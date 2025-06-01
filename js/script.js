@@ -1,42 +1,10 @@
 document.addEventListener('DOMContentLoaded', function() {
     
-    // --- LÓGICA DEL TEMA (CLARO/OSCURO) ---
-    const themeToggle = document.querySelector('.theme-toggle');
-    const body = document.body;
-
-    // Función para aplicar un tema
-    const applyTheme = (theme) => {
-        if (theme === 'light') {
-            body.classList.add('light-mode');
-        } else {
-            body.classList.remove('light-mode');
-        }
-    };
-
-    // Al cargar la página, comprueba si hay un tema guardado o si prefiere el modo claro
-    const savedTheme = localStorage.getItem('theme');
-    const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
-
-    if (savedTheme) {
-        applyTheme(savedTheme);
-    } else if (prefersLight) {
-        applyTheme('light');
-    }
-
-    // Evento para el botón de cambio de tema
-    themeToggle.addEventListener('click', () => {
-        const newTheme = body.classList.contains('light-mode') ? 'dark' : 'light';
-        applyTheme(newTheme);
-        // Guarda la elección del usuario
-        localStorage.setItem('theme', newTheme);
-    });
-
-
-    // --- LÓGICA DEL FEED DE SUBSTACK ---
-    const substackFeedUrl = 'https://eptnews.substack.com/feed';
+    // --- LÓGICA DEL FEED DE SUBSTACK (VERSIÓN MEJORADA) ---
+    const substackFeedUrl = '[https://eptnews.substack.com/feed](https://eptnews.substack.com/feed)';
     const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(substackFeedUrl)}`;
     const feedContainer = document.getElementById('substack-feed-grid');
-    const fallbackImage = 'https://i.imgur.com/VdefT0s.png';
+    const fallbackImage = '[https://i.imgur.com/VdefT0s.png](https://i.imgur.com/VdefT0s.png)';
 
     // Función para truncar texto y eliminar etiquetas HTML
     function truncateText(html, maxLength) {
@@ -52,9 +20,10 @@ document.addEventListener('DOMContentLoaded', function() {
     fetch(apiUrl)
         .then(response => response.json())
         .then(data => {
+            if (!feedContainer) return; // Salir si el contenedor no existe
             feedContainer.innerHTML = ''; 
 
-            if (data.items) {
+            if (data.items && data.items.length > 0) {
                 data.items.forEach(item => {
                     const card = document.createElement('a');
                     card.href = item.link;
@@ -62,10 +31,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     card.rel = 'noopener noreferrer';
                     card.classList.add('feed-card');
                     
-                    const imageUrl = item.thumbnail || fallbackImage;
+                    let imageUrl = fallbackImage; // Empezamos con la imagen de fallback
+
+                    // Verificamos si existe una miniatura en el feed
+                    if (item.thumbnail && item.thumbnail.length > 0) {
+                        // Si existe, la usamos y nos aseguramos de que sea HTTPS
+                        imageUrl = item.thumbnail.replace(/^http:\/\//i, 'https://');
+                    }
+                    
                     const image = document.createElement('img');
                     image.src = imageUrl;
                     image.classList.add('card-image');
+                    // Si incluso la URL https falla, usamos la de fallback
                     image.onerror = () => { image.src = fallbackImage; };
 
                     const content = document.createElement('div');
@@ -74,12 +51,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     const title = document.createElement('h3');
                     title.textContent = item.title;
 
-                    // ¡CAMBIO! Usamos la descripción en lugar del autor
                     const description = document.createElement('p');
-                    description.textContent = truncateText(item.description, 100); // Acortamos a 100 caracteres
+                    description.textContent = truncateText(item.description, 100);
 
                     content.appendChild(title);
-                    content.appendChild(description); // Añadimos la descripción
+                    content.appendChild(description);
                     card.appendChild(image);
                     card.appendChild(content);
 
@@ -91,8 +67,13 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Error al obtener el feed:', error);
-            feedContainer.innerHTML = '<p>Hubo un problema al cargar las publicaciones.</p>';
+            if (feedContainer) {
+                feedContainer.innerHTML = '<p>Hubo un problema al cargar las publicaciones.</p>';
+            }
         });
+
+    // ... (El resto de tu código, como el del tema y el modal, puede ir aquí si lo separaste, si no, asegúrate de que esté todo dentro del mismo 'DOMContentLoaded')
+    // Si todo tu JS está en este archivo, solo necesitas reemplazar la sección del fetch.
 });
 
 // ... todo tu código anterior de tema y feed está aquí arriba ...
