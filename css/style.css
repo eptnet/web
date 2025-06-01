@@ -1,0 +1,388 @@
+/* ---- VARIABLES Y ESTILOS GLOBALES ---- */
+:root {
+    --bg-color: #121212;
+    --surface-primary: #1e1e1e;
+    --surface-secondary: #2a2a2e;
+    --text-primary: #ffffff;
+    --text-secondary: #b3b3b3;
+    --highlight-color: #1DB954;
+    --live-color: #ff0000;
+}
+
+body.light-mode {
+    --bg-color: #f4f4f8;
+    --surface-primary: #ffffff;
+    --surface-secondary: #eef0f2;
+    --text-primary: #181818;
+    --text-secondary: #555555;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: 'Montserrat', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    display: grid;
+    grid-template-columns: 80px 1fr 80px;
+    height: 100vh;
+    overflow-x: hidden;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+/* ---- COLUMNA IZQUIERDA: NAVEGACIÓN ---- */
+.sidebar-left {
+    background-color: #000; /* Siempre negro para consistencia */
+    padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo img {
+    width: 45px;
+    height: auto;
+    border-radius: 8px;
+}
+
+.nav-main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 25px;
+}
+
+.nav-link {
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    text-decoration: none;
+    transition: color 0.3s, transform 0.3s;
+}
+.nav-link:hover {
+    color: var(--text-primary);
+    transform: scale(1.1);
+}
+.nav-link.active {
+    color: var(--highlight-color);
+}
+
+.theme-toggle {
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+.theme-toggle:hover {
+    color: var(--text-primary);
+}
+/* Lógica para mostrar el icono correcto */
+body.light-mode .theme-toggle .fa-moon { display: none; }
+body:not(.light-mode) .theme-toggle .fa-sun { display: none; }
+
+
+/* ---- CONTENIDO PRINCIPAL ---- */
+.main-content {
+    background-color: var(--bg-color);
+    overflow-y: auto;
+    padding: 30px;
+    transition: background-color 0.3s;
+}
+
+.hero-main {
+    width: 100%;
+    height: 40vh;
+    background-image: url('https://i.imgur.com/T0aXkYy.jpeg');
+    background-size: cover;
+    background-position: center;
+    border-radius: 15px;
+    display: flex;
+    align-items: flex-end;
+    padding: 30px;
+}
+
+.hero-text {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #fff; /* Siempre blanco para que sea legible sobre la imagen */
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+}
+
+.feed-section {
+    padding: 40px 0;
+}
+
+.feed-section h2 {
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    color: var(--text-primary);
+    transition: color 0.3s;
+}
+
+#substack-feed-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 25px;
+}
+
+.feed-card {
+    background-color: var(--surface-primary);
+    border-radius: 10px;
+    overflow: hidden;
+    text-decoration: none;
+    color: var(--text-primary);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s;
+}
+
+.feed-card:hover {
+    background-color: var(--surface-secondary);
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.card-image {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    background-color: var(--surface-secondary);
+}
+
+.card-content {
+    padding: 15px;
+}
+
+.card-content h3 {
+    font-size: 1rem;
+    margin: 0 0 10px 0;
+    line-height: 1.4;
+    color: var(--text-primary);
+    transition: color 0.3s;
+}
+
+.card-content p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.5;
+    transition: color 0.3s;
+}
+
+.loading { color: var(--text-secondary); }
+
+/* ---- COLUMNA DERECHA: LIVE ---- */
+.sidebar-right {
+    background-color: var(--bg-color);
+    padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: background-color 0.3s;
+}
+.live-header { color: var(--live-color); font-weight: bold; }
+.live-icon { animation: pulse 1.5s infinite; }
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+.live-channels { margin-top: 20px; display: flex; flex-direction: column; gap: 15px; }
+.channel-placeholder { width: 45px; height: 45px; background-color: var(--surface-secondary); border-radius: 50%; border: 2px solid var(--text-secondary); }
+
+/*
+==============================================
+--- ESTILOS DEL MODAL DE CANALES EN VIVO ---
+==============================================
+*/
+.sidebar-right {
+    cursor: pointer; /* Hacemos que la barra derecha parezca clickable */
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85); /* Fondo oscuro semitransparente */
+    display: none; /* Oculto por defecto */
+    justify-content: center;
+    align-items: center;
+    z-index: 2000; /* Por encima de todo */
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal-overlay.visible {
+    display: flex;
+    opacity: 1;
+}
+
+.modal-content {
+    background-color: var(--surface-primary);
+    padding: 30px;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 600px;
+    position: relative;
+    transform: scale(0.95);
+    transition: transform 0.3s ease;
+}
+
+.modal-overlay.visible .modal-content {
+    transform: scale(1);
+}
+
+.modal-close-button {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 2rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    line-height: 1;
+}
+.modal-close-button:hover {
+    color: var(--text-primary);
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    color: var(--text-primary);
+}
+
+.live-channel-list {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.channel-item {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 15px;
+    background-color: var(--surface-secondary);
+    border-radius: 10px;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+.channel-item:hover {
+    background-color: var(--bg-color);
+}
+
+.channel-icon {
+    font-size: 2.5rem;
+    color: var(--live-color);
+}
+
+.channel-info h3 {
+    margin: 0 0 5px 0;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+}
+.channel-info p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.channel-live-indicator {
+    margin-left: auto;
+    color: var(--live-color);
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.channel-live-indicator .fa-circle {
+    font-size: 0.7rem;
+    animation: pulse 1.5s infinite; /* Reutilizamos nuestra animación de pulso */
+}
+
+/* Estilo para el botón LIVE de la barra móvil */
+.nav-link-live-mobile {
+    display: none; /* Oculto por defecto en escritorio */
+    font-size: 1.5rem;
+    color: var(--live-color);
+    animation: pulse 1.5s infinite;
+}
+
+/*
+==============================================
+--- REGLAS PARA DISEÑO ADAPTABLE (MÓVIL) ---
+==============================================
+*/
+
+/* Se aplica a pantallas con un ancho máximo de 768px (tablets y teléfonos) */
+@media (max-width: 768px) {
+
+    /* 1. Cambiamos el layout principal a una sola columna */
+    body {
+        display: block; /* Desactivamos el grid de 3 columnas */
+        padding-bottom: 70px; /* Añadimos espacio abajo para que la barra de nav no tape el contenido */
+    }
+
+    /* 2. Transformamos la barra izquierda en una barra de navegación inferior */
+    .sidebar-left {
+        position: fixed; /* La fijamos en la pantalla */
+        bottom: 0;       /* En la parte de abajo */
+        left: 0;
+        width: 100%;     /* Que ocupe todo el ancho */
+        height: 60px;    /* Con una altura fija */
+        flex-direction: row; /* Los iconos ahora estarán en fila */
+        justify-content: space-around; /* Con espacio equitativo entre ellos */
+        align-items: center;
+        border-top: 1px solid var(--surface-secondary); /* Un borde sutil arriba */
+        z-index: 1000; /* Nos aseguramos que esté por encima de todo */
+        background-color: #000; /* La mantenemos negra para buen contraste */
+    }
+
+    /* Ocultamos elementos no esenciales en la barra móvil para limpiar la interfaz */
+    .sidebar-left .logo,
+    .sidebar-left .theme-toggle
+    .sidebar-right { /* Añadimos .sidebar-right aquí */
+        display: none;
+    }
+    
+    /* Y añadimos esta nueva regla DENTRO del media query para mostrar el botón móvil */
+    .nav-link-live-mobile {
+    display: block; /* Lo mostramos solo en móvil */
+}
+    
+    .nav-main {
+        flex-direction: row; /* Aseguramos que los links estén en fila */
+        gap: 0;
+        width: 100%;
+        justify-content: space-around;
+    }
+
+    /* 3. Ocultamos la barra derecha por completo */
+    .sidebar-right {
+        display: none;
+    }
+
+    /* 4. Ajustamos el contenido principal */
+    .main-content {
+        padding: 15px; /* Reducimos el padding para ganar espacio */
+    }
+
+    .hero-main {
+        height: 30vh; /* Hacemos la imagen principal un poco más pequeña */
+    }
+
+    .hero-text {
+        font-size: 1.5rem; /* Reducimos el tamaño del texto principal */
+    }
+
+    .feed-section h2 {
+        font-size: 1.5rem;
+    }
+
+    /* Forzamos las tarjetas a una sola columna en pantallas muy pequeñas */
+    @media (max-width: 480px) {
+        #substack-feed-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+}

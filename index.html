@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epistecnología - Plataforma de Divulgación</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+
+    <nav class="sidebar-left">
+        <a href="#" class="logo">
+            <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Epistecnología Logo">
+        </a>
+        
+        <div class="nav-main">
+            <a href="#" class="nav-link active" title="Inicio"><i class="fas fa-home"></i></a>
+            <a href="#" class="nav-link" title="Explorar"><i class="fas fa-search"></i></a>
+            <a href="#" class="nav-link" title="Publicaciones"><i class="fas fa-book-open"></i></a>
+            <a href="#" class="nav-link" title="Comunidades"><i class="fas fa-users"></i></a>
+            <a href="#" class="nav-link" title="Eventos"><i class="fas fa-calendar-alt"></i></a>
+            <a href="#" id="live-button-mobile" class="nav-link-live-mobile" title="En Vivo"><i class="fas fa-satellite-dish"></i></a>
+        </div>
+        
+        <div class="nav-footer">
+             <div class="theme-toggle" title="Cambiar Tema">
+                <i class="fas fa-moon"></i> <i class="fas fa-sun"></i>  </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <section class="hero-main">
+            <div class="hero-text">
+                Epistecnología es investigación, actualidad e innovación centrada en la persona
+            </div>
+        </section>
+
+        <section class="feed-section">
+            <h2>Últimas Publicaciones</h2>
+            <div id="substack-feed-grid">
+                <p class="loading">Cargando publicaciones...</p>
+            </div>
+        </section>
+    </main>
+
+    <aside class="sidebar-right">
+        <div class="live-header">
+            <i class="fas fa-satellite-dish live-icon"></i>
+            <span>LIVE</span>
+        </div>
+        <div class="live-channels">
+            <div class="channel-placeholder"></div>
+            <div class="channel-placeholder"></div>
+            <div class="channel-placeholder"></div>
+        </div>
+    </aside>
+    
+    <div id="live-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="modal-close-button">&times;</span>
+            <h2>Canales en Transmisión</h2>
+            <div class="live-channel-list">
+                <a href="https://www.youtube.com/watch?v=jfKfPfyJRdk" target="_blank" rel="noopener noreferrer" class="channel-item">
+                    <div class="channel-icon">
+                        <i class="fab fa-youtube"></i>
+                    </div>
+                    <div class="channel-info">
+                        <h3>Evento de Lanzamiento Epistecnología</h3>
+                        <p>Charla sobre el futuro de la divulgación científica.</p>
+                    </div>
+                    <div class="channel-live-indicator">
+                        <i class="fas fa-circle"></i> LIVE
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/script.js"></script>
+</body>
+</html>
