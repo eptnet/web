@@ -75,38 +75,48 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (data.items && data.items.length > 0) {
                     data.items.forEach(item => {
-                        const card = document.createElement('a');
-                        card.href = item.link;
-                        card.target = '_blank';
-                        card.rel = 'noopener noreferrer';
-                        card.classList.add('feed-card');
-                        
-                        let imageUrl = fallbackImage;
-                        if (item.thumbnail && item.thumbnail.length > 0) {
-                            imageUrl = item.thumbnail.replace(/^http:\/\//i, 'https://');
-                        }
-                        
-                        const image = document.createElement('img');
-                        image.src = imageUrl;
-                        image.classList.add('card-image');
-                        image.onerror = () => { image.src = fallbackImage; };
+                    const card = document.createElement('a');
+                    card.href = item.link;
+                    card.target = '_blank';
+                    card.rel = 'noopener noreferrer';
+                    card.classList.add('feed-card');
 
-                        const content = document.createElement('div');
-                        content.classList.add('card-content');
+                    let imageUrl = fallbackImage; // Empezamos con la imagen de fallback
 
-                        const title = document.createElement('h3');
-                        title.textContent = item.title;
+                    // BUSCAMOS LA IMAGEN EN EL LUGAR CORRECTO
+                    // Primero, intentamos con 'thumbnail', por si acaso.
+                    if (item.thumbnail && item.thumbnail.length > 0) {
+                        imageUrl = item.thumbnail;
+                    } 
+                    // Si no, buscamos en 'enclosure', que es lo que nos da el feed.
+                    else if (item.enclosure && item.enclosure.link && item.enclosure.link.length > 0) {
+                        imageUrl = item.enclosure.link;
+                    }
 
-                        const description = document.createElement('p');
-                        description.textContent = truncateText(item.description, 100);
+                    // Una vez que tenemos la URL, nos aseguramos de que sea HTTPS
+                    imageUrl = imageUrl.replace(/^http:\/\//i, 'https://');
 
-                        content.appendChild(title);
-                        content.appendChild(description);
-                        card.appendChild(image);
-                        card.appendChild(content);
+                    const image = document.createElement('img');
+                    image.src = imageUrl;
+                    image.classList.add('card-image');
+                    image.onerror = () => { image.src = fallbackImage; }; // Si todo falla, usamos el fallback
 
-                        feedContainer.appendChild(card);
-                    });
+                    const content = document.createElement('div');
+                    content.classList.add('card-content');
+
+                    const title = document.createElement('h3');
+                    title.textContent = item.title;
+
+                    const description = document.createElement('p');
+                    description.textContent = truncateText(item.description, 100);
+
+                    content.appendChild(title);
+                    content.appendChild(description);
+                    card.appendChild(image);
+                    card.appendChild(content);
+
+                    feedContainer.appendChild(card);
+                });
                 } else {
                     feedContainer.innerHTML = '<p>No se pudieron cargar las publicaciones.</p>';
                 }
