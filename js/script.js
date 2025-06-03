@@ -1,109 +1,119 @@
+// Este es el archivo script.js completo y corregido.
+// Reemplaza todo el contenido de tu archivo js/script.js con este código.
+
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("SCRIPT: DOMContentLoaded se disparó. El script general está funcionando."); // MENSAJE 1
 
     // --- LÓGICA DEL TEMA (CLARO/OSCURO) ---
-    // ... (tu código del tema aquí, no lo modifiques) ...
-    // Ejemplo:
+    console.log("THEME: Iniciando lógica del tema.");
     const themeToggle = document.querySelector('.theme-toggle');
+    const body = document.body;
+
     if (themeToggle) {
-        console.log("SCRIPT: Configurando lógica del tema."); // MENSAJE 2
-        // ... el resto de tu lógica del tema ...
+        console.log("THEME: themeToggle encontrado:", themeToggle);
+
+        // Función para aplicar el tema visualmente
+        const applyThemeVisuals = (theme) => {
+            if (theme === 'light-mode') {
+                body.classList.add('light-mode');
+                console.log("THEME: Aplicada clase 'light-mode' al body.");
+            } else { // 'dark-mode' (o default)
+                body.classList.remove('light-mode');
+                console.log("THEME: Removida clase 'light-mode' del body (activando dark/default).");
+            }
+        };
+
+        // 1. Comprobar preferencia guardada en localStorage al cargar la página
+        const savedTheme = localStorage.getItem('theme');
+        console.log("THEME: Tema guardado en localStorage al cargar:", savedTheme);
+
+        if (savedTheme) {
+            applyThemeVisuals(savedTheme);
+        } else {
+            // 2. Si no hay nada guardado, comprobar preferencia del sistema operativo
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+                console.log("THEME: No hay tema guardado, sistema prefiere light. Aplicando light-mode.");
+                applyThemeVisuals('light-mode');
+                // Opcional: Guardar preferencia del sistema si es la primera vez
+                // localStorage.setItem('theme', 'light-mode');
+            } else {
+                console.log("THEME: No hay tema guardado, sistema prefiere dark (o sin preferencia). Usando default (dark).");
+                applyThemeVisuals('dark-mode'); // Asegura que se aplique el default si no hay preferencia light
+            }
+        }
+
+        // Evento para el botón de cambio de tema
         themeToggle.addEventListener('click', () => {
-            // ...
-        });
-    }
+            console.log("THEME: Clic en themeToggle.");
+            body.classList.toggle('light-mode'); // Alterna la clase light-mode
 
-
-   // --- LÓGICA DEL MODAL DE CANALES EN VIVO ---
-    console.log("MODAL: Iniciando lógica del modal.");
-    const liveButtonDesktop = document.querySelector('.sidebar-right');
-    console.log("MODAL: liveButtonDesktop encontrado:", liveButtonDesktop);
-
-    const liveButtonMobile = document.getElementById('live-button-mobile');
-    console.log("MODAL: liveButtonMobile encontrado:", liveButtonMobile);
-
-    const liveModal = document.getElementById('live-modal');
-    console.log("MODAL: liveModal encontrado:", liveModal);
-
-    const closeModalButton = document.querySelector('.modal-close-button');
-    console.log("MODAL: closeModalButton encontrado:", closeModalButton);
-
-    if (liveModal && closeModalButton) {
-        console.log("MODAL: liveModal y closeModalButton existen. Añadiendo event listeners.");
-        const openModal = () => {
-            console.log("MODAL: openModal() llamado. Añadiendo clase 'visible'.");
-            liveModal.classList.add('visible');
-        }
-        const closeModal = () => {
-            console.log("MODAL: closeModal() llamado. Quitanto clase 'visible'.");
-            liveModal.classList.remove('visible');
-        }
-
-        if (liveButtonDesktop) {
-            console.log("MODAL: Añadiendo listener a liveButtonDesktop.");
-            liveButtonDesktop.addEventListener('click', openModal);
-        } else {
-            console.warn("MODAL: liveButtonDesktop NO encontrado. No se añadió listener.");
-        }
-
-        if (liveButtonMobile) {
-            console.log("MODAL: Añadiendo listener a liveButtonMobile.");
-            liveButtonMobile.addEventListener('click', openModal);
-        } else {
-            console.warn("MODAL: liveButtonMobile NO encontrado. No se añadió listener.");
-        }
-        
-        console.log("MODAL: Añadiendo listener a closeModalButton.");
-        closeModalButton.addEventListener('click', closeModal);
-
-        liveModal.addEventListener('click', function(event) {
-            if (event.target === liveModal) {
-                console.log("MODAL: Clic en overlay, cerrando modal.");
-                closeModal();
+            // Guardar la nueva preferencia del usuario en localStorage
+            if (body.classList.contains('light-mode')) {
+                localStorage.setItem('theme', 'light-mode');
+                console.log("THEME: Guardado 'light-mode' en localStorage después del clic.");
+            } else {
+                localStorage.setItem('theme', 'dark-mode'); // Guardamos 'dark-mode' explícitamente
+                console.log("THEME: Guardado 'dark-mode' en localStorage después del clic.");
             }
         });
     } else {
-        console.error("MODAL: ERROR CRÍTICO - liveModal o closeModalButton NO encontrados. La funcionalidad del modal no se activará.");
+        console.error("THEME: ERROR CRÍTICO - Botón .theme-toggle NO encontrado en el HTML.");
     }
-    // --- FIN DE LA LÓGICA DEL MODAL ---
+    // --- FIN DE LA LÓGICA DEL TEMA ---
 
+    // --- LÓGICA DEL MODAL DE CANALES EN VIVO ---
+    const liveButtonDesktop = document.querySelector('.sidebar-right');
+    const liveButtonMobile = document.getElementById('live-button-mobile');
+    const liveModal = document.getElementById('live-modal');
+    const closeModalButton = document.querySelector('.modal-close-button');
 
-    // --- LÓGICA DEL FEED DE SUBSTACK (CON MENSAJES DE PRUEBA) ---
-    console.log("SCRIPT: Iniciando lógica del feed de Substack."); // MENSAJE 4
+    if (liveModal && closeModalButton) {
+        const openModal = () => liveModal.classList.add('visible');
+        const closeModal = () => liveModal.classList.remove('visible');
+
+        if (liveButtonDesktop) {
+            liveButtonDesktop.addEventListener('click', openModal);
+        }
+        if (liveButtonMobile) {
+            liveButtonMobile.addEventListener('click', openModal);
+        }
+        
+        closeModalButton.addEventListener('click', closeModal);
+
+        // Cerrar el modal si se hace clic fuera del contenido
+        liveModal.addEventListener('click', function(event) {
+            if (event.target === liveModal) {
+                closeModal();
+            }
+        });
+    }
+
+    // --- LÓGICA DEL FEED DE SUBSTACK ---
     const feedContainer = document.getElementById('substack-feed-grid');
-    console.log("SCRIPT: feedContainer encontrado:", feedContainer); // MENSAJE 5 (Si dice null, aquí está el problema)
 
     if (feedContainer) {
-        console.log("SCRIPT: feedContainer EXISTE. Preparando para fetch."); // MENSAJE 6
         const substackFeedUrl = 'https://eptnews.substack.com/feed';
         const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(substackFeedUrl)}`;
-        const fallbackImage = 'https://i.imgur.com/VdefT0s.png';
+        const fallbackImage = 'https://i.imgur.com/VdefT0s.png'; // Una imagen genérica
 
+        // Función para truncar el texto de la descripción
         const truncateText = (html, maxLength) => {
-            // ... (tu función truncateText no necesita cambios) ...
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = html;
             let text = tempDiv.textContent || tempDiv.innerText || "";
             return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
         };
 
-        console.log("SCRIPT: Intentando hacer fetch a:", apiUrl); // MENSAJE 7
         fetch(apiUrl)
             .then(response => {
-                console.log("SCRIPT: Fetch - Respuesta recibida del API."); // MENSAJE 8
                 if (!response.ok) {
-                    console.error("SCRIPT: Fetch - Error en la respuesta del API:", response.status);
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 return response.json();
             })
             .then(data => {
-                console.log("SCRIPT: Fetch - Datos JSON procesados:", data); // MENSAJE 9
-                feedContainer.innerHTML = ''; 
+                feedContainer.innerHTML = ''; // Limpiar el mensaje "Cargando..."
 
                 if (data.items && data.items.length > 0) {
-                    console.log("SCRIPT: Fetch - Encontrados " + data.items.length + " items. Procesando..."); // MENSAJE 10
-                    // ... (el resto de tu data.items.forEach, no necesita cambios) ...
                     data.items.forEach(item => {
                         const card = document.createElement('a');
                         card.href = item.link;
@@ -111,18 +121,20 @@ document.addEventListener('DOMContentLoaded', function() {
                         card.rel = 'noopener noreferrer';
                         card.classList.add('feed-card');
 
+                        // Lógica mejorada para encontrar la imagen
                         let imageUrl = fallbackImage;
                         if (item.thumbnail && item.thumbnail.length > 0) {
                             imageUrl = item.thumbnail;
-                        } 
-                        else if (item.enclosure && item.enclosure.link && item.enclosure.link.length > 0) {
+                        } else if (item.enclosure && item.enclosure.link && item.enclosure.type.startsWith('image')) {
                             imageUrl = item.enclosure.link;
                         }
-                        imageUrl = imageUrl.replace(/^http:\/\//i, 'https://');
-                        
+                        imageUrl = imageUrl.replace(/^http:\/\//i, 'https://'); // Forzar HTTPS
+
                         const image = document.createElement('img');
                         image.src = imageUrl;
                         image.classList.add('card-image');
+                        image.alt = item.title;
+                        // Si la imagen de Substack falla, se carga la de respaldo
                         image.onerror = () => { image.src = fallbackImage; };
 
                         const content = document.createElement('div');
@@ -142,15 +154,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         feedContainer.appendChild(card);
                     });
                 } else {
-                    console.warn("SCRIPT: Fetch - No se encontraron items en los datos o data.items está vacío."); // MENSAJE 11
-                    feedContainer.innerHTML = '<p>No se pudieron cargar las publicaciones (sin items).</p>';
+                    feedContainer.innerHTML = '<p>No se encontraron publicaciones recientes.</p>';
                 }
             })
             .catch(error => {
-                console.error('SCRIPT: Fetch - ERROR CATASTRÓFICO:', error); // MENSAJE 12
-                feedContainer.innerHTML = '<p>Hubo un problema crítico al cargar las publicaciones.</p>';
+                console.error('Error al obtener el feed de Substack:', error);
+                feedContainer.innerHTML = '<p>Hubo un problema al cargar las publicaciones.</p>';
             });
-    } else {
-        console.error("SCRIPT: ERROR CRÍTICO - feedContainer NO encontrado. El feed no se cargará."); // MENSAJE 13
     }
 });
