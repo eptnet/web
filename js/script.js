@@ -14,14 +14,58 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
-    // --- LÓGICA DEL MODAL DE CANALES EN VIVO ---
-    // ... (tu código del modal aquí, no lo modifiques) ...
-    // Ejemplo:
+   // --- LÓGICA DEL MODAL DE CANALES EN VIVO ---
+    console.log("MODAL: Iniciando lógica del modal.");
     const liveButtonDesktop = document.querySelector('.sidebar-right');
-    if (liveButtonDesktop) { // O cualquier elemento principal de tu lógica de modal
-        console.log("SCRIPT: Configurando lógica del modal."); // MENSAJE 3
-        // ... el resto de tu lógica del modal ...
+    console.log("MODAL: liveButtonDesktop encontrado:", liveButtonDesktop);
+
+    const liveButtonMobile = document.getElementById('live-button-mobile');
+    console.log("MODAL: liveButtonMobile encontrado:", liveButtonMobile);
+
+    const liveModal = document.getElementById('live-modal');
+    console.log("MODAL: liveModal encontrado:", liveModal);
+
+    const closeModalButton = document.querySelector('.modal-close-button');
+    console.log("MODAL: closeModalButton encontrado:", closeModalButton);
+
+    if (liveModal && closeModalButton) {
+        console.log("MODAL: liveModal y closeModalButton existen. Añadiendo event listeners.");
+        const openModal = () => {
+            console.log("MODAL: openModal() llamado. Añadiendo clase 'visible'.");
+            liveModal.classList.add('visible');
+        }
+        const closeModal = () => {
+            console.log("MODAL: closeModal() llamado. Quitanto clase 'visible'.");
+            liveModal.classList.remove('visible');
+        }
+
+        if (liveButtonDesktop) {
+            console.log("MODAL: Añadiendo listener a liveButtonDesktop.");
+            liveButtonDesktop.addEventListener('click', openModal);
+        } else {
+            console.warn("MODAL: liveButtonDesktop NO encontrado. No se añadió listener.");
+        }
+
+        if (liveButtonMobile) {
+            console.log("MODAL: Añadiendo listener a liveButtonMobile.");
+            liveButtonMobile.addEventListener('click', openModal);
+        } else {
+            console.warn("MODAL: liveButtonMobile NO encontrado. No se añadió listener.");
+        }
+        
+        console.log("MODAL: Añadiendo listener a closeModalButton.");
+        closeModalButton.addEventListener('click', closeModal);
+
+        liveModal.addEventListener('click', function(event) {
+            if (event.target === liveModal) {
+                console.log("MODAL: Clic en overlay, cerrando modal.");
+                closeModal();
+            }
+        });
+    } else {
+        console.error("MODAL: ERROR CRÍTICO - liveModal o closeModalButton NO encontrados. La funcionalidad del modal no se activará.");
     }
+    // --- FIN DE LA LÓGICA DEL MODAL ---
 
 
     // --- LÓGICA DEL FEED DE SUBSTACK (CON MENSAJES DE PRUEBA) ---
