@@ -71,6 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (item.enclosure && item.enclosure.type && item.enclosure.type.startsWith('audio/mpeg') && item.enclosure.link) {
             const audioPlayer = document.createElement('audio');
             audioPlayer.controls = true;
+            audioPlayer.controlsList = 'nodownload';
             audioPlayer.src = item.enclosure.link.replace(/^http:\/\//i, 'https://');
             panelAudioContainer.appendChild(audioPlayer);
         }
