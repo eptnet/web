@@ -316,13 +316,13 @@ body:not(.light-mode) .theme-toggle .fa-sun { display: none; }
 .side-panel {
     position: fixed;
     top: 0;
-    right: -100%; /* Empieza oculto fuera de la pantalla a la derecha */
-    width: 450px; /* Ancho del panel, puedes ajustarlo */
-    max-width: 90vw; /* Máximo ancho en pantallas más pequeñas */
+    right: -100%;
+    width: 550px; /* AUMENTADO DE 450px */
+    max-width: 90vw;
     height: 100%;
-    background-color: var(--surface-primary); /* O el color que prefieras */
+    background-color: var(--surface-primary);
     box-shadow: -5px 0 15px rgba(0,0,0,0.2);
-    z-index: 1050; /* Por encima del modal de LIVE si es necesario */
+    z-index: 1050;
     overflow-y: auto;
     transition: right 0.4s ease-in-out;
     color: var(--text-primary);
@@ -414,6 +414,32 @@ body:not(.light-mode) .theme-toggle .fa-sun { display: none; }
     color: var(--highlight-color);
 }
 
+/* --- Añade estas nuevas reglas al final de los estilos del panel --- */
+#panel-share-buttons button { /* Estilo base para botones en el panel */
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+#panel-share-buttons a, #panel-share-buttons button { /* Estilo unificado */
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    margin: 0 10px;
+    text-decoration: none;
+}
+#panel-share-buttons a:hover, #panel-share-buttons button:hover {
+    color: var(--highlight-color);
+}
+
+/* Para manejar la visibilidad de los botones de compartir */
+.desktop-share-icons {
+    display: inline-block; /* Se muestran por defecto */
+}
+#native-share-btn {
+    display: none; /* Oculto por defecto */
+}
+
 /* Efecto de "empujar" el contenido principal en escritorio */
 body.panel-open .main-content {
     /* Ajusta este valor según el ancho de tu panel y si quieres un margen */
@@ -491,15 +517,26 @@ body.panel-open .sidebar-right {
 
     /* En móvil, el panel no empuja el contenido, se superpone */
     body.panel-open .main-content {
-        margin-right: 0; 
+    margin-right: 550px; /* AUMENTADO DE 450px */
+    transition: margin-right 0.4s ease-in-out;
     }
     body.panel-open .sidebar-right {
-        right: 0; /* La barra derecha no se mueve */
+        right: 550px; /* AUMENTADO DE 450px */
+        transition: right 0.4s ease-in-out;
     }
+
 
     #panel-title {
         font-size: 1.5rem;
         margin-top: 30px; /* Más espacio para el botón de cerrar */
+    }
+    
+    /* Ocultamos los iconos individuales en móvil y mostramos el botón de compartir nativo */
+    .desktop-share-icons {
+        display: none;
+    }
+    #native-share-btn {
+        display: inline-block;
     }
 }
 
