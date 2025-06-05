@@ -310,6 +310,201 @@ body:not(.light-mode) .theme-toggle .fa-sun { display: none; }
 
 /*
 ==============================================
+--- ESTILOS DEL PANEL LATERAL DE PUBLICACIONES ---
+==============================================
+*/
+.side-panel {
+    position: fixed;
+    top: 0;
+    right: -100%; /* Empieza oculto fuera de la pantalla a la derecha */
+    width: 450px; /* Ancho del panel, puedes ajustarlo */
+    max-width: 90vw; /* Máximo ancho en pantallas más pequeñas */
+    height: 100%;
+    background-color: var(--surface-primary); /* O el color que prefieras */
+    box-shadow: -5px 0 15px rgba(0,0,0,0.2);
+    z-index: 1050; /* Por encima del modal de LIVE si es necesario */
+    overflow-y: auto;
+    transition: right 0.4s ease-in-out;
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+}
+
+.side-panel.open {
+    right: 0; /* Se desliza a la vista */
+}
+
+.panel-content {
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.panel-close-button {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: none;
+    border: none;
+    font-size: 2.5rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    line-height: 1;
+}
+.panel-close-button:hover {
+    color: var(--text-primary);
+}
+
+#panel-title {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    font-size: 1.8rem;
+    color: var(--text-primary);
+}
+
+#panel-audio-player-container audio {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+#panel-body-content {
+    flex-grow: 1;
+    line-height: 1.7;
+    font-size: 0.95rem;
+    overflow-y: auto; /* Para que el contenido del post haga scroll si es largo */
+}
+
+/* Estilos para el contenido HTML que viene de Substack */
+#panel-body-content img { /* Para que las imágenes dentro del post sean responsivas */
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 15px 0;
+}
+#panel-body-content a {
+    color: var(--highlight-color);
+}
+#panel-body-content blockquote {
+    border-left: 3px solid var(--highlight-color);
+    padding-left: 15px;
+    margin-left: 0;
+    font-style: italic;
+    color: var(--text-secondary);
+}
+
+.panel-footer {
+    margin-top: auto; /* Empuja el pie de página hacia abajo */
+    padding-top: 20px;
+    border-top: 1px solid var(--surface-secondary);
+    text-align: center;
+}
+
+.panel-footer .cta-button { /* Reutilizamos el estilo del botón CTA */
+    margin-bottom: 15px;
+}
+
+#panel-share-buttons a {
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    margin: 0 10px;
+    text-decoration: none;
+}
+#panel-share-buttons a:hover {
+    color: var(--highlight-color);
+}
+
+/* Efecto de "empujar" el contenido principal en escritorio */
+body.panel-open .main-content {
+    /* Ajusta este valor según el ancho de tu panel y si quieres un margen */
+    margin-right: 450px; 
+    transition: margin-right 0.4s ease-in-out;
+}
+/* También podemos ajustar el sidebar derecho si es necesario */
+body.panel-open .sidebar-right {
+    right: 450px; /* O el ancho de tu panel */
+    transition: right 0.4s ease-in-out;
+}
+/* Ocultar los controles de imagen que vienen de Substack dentro del panel */
+#panel-body-content .image-link-expand {
+    display: none !important; /* Usamos !important por si Substack tiene estilos muy específicos */
+}
+.substack-embed-container {
+    width: 100%;
+    max-width: 480px; /* Ancho máximo del embed de Substack */
+    margin: 0 auto 15px auto; /* Centrado y con margen inferior */
+}
+.substack-embed-container iframe {
+    max-width: 100%; /* Para que sea responsivo */
+}
+/* Estilos para tarjeta de Suscripción y Cargar Más */
+.subscribe-card, .load-more-card {
+    background-color: var(--surface-secondary); /* Un color ligeramente diferente o el mismo */
+    text-align: center;
+    cursor: pointer; /* Para el botón de cargar más */
+}
+
+.subscribe-card .card-content, .load-more-card .card-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%; /* Para que ocupe toda la tarjeta si es una imagen */
+    min-height: 280px; /* Altura similar a otras tarjetas con imagen */
+}
+
+.subscribe-card h3 {
+    color: var(--highlight-color); /* Destacar el título */
+}
+
+.subscribe-card .cta-button {
+    margin-top: 15px;
+    background-color: var(--highlight-color);
+    color: white;
+}
+
+.load-more-card span {
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.load-more-card .fa-chevron-down {
+    font-size: 1.5rem;
+    margin-top: 10px;
+    color: var(--highlight-color);
+}
+
+/*
+==============================================
+--- REGLAS PARA DISEÑO ADAPTABLE (MÓVIL) ---
+==============================================
+*/
+@media (max-width: 768px) {
+    /* ... tus estilos móviles existentes ... */
+
+    .side-panel {
+        width: 100%; /* En móvil, el panel ocupa todo el ancho */
+        right: -100%; /* Sigue empezando oculto */
+        max-width: 100%;
+        box-shadow: none; /* No necesitamos sombra si ocupa toda la pantalla */
+    }
+
+    /* En móvil, el panel no empuja el contenido, se superpone */
+    body.panel-open .main-content {
+        margin-right: 0; 
+    }
+    body.panel-open .sidebar-right {
+        right: 0; /* La barra derecha no se mueve */
+    }
+
+    #panel-title {
+        font-size: 1.5rem;
+        margin-top: 30px; /* Más espacio para el botón de cerrar */
+    }
+}
+
+/*
+==============================================
 --- REGLAS PARA DISEÑO ADAPTABLE (MÓVIL) ---
 ==============================================
 */
