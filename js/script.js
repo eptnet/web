@@ -41,28 +41,24 @@ document.addEventListener('DOMContentLoaded', function() {
         const nativeShareButton = postPanel.querySelector('#native-share-btn');
         let currentUrlToShare = '';
 
-        // Ocultar el botón de compartir nativo si el navegador no lo soporta
         if (nativeShareButton && !navigator.share) {
             nativeShareButton.style.display = 'none';
         }
 
-        // Función para abrir panel con contenido de un post de Substack
         const openPostPanel = (item) => {
             panelTitle.textContent = item.title || "Sin título";
             panelAudioContainer.innerHTML = '';
             panelBodyContent.innerHTML = item.content || "<p>Contenido no disponible.</p>";
             currentUrlToShare = item.link || window.location.href;
 
-            // Crear reproductor de audio si es un podcast
             if (item.enclosure && item.enclosure.type && item.enclosure.type.startsWith('audio/mpeg') && item.enclosure.link) {
                 const audioPlayer = document.createElement('audio');
                 audioPlayer.controls = true;
-                audioPlayer.controlsList = 'nodownload'; // Desactiva botón de descarga
+                audioPlayer.controlsList = 'nodownload';
                 audioPlayer.src = item.enclosure.link.replace(/^http:\/\//i, 'https://');
                 panelAudioContainer.appendChild(audioPlayer);
             }
             
-            // Configurar enlaces de compartir
             const shareUrl = encodeURIComponent(currentUrlToShare);
             const shareTitle = encodeURIComponent(item.title || document.title);
             if(shareTwitter) shareTwitter.href = `https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareTitle}`;
@@ -73,12 +69,11 @@ document.addEventListener('DOMContentLoaded', function() {
             postPanel.classList.add('open');
         };
 
-        // Función para abrir panel con contenido de ejemplo (para iconos)
         const openPlaceholderPanel = (title) => {
             panelTitle.textContent = title;
             panelAudioContainer.innerHTML = '';
             panelBodyContent.innerHTML = `<p style="padding: 20px; text-align: center;">Aquí se mostrará el contenido correspondiente a la sección "<strong>${title}</strong>".<br/>Esta funcionalidad está en desarrollo.</p>`;
-            currentUrlToShare = window.location.href; // Usar URL actual para compartir
+            currentUrlToShare = window.location.href;
             
             const shareUrl = encodeURIComponent(currentUrlToShare);
             const shareTitle = encodeURIComponent(title);
@@ -90,7 +85,6 @@ document.addEventListener('DOMContentLoaded', function() {
             postPanel.classList.add('open');
         };
         
-        // Función para cerrar el panel
         const closePostPanel = () => {
             postPanel.classList.remove('open');
             document.body.classList.remove('panel-open');
@@ -101,13 +95,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
 
-        // Asignar eventos de cierre
         if (panelCloseBtn) panelCloseBtn.addEventListener('click', closePostPanel);
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape' && postPanel.classList.contains('open')) closePostPanel();
         });
 
-        // Asignar eventos a todos los triggers de la barra derecha
         document.querySelectorAll('.panel-trigger').forEach(trigger => {
             trigger.addEventListener('click', (event) => {
                 event.preventDefault();
@@ -118,7 +110,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
-        // Asignar eventos a los botones de compartir del panel
         if (copyLinkButton) {
             copyLinkButton.addEventListener('click', (event) => {
                 event.preventDefault();
@@ -169,7 +160,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const createCardElement = (item) => {
                 const card = document.createElement('div');
                 card.classList.add('feed-card');
-                card.addEventListener('click', () => openPostPanel(item)); // ¡Listener de clic reparado!
+                card.addEventListener('click', () => openPostPanel(item)); // Listener de clic reparado
                 
                 let imageUrl = fallbackImage;
                 const isAudioPost = item.enclosure && item.enclosure.type && item.enclosure.type.startsWith('audio/mpeg');
