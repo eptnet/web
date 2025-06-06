@@ -1,632 +1,216 @@
-/* ---- VARIABLES Y ESTILOS GLOBALES ---- */
+/*
+==============================================
+--- 1. ESTILOS GLOBALES Y VARIABLES ---
+==============================================
+*/
 :root {
-    --bg-color: #121212;
-    --surface-primary: #1e1e1e;
-    --surface-secondary: #2a2a2e;
+    --dark-bg: #121212;
+    --primary-surface: #1e1e1e;
+    --secondary-surface: #2a2a2e;
     --text-primary: #ffffff;
     --text-secondary: #b3b3b3;
     --highlight-color: #b72a1e;
     --live-color: #ff0000;
+    --panel-width: 600px;
+    --sidebar-width: 80px;
 }
 
 body.light-mode {
-    --bg-color: #f4f4f8;
-    --surface-primary: #ffffff;
     --surface-secondary: #eef0f2;
+    --dark-bg: #f4f4f8;
+    --primary-surface: #ffffff;
+    --secondary-surface: #eef0f2;
     --text-primary: #181818;
     --text-secondary: #555555;
 }
 
-* {
-    box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
     margin: 0;
     font-family: 'Montserrat', sans-serif;
-    background-color: var(--bg-color);
+    background-color: var(--dark-bg);
     color: var(--text-primary);
-    display: grid;
-    grid-template-columns: 80px 1fr 80px;
     height: 100vh;
-    overflow-x: hidden;
+    overflow: hidden;
     transition: background-color 0.3s, color 0.3s;
 }
 
-/* ---- COLUMNA IZQUIERDA: NAVEGACIÓN ---- */
+/*
+==============================================
+--- 2. ESTRUCTURA PRINCIPAL Y BARRAS LATERALES ---
+==============================================
+*/
 .sidebar-left {
-    background-color: #000; /* Siempre negro para consistencia */
+    position: fixed;
+    top: 0; left: 0;
+    width: var(--sidebar-width);
+    height: 100%;
+    background-color: #000;
     padding: 20px 0;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     align-items: center;
+    z-index: 1002;
 }
-
-.logo img {
-    width: 45px;
-    height: auto;
-    border-radius: 8px;
-}
-
-.nav-main {
+.sidebar-right {
+    position: fixed;
+    top: 0; right: 0;
+    width: var(--sidebar-width);
+    height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 25px;
+    padding: 20px 0;
+    gap: 40px;
+    z-index: 1001;
 }
 
-.nav-link {
-    color: var(--text-secondary);
-    font-size: 1.5rem;
-    text-decoration: none;
-    transition: color 0.3s, transform 0.3s;
+.main-content {
+    height: 100vh;
+    overflow-y: auto;
+    margin-left: var(--sidebar-width);
+    margin-right: var(--sidebar-width);
+    padding: 0 40px;
+    transition: margin-right 0.4s ease-in-out;
 }
-.nav-link:hover {
-    color: var(--text-primary);
-    transform: scale(1.1);
-}
-.nav-link.active {
-    color: var(--highlight-color);
+body.panel-open .main-content {
+    margin-right: calc(var(--sidebar-width) + var(--panel-width));
 }
 
-.theme-toggle {
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: var(--text-secondary);
-}
-.theme-toggle:hover {
-    color: var(--text-primary);
-}
-/* Lógica para mostrar el icono correcto */
+.logo img { width: 45px; height: auto; border-radius: 8px; }
+.nav-main { display: flex; flex-direction: column; align-items: center; gap: 25px; }
+.nav-link { color: var(--text-secondary); font-size: 1.5rem; text-decoration: none; transition: all 0.3s; }
+.nav-link:hover { color: var(--text-primary); transform: scale(1.1); }
+.nav-link.active { color: var(--highlight-color); }
+.nav-footer { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+.theme-toggle { font-size: 1.5rem; cursor: pointer; color: var(--text-secondary); }
+.theme-toggle:hover { color: var(--text-primary); }
 body.light-mode .theme-toggle .fa-moon { display: none; }
 body:not(.light-mode) .theme-toggle .fa-sun { display: none; }
+.nav-link-live-mobile { display: none; }
 
-
-/* ---- CONTENIDO PRINCIPAL ---- */
-.main-content {
-    background-color: var(--bg-color);
-    overflow-y: auto;
-    padding: 30px;
-    transition: background-color 0.3s;
-}
-
-.hero-main {
-    width: 100%;
-    height: 40vh;
-    background-image: url('https://i.ibb.co/5xzY4GDR/Portada-EPT-7.png');
-    background-size: cover;
-    background-position: center;
-    border-radius: 15px;
-    display: flex;
-    align-items: flex-end;
-    padding: 30px;
-}
-
-.hero-text {
-    font-size: 2rem;
-    font-weight: bold;
-    color: #fff; /* Siempre blanco para que sea legible sobre la imagen */
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
-}
-
-.feed-section {
-    padding: 40px 0;
-}
-
-.feed-section h2 {
-    font-size: 1.8rem;
-    margin-bottom: 20px;
-    color: var(--text-primary);
-    transition: color 0.3s;
-}
-
-#substack-feed-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 25px;
-}
-
-.feed-card {
-    background-color: var(--surface-primary);
-    border-radius: 10px;
-    overflow: hidden;
-    text-decoration: none;
-    color: var(--text-primary);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s;
-}
-
-.feed-card:hover {
-    background-color: var(--surface-secondary);
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-}
-
-.card-image {
-    width: 100%;
-    height: 150px;
-    object-fit: cover;
-    background-color: var(--surface-secondary);
-}
-
-.card-content {
-    padding: 15px;
-}
-
-.card-content h3 {
-    font-size: 1rem;
-    margin: 0 0 10px 0;
-    line-height: 1.4;
-    color: var(--text-primary);
-    transition: color 0.3s;
-}
-
-.card-content p {
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    margin: 0;
-    line-height: 1.5;
-    transition: color 0.3s;
-}
-
-.loading { color: var(--text-secondary); }
-
-/* ---- COLUMNA DERECHA: LIVE ---- */
-.sidebar-right {
-    background-color: var(--bg-color);
-    padding: 20px 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    transition: background-color 0.3s;
-}
-.live-header { color: var(--live-color); font-weight: bold; }
+.sidebar-section { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 25px; }
+.user-actions, .live-channels, .social-links { display: flex; flex-direction: column; align-items: center; gap: 25px; }
+.live-header { cursor: pointer; text-align: center; color: var(--live-color); font-size: 1.8rem; }
 .live-icon { animation: pulse 1.5s infinite; }
-@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
-.live-channels { margin-top: 20px; display: flex; flex-direction: column; gap: 15px; }
-.channel-placeholder { width: 45px; height: 45px; background-color: var(--surface-secondary); border-radius: 50%; border: 2px solid var(--text-secondary); }
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+.channel-placeholder { width: 45px; height: 45px; background-color: var(--secondary-surface); border-radius: 50%; border: 2px solid var(--text-secondary); cursor: pointer; transition: transform 0.3s; position: relative; }
+.channel-placeholder:hover { transform: scale(1.1); }
+.channel-placeholder.live { border-color: transparent; }
+.channel-placeholder.live::before { content: ''; position: absolute; top: -4px; left: -4px; right: -4px; bottom: -4px; border: 2px solid var(--live-color); border-radius: 50%; animation: pulse-border 1.5s infinite; }
+@keyframes pulse-border { 0% { box-shadow: 0 0 0 0 rgba(255,0,0,0.7); } 70% { box-shadow: 0 0 0 10px rgba(255,0,0,0); } 100% { box-shadow: 0 0 0 0 rgba(255,0,0,0); } }
 
 /*
 ==============================================
---- ESTILOS DEL MODAL DE CANALES EN VIVO ---
+--- 3. SECCIONES DE CONTENIDO ---
 ==============================================
 */
-.sidebar-right {
-    cursor: pointer; /* Hacemos que la barra derecha parezca clickable */
-}
+.hero-main { width: 100%; height: 50vh; background: var(--secondary-surface) url('https://i.ibb.co/b5VxbphH/Jesus-Atenas-Jerusalen.jpg') center center / cover; border-radius: 20px; margin-top: 30px; display: flex; align-items: flex-end; padding: 40px; color: white; }
+.hero-text { font-size: 2.2rem; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.7); max-width: 600px; }
 
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.85); /* Fondo oscuro semitransparente */
-    display: none; /* Oculto por defecto */
-    justify-content: center;
-    align-items: center;
-    z-index: 2000; /* Por encima de todo */
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
+.card-layout-section { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px; padding-top: 80px; padding-bottom: 80px; }
+.info-card { background-size: cover; background-position: center; border-radius: 20px; padding: 40px; min-height: 350px; display: flex; flex-direction: column; justify-content: flex-end; position: relative; overflow: hidden; color: white; }
+.info-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.1) 100%); z-index: 1; }
+.card-text-big, .card-text-small { position: relative; z-index: 2; text-shadow: 1px 1px 3px rgba(0,0,0,0.6); text-align: left; }
+.card-text-big { font-size: 2rem; font-weight: bold; line-height: 1.3; }
+.card-text-small h3 { font-size: 1.5rem; margin-top: 0; }
+.card-text-small p { font-size: 1rem; line-height: 1.6; }
+.zenodo-button { display: inline-flex; align-items: center; gap: 10px; background-color: var(--highlight-color); color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 700; margin-top: 20px; transition: all 0.3s; }
+.zenodo-button:hover { background-color: #9a2317; transform: translateY(-2px); }
+.zenodo-button img { height: 20px; width: auto; filter: brightness(0) invert(1); }
 
-.modal-overlay.visible {
-    display: flex;
-    opacity: 1;
-}
+.module-section { padding: 60px 0; }
+.module-header { text-align: center; max-width: 600px; margin: 0 auto 40px auto; }
+.module-header h3 { font-size: 1.8rem; margin-bottom: 10px; }
+.module-header p { color: var(--text-secondary); line-height: 1.6; }
+.module-logos { width: 100%; overflow: hidden; -webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%); mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%); }
+.logo-scroller { display: flex; gap: 80px; animation: scroll 40s linear infinite; }
+.logo-scroller:hover { animation-play-state: paused; }
+.logo-scroller img { height: 60px; width: auto; max-width: 180px; filter: grayscale(100%) opacity(70%); transition: filter 0.3s; }
+.logo-scroller img:hover { filter: grayscale(0%) opacity(100%); }
+@keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
-.modal-content {
-    background-color: var(--surface-primary);
-    padding: 30px;
-    border-radius: 15px;
-    width: 90%;
-    max-width: 600px;
-    position: relative;
-    transform: scale(0.95);
-    transition: transform 0.3s ease;
-}
+.feed-section { padding: 80px 0; }
+.feed-section h2 { text-align: center; font-size: 1.8rem; margin-bottom: 40px; }
+#substack-feed-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
+.feed-card { background-color: var(--primary-surface); border-radius: 10px; overflow: hidden; color: var(--text-primary); transition: all 0.3s; cursor: pointer; }
+.feed-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.2); }
+.card-image { width: 100%; height: 180px; object-fit: cover; background-color: var(--secondary-surface); }
+.card-content { padding: 20px; }
+.card-content h3 { font-size: 1.1rem; margin: 0 0 10px 0; line-height: 1.4; }
+.card-content p { font-size: 0.9rem; color: var(--text-secondary); margin: 0; line-height: 1.5; }
 
-.modal-overlay.visible .modal-content {
-    transform: scale(1);
-}
+.subscribe-card, .load-more-card { text-align: center; }
+a.subscribe-card { text-decoration: none; }
+.subscribe-card .card-content, .load-more-card .card-content { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 280px; }
+.subscribe-card h3 { color: var(--highlight-color); }
+.cta-button-imitation { display: inline-block; background-color: var(--highlight-color); color: white; padding: 15px 30px; border-radius: 5px; text-decoration: none; font-weight: 700; margin-top: 15px; transition: all 0.3s; }
+a.subscribe-card:hover .cta-button-imitation { background-color: #9a2317; transform: translateY(-2px); }
+.load-more-card span { font-size: 1.1rem; font-weight: bold; }
+.load-more-card .fa-chevron-down { font-size: 1.5rem; margin-top: 10px; color: var(--highlight-color); }
 
-.modal-close-button {
-    position: absolute;
-    top: 15px;
-    right: 20px;
-    font-size: 2rem;
-    color: var(--text-secondary);
-    cursor: pointer;
-    line-height: 1;
-}
-.modal-close-button:hover {
-    color: var(--text-primary);
-}
-
-.modal-content h2 {
-    margin-top: 0;
-    color: var(--text-primary);
-}
-
-.live-channel-list {
-    margin-top: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.channel-item {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    padding: 15px;
-    background-color: var(--surface-secondary);
-    border-radius: 10px;
-    text-decoration: none;
-    transition: background-color 0.2s;
-}
-.channel-item:hover {
-    background-color: var(--bg-color);
-}
-
-.channel-icon {
-    font-size: 2.5rem;
-    color: var(--live-color);
-}
-
-.channel-info h3 {
-    margin: 0 0 5px 0;
-    color: var(--text-primary);
-    font-size: 1.1rem;
-}
-.channel-info p {
-    margin: 0;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-}
-
-.channel-live-indicator {
-    margin-left: auto;
-    color: var(--live-color);
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.channel-live-indicator .fa-circle {
-    font-size: 0.7rem;
-    animation: pulse 1.5s infinite; /* Reutilizamos nuestra animación de pulso */
-}
-
-/* Estilo para el botón LIVE de la barra móvil */
-.nav-link-live-mobile {
-    display: none; /* Oculto por defecto en escritorio */
-    font-size: 1.5rem;
-    color: var(--live-color);
-    animation: pulse 1.5s infinite;
-}
+.main-footer { text-align: center; padding: 40px 20px; color: var(--text-secondary); font-size: 0.9rem; margin-top: 40px; border-top: 1px solid var(--secondary-surface); }
+.main-footer a { color: var(--text-secondary); text-decoration: none; }
+.main-footer a:hover { text-decoration: underline; }
 
 /*
 ==============================================
---- ESTILOS DEL PANEL LATERAL DE PUBLICACIONES ---
+--- 4. PANEL LATERAL ---
 ==============================================
 */
-.side-panel {
-    position: fixed;
-    top: 0;
-    right: -100%;
-    width: 550px; /* AUMENTADO DE 450px */
-    max-width: 90vw;
-    height: 100%;
-    background-color: var(--surface-primary);
-    box-shadow: -5px 0 15px rgba(0,0,0,0.2);
-    z-index: 1050;
-    overflow-y: auto;
-    transition: right 0.4s ease-in-out;
-    color: var(--text-primary);
-    display: flex;
-    flex-direction: column;
-}
-
-.side-panel.open {
-    right: 0; /* Se desliza a la vista */
-}
-
-.panel-content {
-    padding: 25px;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-}
-
-.panel-close-button {
-    position: absolute;
-    top: 15px;
-    right: 20px;
-    background: none;
-    border: none;
-    font-size: 2.5rem;
-    color: var(--text-secondary);
-    cursor: pointer;
-    line-height: 1;
-}
-.panel-close-button:hover {
-    color: var(--text-primary);
-}
-
-#panel-title {
-    margin-top: 20px;
-    margin-bottom: 20px;
-    font-size: 1.8rem;
-    color: var(--text-primary);
-}
-
-#panel-audio-player-container audio {
-    width: 100%;
-    margin-bottom: 20px;
-}
-
-#panel-body-content {
-    flex-grow: 1;
-    line-height: 1.7;
-    font-size: 0.95rem;
-    overflow-y: auto; /* Para que el contenido del post haga scroll si es largo */
-}
-
-/* Estilos para el contenido HTML que viene de Substack */
-#panel-body-content img { /* Para que las imágenes dentro del post sean responsivas */
-    max-width: 100%;
-    height: auto;
-    border-radius: 8px;
-    margin: 15px 0;
-}
-#panel-body-content a {
-    color: var(--highlight-color);
-}
-#panel-body-content blockquote {
-    border-left: 3px solid var(--highlight-color);
-    padding-left: 15px;
-    margin-left: 0;
-    font-style: italic;
-    color: var(--text-secondary);
-}
-
-.panel-footer {
-    margin-top: auto; /* Empuja el pie de página hacia abajo */
-    padding-top: 20px;
-    border-top: 1px solid var(--surface-secondary);
-    text-align: center;
-}
-
-.panel-footer .cta-button { /* Reutilizamos el estilo del botón CTA */
-    margin-bottom: 15px;
-}
-
-#panel-share-buttons a {
-    font-size: 1.5rem;
-    color: var(--text-secondary);
-    margin: 0 10px;
-    text-decoration: none;
-}
-#panel-share-buttons a:hover {
-    color: var(--highlight-color);
-}
-
-/* --- Añade estas nuevas reglas al final de los estilos del panel --- */
-#panel-share-buttons button { /* Estilo base para botones en el panel */
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-}
-
-#panel-share-buttons a, #panel-share-buttons button { /* Estilo unificado */
-    font-size: 1.5rem;
-    color: var(--text-secondary);
-    margin: 0 10px;
-    text-decoration: none;
-}
-#panel-share-buttons a:hover, #panel-share-buttons button:hover {
-    color: var(--highlight-color);
-}
-
-/* Para manejar la visibilidad de los botones de compartir */
-.desktop-share-icons {
-    display: inline-block; /* Se muestran por defecto */
-}
-#native-share-btn {
-    display: none; /* Oculto por defecto */
-}
-
-/* Efecto de "empujar" el contenido principal en escritorio */
-body.panel-open .main-content {
-    /* Ajusta este valor según el ancho de tu panel y si quieres un margen */
-    margin-right: 450px; 
-    transition: margin-right 0.4s ease-in-out;
-}
-/* También podemos ajustar el sidebar derecho si es necesario */
-body.panel-open .sidebar-right {
-    right: 450px; /* O el ancho de tu panel */
-    transition: right 0.4s ease-in-out;
-}
-/* Ocultar los controles de imagen que vienen de Substack dentro del panel */
-#panel-body-content .image-link-expand {
-    display: none !important; /* Usamos !important por si Substack tiene estilos muy específicos */
-}
-.substack-embed-container {
-    width: 100%;
-    max-width: 480px; /* Ancho máximo del embed de Substack */
-    margin: 0 auto 15px auto; /* Centrado y con margen inferior */
-}
-.substack-embed-container iframe {
-    max-width: 100%; /* Para que sea responsivo */
-}
-/* Estilos para tarjeta de Suscripción y Cargar Más */
-.subscribe-card, .load-more-card {
-    background-color: var(--surface-secondary); /* Un color ligeramente diferente o el mismo */
-    text-align: center;
-    cursor: pointer; /* Para el botón de cargar más */
-}
-
-.subscribe-card .card-content, .load-more-card .card-content {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100%; /* Para que ocupe toda la tarjeta si es una imagen */
-    min-height: 280px; /* Altura similar a otras tarjetas con imagen */
-}
-
-.subscribe-card h3 {
-    color: var(--highlight-color); /* Destacar el título */
-}
-
-.subscribe-card .cta-button {
-    margin-top: 15px;
-    background-color: var(--highlight-color);
-    color: white;
-}
-
-.load-more-card span {
-    font-size: 1.1rem;
-    font-weight: bold;
-}
-
-.load-more-card .fa-chevron-down {
-    font-size: 1.5rem;
-    margin-top: 10px;
-    color: var(--highlight-color);
-}
-
-.cta-button-imitation {
-    display: inline-block;
-    background-color: var(--highlight-color);
-    color: white;
-    padding: 15px 30px;
-    border-radius: 5px;
-    text-decoration: none;
-    font-weight: 700;
-    margin-top: 15px;
-    transition: background-color 0.3s, transform 0.3s;
-}
+.side-panel { position: fixed; top: 0; right: calc(-1 * var(--panel-width)); width: var(--panel-width); max-width: 95vw; height: 100vh; background-color: var(--surface-primary); box-shadow: -5px 0 25px rgba(0,0,0,0.5); z-index: 1050; transition: right 0.4s ease-in-out; color: var(--text-primary); display: flex; flex-direction: column; border-top-left-radius: 20px; border-bottom-left-radius: 20px; }
+.side-panel.open { right: 0; }
+.panel-header { padding: 20px 40px; border-bottom: 1px solid var(--secondary-surface); flex-shrink: 0; display: flex; align-items: flex-start; justify-content: space-between; }
+#panel-title { margin: 0; font-size: 1.8rem; padding-right: 20px; line-height: 1.2; }
+.panel-close-button { background: none; border: none; font-size: 2.5rem; color: var(--text-secondary); cursor: pointer; line-height: 1; padding: 0; }
+.panel-body { flex-grow: 1; overflow-y: auto; padding: 30px 40px; }
+#panel-audio-player-container audio { width: 100%; margin-bottom: 20px; }
+#panel-body-content img { max-width: 100%; height: auto; border-radius: 8px; margin: 15px 0; }
+#panel-body-content a { color: var(--highlight-color); }
+#panel-body-content blockquote { border-left: 3px solid var(--highlight-color); padding-left: 15px; margin-left: 0; font-style: italic; color: var(--text-secondary); }
+#panel-body-content .image-link-expand { display: none !important; }
+.panel-footer { padding: 20px 40px; border-top: 1px solid var(--secondary-surface); text-align: center; flex-shrink: 0; }
+.substack-embed-container { width: 100%; max-width: 480px; margin: 0 auto 15px auto; }
+.substack-embed-container iframe { max-width: 100%; }
+#panel-share-buttons { margin-top: 15px; }
+#panel-share-buttons a, #panel-share-buttons button { background: none; border: none; cursor: pointer; padding: 0; font-size: 1.5rem; color: var(--text-secondary); margin: 0 10px; text-decoration: none; transition: color 0.3s; }
+#panel-share-buttons a:hover, #panel-share-buttons button:hover { color: var(--highlight-color); }
+.desktop-share-icons { display: inline-block; }
+#native-share-btn { display: none; }
 
 /*
 ==============================================
---- REGLAS PARA DISEÑO ADAPTABLE (MÓVIL) ---
+--- 5. MEDIA QUERIES (VISTA MÓVIL) ---
 ==============================================
 */
+@media (max-width: 992px) {
+    .main-content { margin-right: 0; padding-right: 20px; }
+    .sidebar-right { display: none; }
+    body.panel-open .main-content { margin-right: 0; } /* El panel se superpone, no empuja */
+    .side-panel { width: 85vw; }
+}
+
 @media (max-width: 768px) {
-    /* ... tus estilos móviles existentes ... */
-
-    .side-panel {
-        width: 100%; /* En móvil, el panel ocupa todo el ancho */
-        right: -100%; /* Sigue empezando oculto */
-        max-width: 100%;
-        box-shadow: none; /* No necesitamos sombra si ocupa toda la pantalla */
-    }
-
-    /* En móvil, el panel no empuja el contenido, se superpone */
-    body.panel-open .main-content {
-    margin-right: 550px; /* AUMENTADO DE 450px */
-    transition: margin-right 0.4s ease-in-out;
-    }
-    body.panel-open .sidebar-right {
-        right: 550px; /* AUMENTADO DE 450px */
-        transition: right 0.4s ease-in-out;
-    }
-
-
-    #panel-title {
-        font-size: 1.5rem;
-        margin-top: 30px; /* Más espacio para el botón de cerrar */
-    }
-    
-    /* Ocultamos los iconos individuales en móvil y mostramos el botón de compartir nativo */
-    .desktop-share-icons {
-        display: none;
-    }
-    #native-share-btn {
-        display: inline-block;
-    }
-}
-
-/*
-==============================================
---- REGLAS PARA DISEÑO ADAPTABLE (MÓVIL) ---
-==============================================
-*/
-
-/* Se aplica a pantallas con un ancho máximo de 768px (tablets y teléfonos) */
-@media (max-width: 768px) {
-
-    /* 1. Cambiamos el layout principal a una sola columna */
-    body {
-        display: block; /* Desactivamos el grid de 3 columnas */
-        padding-bottom: 70px; /* Añadimos espacio abajo para que la barra de nav no tape el contenido */
-    }
-
-    /* 2. Transformamos la barra izquierda en una barra de navegación inferior */
-    .sidebar-left {
-        position: fixed; /* La fijamos en la pantalla */
-        bottom: 0;       /* En la parte de abajo */
-        left: 0;
-        width: 100%;     /* Que ocupe todo el ancho */
-        height: 60px;    /* Con una altura fija */
-        flex-direction: row; /* Los iconos ahora estarán en fila */
-        justify-content: space-around; /* Con espacio equitativo entre ellos */
-        align-items: center;
-        border-top: 1px solid var(--surface-secondary); /* Un borde sutil arriba */
-        z-index: 1000; /* Nos aseguramos que esté por encima de todo */
-        background-color: #000; /* La mantenemos negra para buen contraste */
-    }
-
-    /* Ocultamos elementos no esenciales en la barra móvil para limpiar la interfaz */
-    .sidebar-left .logo,
-    .sidebar-left .theme-toggle
-    .sidebar-right { /* Añadimos .sidebar-right aquí */
-        display: none;
-    }
-    
-    /* Y añadimos esta nueva regla DENTRO del media query para mostrar el botón móvil */
-    .nav-link-live-mobile {
-    display: block; /* Lo mostramos solo en móvil */
-}
-    
-    .nav-main {
-        flex-direction: row; /* Aseguramos que los links estén en fila */
-        gap: 0;
-        width: 100%;
-        justify-content: space-around;
-    }
-
-    /* 3. Ocultamos la barra derecha por completo */
-    .sidebar-right {
-        display: none;
-    }
-
-    /* 4. Ajustamos el contenido principal */
-    .main-content {
-        padding: 15px; /* Reducimos el padding para ganar espacio */
-    }
-
-    .hero-main {
-        height: 30vh; /* Hacemos la imagen principal un poco más pequeña */
-    }
-
-    .hero-text {
-        font-size: 1.5rem; /* Reducimos el tamaño del texto principal */
-    }
-
-    .feed-section h2 {
-        font-size: 1.5rem;
-    }
-
-    /* Forzamos las tarjetas a una sola columna en pantallas muy pequeñas */
-    @media (max-width: 480px) {
-        #substack-feed-grid {
-            grid-template-columns: 1fr;
-        }
-    }
+    body { display: block; }
+    .main-content { margin-left: 0; padding: 0 15px 80px 15px; height: auto; }
+    .sidebar-left { position: fixed; bottom: 0; left: 0; top: auto; width: 100%; height: 60px; flex-direction: row; justify-content: space-between; padding: 0 15px; }
+    .sidebar-left .logo { display: none; }
+    .nav-main { flex-direction: row; gap: 0; width: auto; }
+    .nav-footer { flex-direction: row; }
+    .nav-link-live-mobile { display: block; }
+    .hero-main { height: 40vh; margin-top: 15px; }
+    #substack-feed-grid { grid-template-columns: 1fr; }
+    .card-layout-section { padding: 40px 0; grid-template-columns: 1fr; }
+    .module-section { padding: 40px 0; }
+    .logo-scroller img { height: 45px; }
+    .side-panel { width: 100vw; max-width: 100vw; right: -100vw; border-radius: 0; }
+    .side-panel.open { right: 0; }
+    .panel-header { padding: 15px 20px; }
+    .panel-body { padding: 20px; }
+    .panel-footer { padding: 15px 20px; }
+    #panel-title { font-size: 1.5rem; padding-right: 40px; }
+    .desktop-share-icons { display: none; }
+    #native-share-btn { display: inline-block; }
 }
