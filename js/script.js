@@ -4,53 +4,45 @@ document.addEventListener('DOMContentLoaded', function() {
     const themeToggle = document.querySelector('.theme-toggle');
     if (themeToggle) {
         const body = document.body;
-        const applyThemeVisuals = (theme) => {
-            if (theme === 'light-mode') {
-                body.classList.add('light-mode');
-            } else {
-                body.classList.remove('light-mode');
-            }
+        const applyTheme = (theme) => {
+            body.classList.toggle('light-mode', theme === 'light-mode');
         };
         const savedTheme = localStorage.getItem('theme');
+        const systemPrefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
         if (savedTheme) {
-            applyThemeVisuals(savedTheme);
+            applyTheme(savedTheme);
         } else {
-            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-                applyThemeVisuals('light-mode');
-            }
+            applyTheme(systemPrefersLight ? 'light-mode' : 'dark-mode');
         }
         themeToggle.addEventListener('click', () => {
-            body.classList.toggle('light-mode');
-            localStorage.setItem('theme', body.classList.contains('light-mode') ? 'light-mode' : 'dark-mode');
+            const newTheme = body.classList.contains('light-mode') ? 'dark-mode' : 'light-mode';
+            localStorage.setItem('theme', newTheme);
+            applyTheme(newTheme);
         });
     }
 
-    // --- LÓGICA DEL PANEL LATERAL (SISTEMA CENTRALIZADO) ---
-    const postPanel = document.getElementById('post-panel');
-    if (postPanel) {
-        const panelCloseBtn = postPanel.querySelector('.panel-close-button');
-        const panelTitle = postPanel.querySelector('#panel-title');
-        const panelAudioContainer = postPanel.querySelector('#panel-audio-player-container');
-        const panelBodyContent = postPanel.querySelector('#panel-body-content');
-        const shareTwitter = postPanel.querySelector('#share-twitter');
-        const shareFacebook = postPanel.querySelector('#share-facebook');
-        const shareLinkedin = postPanel.querySelector('#share-linkedin');
-        const copyLinkButton = postPanel.querySelector('#share-copy-link');
-        const nativeShareButton = postPanel.querySelector('#native-share-btn');
-        let currentItemData = {};
+    // --- LÓGICA DEL PANEL LATERAL ---
+    const sidePanel = document.getElementById('side-panel');
+    if (sidePanel) {
+        const panelCloseBtn = sidePanel.querySelector('.panel-close-button');
+        const panelTitle = sidePanel.querySelector('#panel-title');
+        const panelAudioContainer = sidePanel.querySelector('#panel-audio-player-container');
+        const panelBodyContent = sidePanel.querySelector('#panel-body-content');
+        const copyLinkButton = sidePanel.querySelector('#share-copy-link');
+        const nativeShareButton = sidePanel.querySelector('#native-share-btn');
+        let currentShareData = {};
 
-        // Ocultar botón de compartir nativo si el navegador no lo soporta
         if (nativeShareButton && !navigator.share) {
             nativeShareButton.style.display = 'none';
         }
 
         const openPanel = (data) => {
-            currentItemData = data;
+            currentShareData = data;
             panelTitle.textContent = data.title || "Sin título";
             panelAudioContainer.innerHTML = '';
             panelBodyContent.innerHTML = data.content || "<p>Contenido no disponible.</p>";
 
-            if (data.isAudio) {
+            if (data.isAudio && data.audioUrl) {
                 const audioPlayer = document.createElement('audio');
                 audioPlayer.controls = true;
                 audioPlayer.controlsList = 'nodownload';
@@ -58,19 +50,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 panelAudioContainer.appendChild(audioPlayer);
             }
             
-            const shareUrl = encodeURIComponent(data.link || window.location.href);
-            const shareTitle = encodeURIComponent(data.title || document.title);
-            if(shareTwitter) shareTwitter.href = `https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareTitle}`;
-            if(shareFacebook) shareFacebook.href = `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`;
-            if(shareLinkedin) shareLinkedin.href = `https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`;
-
-            document.body.classList.add('panel-open');
-            postPanel.classList.add('open');
+            sidePanel.classList.add('open');
         };
 
         const closePanel = () => {
-            postPanel.classList.remove('open');
-            document.body.classList.remove('panel-open');
+            sidePanel.classList.remove('open');
             const audioPlayer = panelAudioContainer.querySelector('audio');
             if (audioPlayer) {
                 audioPlayer.pause();
@@ -80,10 +64,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (panelCloseBtn) panelCloseBtn.addEventListener('click', closePanel);
         document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape' && postPanel.classList.contains('open')) closePanel();
+            if (event.key === 'Escape' && sidePanel.classList.contains('open')) closePanel();
         });
 
-        // Listeners para los botones de la barra derecha
         document.querySelectorAll('.panel-trigger').forEach(trigger => {
             trigger.addEventListener('click', (event) => {
                 event.preventDefault();
@@ -91,139 +74,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (placeholderTitle) {
                     openPanel({
                         title: placeholderTitle,
-                        content: `<p style="padding: 20px; text-align: center;">Aquí se mostrará el contenido correspondiente a la sección "<strong>${placeholderTitle}</strong>".<br/>Esta funcionalidad está en desarrollo.</p>`
+                        content: `<p style="padding: 20px; text-align: center;">Aquí se mostrará el contenido correspondiente.<br/>Esta funcionalidad está en desarrollo.</p>`,
+                        link: window.location.href
                     });
                 }
-<<<<<<< HEAD
-=======
-            }
-        });
-    }
-
-    // --- LÓGICA DEL FEED DE SUBSTACK ---
-    // (Esta sección no cambia, la dejamos como está)
-    const feedContainer = document.getElementById('substack-feed-grid');
-    if (feedContainer) {
-        const substackFeedUrl = 'https://eptnews.substack.com/feed';
-        const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(substackFeedUrl)}`;
-        const genericPodcastImage = 'https://i.ibb.co/F42PGTLf/Leonardo-Phoenix-10-A-vibrant-ornate-podcast-artwork-with-a-pr-1.jpg';
-        const fallbackImage = 'https://i.imgur.com/VdefT0s.png';
-        
-        let allItems = [];
-        let itemsPerLoad = 6;
-        let currentIndex = 0;
-
-        const truncateText = (html, maxLength) => {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = html;
-            let text = tempDiv.textContent || tempDiv.innerText || "";
-            return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-        };
-
-        const createCardElement = (item) => {
-            const card = document.createElement('div'); 
-            card.classList.add('feed-card');
-            card.addEventListener('click', () => openPostPanel(item));
-
-            let imageUrl = fallbackImage;
-            const isAudioPost = item.enclosure && item.enclosure.type && item.enclosure.type.startsWith('audio/mpeg');
-
-            if (isAudioPost && genericPodcastImage) {
-                imageUrl = genericPodcastImage;
-            } else if (item.thumbnail && item.thumbnail.length > 0) {
-                imageUrl = item.thumbnail;
-            } else if (item.enclosure && item.enclosure.link && item.enclosure.type.startsWith('image')) {
-                imageUrl = item.enclosure.link;
-            }
-            imageUrl = imageUrl.replace(/^http:\/\//i, 'https://');
-            
-            const image = document.createElement('img');
-            image.src = imageUrl;
-            image.classList.add('card-image');
-            image.alt = item.title || "Miniatura de publicación";
-            image.onerror = () => { image.src = fallbackImage; };
-
-            const content = document.createElement('div');
-            content.classList.add('card-content');
-            const title = document.createElement('h3');
-            title.textContent = item.title;
-            const description = document.createElement('p');
-            description.textContent = truncateText(item.description, 100);
-
-            content.appendChild(title);
-            content.appendChild(description);
-            card.appendChild(image);
-            card.appendChild(content);
-            return card;
-        };
-        
-        const createEndOfFeedCard = () => {
-            const card = document.createElement('div');
-            card.id = 'end-of-feed-card';
-            card.classList.add('feed-card', 'subscribe-card');
-            card.innerHTML = `
-                <div class="card-content">
-                    <h3>¿Te gustó lo que viste?</h3>
-                    <p>Sigue explorando en EPT News y suscríbete para no perderte futuras publicaciones.</p>
-                    <a href="https://eptnews.substack.com/subscribe?" target="_blank" rel="noopener noreferrer" class="cta-button">Suscribirme a EPT News</a>
-                </div>
-            `;
-            return card;
-        };
-
-        const displayItems = () => {
-            const fragment = document.createDocumentFragment();
-            const itemsToDisplay = allItems.slice(currentIndex, currentIndex + itemsPerLoad);
-            
-            itemsToDisplay.forEach(item => fragment.appendChild(createCardElement(item)));
-            
-            const existingLoadMoreButton = document.getElementById('load-more-btn');
-            if (existingLoadMoreButton) existingLoadMoreButton.remove();
-            const existingEndOfFeedCard = document.getElementById('end-of-feed-card');
-            if (existingEndOfFeedCard) existingEndOfFeedCard.remove();
-            
-            feedContainer.appendChild(fragment);
-            currentIndex += itemsToDisplay.length;
-
-            if (currentIndex < allItems.length) {
-                const loadMoreButton = document.createElement('div');
-                loadMoreButton.id = 'load-more-btn';
-                loadMoreButton.classList.add('feed-card', 'load-more-card');
-                loadMoreButton.innerHTML = `<div class="card-content"><span>Cargar ${Math.min(itemsPerLoad, allItems.length - currentIndex)} publicaciones más</span><i class="fas fa-chevron-down"></i></div>`;
-                loadMoreButton.addEventListener('click', displayItems);
-                feedContainer.appendChild(loadMoreButton);
-            } else {
-                feedContainer.appendChild(createEndOfFeedCard());
-            }
-        };
-
-        fetch(apiUrl)
-            .then(response => response.json())
-            .then(data => {
-                if (!feedContainer) return;
-                feedContainer.innerHTML = ''; 
-                if (data.items && data.items.length > 0) {
-                    allItems = data.items;
-                    currentIndex = 0;
-                    displayItems();
-                } else {
-                    feedContainer.innerHTML = '<p>No se encontraron publicaciones.</p>';
-                }
-            })
-            .catch(error => {
-                console.error('Error al obtener el feed:', error);
-                if (feedContainer) feedContainer.innerHTML = '<p>Hubo un problema al cargar las publicaciones.</p>';
->>>>>>> parent of ddd5ed5 (V1 Color y Descripción)
             });
         });
 
-        // Listeners para los botones de compartir
         if (copyLinkButton) {
             copyLinkButton.addEventListener('click', (event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                if (currentItemData.link && navigator.clipboard) {
-                    navigator.clipboard.writeText(currentItemData.link).then(() => {
+                if (currentShareData.link && navigator.clipboard) {
+                    navigator.clipboard.writeText(currentShareData.link).then(() => {
                         const icon = copyLinkButton.querySelector('i');
                         if (icon) {
                             const originalHTML = icon.outerHTML;
@@ -238,47 +101,41 @@ document.addEventListener('DOMContentLoaded', function() {
             nativeShareButton.addEventListener('click', async (event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                if (currentItemData) {
+                if (currentShareData) {
                     try {
-                        await navigator.share({ title: currentItemData.title, text: currentItemData.description, url: currentItemData.link });
-                    } catch (err) {
-                        console.error('Error al compartir:', err);
-                    }
+                        await navigator.share({ title: currentShareData.title, text: currentShareData.description, url: currentShareData.link });
+                    } catch (err) { console.error('Error al compartir:', err); }
                 }
             });
         }
         
         // --- LÓGICA DEL FEED DE SUBSTACK ---
-        const feedContainer = document.getElementById('substack-feed-grid');
-        if (feedContainer) {
+        const feedGrid = document.getElementById('substack-feed-grid');
+        // CORRECCIÓN CRÍTICA: Apuntar a .main-container para el scroll, no a .main-content
+        const mainContainer = document.querySelector('.main-container'); 
+        
+        if (feedGrid && mainContainer) {
             const substackFeedUrl = 'https://eptnews.substack.com/feed';
             const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(substackFeedUrl)}`;
             const genericPodcastImage = 'https://i.ibb.co/F42PGTLf/Leonardo-Phoenix-10-A-vibrant-ornate-podcast-artwork-with-a-pr-1.jpg';
             const fallbackImage = 'https://i.imgur.com/VdefT0s.png';
             let allItems = [];
-            let itemsPerLoad = 6;
-            let currentIndex = 0;
-
-            const truncateText = (html, maxLength) => {
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = html;
-                let text = tempDiv.textContent || tempDiv.innerText || "";
-                return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-            };
+            let isLoading = false;
+            let cursor = 0;
+            const itemsPerLoad = 9;
 
             const createCardElement = (item) => {
                 const card = document.createElement('div');
                 card.classList.add('feed-card');
                 card.addEventListener('click', () => {
-                    const isAudioPost = item.enclosure && item.enclosure.type && item.enclosure.type.startsWith('audio/mpeg');
+                    const isAudio = item.enclosure && item.enclosure.type && item.enclosure.type.startsWith('audio/mpeg');
                     openPanel({
-                        type: 'post',
                         title: item.title,
                         content: item.content,
                         link: item.link,
                         description: item.description,
-                        isAudio: isAudioPost,
-                        audioUrl: isAudioPost ? item.enclosure.link : null
+                        isAudio: isAudio,
+                        audioUrl: isAudio ? item.enclosure.link : null
                     });
                 });
                 
@@ -289,77 +146,49 @@ document.addEventListener('DOMContentLoaded', function() {
                 else if (item.enclosure && item.enclosure.link && item.enclosure.type.startsWith('image')) { imageUrl = item.enclosure.link; }
                 if(imageUrl) imageUrl = imageUrl.replace(/^http:\/\//i, 'https://');
                 
-                const image = document.createElement('img');
-                image.src = imageUrl;
-                image.classList.add('card-image');
-                image.alt = item.title || "Miniatura de publicación";
-                image.onerror = () => { image.src = fallbackImage; };
-
-                const content = document.createElement('div');
-                content.classList.add('card-content');
-                const title = document.createElement('h3');
-                title.textContent = item.title;
-                const description = document.createElement('p');
-                description.textContent = truncateText(item.description, 100);
-
-                content.appendChild(title);
-                content.appendChild(description);
-                card.appendChild(image);
-                card.appendChild(content);
+                card.innerHTML = `
+                    <img src="${imageUrl}" class="card-image" alt="" onerror="this.onerror=null;this.src='${fallbackImage}';">
+                    <div class="card-content">
+                        <h3>${item.title || ''}</h3>
+                    </div>
+                `;
                 return card;
             };
-            
-            const createEndOfFeedCard = () => {
-                const cardLink = document.createElement('a');
-                cardLink.id = 'end-of-feed-card';
-                cardLink.href = "https://eptnews.substack.com/subscribe?";
-                cardLink.target = "_blank";
-                cardLink.rel = "noopener noreferrer";
-                cardLink.classList.add('feed-card', 'subscribe-card');
-                cardLink.innerHTML = `<div class="card-content"><h3>¿Te gustó lo que viste?</h3><p>Sigue explorando en EPT News y suscríbete para no perderte futuras publicaciones.</p><span class="cta-button-imitation">Suscribirme a EPT News</span></div>`;
-                return cardLink;
-            };
 
-            const displayItems = () => {
-                const fragment = document.createDocumentFragment();
-                const itemsToDisplay = allItems.slice(currentIndex, currentIndex + itemsPerLoad);
-                itemsToDisplay.forEach(item => fragment.appendChild(createCardElement(item)));
-                
-                const existingLoadMoreButton = document.getElementById('load-more-btn');
-                if (existingLoadMoreButton) existingLoadMoreButton.remove();
-                
-                feedContainer.appendChild(fragment);
-                currentIndex += itemsToDisplay.length;
-                
-                if (currentIndex < allItems.length) {
-                    const loadMoreButton = document.createElement('div');
-                    loadMoreButton.id = 'load-more-btn';
-                    loadMoreButton.classList.add('feed-card', 'load-more-card');
-                    loadMoreButton.innerHTML = `<div class="card-content"><span>Cargar más publicaciones</span><i class="fas fa-chevron-down"></i></div>`;
-                    loadMoreButton.addEventListener('click', displayItems);
-                    feedContainer.appendChild(loadMoreButton);
-                } else {
-                    feedContainer.appendChild(createEndOfFeedCard());
-                }
+            const loadMoreItems = () => {
+                if (isLoading || cursor >= allItems.length) return;
+                isLoading = true;
+
+                const itemsToLoad = allItems.slice(cursor, cursor + itemsPerLoad);
+                itemsToLoad.forEach(item => {
+                    feedGrid.appendChild(createCardElement(item));
+                });
+
+                cursor += itemsPerLoad;
+                isLoading = false;
             };
 
             fetch(apiUrl)
                 .then(response => response.json())
                 .then(data => {
-                    if (!feedContainer) return;
-                    feedContainer.innerHTML = '';
                     if (data.items && data.items.length > 0) {
+                        feedGrid.innerHTML = '';
                         allItems = data.items;
-                        currentIndex = 0;
-                        displayItems();
+                        loadMoreItems();
                     } else {
-                        feedContainer.innerHTML = '<p>No se encontraron publicaciones.</p>';
+                        feedGrid.innerHTML = '<p>No se encontraron publicaciones.</p>';
                     }
                 })
                 .catch(error => {
                     console.error('Error al obtener el feed:', error);
-                    if (feedContainer) feedContainer.innerHTML = '<p>Hubo un problema al cargar las publicaciones.</p>';
+                    feedGrid.innerHTML = '<p>Hubo un problema al cargar las publicaciones.</p>';
                 });
+
+            mainContainer.addEventListener('scroll', () => {
+                if (mainContainer.scrollTop + mainContainer.clientHeight >= mainContainer.scrollHeight - 500) {
+                    loadMoreItems();
+                }
+            });
         }
     }
 });
