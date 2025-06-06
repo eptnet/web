@@ -198,18 +198,24 @@ document.addEventListener('DOMContentLoaded', function() {
             return card;
         };
         
+        // --- Reemplaza esta función en tu script.js ---
         const createEndOfFeedCard = () => {
-            const card = document.createElement('div');
-            card.id = 'end-of-feed-card';
-            card.classList.add('feed-card', 'subscribe-card');
-            card.innerHTML = `
+            const cardLink = document.createElement('a'); // Creamos un <a> en lugar de un <div>
+            cardLink.id = 'end-of-feed-card';
+            cardLink.href = "https://eptnews.substack.com/subscribe?"; // El enlace principal
+            cardLink.target = "_blank";
+            cardLink.rel = "noopener noreferrer";
+            cardLink.classList.add('feed-card', 'subscribe-card');
+
+            // El contenido interno ya no necesita su propio enlace
+            cardLink.innerHTML = `
                 <div class="card-content">
                     <h3>¿Te gustó lo que viste?</h3>
                     <p>Sigue explorando en EPT News y suscríbete para no perderte futuras publicaciones.</p>
-                    <a href="https://eptnews.substack.com/subscribe?" target="_blank" rel="noopener noreferrer" class="cta-button">Suscribirme a EPT News</a>
+                    <span class="cta-button-imitation">Suscribirme a EPT News</span>
                 </div>
             `;
-            return card;
+            return cardLink;
         };
 
         const displayItems = () => {

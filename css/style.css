@@ -5,7 +5,7 @@
     --surface-secondary: #2a2a2e;
     --text-primary: #ffffff;
     --text-secondary: #b3b3b3;
-    --highlight-color: #1DB954;
+    --highlight-color: #b72a1e;
     --live-color: #ff0000;
 }
 
@@ -498,6 +498,18 @@ body.panel-open .sidebar-right {
     font-size: 1.5rem;
     margin-top: 10px;
     color: var(--highlight-color);
+}
+
+.cta-button-imitation {
+    display: inline-block;
+    background-color: var(--highlight-color);
+    color: white;
+    padding: 15px 30px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 700;
+    margin-top: 15px;
+    transition: background-color 0.3s, transform 0.3s;
 }
 
 /*
