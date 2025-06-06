@@ -11,7 +11,11 @@
     --secondary-surface: #2a2a2e;
     --text-primary: #ffffff;
     --text-secondary: #b3b3b3;
+<<<<<<< HEAD
     --highlight-color: #b72a1e; /* Color rojo corporativo */
+=======
+    --highlight-color: #1DB954;
+>>>>>>> parent of ddd5ed5 (V1 Color y Descripción)
     --live-color: #ff0000;
 }
 
@@ -202,11 +206,38 @@ body:not(.light-mode) .theme-toggle .fa-sun { display: none; }
     flex-shrink: 0;
     display: flex;
     align-items: center;
+<<<<<<< HEAD
 }
 #panel-title { margin: 0; font-size: 1.5rem; line-height: 1.2; }
 .panel-close-button { background: none; border: none; font-size: 2rem; color: var(--text-secondary); cursor: pointer; line-height: 1; padding: 0; margin-right: 20px; } /* Movido a la izquierda */
 .panel-body { flex-grow: 1; overflow-y: auto; padding: 30px; }
 /* ... (El resto de los estilos del panel no cambian) ... */
+=======
+    height: 100%; /* Para que ocupe toda la tarjeta si es una imagen */
+    min-height: 280px; /* Altura similar a otras tarjetas con imagen */
+}
+
+.subscribe-card h3 {
+    color: var(--highlight-color); /* Destacar el título */
+}
+
+.subscribe-card .cta-button {
+    margin-top: 15px;
+    background-color: var(--highlight-color);
+    color: white;
+}
+
+.load-more-card span {
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.load-more-card .fa-chevron-down {
+    font-size: 1.5rem;
+    margin-top: 10px;
+    color: var(--highlight-color);
+}
+>>>>>>> parent of ddd5ed5 (V1 Color y Descripción)
 
 /*
 ==============================================
