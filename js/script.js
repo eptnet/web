@@ -151,7 +151,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const fallbackImage = 'https://i.imgur.com/VdefT0s.png';
         
         let allItems = [];
-        let itemsPerLoad = 6;
+        let itemsPerLoad = 4;
         let currentIndex = 0;
 
         const truncateText = (html, maxLength) => {
