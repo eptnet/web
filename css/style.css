@@ -16,7 +16,6 @@
 }
 
 body.light-mode {
-    --surface-secondary: #eef0f2;
     --dark-bg: #f4f4f8;
     --primary-surface: #ffffff;
     --secondary-surface: #eef0f2;
