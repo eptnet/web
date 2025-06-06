@@ -2,8 +2,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- LÓGICA DEL TEMA (CLARO/OSCURO) ---
     const themeToggle = document.querySelector('.theme-toggle');
-    const body = document.body;
     if (themeToggle) {
+        const body = document.body;
         const applyThemeVisuals = (theme) => {
             if (theme === 'light-mode') {
                 body.classList.add('light-mode');
@@ -17,8 +17,6 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
                 applyThemeVisuals('light-mode');
-            } else {
-                applyThemeVisuals('dark-mode');
             }
         }
         themeToggle.addEventListener('click', () => {
@@ -27,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // --- LÓGICA DEL PANEL LATERAL ---
+    // --- LÓGICA DEL PANEL LATERAL (SISTEMA CENTRALIZADO) ---
     const postPanel = document.getElementById('post-panel');
     if (postPanel) {
         const panelCloseBtn = postPanel.querySelector('.panel-close-button');
@@ -39,28 +37,29 @@ document.addEventListener('DOMContentLoaded', function() {
         const shareLinkedin = postPanel.querySelector('#share-linkedin');
         const copyLinkButton = postPanel.querySelector('#share-copy-link');
         const nativeShareButton = postPanel.querySelector('#native-share-btn');
-        let currentUrlToShare = '';
+        let currentItemData = {};
 
+        // Ocultar botón de compartir nativo si el navegador no lo soporta
         if (nativeShareButton && !navigator.share) {
             nativeShareButton.style.display = 'none';
         }
 
-        const openPostPanel = (item) => {
-            panelTitle.textContent = item.title || "Sin título";
+        const openPanel = (data) => {
+            currentItemData = data;
+            panelTitle.textContent = data.title || "Sin título";
             panelAudioContainer.innerHTML = '';
-            panelBodyContent.innerHTML = item.content || "<p>Contenido no disponible.</p>";
-            currentUrlToShare = item.link || window.location.href;
+            panelBodyContent.innerHTML = data.content || "<p>Contenido no disponible.</p>";
 
-            if (item.enclosure && item.enclosure.type && item.enclosure.type.startsWith('audio/mpeg') && item.enclosure.link) {
+            if (data.isAudio) {
                 const audioPlayer = document.createElement('audio');
                 audioPlayer.controls = true;
                 audioPlayer.controlsList = 'nodownload';
-                audioPlayer.src = item.enclosure.link.replace(/^http:\/\//i, 'https://');
+                audioPlayer.src = data.audioUrl.replace(/^http:\/\//i, 'https://');
                 panelAudioContainer.appendChild(audioPlayer);
             }
             
-            const shareUrl = encodeURIComponent(currentUrlToShare);
-            const shareTitle = encodeURIComponent(item.title || document.title);
+            const shareUrl = encodeURIComponent(data.link || window.location.href);
+            const shareTitle = encodeURIComponent(data.title || document.title);
             if(shareTwitter) shareTwitter.href = `https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareTitle}`;
             if(shareFacebook) shareFacebook.href = `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`;
             if(shareLinkedin) shareLinkedin.href = `https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`;
@@ -69,23 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
             postPanel.classList.add('open');
         };
 
-        const openPlaceholderPanel = (title) => {
-            panelTitle.textContent = title;
-            panelAudioContainer.innerHTML = '';
-            panelBodyContent.innerHTML = `<p style="padding: 20px; text-align: center;">Aquí se mostrará el contenido correspondiente a la sección "<strong>${title}</strong>".<br/>Esta funcionalidad está en desarrollo.</p>`;
-            currentUrlToShare = window.location.href;
-            
-            const shareUrl = encodeURIComponent(currentUrlToShare);
-            const shareTitle = encodeURIComponent(title);
-            if(shareTwitter) shareTwitter.href = `https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareTitle}`;
-            if(shareFacebook) shareFacebook.href = `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`;
-            if(shareLinkedin) shareLinkedin.href = `https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`;
-            
-            document.body.classList.add('panel-open');
-            postPanel.classList.add('open');
-        };
-        
-        const closePostPanel = () => {
+        const closePanel = () => {
             postPanel.classList.remove('open');
             document.body.classList.remove('panel-open');
             const audioPlayer = panelAudioContainer.querySelector('audio');
@@ -95,27 +78,32 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
 
-        if (panelCloseBtn) panelCloseBtn.addEventListener('click', closePostPanel);
+        if (panelCloseBtn) panelCloseBtn.addEventListener('click', closePanel);
         document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape' && postPanel.classList.contains('open')) closePostPanel();
+            if (event.key === 'Escape' && postPanel.classList.contains('open')) closePanel();
         });
 
+        // Listeners para los botones de la barra derecha
         document.querySelectorAll('.panel-trigger').forEach(trigger => {
             trigger.addEventListener('click', (event) => {
                 event.preventDefault();
                 const placeholderTitle = trigger.getAttribute('data-panel-title');
                 if (placeholderTitle) {
-                    openPlaceholderPanel(placeholderTitle);
+                    openPanel({
+                        title: placeholderTitle,
+                        content: `<p style="padding: 20px; text-align: center;">Aquí se mostrará el contenido correspondiente a la sección "<strong>${placeholderTitle}</strong>".<br/>Esta funcionalidad está en desarrollo.</p>`
+                    });
                 }
             });
         });
 
+        // Listeners para los botones de compartir
         if (copyLinkButton) {
             copyLinkButton.addEventListener('click', (event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                if (currentUrlToShare && navigator.clipboard) {
-                    navigator.clipboard.writeText(currentUrlToShare).then(() => {
+                if (currentItemData.link && navigator.clipboard) {
+                    navigator.clipboard.writeText(currentItemData.link).then(() => {
                         const icon = copyLinkButton.querySelector('i');
                         if (icon) {
                             const originalHTML = icon.outerHTML;
@@ -126,15 +114,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         }
-
         if (nativeShareButton && navigator.share) {
             nativeShareButton.addEventListener('click', async (event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                if (currentUrlToShare) {
+                if (currentItemData) {
                     try {
-                        await navigator.share({ title: panelTitle.textContent, url: currentUrlToShare });
-                    } catch (err) { console.error('Error al compartir:', err); }
+                        await navigator.share({ title: currentItemData.title, text: currentItemData.description, url: currentItemData.link });
+                    } catch (err) {
+                        console.error('Error al compartir:', err);
+                    }
                 }
             });
         }
@@ -147,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const genericPodcastImage = 'https://i.ibb.co/F42PGTLf/Leonardo-Phoenix-10-A-vibrant-ornate-podcast-artwork-with-a-pr-1.jpg';
             const fallbackImage = 'https://i.imgur.com/VdefT0s.png';
             let allItems = [];
-            let itemsPerLoad = 8;
+            let itemsPerLoad = 6;
             let currentIndex = 0;
 
             const truncateText = (html, maxLength) => {
@@ -160,14 +149,24 @@ document.addEventListener('DOMContentLoaded', function() {
             const createCardElement = (item) => {
                 const card = document.createElement('div');
                 card.classList.add('feed-card');
-                card.addEventListener('click', () => openPostPanel(item)); // Listener de clic reparado
+                card.addEventListener('click', () => {
+                    const isAudioPost = item.enclosure && item.enclosure.type && item.enclosure.type.startsWith('audio/mpeg');
+                    openPanel({
+                        type: 'post',
+                        title: item.title,
+                        content: item.content,
+                        link: item.link,
+                        description: item.description,
+                        isAudio: isAudioPost,
+                        audioUrl: isAudioPost ? item.enclosure.link : null
+                    });
+                });
                 
                 let imageUrl = fallbackImage;
                 const isAudioPost = item.enclosure && item.enclosure.type && item.enclosure.type.startsWith('audio/mpeg');
                 if (isAudioPost) { imageUrl = genericPodcastImage; }
                 else if (item.thumbnail && item.thumbnail.length > 0) { imageUrl = item.thumbnail; }
                 else if (item.enclosure && item.enclosure.link && item.enclosure.type.startsWith('image')) { imageUrl = item.enclosure.link; }
-                
                 if(imageUrl) imageUrl = imageUrl.replace(/^http:\/\//i, 'https://');
                 
                 const image = document.createElement('img');
