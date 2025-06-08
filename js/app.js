@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function displayPosts(posts) {
         // Módulo de bienvenida estático
-        const welcomeModule = `<div class="bento-box welcome-module" data-id="static-welcome"><h2>Una Galería de Conocimiento Curada</h2><p>Explora la intersección entre tecnología, ciencia y cultura.</p></div>`;
+        const welcomeModule = `<div class="bento-box welcome-module" data-id="static-welcome"><h2>Epistecnología</h2><p>Una plataforma para la divulgación del conocimiento producido con Sabiduría</p></div>`;
         bentoGrid.insertAdjacentHTML('beforeend', welcomeModule);
 
         // Iteramos sobre cada post para crear su tarjeta correspondiente.
@@ -114,7 +114,32 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Módulos estáticos que van al final del grid.
-        const staticModules = `<div class="bento-box zenodo-module bento-box--wide" data-id="static-zenodo">...</div><div class="bento-box collaborators-module">...</div>`;
+        const staticModules = `
+            <div class="bento-box zenodo-module bento-box--wide" data-id="static-zenodo">
+                <div class="card-content">
+                     <svg viewBox="0 0 24 24" fill="currentColor" style="width:100px; height:auto; margin: 0 auto 1rem;"><path d="M12.246 17.34l-4.14-4.132h2.802v-2.8H5.976l4.131-4.14L7.305 3.46l-6.84 6.832 6.84 6.84 2.802-2.801zm-.492-13.88l6.839 6.84-6.84 6.839 2.802 2.802 6.84-6.84-6.84-6.84-2.801 2.803zm-1.89 7.02h5.364v2.8H9.864v-2.8z"></path></svg>
+                    <h3>Conocimiento Citable</h3>
+                    <p>Accede a nuestros datasets, preprints y materiales de investigación.</p>
+                    <a href="#" class="btn btn-zenodo">Visitar Repositorio</a>
+                </div>
+            </div>
+            
+            <div class="bento-box bento-box--wide collaborators-module">
+                 <div class="card-content">
+                    <h3>Colaboradores</h3>
+                    <p>Logo 1 | Logo 2 | Logo 3</p>
+                </div>
+            </div>
+            
+            <div class="bento-box bento-box--tall" data-id="static-taller-junio">
+                <div class="card-content">
+                    <span class="card-category">Próximamente</span>
+                    <h3>Taller de IA y Creatividad</h3>
+                    <p>Explora cómo las herramientas de IA pueden potenciar tu proceso creativo.</p>
+                    <a href="#" class="btn" style="margin-top: auto;">Inscribirse</a>
+                </div>
+            </div>
+        `;
         bentoGrid.insertAdjacentHTML('beforeend', staticModules);
     }
 
