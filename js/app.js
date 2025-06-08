@@ -12,17 +12,14 @@
  * - Gestionar la funcionalidad de los botones para compartir en redes sociales.
  */
 
-// 'DOMContentLoaded' es un evento que espera a que todo el HTML de la página
-// esté completamente cargado y listo antes de ejecutar cualquier código JavaScript.
-// Esto previene errores comunes donde el script intenta manipular elementos que aún no existen.
+// 'DOMContentLoaded' espera a que el HTML esté listo antes de ejecutar el script.
+// Esto previene errores donde el script intenta manipular elementos que aún no existen.
 document.addEventListener('DOMContentLoaded', () => {
 
     // =========================================================================
     // 1. CONSTANTES Y SELECTORES DEL DOM
     // =========================================================================
-    // Es una buena práctica declarar todas las referencias a elementos del DOM
-    // y constantes al principio del script para tener un acceso fácil y centralizado.
-
+    // Referencias a los elementos del HTML que vamos a manipular.
     const bentoGrid = document.getElementById('bento-grid');
     const themeSwitcher = document.getElementById('theme-switcher');
     const sidePanel = document.getElementById('side-panel');
@@ -30,44 +27,50 @@ document.addEventListener('DOMContentLoaded', () => {
     const sidePanelClose = document.getElementById('side-panel-close');
     const overlay = document.getElementById('overlay');
 
+    // Constantes de la aplicación.
     const apiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed';
     const audioPostBackground = 'https://i.ibb.co/vvPbhLpV/Leonardo-Phoenix-10-A-modern-and-minimalist-design-for-a-scien-2.jpg';
 
-
     // =========================================================================
-    // 2. ESTADO DE LA APLICACIÓN
+    // 2. PLANTILLAS DE MÓDULOS ESTÁTICOS
     // =========================================================================
-    // Aquí guardamos datos que pueden cambiar durante la ejecución del programa.
+    // Definimos los bloques de HTML aquí para mantener las funciones más limpias.
     
-    let allPostsData = []; // Almacenará los datos de todos los posts una vez que se carguen desde la API.
+    const welcomeModuleHTML = `<div class="bento-box bento-box--4x1 welcome-module" data-id="static-welcome"><h2>Una Galería de Conocimiento Curada</h2><p>Explora la intersección entre tecnología, ciencia y cultura.</p></div>`;
+    
+    const topStaticModulesHTML = `<div class="bento-box bento-box--4x1" data-id="static-quote" style="cursor:default;"><div class="card-content" style="text-align: center;"><p style="font-size: 1.2rem; font-style: italic;">"El conocimiento es la única riqueza que no se puede robar."</p><h4 style="margin-top: 0.5rem;">- Anónimo</h4></div></div>`;
+    
+    const inFeedModuleHTML = `<div class="bento-box bento-box--2x1" style="background-color: var(--color-accent); color: white; cursor:pointer;" data-id="static-in-feed-promo"><div class="card-content"><h3>¿Disfrutando el Contenido?</h3><p>Suscríbete a nuestro boletín para no perderte ninguna publicación.</p></div></div>`;
+    
+    const endStaticModulesHTML = `<div class="bento-box zenodo-module bento-box--2x2" data-id="static-zenodo"><div class="card-content"><svg viewBox="0 0 24 24" fill="currentColor" style="width:100px; height:auto; margin: 0 auto 1rem;"><path d="M12.246 17.34l-4.14-4.132h2.802v-2.8H5.976l4.131-4.14L7.305 3.46l-6.84 6.832 6.84 6.84 2.802-2.801zm-.492-13.88l6.839 6.84-6.84 6.839 2.802 2.802 6.84-6.84-6.84-6.84-2.801 2.803zm-1.89 7.02h5.364v2.8H9.864v-2.8z"></path></svg><h3>Conocimiento Citable</h3><p>Accede a nuestros datasets, preprints y materiales de investigación.</p><a href="#" class="btn btn-zenodo">Visitar Repositorio</a></div></div><div class="bento-box collaborators-module bento-box--4x1"><div class="card-content"><h3>Colaboradores</h3><p>Logo 1 | Logo 2 | Logo 3</p></div></div>`;
 
 
     // =========================================================================
-    // 3. FUNCIONES PRINCIPALES (LÓGICA DE NEGOCIO)
+    // 3. ESTADO DE LA APLICACIÓN
+    // =========================================================================
+    let allPostsData = []; // Almacenará los datos de todos los posts.
+
+
+    // =========================================================================
+    // 4. FUNCIONES PRINCIPALES
     // =========================================================================
 
     /**
-     * Carga las publicaciones desde la API. Es una función 'async' para poder
-     * usar 'await', lo que permite esperar a que la respuesta de la red llegue
-     * sin congelar la página.
+     * Carga las publicaciones desde la API.
      */
     async function loadPosts() {
         if (!bentoGrid) {
-            console.error('Error Crítico: El contenedor .bento-grid no fue encontrado en el DOM.');
+            console.error('Error Crítico: El contenedor .bento-grid no fue encontrado.');
             return;
         }
         bentoGrid.innerHTML = '<div class="loading">Cargando publicaciones...</div>';
-
-        // 'try...catch' es un bloque para manejo de errores. Si algo falla dentro
-        // del 'try' (ej. no hay internet), el código salta al 'catch' sin detener la web.
         try {
             const response = await fetch(apiUrl);
             if (!response.ok) throw new Error(`Error en la red: ${response.statusText}`);
-            
             const data = await response.json();
             if (data.status === 'ok' && data.items) {
                 allPostsData = data.items;
-                bentoGrid.innerHTML = ''; // Limpia el mensaje de "cargando"
+                bentoGrid.innerHTML = '';
                 displayPosts(allPostsData);
             } else {
                 throw new Error('La respuesta de la API no fue exitosa o no contiene items.');
@@ -79,141 +82,127 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Recibe un array de posts y construye el HTML para mostrarlos en el Bento Grid.
-     * @param {Array} posts - El array de objetos de post que viene de la API.
+     * Construye y muestra todo el Bento Grid.
+     * @param {Array} posts - El array de posts de la API.
      */
     function displayPosts(posts) {
-        // Módulo de bienvenida estático
-        const welcomeModule = `<div class="bento-box welcome-module" data-id="static-welcome"><h2>Epistecnología</h2><p>Una plataforma para la divulgación del conocimiento producido con Sabiduría</p></div>`;
-        bentoGrid.insertAdjacentHTML('beforeend', welcomeModule);
+        bentoGrid.insertAdjacentHTML('beforeend', welcomeModuleHTML);
+        bentoGrid.insertAdjacentHTML('beforeend', topStaticModulesHTML);
 
-        // Iteramos sobre cada post para crear su tarjeta correspondiente.
         posts.forEach((post, index) => {
-            // Verificamos si es un post de audio o si tiene imagen en miniatura.
-            // El 'encadenamiento opcional' (?.) evita errores si 'enclosure' o 'link' no existen.
+            if (index === 4) {
+                bentoGrid.insertAdjacentHTML('beforeend', inFeedModuleHTML);
+            }
+            
+            // --- LÓGICA DE IMÁGENES MEJORADA ---
             const isAudio = post.enclosure?.link?.endsWith('.mp3');
-            const hasThumbnail = post.thumbnail && post.thumbnail !== '';
+            let imageUrl = post.thumbnail; // 1. Intenta usar el thumbnail oficial.
+
+            // 2. Si no hay thumbnail, intenta extraer la primera imagen del contenido del post.
+            if (!imageUrl || imageUrl === "") {
+                imageUrl = extractFirstImageUrl(post.content);
+            }
+
             let backgroundStyle = '', cardCategory = 'Artículo', sizeClass = '';
 
             if (isAudio) {
                 backgroundStyle = `style="background-image: url(${audioPostBackground});"`;
                 cardCategory = 'Podcast';
-            } else if (hasThumbnail) {
-                backgroundStyle = `style="background-image: url(${post.thumbnail});"`;
+            } else if (imageUrl) { // 3. Si se encontró una URL (del thumbnail O del contenido), úsala.
+                backgroundStyle = `style="background-image: url(${imageUrl});"`;
                 cardCategory = 'Publicación';
             }
             
-            // Lógica para dar variedad de tamaños a las tarjetas del grid.
-            if (index === 0) sizeClass = 'bento-box--large';
-            else if (index % 5 === 2) sizeClass = 'bento-box--tall';
-            else if (index % 5 === 3) sizeClass = 'bento-box--wide';
+            // Lógica para variar el tamaño de las tarjetas
+            if (index === 0) sizeClass = 'bento-box--2x2';
+            else if (index % 5 === 1) sizeClass = 'bento-box--1x2';
+            else if (index % 5 === 3) sizeClass = 'bento-box--2x1';
 
-            // Creamos el HTML de la tarjeta y lo añadimos al grid.
             const postHTML = `<div class="bento-box post-card ${sizeClass}" data-id="${post.guid}" ${backgroundStyle}><div class="card-content"><span class="card-category">${cardCategory}</span><h4>${post.title}</h4></div></div>`;
             bentoGrid.insertAdjacentHTML('beforeend', postHTML);
         });
 
-        // Módulos estáticos que van al final del grid.
-        const staticModules = `
-            <div class="bento-box zenodo-module bento-box--wide" data-id="static-zenodo">
-                <div class="card-content">
-                     <svg viewBox="0 0 24 24" fill="currentColor" style="width:100px; height:auto; margin: 0 auto 1rem;"><path d="M12.246 17.34l-4.14-4.132h2.802v-2.8H5.976l4.131-4.14L7.305 3.46l-6.84 6.832 6.84 6.84 2.802-2.801zm-.492-13.88l6.839 6.84-6.84 6.839 2.802 2.802 6.84-6.84-6.84-6.84-2.801 2.803zm-1.89 7.02h5.364v2.8H9.864v-2.8z"></path></svg>
-                    <h3>Conocimiento Citable</h3>
-                    <p>Accede a nuestros datasets, preprints y materiales de investigación.</p>
-                    <a href="#" class="btn btn-zenodo">Visitar Repositorio</a>
-                </div>
-            </div>
-            
-            <div class="bento-box bento-box--wide collaborators-module">
-                 <div class="card-content">
-                    <h3>Colaboradores</h3>
-                    <p>Logo 1 | Logo 2 | Logo 3</p>
-                </div>
-            </div>
-            
-            <div class="bento-box bento-box--tall" data-id="static-taller-junio">
-                <div class="card-content">
-                    <span class="card-category">Próximamente</span>
-                    <h3>Taller de IA y Creatividad</h3>
-                    <p>Explora cómo las herramientas de IA pueden potenciar tu proceso creativo.</p>
-                    <a href="#" class="btn" style="margin-top: auto;">Inscribirse</a>
-                </div>
-            </div>
-        `;
-        bentoGrid.insertAdjacentHTML('beforeend', staticModules);
+        bentoGrid.insertAdjacentHTML('beforeend', endStaticModulesHTML);
     }
 
     /**
-     * Abre el panel lateral y lo puebla con el contenido de un post específico.
-     * @param {string} postId - El ID (guid) único del post que se va a mostrar.
+     * Abre el panel lateral con el contenido de un post.
+     * @param {string} postId - El ID (guid) del post a mostrar.
      */
     function openSidePanel(postId) {
         const postData = allPostsData.find(p => p.guid === postId);
-        if (!postData) return; // Si no se encuentra el post, no hacemos nada.
+        if (!postData) return;
 
         const postDate = new Date(postData.pubDate).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
-        
         let contentHTML = `<h2>${postData.title}</h2><div class="post-meta">Publicado por ${postData.author} el ${postDate}</div><div class="post-body">${postData.content}</div>`;
-        
         if (postData.enclosure?.link?.endsWith('.mp3')) {
             contentHTML += `<audio controls controlsList="nodownload" src="${postData.enclosure.link}"></audio>`;
         }
         
         sidePanelContent.innerHTML = contentHTML;
-
-        // Llamamos a las funciones auxiliares para los toques finales.
         cleanupPostContent();
         setupShareButtons(postData);
 
-        // Hacemos visible el panel y el overlay añadiendo clases CSS.
         sidePanel.classList.add('is-open');
         overlay.classList.add('is-open');
-        document.body.style.overflow = 'hidden'; // Evita que se pueda hacer scroll en el fondo.
+        document.body.style.overflow = 'hidden';
     }
 
     /**
-     * Cierra el panel lateral y el overlay.
+     * Cierra el panel lateral.
      */
     function closeSidePanel() {
         sidePanel.classList.remove('is-open');
         overlay.classList.remove('is-open');
-        document.body.style.overflow = ''; // Restaura el scroll en el fondo.
+        document.body.style.overflow = '';
     }
 
 
     // =========================================================================
-    // 4. FUNCIONES AUXILIARES (HELPERS)
+    // 5. FUNCIONES AUXILIARES (HELPERS)
     // =========================================================================
 
     /**
-     * Aplica la clase 'dark-theme' al body si el tema es oscuro.
-     * @param {string} theme - El tema a aplicar ('dark' o 'light').
+     * Aplica el tema claro/oscuro al <body>.
+     * @param {string} theme - 'dark' o 'light'.
      */
     function applyTheme(theme) {
         document.body.classList.toggle('dark-theme', theme === 'dark');
     }
 
     /**
-     * Cambia el tema actual y lo guarda en localStorage para que la elección del usuario sea persistente.
+     * Cambia el tema y lo guarda en localStorage.
      */
     function toggleTheme() {
         const newTheme = document.body.classList.contains('dark-theme') ? 'light' : 'dark';
-        localStorage.setItem('theme', newTheme); // Guarda la elección en el navegador.
+        localStorage.setItem('theme', newTheme);
         applyTheme(newTheme);
+    }
+
+    /**
+     * NUEVA FUNCIÓN: Extrae la URL de la primera imagen del contenido HTML de un post.
+     * @param {string} htmlContent - El string de HTML del contenido del post.
+     * @returns {string|null} - La URL de la imagen o null si no se encuentra.
+     */
+    function extractFirstImageUrl(htmlContent) {
+        // Creamos un elemento DOM temporal en memoria para analizar el HTML de forma segura.
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlContent, 'text/html');
+        const firstImage = doc.querySelector('img');
+        return firstImage ? firstImage.src : null;
     }
     
     /**
-     * Busca y elimina elementos no deseados (ej. barras de herramientas de Substack) del contenido del post.
+     * Limpia elementos no deseados del contenido del post.
      */
     function cleanupPostContent() {
         const selectorDeIconos = '.pencraft.icon-container';
-        // Usamos el selector que identificaste para encontrar y eliminar los iconos molestos.
         sidePanelContent.querySelectorAll(selectorDeIconos)?.forEach(toolbar => toolbar.parentElement.remove());
     }
 
     /**
-     * Configura la funcionalidad de los botones de compartir en el panel lateral.
-     * @param {object} postData - Los datos del post actual para obtener su título y enlace.
+     * Configura los botones de compartir.
+     * @param {object} postData - Los datos del post actual.
      */
     function setupShareButtons(postData) {
         const url = encodeURIComponent(postData.link);
@@ -226,27 +215,37 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const copyBtn = document.getElementById('copy-link');
         copyBtn.onclick = () => {
-            // La API del Portapapeles es la forma moderna y segura de copiar texto.
             navigator.clipboard.writeText(postData.link).then(() => {
-                const originalIcon = copyBtn.innerHTML;
-                copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-                setTimeout(() => { copyBtn.innerHTML = originalIcon; }, 2000); // Vuelve al icono original después de 2 segundos.
+                const originalIconHTML = `<i class="fa-solid fa-link"></i>`;
+                copyBtn.innerHTML = `<i class="fa-solid fa-check"></i>`;
+                setTimeout(() => { copyBtn.innerHTML = originalIconHTML; }, 2000);
             }).catch(err => console.error('Error al copiar el enlace:', err));
         };
     }
     
+    /**
+     * Simula la comprobación del estado "En Vivo".
+     */
+    function checkLiveStatus() {
+        const liveEstaActivo = true; // Cambia a false para probar
+        const liveIcon = document.getElementById('nav-live');
+
+        if (liveIcon) {
+            liveIcon.classList.toggle('is-live', liveEstaActivo);
+        }
+    }
+
 
     // =========================================================================
-    // 5. MANEJADORES DE EVENTOS (EVENT LISTENERS)
+    // 6. MANEJADORES DE EVENTOS (EVENT LISTENERS)
     // =========================================================================
-    // Esta sección asigna nuestras funciones a las interacciones del usuario.
+    // Asigna las funciones a las interacciones del usuario.
     
     themeSwitcher.addEventListener('click', toggleTheme);
     sidePanelClose.addEventListener('click', closeSidePanel);
     overlay.addEventListener('click', closeSidePanel);
 
-    // Técnica de "Delegación de Eventos": en lugar de añadir un listener a cada
-    // tarjeta, añadimos uno solo al contenedor padre. Es mucho más eficiente.
+    // Delegación de Eventos: un solo listener en el contenedor padre es más eficiente.
     bentoGrid.addEventListener('click', e => {
         const clickedCard = e.target.closest('.bento-box[data-id]');
         if (clickedCard && !clickedCard.dataset.id.startsWith('static')) {
@@ -256,18 +255,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // =========================================================================
-    // 6. INICIALIZACIÓN
+    // 7. INICIALIZACIÓN
     // =========================================================================
-    // Este es el punto de partida que ejecuta el código cuando la página carga.
+    // Punto de partida que ejecuta el código cuando la página carga.
     
     function init() {
-        // Aplica el tema guardado por el usuario (o 'light' por defecto).
         applyTheme(localStorage.getItem('theme') || 'light');
-        // Carga las publicaciones.
         loadPosts();
+        checkLiveStatus();
     }
     
-    // Ejecuta la función de inicialización.
     init();
 
 });

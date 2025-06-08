@@ -37,6 +37,11 @@ body.dark-theme {
     padding: 0;
 }
 
+
+/* ==========================================================================
+   2. LAYOUT Y UTILIDADES
+   ========================================================================== */
+
 /* Estilos base para la etiqueta <body>, que afecta a toda la página. */
 body {
     font-family: 'Inter', sans-serif;
@@ -46,11 +51,6 @@ body {
     transition: background-color 0.3s, color 0.3s; /* Transición suave para el cambio de tema. */
 }
 
-
-/* ==========================================================================
-   2. LAYOUT Y UTILIDADES
-   ========================================================================== */
-
 /* Contenedor principal que limita el ancho del contenido y lo centra. */
 .container {
     max-width: 1400px;
@@ -58,7 +58,7 @@ body {
     padding: 0 2rem;
 }
 
-/* Estilos base para enlaces, botones, etc. */
+/* Estilos base para elementos comunes */
 a {
     color: var(--color-text-secondary);
     text-decoration: none;
@@ -79,6 +79,7 @@ button {
     border: none;
     cursor: pointer;
     font-family: inherit; /* Hereda la fuente del resto de la página. */
+    padding: 0;
 }
 
 
@@ -86,7 +87,8 @@ button {
    3. COMPONENTES
    ========================================================================== */
 
-/* --- 3.1 NAVEGACIÓN SUPERIOR (ESCRITORIO) --- */
+/* --- 3.1 NAVEGACIÓN --- */
+/* Estilos para la barra de navegación superior (escritorio) */
 .desktop-nav {
     padding: 1rem 0;
     position: sticky; /* Hace que el menú se quede fijo en la parte superior al hacer scroll. */
@@ -94,7 +96,7 @@ button {
     z-index: 1000; /* Asegura que la navegación esté por encima de otros contenidos. */
     -webkit-backdrop-filter: blur(10px); /* Efecto "cristal esmerilado" para Safari. */
     backdrop-filter: blur(10px); /* Efecto "cristal esmerilado" estándar. */
-    background-color: rgba(240, 242, 245, 0.8); /* Color de fondo semitransparente. */
+    background-color: rgba(240, 242, 245, 0.8);
     transition: background-color 0.3s;
 }
 
@@ -104,16 +106,17 @@ body.dark-theme .desktop-nav {
 
 .desktop-nav .container {
     display: flex; /* Activa Flexbox para alinear los elementos hijos. */
-    justify-content: space-between; /* Distribuye los elementos horizontalmente. */
-    align-items: center; /* Centra los elementos verticalmente. */
-    gap: 1rem; /* Espacio entre los elementos. */
+    justify-content: space-between; /* Distribuye los elementos. */
+    align-items: center; /* Centra verticalmente. */
+    gap: 1rem;
 }
 
 .desktop-nav .logo img {
     height: 40px;
-    display: block; /* Elimina un pequeño espacio extra que los navegadores a veces añaden a las imágenes. */
+    display: block; /* Evita espacios extra debajo de la imagen. */
 }
 
+/* Estilo de las cajas "bento" que contienen los grupos de iconos */
 .bento-box-nav {
     display: flex;
     align-items: center;
@@ -126,18 +129,29 @@ body.dark-theme .desktop-nav {
 }
 
 .main-menu {
-    flex-grow: 1; /* Permite que este elemento ocupe el espacio sobrante. */
-    justify-content: center; /* Centra los iconos dentro de su caja. */
+    flex-grow: 1; /* Permite que ocupe el espacio sobrante. */
+    justify-content: flex-start; /* Alinea los iconos a la izquierda. */
 }
 
+.live-channels {
+    justify-content: center;
+}
+
+.user-actions {
+    justify-content: flex-end;
+}
+
+/* Estilo individual de cada icono en la navegación superior */
 .nav-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0.5rem;
+    width: 44px;
+    height: 44px;
     border-radius: 8px;
     transition: background-color 0.2s ease, color 0.2s ease;
     color: var(--color-text-secondary);
+    font-size: 1.1rem; /* Controla el tamaño de los iconos de Font Awesome */
 }
 
 .nav-icon:hover {
@@ -148,6 +162,50 @@ body.dark-theme .desktop-nav {
 .nav-icon.active {
     background-color: var(--color-accent);
     color: white;
+}
+
+/* Efecto para Estado "En Vivo" */
+@keyframes pulse-live {
+  0% { box-shadow: 0 0 0 0 rgba(183, 42, 30, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(183, 42, 30, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(183, 42, 30, 0); }
+}
+
+.nav-icon.is-live {
+  background-color: var(--color-accent);
+  color: white;
+  animation: pulse-live 2s infinite;
+}
+
+/* Estilos para la barra de navegación inferior (móvil) */
+.mobile-nav {
+    display: none; /* Oculta por defecto en escritorio. */
+    position: fixed;
+    bottom: 0; left: 0;
+    width: 100%;
+    background-color: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    z-index: 1000;
+    justify-content: space-around;
+    padding: 0.5rem 0;
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+}
+.mobile-nav__link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-grow: 1;
+    padding: 0.25rem 0;
+    color: var(--color-text-secondary);
+    font-size: 1.4rem; /* Tamaño de los iconos de Font Awesome en móvil */
+}
+.mobile-nav__link.active {
+    color: var(--color-accent);
+}
+.mobile-nav__text {
+    font-size: 0.7rem;
+    margin-top: 4px;
 }
 
 
@@ -183,102 +241,52 @@ body.dark-theme .bento-box:hover {
 }
 
 .post-card {
-    min-height: 250px; /* Asegura que las tarjetas más pequeñas tengan una altura mínima agradable. */
+    min-height: 250px;
 }
 
-/* Clases modificadoras para dar variedad de tamaños a las tarjetas */
-.bento-box--wide { grid-column: span 2; } /* Ocupa 2 columnas de ancho. */
-.bento-box--tall { grid-row: span 2; }    /* Ocupa 2 filas de alto. */
-.bento-box--large { grid-column: span 2; grid-row: span 2; } /* Ocupa un bloque de 2x2. */
-
-/* --- NUEVO: Catálogo de Tamaños para Módulos del Grid --- */
-
-/* 1 columna de ancho, 2 de alto */
-.bento-box--1x2 {
-    grid-row: span 2;
-}
-/* 2 columnas de ancho, 1 de alto */
-.bento-box--2x1 {
-    grid-column: span 2;
-}
-/* 2 columnas de ancho, 2 de alto */
-.bento-box--2x2 {
-    grid-column: span 2;
-    grid-row: span 2;
-}
-/* 3 columnas de ancho, 1 de alto */
-.bento-box--3x1 {
-    grid-column: span 3;
-}
-/* 4 columnas de ancho, 1 de alto */
-.bento-box--4x1 {
-    grid-column: span 4;
-}
-
-.welcome-module {
-    grid-column: span 4;
-    cursor: default; /* El cursor no cambia porque no es un elemento cliqueable. */
-}
-.welcome-module:hover {
-    transform: none; /* Se anula el efecto hover de las demás cajas. */
-    box-shadow: var(--shadow-light);
-}
+/* Catálogo de Tamaños para Módulos del Grid */
+.bento-box--1x2 { grid-row: span 2; }
+.bento-box--2x1 { grid-column: span 2; }
+.bento-box--2x2 { grid-column: span 2; grid-row: span 2; }
+.bento-box--3x1 { grid-column: span 3; }
+.bento-box--4x1 { grid-column: span 4; }
+.bento-box--1x3 { grid-row: span 3; } /* Corregido */
+.bento-box--1x4 { grid-row: span 4; }
 
 /* Estilos para tarjetas con imagen de fondo */
-.featured-post, .post-card {
-    background-size: cover; /* La imagen cubre toda la tarjeta sin deformarse. */
+.bento-box[style*="background-image"] {
+    background-size: cover;
     background-position: center;
 }
-
-/* El pseudo-elemento ::after se usa para crear una capa de gradiente oscuro sobre las imágenes de fondo.
-   Esto asegura que el texto blanco encima sea siempre legible. */
-.featured-post::after, .post-card::after {
+/* El pseudo-elemento ::after crea una capa oscura sobre la imagen para que el texto sea legible. */
+.bento-box[style*="background-image"]::after {
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
     background: linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0.1));
-    opacity: 0; /* Inicialmente es invisible. */
     transition: opacity 0.3s;
 }
-
-/* Cuando una caja tiene una imagen de fondo (añadida con 'style' por JS), hacemos visible el gradiente. */
-.bento-box[style*="background-image"]::after {
-    opacity: 1;
-}
-
-/* Y forzamos a que todo el texto dentro de ella sea blanco. */
+/* Forzamos a que todo el texto dentro de ella sea blanco. */
 .bento-box[style*="background-image"] * {
     color: white;
 }
-
 /* Contenido de las tarjetas */
 .card-content {
-    flex-grow: 1; /* Permite que este contenedor ocupe el espacio vertical disponible. */
+    flex-grow: 1;
     display: flex;
     flex-direction: column;
     position: relative;
-    z-index: 2; /* Se asegura que el contenido esté por encima del gradiente ::after. */
-    justify-content: flex-end; /* Alinea el contenido en la parte inferior de la tarjeta. */
+    z-index: 2; /* Se asegura que el contenido esté por encima del gradiente. */
+    justify-content: flex-end; /* Alinea el contenido en la parte inferior. */
 }
-
 .card-content h4 {
     margin-top: auto; /* Truco para que el título se separe de la categoría. */
 }
-
 .card-category {
     font-size: 0.8rem;
     font-weight: 500;
-    color: var(--color-accent); /* Por defecto es rojo, pero la regla anterior lo hace blanco si hay imagen. */
+    color: var(--color-accent);
     margin-bottom: 0.5rem;
-}
-
-/* Mensajes de Carga y Error */
-.loading, .error {
-    grid-column: span 4;
-    text-align: center;
-    padding: 4rem;
-    font-size: 1.2rem;
-    color: var(--color-text-secondary);
 }
 
 
@@ -288,37 +296,26 @@ body.dark-theme .bento-box:hover {
     width: 100%; max-width: 650px; height: 100%;
     background-color: var(--color-surface);
     z-index: 1002;
-    /* La magia de la animación: por defecto está fuera de la pantalla. */
-    transform: translateX(100%);
-    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Transición suave. */
-    border-top-left-radius: var(--border-radius);
-    border-bottom-left-radius: var(--border-radius);
+    transform: translateX(100%); /* Por defecto, está fuera de la pantalla. */
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     box-shadow: -5px 0 15px rgba(0,0,0,0.1);
     display: flex; flex-direction: column;
 }
-
-/* Cuando el panel tiene la clase 'is-open', se mueve a su posición visible. */
 .side-panel.is-open {
-    transform: translateX(0);
+    transform: translateX(0); /* Al añadir esta clase, el panel se desliza a la vista. */
 }
-
 .side-panel__close {
     position: absolute;
     top: 1rem; right: 1.5rem;
     color: var(--color-text-primary);
     z-index: 10;
+    font-size: 1.5rem;
 }
-
 .side-panel__content {
-    padding: 2.5rem;
-    padding-top: 4rem; /* Más espacio arriba para que el contenido no choque con el botón de cerrar. */
+    padding: 2.5rem; padding-top: 4rem;
     overflow-y: auto; /* Permite scroll si el contenido es muy largo. */
     flex-grow: 1;
 }
-
-.side-panel__content h2 { font-size: 2rem; margin-bottom: 1rem; color: var(--color-text-primary); }
-.side-panel__content .post-meta { font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 1.5rem; }
-.side-panel__content .post-body { line-height: 1.7; }
 .side-panel__content .post-body img { max-width: 100%; height: auto; border-radius: 8px; }
 .side-panel__content audio { width: 100%; margin-top: 1rem; }
 
@@ -330,9 +327,7 @@ body.dark-theme .bento-box:hover {
     flex-shrink: 0; /* Evita que este contenedor se encoja. */
     display: flex;
     gap: 0.75rem;
-    border-bottom-left-radius: var(--border-radius);
 }
-
 .share-btn {
     width: 44px; height: 44px;
     border-radius: 50%; /* Estilo circular. */
@@ -340,8 +335,8 @@ body.dark-theme .bento-box:hover {
     color: var(--color-text-secondary);
     display: flex; align-items: center; justify-content: center;
     transition: all 0.2s ease;
+    font-size: 1.2rem;
 }
-
 .share-btn:hover {
     background-color: var(--color-accent);
     color: white;
@@ -354,59 +349,54 @@ body.dark-theme .bento-box:hover {
     width: 100%; height: 100%;
     background: rgba(0,0,0,0.5);
     z-index: 1001;
-    opacity: 0; /* Por defecto invisible. */
-    visibility: hidden;
+    opacity: 0; visibility: hidden; /* Por defecto invisible. */
     transition: opacity 0.4s, visibility 0.4s;
 }
-
 .overlay.is-open {
-    opacity: 1;
-    visibility: visible;
+    opacity: 1; visibility: visible;
 }
 
 
-/* --- 3.4 NAVEGACIÓN INFERIOR (MÓVIL) --- */
-.mobile-nav {
-    display: none; /* Oculta por defecto en escritorio. */
-    position: fixed;
-    bottom: 0; left: 0;
+/* --- 3.4 WIDGETS (Como el iframe de Substack) --- */
+.iframe-container {
+    position: relative;
+    overflow: hidden;
     width: 100%;
-    background-color: var(--color-surface);
-    border-top: 1px solid var(--color-border);
-    z-index: 1000;
-    justify-content: space-around;
-    padding: 0.5rem 0;
-    box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+    /* El truco del padding: mantiene la proporción del iframe. 320/480 = 66.66% */
+    padding-top: 66.66%;
 }
-.mobile-nav__link { display: flex; flex-direction: column; align-items: center; justify-content: center; flex-grow: 1; padding: 0.25rem 0; }
-.mobile-nav__link.active { color: var(--color-accent); }
-.mobile-nav__text { font-size: 0.7rem; margin-top: 2px; }
+.iframe-container iframe {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    border: none;
+}
 
 
 /* ==========================================================================
    4. REGLAS RESPONSIVAS (@MEDIA QUERIES)
    ========================================================================== */
 
-/* Estilos para pantallas de tablet (hasta 992px de ancho) */
-@media (max-width: 992px) {
+/* --- Para Tablets y Laptops Pequeñas (hasta 1024px) --- */
+@media (max-width: 1024px) {
     .bento-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-    .welcome-module, .collaborators-module, .bento-box--wide {
+    .welcome-module, .collaborators-module, .bento-box--3x1, .bento-box--4x1 {
         grid-column: span 2;
     }
 }
 
-/* Estilos para pantallas de móvil (hasta 768px de ancho) */
+/* --- Para Móviles y Tablets en Vertical (hasta 768px) --- */
 @media (max-width: 768px) {
     .container {
         padding: 0 1rem;
     }
     .desktop-nav {
-        display: none; /* Oculta la navegación de escritorio. */
+        display: none;
     }
     .mobile-nav {
-        display: flex !important; /* Muestra la navegación móvil. El '!important' asegura que esta regla gane cualquier conflicto. */
+        display: flex !important; /* El '!important' asegura que esta regla gane cualquier conflicto de CSS. */
     }
     body {
         padding-bottom: 80px; /* Añade espacio al final para que la nav no tape contenido. */
@@ -417,15 +407,15 @@ body.dark-theme .bento-box:hover {
     .bento-grid {
         grid-template-columns: 1fr; /* Apila todo en una sola columna. */
     }
-    /* Fuerza a TODOS los módulos a ocupar 1 columna y tener un aspecto 4:3 en móvil. */
+    /* Fuerza a TODOS los módulos a ocupar 1 columna y tener aspecto 4:3 en móvil. */
     .bento-box, .welcome-module, .featured-post, .zenodo-module, .post-card, .collaborators-module,
-    .bento-box--wide, .bento-box--tall, .bento-box--large {
+    .bento-box--1x2, .bento-box--2x1, .bento-box--2x2, .bento-box--3x1, .bento-box--4x1, .bento-box--1x3, .bento-box--1x4 {
         grid-column: span 1 !important;
         grid-row: span 1 !important;
         aspect-ratio: 4 / 3; /* Mantiene una proporción visualmente agradable. */
         min-height: unset; /* Anula la altura mínima de escritorio. */
     }
     .bento-box[style*="background-image"] {
-        justify-content: flex-end; /* Alinea el contenido abajo en las tarjetas con imagen. */
+        justify-content: flex-end;
     }
 }

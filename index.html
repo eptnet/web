@@ -14,6 +14,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     
+    <script src="https://kit.fontawesome.com/a978363849.js" crossorigin="anonymous"></script>
+    
     <script src="js/app.js" defer></script>
 </head>
 
@@ -27,15 +29,21 @@
             </a>
             
             <nav class="main-menu bento-box-nav">
-                <a href="#" class="nav-icon active" aria-label="Inicio"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></a>
-                <a href="#" class="nav-icon" aria-label="Explorar"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></a>
-                <a href="#" class="nav-icon" aria-label="Publicaciones"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg></a>
-                <a href="#" class="nav-icon" aria-label="Eventos"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></a>
+                <a href="#" class="nav-icon active" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
+                <a href="#" class="nav-icon" aria-label="Explorar"><i class="fa-solid fa-search"></i></a>
+                <a href="#" class="nav-icon" aria-label="Publicaciones"><i class="fa-solid fa-book-open"></i></a>
+                <a href="#" class="nav-icon" aria-label="Eventos"><i class="fa-solid fa-calendar-days"></i></a>
             </nav>
-            
+
+            <div class="live-channels bento-box-nav">
+                 <a href="#" class="nav-icon" id="nav-live" aria-label="En Vivo">
+                    <i class="fa-solid fa-satellite-dish"></i>
+                </a>
+            </div>
+
             <div class="user-actions bento-box-nav">
-                <a href="#" class="nav-icon" aria-label="Login / ORCID"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></a>
-                <button class="theme-switcher nav-icon" id="theme-switcher" aria-label="Cambiar tema"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></button>
+                <a href="#" class="nav-icon" aria-label="Login / ORCID"><i class="fa-solid fa-user"></i></a>
+                <button class="theme-switcher nav-icon" id="theme-switcher" aria-label="Cambiar tema"><i class="fa-solid fa-moon"></i></button>
             </div>
         </div>
     </header>
@@ -46,16 +54,16 @@
     </main>
     
     <aside class="side-panel" id="side-panel">
-        <button class="side-panel__close" id="side-panel-close" aria-label="Cerrar panel"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+        <button class="side-panel__close" id="side-panel-close" aria-label="Cerrar panel"><i class="fa-solid fa-xmark"></i></button>
         
         <div class="side-panel__content" id="side-panel-content"></div>
         
         <div class="side-panel__share">
-            <button class="share-btn" id="share-fb" aria-label="Compartir en Facebook"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9.198 21.5h4v-8.01h3.604l.396-3.98h-4V7.5a1 1 0 0 1 1-1h3v-4h-3a4 4 0 0 0-4 4v2.01h-2l-.396 3.98h2.396v8.01Z"/></svg></button>
-            <button class="share-btn" id="share-li" aria-label="Compartir en LinkedIn"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6.94 5a2 2 0 1 1-4-.002a2 2 0 0 1 4 .002M7 8.48H3V21h4V8.48m10.32 0H13.34v2.066h.058a4.63 4.63 0 0 1 4.195-2.228c4.492 0 5.322 2.958 5.322 6.796V21h-4v-6.35c0-1.51-.028-3.45-2.1-3.45c-2.1 0-2.424 1.64-2.424 3.34V21h-4V8.48Z"/></svg></button>
-            <button class="share-btn" id="share-wa" aria-label="Compartir en WhatsApp"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 14c-.2-.1-1.5-.7-1.7-.8c-.2-.1-.4-.1-.6.1c-.2.2-.6.7-.8.9c-.1.1-.3.2-.5.1c-.2-.1-1-.4-1.9-1.1c-.7-.6-1.2-1.4-1.4-1.6c-.1-.2 0-.4.1-.5s.2-.3.4-.4c.1-.1.2-.2.2-.3c.1-.1.1-.3 0-.4c0-.1-.6-1.5-.8-2c-.2-.5-.4-.5-.6-.5h-.5c-.2 0-.5.2-.6.3c-.2.2-.7.7-.7,1.6c0,1, .8,1.9.9,2c.1.1,1.5,2.3,3.6,3.2c.5.2,1,.4,1.3.5c.6.2,1.1.2,1.5.1c.4-.1,1.5-.6,1.7-.7c.2-.1.4-.1.5.1c.2.2.4.7.4,1c0,.2,0,.2-.1.3c-.1.1-.3.2-.6.2c-.2.1-1.7.9-2,1"/></svg></button>
-            <button class="share-btn" id="share-x" aria-label="Compartir en X"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26l8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></button>
-            <button class="share-btn" id="copy-link" aria-label="Copiar enlace"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></button>
+            <button class="share-btn" id="share-fb" aria-label="Compartir en Facebook"><i class="fa-brands fa-facebook-f"></i></button>
+            <button class="share-btn" id="share-li" aria-label="Compartir en LinkedIn"><i class="fa-brands fa-linkedin-in"></i></button>
+            <button class="share-btn" id="share-wa" aria-label="Compartir en WhatsApp"><i class="fa-brands fa-whatsapp"></i></button>
+            <button class="share-btn" id="share-x" aria-label="Compartir en X"><i class="fa-brands fa-twitter"></i></button>
+            <button class="share-btn" id="copy-link" aria-label="Copiar enlace"><i class="fa-solid fa-link"></i></button>
         </div>
     </aside>
     
@@ -68,22 +76,10 @@
     </footer>
 
     <nav class="mobile-nav">
-        <a href="#" class="mobile-nav__link active" aria-label="Inicio">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-            <span class="mobile-nav__text">Inicio</span>
-        </a>
-        <a href="#" class="mobile-nav__link" aria-label="Explorar">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <span class="mobile-nav__text">Explorar</span>
-        </a>
-        <a href="#" class="mobile-nav__link" aria-label="Publicaciones">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
-            <span class="mobile-nav__text">Posts</span>
-        </a>
-        <a href="#" class="mobile-nav__link" aria-label="Más opciones">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-            <span class="mobile-nav__text">Más</span>
-        </a>
+        <a href="#" class="mobile-nav__link active"><i class="fa-solid fa-house"></i><span class="mobile-nav__text">Inicio</span></a>
+        <a href="#" class="mobile-nav__link"><i class="fa-solid fa-search"></i><span class="mobile-nav__text">Explorar</span></a>
+        <a href="#" class="mobile-nav__link"><i class="fa-solid fa-book-open"></i><span class="mobile-nav__text">Posts</span></a>
+        <a href="#" class="mobile-nav__link"><i class="fa-solid fa-bars"></i><span class="mobile-nav__text">Más</span></a>
     </nav>
 </body>
 </html>
