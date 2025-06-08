@@ -55,7 +55,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function displayPosts(posts) {
-        const welcomeModuleHTML = `<div class="bento-box welcome-module bento-box--4x1" data-id="static-welcome"><h2>Una Galería de Conocimiento Curada</h2><p>Explora la intersección entre tecnología, ciencia y cultura.</p></div>`;
+        const welcomeModuleHTML = `
+            <div class="bento-box welcome-module bento-box--4x1" data-id="static-welcome">
+                <h2>Epistecnología</h2>
+                <p>Plataforma para la divulgación del conocimiento producido con Sabiduría para el bien integral de la sociedad.</p>
+            </div>
+        `;
         bentoGrid.insertAdjacentHTML('beforeend', welcomeModuleHTML);
         
         posts.forEach((post, index) => {
