@@ -7,20 +7,15 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     // =========================================================================
-    // 1. CONSTANTES Y SELECTORES DEL DOM (CORREGIDOS)
+    // 1. CONSTANTES Y SELECTORES DEL DOM
     // =========================================================================
-    // Ahora seleccionamos los elementos con sus IDs únicos para escritorio y móvil.
     const bentoGrid = document.getElementById('bento-grid');
     const sidePanel = document.getElementById('side-panel');
     const sidePanelContent = document.getElementById('side-panel-content');
     const sidePanelClose = document.getElementById('side-panel-close');
     const overlay = document.getElementById('overlay');
-    
-    // Selectores para cambio de tema
     const themeSwitcherDesktop = document.getElementById('theme-switcher-desktop');
     const themeSwitcherMobile = document.getElementById('theme-switcher-mobile');
-
-    // Selectores para menú móvil "Más"
     const mobileMoreBtn = document.getElementById('mobile-more-btn');
     const mobileMoreMenu = document.getElementById('mobile-more-menu');
     const mobileMoreMenuClose = document.getElementById('mobile-more-menu-close');
@@ -29,13 +24,62 @@ document.addEventListener('DOMContentLoaded', () => {
     const audioPostBackground = 'https://i.ibb.co/vvPbhLpV/Leonardo-Phoenix-10-A-modern-and-minimalist-design-for-a-scien-2.jpg';
 
     // =========================================================================
-    // 2. ESTADO DE LA APLICACIÓN
+    // 2. PLANTILLAS DE MÓDULOS ESTÁTICOS
+    // =========================================================================
+    // Aquí puedes crear y editar el contenido de todos tus módulos fijos.
+    
+    // --- Módulo de Bienvenida ---
+    const welcomeModuleHTML = `
+        <div class="bento-box welcome-module bento-box--4x1" data-id="static-welcome">
+            <h2>Una Galería de Conocimiento Curada</h2>
+            <p>Explora la intersección entre tecnología, ciencia y cultura.</p>
+        </div>`;
+    
+    // --- Módulos a mostrar ANTES del feed de Substack ---
+    const topStaticModulesHTML = `
+        <div class="bento-box bento-box--4x1" data-id="static-quote" style="cursor:default;">
+            <div class="card-content" style="text-align: center;">
+                <p style="font-size: 1.2rem; font-style: italic;">"El conocimiento es la única riqueza que no se puede robar."</p>
+                <h4 style="margin-top: 0.5rem;">- Anónimo</h4>
+            </div>
+        </div>`;
+    
+    // --- Módulo a mostrar INTERCALADO en el feed ---
+    const inFeedModuleHTML = `
+        <div class="bento-box bento-box--2x1" style="background-color: var(--color-accent); color: white; cursor:pointer;" data-id="static-in-feed-promo">
+            <div class="card-content">
+                <h3>¿Disfrutando el Contenido?</h3>
+                <p>Suscríbete a nuestro boletín para no perderte ninguna publicación.</p>
+            </div>
+        </div>`;
+    
+    // --- Módulos a mostrar DESPUÉS del feed de Substack ---
+    const endStaticModulesHTML = `
+        <div class="bento-box zenodo-module bento-box--2x2" data-id="static-zenodo">
+            <div class="card-content">
+                <svg viewBox="0 0 24 24" fill="currentColor" style="width:100px; height:auto; margin: 0 auto 1rem;"><path d="M12.246 17.34l-4.14-4.132h2.802v-2.8H5.976l4.131-4.14L7.305 3.46l-6.84 6.832 6.84 6.84 2.802-2.801zm-.492-13.88l6.839 6.84-6.84 6.839 2.802 2.802 6.84-6.84-6.84-6.84-2.801 2.803zm-1.89 7.02h5.364v2.8H9.864v-2.8z"></path></svg>
+                <h3>Conocimiento Citable</h3>
+                <p>Accede a nuestros datasets y preprints.</p>
+                <a href="#" class="btn">Visitar Repositorio</a>
+            </div>
+        </div>
+        <div class="bento-box collaborators-module bento-box--2x2">
+            <div class="card-content">
+                <h3>Colaboradores</h3>
+                <p>Logo 1 | Logo 2 | Logo 3</p>
+            </div>
+        </div>`;
+
+
+    // =========================================================================
+    // 3. ESTADO DE LA APLICACIÓN
     // =========================================================================
     let allPostsData = [];
 
     // =========================================================================
-    // 3. FUNCIONES PRINCIPALES
+    // 4. FUNCIONES PRINCIPALES
     // =========================================================================
+
     async function loadPosts() {
         if (!bentoGrid) { console.error('Error Crítico: El contenedor .bento-grid no fue encontrado.'); return; }
         bentoGrid.innerHTML = '<div class="loading">Cargando publicaciones...</div>';
@@ -54,16 +98,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    /**
+     * Construye y muestra todo el Bento Grid, insertando los módulos en orden.
+     * @param {Array} posts - El array de posts de la API.
+     */
     function displayPosts(posts) {
-        const welcomeModuleHTML = `
-            <div class="bento-box welcome-module bento-box--4x1" data-id="static-welcome">
-                <h2>Epistecnología</h2>
-                <p>Plataforma para la divulgación del conocimiento producido con Sabiduría para el bien integral de la sociedad.</p>
-            </div>
-        `;
+        // Inserta el módulo de bienvenida
         bentoGrid.insertAdjacentHTML('beforeend', welcomeModuleHTML);
-        
+        // Inserta los módulos fijos superiores
+        bentoGrid.insertAdjacentHTML('beforeend', topStaticModulesHTML);
+
+        // Inserta los posts de Substack y el módulo intercalado
         posts.forEach((post, index) => {
+            // Inserta el módulo intercalado después del 5to post.
+            if (index === 4) {
+                bentoGrid.insertAdjacentHTML('beforeend', inFeedModuleHTML);
+            }
+            
+            // Lógica para crear la tarjeta del post actual
             const isAudio = post.enclosure?.link?.endsWith('.mp3');
             let imageUrl = post.thumbnail;
             if (!imageUrl || imageUrl === "") {
@@ -77,12 +129,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 backgroundStyle = `style="background-image: url(${imageUrl});"`;
                 cardCategory = 'Publicación';
             }
+            
             if (index === 0) sizeClass = 'bento-box--2x2';
             else if (index % 5 === 1) sizeClass = 'bento-box--1x2';
             else if (index % 5 === 3) sizeClass = 'bento-box--2x1';
+
             const postHTML = `<div class="bento-box post-card ${sizeClass}" data-id="${post.guid}" ${backgroundStyle}><div class="card-content"><span class="card-category">${cardCategory}</span><h4>${post.title}</h4></div></div>`;
             bentoGrid.insertAdjacentHTML('beforeend', postHTML);
         });
+        
+        // Inserta los módulos fijos inferiores
+        bentoGrid.insertAdjacentHTML('beforeend', endStaticModulesHTML);
     }
 
     function openSidePanel(postId) {
