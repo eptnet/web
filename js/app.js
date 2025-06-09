@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
              data-id="static-video" 
              data-panel-type="embed" 
              data-panel-title="Video Destacado"
-             data-embed-src="https://www.youtube.com/watch?v=_lzXjouj-EQ">
+             data-embed-src="https://www.youtube.com/embed/_lzXjouj-EQ">
              <div class="card-content">
                 <span class="card-category">Ver Ahora</span>
                 <h4>El Futuro de la Exploración Espacial</h4>
