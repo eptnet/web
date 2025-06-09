@@ -319,25 +319,176 @@ body.dark-theme .bento-box:hover {
 
 
 /* --- 3.3 PANEL LATERAL --- */
-.side-panel { position: fixed; top: 0; right: 0; width: 100%; max-width: 650px; height: 100%; background-color: var(--color-surface); z-index: 1002; transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); box-shadow: -5px 0 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
-.side-panel.is-open { transform: translateX(0); }
-.side-panel__close { position: absolute; top: 1rem; right: 1.5rem; color: var(--color-text-primary); z-index: 10; font-size: 1.5rem; }
-.side-panel__content { padding: 2.5rem; padding-top: 4rem; overflow-y: auto; flex-grow: 1; }
-.side-panel__content h2 { font-size: var(--font-size-h2); }
-.side-panel__content .post-meta { font-size: var(--font-size-small); }
-.side-panel__content .post-body img { max-width: 100%; height: auto; border-radius: 8px; }
-.side-panel__content audio { width: 100%; margin-top: 1rem; }
-.side-panel__share { padding: 1rem 2.5rem; border-top: 1px solid var(--color-border); background-color: var(--color-surface); flex-shrink: 0; display: flex; gap: 0.75rem; }
-.share-btn { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--color-border); color: var(--color-text-secondary); display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; font-size: 1.2rem; }
-.share-btn:hover { background-color: var(--color-accent); color: white; border-color: var(--color-accent); }
-.overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1001; opacity: 0; visibility: hidden; transition: opacity 0.4s, visibility 0.4s; }
-.overlay.is-open { opacity: 1; visibility: visible; }
+.side-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 100%;
+    max-width: 650px;
+    height: 100%;
+    background-color: var(--color-surface);
+    z-index: 1002;
+    transform: translateX(100%);
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    border-top-left-radius: var(--border-radius);
+    border-bottom-left-radius: var(--border-radius);
+}
+.side-panel.is-open {
+    transform: translateX(0);
+}
+.side-panel__close {
+    position: absolute;
+    top: 1rem;
+    right: 1.5rem;
+    color: var(--color-text-primary);
+    z-index: 10;
+    font-size: 1.5rem;
+}
+.side-panel__content {
+    padding: 2.5rem;
+    padding-top: 4.5rem; /* Aumentamos el padding para que no choque con el botón de cerrar */
+    overflow-y: auto;
+    flex-grow: 1;
+}
+/* Estilos para el título del post dentro del panel */
+.side-panel__content h2 {
+    font-size: var(--font-size-h2);
+    color: var(--color-text-primary);
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+}
+/* Estilos para los metadatos (autor, fecha) */
+.side-panel__content .post-meta {
+    font-size: var(--font-size-small);
+    color: var(--color-text-secondary);
+    margin-bottom: 2rem;
+    display: block;
+}
+/* Estilos para el cuerpo del post */
+.side-panel__content .post-body p {
+    margin-bottom: 1.5rem; /* Espacio entre párrafos */
+    font-size: var(--font-size-base);
+    color: var(--color-text-primary);
+}
+/* Estilos para que las imágenes, audios y videos se vean bien y consistentes */
+.side-panel__content .post-body img,
+.side-panel__content .post-body audio,
+.side-panel__content .post-body iframe {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--border-radius); /* ¡Esquinas redondeadas consistentes! */
+    margin-top: 1rem;
+    margin-bottom: 1.5rem;
+}
+/* Contenedor específico para iframes responsivos dentro del panel */
+.side-panel__content .iframe-container {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    padding-top: 56.25%; /* Proporción 16:9 para videos de YouTube/Vimeo */
+    border-radius: var(--border-radius);
+    margin-bottom: 1.5rem;
+}
+.side-panel__content .iframe-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+/* === FIN: NUEVOS ESTILOS PARA EL CONTENIDO DEL PANEL === */
 
+/* Sección de compartir */
+.side-panel__share {
+    padding: 1rem 2.5rem;
+    border-top: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    flex-shrink: 0;
+    display: flex;
+    gap: 0.75rem;
+    border-bottom-left-radius: var(--border-radius);
+}
+.share-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 1.2rem;
+}
+.share-btn:hover {
+    background-color: var(--color-accent);
+    color: white;
+    border-color: var(--color-accent);
+}
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1001;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.4s, visibility 0.4s;
+}
+.overlay.is-open {
+    opacity: 1;
+    visibility: visible;
+}
 
 /* --- 3.4 WIDGETS Y CONTENIDO EMBEBIDO --- */
-.iframe-container { position: relative; overflow: hidden; width: 100%; padding-top: 66.66%; }
-.iframe-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+.iframe-container { 
+    position: relative; 
+    overflow: hidden; 
+    width: 100%; 
+    padding-top: 66.66%; 
+}
+.iframe-container iframe { 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    border: none; 
+}
 
+/* --- 3.5 SECCIONES DE CATEGORÍAS DESTACADAS --- */
+
+.category-feature {
+    padding-top: 2rem;
+    padding-bottom: 1rem;
+}
+
+.category-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--color-border);
+    padding-bottom: 0.75rem;
+}
+
+.category-title i {
+    color: var(--color-accent);
+    margin-right: 0.75rem;
+}
+
+/* Usamos CSS Grid también aquí, pero con 3 columnas */
+.category-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+}
 
 /* ==========================================================================
    4. REGLAS RESPONSIVAS (@MEDIA QUERIES)
