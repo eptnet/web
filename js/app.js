@@ -2,84 +2,67 @@
  * =========================================================================
  * Script Principal para la funcionalidad de Epistecnologia.com
  * =========================================================================
+ *
+ * Este archivo se encarga de:
+ * - Gestionar el tema claro/oscuro y guardarlo en la memoria del navegador.
+ * - Cargar las publicaciones desde el feed RSS de Substack a través de una API.
+ * - Construir y mostrar dinámicamente el Bento Grid con las publicaciones.
+ * - Manejar toda la interactividad del panel lateral para leer los posts.
+ * - Limpiar el contenido de los posts (eliminando elementos de Substack).
+ * - Gestionar la funcionalidad de los botones para compartir en redes sociales.
  */
 
+// 'DOMContentLoaded' espera a que todo el HTML esté listo antes de ejecutar el script.
 document.addEventListener('DOMContentLoaded', () => {
 
     // =========================================================================
     // 1. CONSTANTES Y SELECTORES DEL DOM
     // =========================================================================
+    // Referencias a los elementos del HTML que vamos a manipular.
     const bentoGrid = document.getElementById('bento-grid');
     const sidePanel = document.getElementById('side-panel');
     const sidePanelContent = document.getElementById('side-panel-content');
     const sidePanelClose = document.getElementById('side-panel-close');
     const overlay = document.getElementById('overlay');
+    
+    // Selectores para elementos con versiones de escritorio y móvil.
     const themeSwitcherDesktop = document.getElementById('theme-switcher-desktop');
     const themeSwitcherMobile = document.getElementById('theme-switcher-mobile');
     const mobileMoreBtn = document.getElementById('mobile-more-btn');
     const mobileMoreMenu = document.getElementById('mobile-more-menu');
     const mobileMoreMenuClose = document.getElementById('mobile-more-menu-close');
 
+    // Constantes de la aplicación.
     const apiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed';
     const audioPostBackground = 'https://i.ibb.co/vvPbhLpV/Leonardo-Phoenix-10-A-modern-and-minimalist-design-for-a-scien-2.jpg';
 
     // =========================================================================
     // 2. PLANTILLAS DE MÓDULOS ESTÁTICOS
     // =========================================================================
-    // Aquí puedes crear y editar el contenido de todos tus módulos fijos.
+    // Definimos los bloques de HTML aquí para mantener las funciones más limpias.
     
-    // --- Módulo de Bienvenida ---
-    const welcomeModuleHTML = `
-        <div class="bento-box welcome-module bento-box--4x1" data-id="static-welcome">
-            <h2>Una Galería de Conocimiento Curada</h2>
-            <p>Explora la intersección entre tecnología, ciencia y cultura.</p>
-        </div>`;
+    const welcomeModuleHTML = `<div class="bento-box welcome-module bento-box--4x1" data-id="static-welcome"><h2>Una Galería de Conocimiento Curada</h2><p>Explora la intersección entre tecnología, ciencia y cultura.</p></div>`;
     
-    // --- Módulos a mostrar ANTES del feed de Substack ---
-    const topStaticModulesHTML = `
-        <div class="bento-box bento-box--4x1" data-id="static-quote" style="cursor:default;">
-            <div class="card-content" style="text-align: center;">
-                <p style="font-size: 1.2rem; font-style: italic;">"El conocimiento es la única riqueza que no se puede robar."</p>
-                <h4 style="margin-top: 0.5rem;">- Anónimo</h4>
-            </div>
-        </div>`;
+    const topStaticModulesHTML = `<div class="bento-box bento-box--4x1" data-id="static-quote" style="cursor:default;"><div class="card-content" style="text-align: center;"><p style="font-size: 1.2rem; font-style: italic;">"El conocimiento es la única riqueza que no se puede robar."</p><h4 style="margin-top: 0.5rem;">- Anónimo</h4></div></div>`;
     
-    // --- Módulo a mostrar INTERCALADO en el feed ---
-    const inFeedModuleHTML = `
-        <div class="bento-box bento-box--2x1" style="background-color: var(--color-accent); color: white; cursor:pointer;" data-id="static-in-feed-promo">
-            <div class="card-content">
-                <h3>¿Disfrutando el Contenido?</h3>
-                <p>Suscríbete a nuestro boletín para no perderte ninguna publicación.</p>
-            </div>
-        </div>`;
+    const inFeedModuleHTML = `<div class="bento-box bento-box--2x1 bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;"><div class="card-content"><h3>¿Disfrutando el Contenido?</h3><p>Suscríbete a nuestro boletín para no perderte ninguna publicación.</p></div></div>`;
     
-    // --- Módulos a mostrar DESPUÉS del feed de Substack ---
-    const endStaticModulesHTML = `
-        <div class="bento-box zenodo-module bento-box--2x2" data-id="static-zenodo">
-            <div class="card-content">
-                <svg viewBox="0 0 24 24" fill="currentColor" style="width:100px; height:auto; margin: 0 auto 1rem;"><path d="M12.246 17.34l-4.14-4.132h2.802v-2.8H5.976l4.131-4.14L7.305 3.46l-6.84 6.832 6.84 6.84 2.802-2.801zm-.492-13.88l6.839 6.84-6.84 6.839 2.802 2.802 6.84-6.84-6.84-6.84-2.801 2.803zm-1.89 7.02h5.364v2.8H9.864v-2.8z"></path></svg>
-                <h3>Conocimiento Citable</h3>
-                <p>Accede a nuestros datasets y preprints.</p>
-                <a href="#" class="btn">Visitar Repositorio</a>
-            </div>
-        </div>
-        <div class="bento-box collaborators-module bento-box--2x2">
-            <div class="card-content">
-                <h3>Colaboradores</h3>
-                <p>Logo 1 | Logo 2 | Logo 3</p>
-            </div>
-        </div>`;
+    const endStaticModulesHTML = `<div class="bento-box zenodo-module bento-box--2x2" data-id="static-zenodo"><div class="card-content"><svg viewBox="0 0 24 24" fill="currentColor" style="width:100px; height:auto; margin: 0 auto 1rem;"><path d="M12.246 17.34l-4.14-4.132h2.802v-2.8H5.976l4.131-4.14L7.305 3.46l-6.84 6.832 6.84 6.84 2.802-2.801zm-.492-13.88l6.839 6.84-6.84 6.839 2.802 2.802 6.84-6.84-6.84-6.84-2.801 2.803zm-1.89 7.02h5.364v2.8H9.864v-2.8z"></path></svg><h3>Conocimiento Citable</h3><p>Accede a nuestros datasets y preprints.</p><a href="#" class="btn">Visitar Repositorio</a></div></div><div class="bento-box collaborators-module bento-box--2x2"><div class="card-content"><h3>Colaboradores</h3><p>Logo 1 | Logo 2 | Logo 3</p></div></div>`;
 
 
     // =========================================================================
     // 3. ESTADO DE LA APLICACIÓN
     // =========================================================================
-    let allPostsData = [];
+    let allPostsData = []; // Almacenará los datos de todos los posts.
+
 
     // =========================================================================
     // 4. FUNCIONES PRINCIPALES
     // =========================================================================
 
+    /**
+     * Carga las publicaciones desde la API de forma asíncrona.
+     */
     async function loadPosts() {
         if (!bentoGrid) { console.error('Error Crítico: El contenedor .bento-grid no fue encontrado.'); return; }
         bentoGrid.innerHTML = '<div class="loading">Cargando publicaciones...</div>';
@@ -103,19 +86,14 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {Array} posts - El array de posts de la API.
      */
     function displayPosts(posts) {
-        // Inserta el módulo de bienvenida
         bentoGrid.insertAdjacentHTML('beforeend', welcomeModuleHTML);
-        // Inserta los módulos fijos superiores
         bentoGrid.insertAdjacentHTML('beforeend', topStaticModulesHTML);
 
-        // Inserta los posts de Substack y el módulo intercalado
         posts.forEach((post, index) => {
-            // Inserta el módulo intercalado después del 5to post.
             if (index === 4) {
                 bentoGrid.insertAdjacentHTML('beforeend', inFeedModuleHTML);
             }
             
-            // Lógica para crear la tarjeta del post actual
             const isAudio = post.enclosure?.link?.endsWith('.mp3');
             let imageUrl = post.thumbnail;
             if (!imageUrl || imageUrl === "") {
@@ -138,10 +116,13 @@ document.addEventListener('DOMContentLoaded', () => {
             bentoGrid.insertAdjacentHTML('beforeend', postHTML);
         });
         
-        // Inserta los módulos fijos inferiores
         bentoGrid.insertAdjacentHTML('beforeend', endStaticModulesHTML);
     }
 
+    /**
+     * Abre el panel lateral con el contenido de un post.
+     * @param {string} postId - El ID (guid) del post a mostrar.
+     */
     function openSidePanel(postId) {
         const postData = allPostsData.find(p => p.guid === postId);
         if (!postData) return;
@@ -158,6 +139,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.style.overflow = 'hidden';
     }
 
+    /**
+     * Cierra el panel lateral.
+     */
     function closeSidePanel() {
         sidePanel.classList.remove('is-open');
         overlay.classList.remove('is-open');
@@ -165,8 +149,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================================
-    // 4. FUNCIONES AUXILIARES (HELPERS)
+    // 5. FUNCIONES AUXILIARES (HELPERS)
     // =========================================================================
+
     function applyTheme(theme) {
         document.body.classList.toggle('dark-theme', theme === 'dark');
     }
@@ -177,7 +162,13 @@ document.addEventListener('DOMContentLoaded', () => {
         applyTheme(newTheme);
     }
     
+    /**
+     * Extrae la URL de la primera imagen del contenido HTML de un post.
+     * @param {string} htmlContent - El string de HTML.
+     * @returns {string|null} - La URL de la imagen o null si no existe.
+     */
     function extractFirstImageUrl(htmlContent) {
+        // Creamos un elemento DOM temporal en memoria para analizar el HTML de forma segura.
         const parser = new DOMParser();
         const doc = parser.parseFromString(htmlContent, 'text/html');
         const firstImage = doc.querySelector('img');
@@ -196,6 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('share-li').onclick = () => window.open(`https://www.linkedin.com/shareArticle?mini=true&url=${url}&title=${title}`);
         document.getElementById('share-wa').onclick = () => window.open(`https://api.whatsapp.com/send?text=${title}%20${url}`);
         document.getElementById('share-x').onclick = () => window.open(`https://twitter.com/intent/tweet?url=${url}&text=${title}`);
+        
         const copyBtn = document.getElementById('copy-link');
         copyBtn.onclick = () => {
             navigator.clipboard.writeText(postData.link).then(() => {
@@ -205,11 +197,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }).catch(err => console.error('Error al copiar el enlace:', err));
         };
     }
-
+    
     function checkLiveStatus() {
-        const liveEstaActivo = true;
+        const liveEstaActivo = true; // Simulación: cambia a false para probar
         const liveIconDesktop = document.getElementById('nav-live-desktop');
         const liveIconMobile = document.getElementById('nav-live-mobile');
+        
+        // Se asegura de que los elementos existan antes de manipularlos
         if (liveIconDesktop) {
             liveIconDesktop.classList.toggle('is-live', liveEstaActivo);
         }
@@ -219,11 +213,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+
     // =========================================================================
-    // 5. MANEJADORES DE EVENTOS (EVENT LISTENERS)
+    // 6. MANEJADORES DE EVENTOS (EVENT LISTENERS)
     // =========================================================================
     
-    // Se asegura de que los listeners solo se añadan si los botones existen.
     if (themeSwitcherDesktop) themeSwitcherDesktop.addEventListener('click', toggleTheme);
     if (themeSwitcherMobile) themeSwitcherMobile.addEventListener('click', toggleTheme);
     
@@ -247,7 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (mobileMoreBtn) {
         mobileMoreBtn.addEventListener('click', e => {
-            e.stopPropagation();
+            e.stopPropagation(); // Evita que el clic se propague y cierre el menú inmediatamente.
             if (mobileMoreMenu) mobileMoreMenu.classList.toggle('is-open');
         });
     }
@@ -258,9 +252,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+
     // =========================================================================
-    // 6. INICIALIZACIÓN
+    // 7. INICIALIZACIÓN
     // =========================================================================
+    
     function init() {
         applyTheme(localStorage.getItem('theme') || 'light');
         loadPosts();
