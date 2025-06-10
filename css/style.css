@@ -2,9 +2,6 @@
    1. CONFIGURACIÓN GLOBAL Y VARIABLES
    ========================================================================== */
 
-/* :root nos permite declarar "variables CSS". Es una práctica excelente para
-   mantener la consistencia en colores, fuentes, etc., y facilita enormemente
-   la implementación de temas, como el modo oscuro. */
 :root {
     /* Paleta de Colores */
     --color-background: #f0f2f5;
@@ -19,16 +16,14 @@
     --border-radius: 12px;
 
     /* Panel de Control de Tipografía */
-    --font-size-base: 1rem;       /* 16px por defecto */
-    --font-size-h2: 2rem;         /* Títulos principales */
-    --font-size-h3: 1.5rem;       /* Títulos secundarios */
-    --font-size-h4: 1.1rem;       /* Títulos de tarjetas */
-    --font-size-small: 0.9rem;    /* Texto pequeño */
-    --font-size-category: 0.8rem; /* Categorías de tarjetas */
+    --font-size-base: 1rem;
+    --font-size-h2: 2rem;
+    --font-size-h3: 1.5rem;
+    --font-size-h4: 1.1rem;
+    --font-size-small: 0.9rem;
+    --font-size-category: 0.8rem;
 }
 
-/* Cuando el <body> tiene la clase 'dark-theme', estas variables sobreescriben
-   las declaradas en :root, cambiando la paleta de colores de todo el sitio. */
 body.dark-theme {
     --color-background: #18191a;
     --color-surface: #242526;
@@ -38,8 +33,6 @@ body.dark-theme {
     --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* Reseteo de estilos universal. Elimina los márgenes y paddings por defecto.
-   'box-sizing: border-box;' simplifica enormemente los cálculos de tamaño. */
 *, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
@@ -51,7 +44,6 @@ body.dark-theme {
    2. LAYOUT Y UTILIDADES
    ========================================================================== */
 
-/* Estilos base para la etiqueta <body>, que afecta a toda la página. */
 body {
     font-family: 'Inter', sans-serif;
     background-color: var(--color-background);
@@ -60,25 +52,26 @@ body {
     transition: background-color 0.3s, color 0.3s;
 }
 
-/* Contenedor principal que limita el ancho del contenido y lo centra. */
 .container {
     max-width: 1400px;
     margin: 0 auto;
     padding: 0 2rem;
 }
 
-/* Estilos base para elementos comunes */
 a {
     color: var(--color-text-secondary);
     text-decoration: none;
     transition: color 0.2s ease;
 }
+
 a:hover, a.active {
     color: var(--color-accent);
 }
+
 ul {
     list-style: none;
 }
+
 button {
     background: none;
     border: none;
@@ -265,39 +258,25 @@ body.dark-theme .bento-box:hover {
 .bento-box--4x1 { grid-column: span 4; }
 .bento-box--1x3 { grid-row: span 3; }
 .bento-box--1x4 { grid-row: span 4; }
-
-/* --- INICIO DE LAS CORRECCIONES --- */
-
-/* CORRECCIÓN 1: Centrado de imágenes de fondo. */
 .bento-box[style*="background-image"] {
     background-size: cover;
-    background-position: center; /* Esta línea centra la imagen. */
+    background-position: center;
 }
-
-/* El pseudo-elemento ::after para el gradiente oscuro. */
 .bento-box[style*="background-image"]::after {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    top: 0; left: 0; right: 0; bottom: 0;
     background: linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0.1));
     opacity: 1;
     transition: opacity 0.3s;
     pointer-events: none;
 }
-
-/* CORRECCIÓN 2: Forzar el color del texto a blanco en tarjetas con imagen.
-   Este bloque es más específico que una regla universal `*` y soluciona el problema. */
 .bento-box[style*="background-image"] h3,
 .bento-box[style*="background-image"] h4,
 .bento-box[style*="background-image"] p,
 .bento-box[style*="background-image"] .card-category {
     color: white;
 }
-/* --- FIN DE LAS CORRECCIONES --- */
-
 .card-content {
     flex-grow: 1;
     display: flex;
@@ -349,46 +328,41 @@ body.dark-theme .bento-box:hover {
 }
 .side-panel__content {
     padding: 2.5rem;
-    padding-top: 4.5rem; /* Aumentamos el padding para que no choque con el botón de cerrar */
+    padding-top: 4.5rem;
     overflow-y: auto;
     flex-grow: 1;
 }
-/* Estilos para el título del post dentro del panel */
 .side-panel__content h2 {
     font-size: var(--font-size-h2);
     color: var(--color-text-primary);
     margin-bottom: 0.5rem;
     line-height: 1.2;
 }
-/* Estilos para los metadatos (autor, fecha) */
 .side-panel__content .post-meta {
     font-size: var(--font-size-small);
     color: var(--color-text-secondary);
     margin-bottom: 2rem;
     display: block;
 }
-/* Estilos para el cuerpo del post */
 .side-panel__content .post-body p {
-    margin-bottom: 1.5rem; /* Espacio entre párrafos */
+    margin-bottom: 1.5rem;
     font-size: var(--font-size-base);
     color: var(--color-text-primary);
 }
-/* Estilos para que las imágenes, audios y videos se vean bien y consistentes */
 .side-panel__content .post-body img,
 .side-panel__content .post-body audio,
 .side-panel__content .post-body iframe {
     max-width: 100%;
     height: auto;
-    border-radius: var(--border-radius); /* ¡Esquinas redondeadas consistentes! */
+    border-radius: var(--border-radius);
     margin-top: 1rem;
     margin-bottom: 1.5rem;
 }
-/* Contenedor específico para iframes responsivos dentro del panel */
 .side-panel__content .iframe-container {
     position: relative;
     overflow: hidden;
     width: 100%;
-    padding-top: 56.25%; /* Proporción 16:9 para videos de YouTube/Vimeo */
+    padding-top: 56.25%;
     border-radius: var(--border-radius);
     margin-bottom: 1.5rem;
 }
@@ -400,9 +374,6 @@ body.dark-theme .bento-box:hover {
     height: 100%;
     border: 0;
 }
-/* === FIN: NUEVOS ESTILOS PARA EL CONTENIDO DEL PANEL === */
-
-/* Sección de compartir */
 .side-panel__share {
     padding: 1rem 2.5rem;
     border-top: 1px solid var(--color-border);
@@ -446,29 +417,29 @@ body.dark-theme .bento-box:hover {
     visibility: visible;
 }
 
+
 /* --- 3.4 WIDGETS Y CONTENIDO EMBEBIDO --- */
-.iframe-container { 
-    position: relative; 
-    overflow: hidden; 
-    width: 100%; 
-    padding-top: 66.66%; 
+.iframe-container {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    padding-top: 66.66%;
 }
-.iframe-container iframe { 
-    position: absolute; 
-    top: 0; 
-    left: 0; 
-    width: 100%; 
-    height: 100%; 
-    border: none; 
+.iframe-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
 }
+
 
 /* --- 3.5 SECCIONES DE CATEGORÍAS DESTACADAS --- */
-
 .category-feature {
     padding-top: 2rem;
     padding-bottom: 1rem;
 }
-
 .category-title {
     font-size: 1.8rem;
     font-weight: 700;
@@ -477,21 +448,50 @@ body.dark-theme .bento-box:hover {
     border-bottom: 2px solid var(--color-border);
     padding-bottom: 0.75rem;
 }
-
 .category-title i {
     color: var(--color-accent);
     margin-right: 0.75rem;
 }
-
-/* Usamos CSS Grid también aquí, pero con 3 columnas */
 .category-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 1.25rem;
 }
 
+
 /* ==========================================================================
    4. REGLAS RESPONSIVAS (@MEDIA QUERIES)
    ========================================================================== */
-@media (max-width: 1024px) { .bento-grid { grid-template-columns: repeat(2, 1fr); } .welcome-module, .collaborators-module, .bento-box--3x1, .bento-box--4x1, .bento-box--3x2, .bento-box--4x2 { grid-column: span 2; } }
-@media (max-width: 768px) { .container { padding: 0 1rem; } .desktop-nav { display: none; } .mobile-nav { display: flex !important; } body { padding-bottom: 80px; } .side-panel { max-width: 90%; } .bento-grid { grid-template-columns: 1fr; } .bento-box, .welcome-module, .featured-post, .zenodo-module, .post-card, .collaborators-module, .bento-box--1x2, .bento-box--2x1, .bento-box--2x2, .bento-box--3x1, .bento-box--4x1, .bento-box--1x3, .bento-box--1x4, .bento-box--2x3, .bento-box--3x2, .bento-box--4x2 { grid-column: span 1 !important; grid-row: span 1 !important; aspect-ratio: 4 / 3; min-height: unset; } .bento-box[style*="background-image"] { justify-content: flex-end; } }
+@media (max-width: 1024px) {
+    .bento-grid { grid-template-columns: repeat(2, 1fr); }
+    .category-grid { grid-template-columns: repeat(2, 1fr); }
+    .welcome-module, .collaborators-module, .bento-box--3x1, .bento-box--4x1, .bento-box--3x2, .bento-box--4x2 {
+        grid-column: span 2;
+    }
+}
+@media (max-width: 768px) {
+    .container { padding: 0 1rem; }
+    .desktop-nav { display: none; }
+    .mobile-nav { display: flex !important; }
+    body { padding-bottom: 80px; }
+    .category-grid { grid-template-columns: 1fr; }
+    .bento-grid { grid-template-columns: 1fr; }
+    .bento-box,
+    .bento-box--1x2, .bento-box--2x1, .bento-box--2x2, .bento-box--3x1, .bento-box--4x1, 
+    .bento-box--1x3, .bento-box--1x4, .bento-box--2x3, .bento-box--3x2, .bento-box--4x2 {
+        grid-column: span 1 !important;
+        grid-row: span 1 !important;
+        aspect-ratio: 4 / 3;
+        min-height: unset;
+    }
+    .bento-box[style*="background-image"] { justify-content: flex-end; }
+
+    /* MEJORA PARA PANEL LATERAL EN MÓVIL */
+    .side-panel {
+        width: 100%;
+        max-width: 100%;
+        height: 100%;
+        border-radius: 0; /* Sin bordes redondeados en pantalla completa */
+        transition: transform 0.3s ease-in-out; 
+    }
+}
