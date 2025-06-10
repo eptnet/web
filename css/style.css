@@ -251,13 +251,16 @@ body.dark-theme .bento-box:hover {
 .post-card {
     min-height: 250px;
 }
-.bento-box--1x2 { grid-row: span 2; }
-.bento-box--2x1 { grid-column: span 2; }
+.bento-box--1x2 { grid-column: span 1; grid-row: span 2; }
+.bento-box--2x1 { grid-column: span 2; grid-row: span 1; }
 .bento-box--2x2 { grid-column: span 2; grid-row: span 2; }
-.bento-box--3x1 { grid-column: span 3; }
-.bento-box--4x1 { grid-column: span 4; }
-.bento-box--1x3 { grid-row: span 3; }
-.bento-box--1x4 { grid-row: span 4; }
+.bento-box--2x3 { grid-column: span 2; grid-row: span 3; }
+.bento-box--3x1 { grid-column: span 3; grid-row: span 1; }
+.bento-box--3x4 { grid-column: span 3; grid-row: span 4; }
+.bento-box--4x1 { grid-column: span 4; grid-row: span 1; }
+.bento-box--1x3 { grid-column: span 1; grid-row: span 3; }
+.bento-box--1x4 { grid-column: span 1; grid-row: span 4; }
+.bento-box--2x4 { grid-column: span 2; grid-row: span 4; }
 .bento-box[style*="background-image"] {
     background-size: cover;
     background-position: center;
@@ -314,8 +317,6 @@ body.dark-theme .bento-box:hover {
     flex-direction: column;
     border-top-left-radius: var(--border-radius);
     border-bottom-left-radius: var(--border-radius);
-    overflow: hidden; /* <-- CORRECCIÓN AÑADIDA: Asegura que el contenido (video) se recorte a los bordes redondeados. */
-
 }
 .side-panel.is-open {
     transform: translateX(0);
@@ -334,8 +335,6 @@ body.dark-theme .bento-box:hover {
     overflow-y: auto;
     flex-grow: 1;
 }
-
-/* Estilos para el contenido del panel */
 .side-panel__content h2 {
     font-size: var(--font-size-h2);
     color: var(--color-text-primary);
@@ -366,7 +365,7 @@ body.dark-theme .bento-box:hover {
     position: relative;
     overflow: hidden;
     width: 100%;
-    padding-top: 56.25%; /* Proporción 16:9 para videos */
+    padding-top: 56.25%;
     border-radius: var(--border-radius);
     margin-bottom: 1.5rem;
 }
@@ -427,7 +426,7 @@ body.dark-theme .bento-box:hover {
     position: relative;
     overflow: hidden;
     width: 100%;
-    padding-top: 66.66%; /* Proporción 4:3 */
+    padding-top: 66.66%;
 }
 .iframe-container iframe {
     position: absolute;
@@ -495,25 +494,7 @@ body.dark-theme .bento-box:hover {
         width: 100%;
         max-width: 100%;
         height: 100%;
-        border-radius: 0;
+        border-radius: 0; /* Sin bordes redondeados en pantalla completa */
         transition: transform 0.3s ease-in-out; 
     }
 }
-
-/* === INICIO: MEJORA PARA CONTENIDO INMERSIVO EN MÓVIL === */
-    
-    /* Esta nueva clase "rompe" el padding del panel para que el elemento ocupe todo el ancho. */
-    .full-bleed-mobile {
-        /* Los márgenes negativos son iguales al padding del contenedor .side-panel__content (2.5rem). */
-        /* Como en móvil el padding es 1rem, usamos -1rem */
-        margin-left: 0rem;
-        margin-right: -1rem;
-        border-radius: 0; /* Asegura que no queden esquinas redondeadas raras. */
-    }
-
-    /* Ajustamos el padding del panel en móvil para que coincida. */
-    .side-panel__content {
-        padding-left: 1rem;
-        padding-right: 1rem;
-    }
-     /* === FIN: MEJORA === */

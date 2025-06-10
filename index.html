@@ -6,14 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Epistecnologia, plaforma de divulgción</title>
     <meta name="description" content="Epistecnología: Un ecosistema para la divulgación de conocimiento académico. Explora artículos, podcasts e investigaciones en un diseño modular y elegante.">
+    
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/video-player.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    
-    <script src="js/app.js" defer></script>
 </head>
 
 <body>
@@ -23,18 +25,15 @@
             <a href="#" class="logo">
                 <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Epistecnologia Logo">
             </a>
-            
             <nav class="main-menu bento-box-nav">
                 <a href="#" class="nav-icon active" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
                 <a href="#" class="nav-icon" aria-label="Explorar"><i class="fa-solid fa-search"></i></a>
                 <a href="#" class="nav-icon" aria-label="Publicaciones"><i class="fa-solid fa-book-open"></i></a>
                 <a href="#" class="nav-icon" aria-label="Eventos"><i class="fa-solid fa-calendar-days"></i></a>
             </nav>
-
             <div class="live-channels bento-box-nav">
-                 <a href="#" class="nav-icon" id="nav-live-desktop" aria-label="En Vivo"><i class="fa-solid fa-satellite-dish"></i></a>
+                <a href="#" class="nav-icon" id="nav-live-desktop" aria-label="En Vivo"><i class="fa-solid fa-satellite-dish"></i></a>
             </div>
-
             <div class="user-actions bento-box-nav">
                 <a href="#" class="nav-icon" aria-label="Login / ORCID"><i class="fa-solid fa-user"></i></a>
                 <button class="theme-switcher nav-icon" id="theme-switcher-desktop" aria-label="Cambiar tema"><i class="fa-solid fa-moon"></i></button>
@@ -46,13 +45,11 @@
         <h2 class="category-title">
             <i class="fa-solid fa-palette"></i> Cultura
         </h2>
-        <div class="category-grid" id="cultura-grid">
-            </div>
+        <div class="category-grid" id="cultura-grid"></div>
     </section>
 
     <main class="container">
-        <div class="bento-grid" id="bento-grid">
-            </div>
+        <div class="bento-grid" id="bento-grid"></div>
     </main>
     
     <aside class="side-panel" id="side-panel">
@@ -85,20 +82,15 @@
 
     <div class="mobile-more-menu" id="mobile-more-menu">
         <div class="mobile-more-menu__content">
-            <a href="#" class="mobile-more-menu__item">
-                <i class="fa-solid fa-user"></i>
-                <span>Login / ORCID</span>
-            </a>
-            <button class="mobile-more-menu__item" id="theme-switcher-mobile">
-                <i class="fa-solid fa-moon"></i>
-                <span>Cambiar Tema</span>
-            </button>
-            <button class="mobile-more-menu__item" id="mobile-more-menu-close">
-                <i class="fa-solid fa-xmark"></i>
-                <span>Cerrar</span>
-            </button>
+            <a href="#" class="mobile-more-menu__item"><i class="fa-solid fa-user"></i><span>Login / ORCID</span></a>
+            <button class="mobile-more-menu__item" id="theme-switcher-mobile"><i class="fa-solid fa-moon"></i><span>Cambiar Tema</span></button>
+            <button class="mobile-more-menu__item" id="mobile-more-menu-close"><i class="fa-solid fa-xmark"></i><span>Cerrar</span></button>
         </div>
     </div>
+    
+    <script src="https://vjs.zencdn.net/8.10.0/video.min.js" defer></script>
+    <script src="js/app.js" defer></script>
+    <script src="js/video-player.js" defer></script>
 
 </body>
 </html>
