@@ -20,9 +20,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Lista de videos verticales
         const storiesPlaylist = [
-            { src: 'https://videos.pexels.com/video-files/8541944/8541944-sd_640_1280_25fps.mp4', type: 'video/mp4' },
-            { src: 'https://videos.pexels.com/video-files/4434242/4434242-sd_540_960_30fps.mp4', type: 'video/mp4' },
-            { src: 'https://videos.pexels.com/video-files/8065339/8065339-sd_540_960_25fps.mp4', type: 'video/mp4' }
+            { src: 'https://streamable.com/l/vfr7yq/mp4.mp4', type: 'video/mp4' },
+            { src: 'https://streamable.com/l/kwttnc/mp4.mp4', type: 'video/mp4' },
+            { src: 'https://streamable.com/l/l4f257/mp4.mp4', type: 'video/mp4' }
         ];
         let currentVideoIndex = 0;
 
