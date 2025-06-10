@@ -497,3 +497,21 @@ body.dark-theme .bento-box:hover {
         transition: transform 0.3s ease-in-out; 
     }
 }
+
+/* === INICIO: MEJORA PARA CONTENIDO INMERSIVO EN MÓVIL === */
+    
+    /* Esta nueva clase "rompe" el padding del panel para que el elemento ocupe todo el ancho. */
+    .full-bleed-mobile {
+        /* Los márgenes negativos son iguales al padding del contenedor .side-panel__content (2.5rem). */
+        /* Como en móvil el padding es 1rem, usamos -1rem */
+        margin-left: 0rem;
+        margin-right: -1rem;
+        border-radius: 0; /* Asegura que no queden esquinas redondeadas raras. */
+    }
+
+    /* Ajustamos el padding del panel en móvil para que coincida. */
+    .side-panel__content {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+     /* === FIN: MEJORA === */
