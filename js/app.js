@@ -2,13 +2,6 @@
  * =========================================================================
  * Script Principal para la funcionalidad de Epistecnologia.com
  * =========================================================================
- *
- * Este archivo se encarga de:
- * - Gestionar el tema claro/oscuro.
- * - Cargar publicaciones desde el feed RSS de Substack.
- * - Construir y mostrar el Bento Grid principal y secciones de categorías.
- * - Manejar la interactividad del panel lateral para posts dinámicos Y módulos fijos.
- * - Limpiar el contenido de los posts y gestionar los botones de compartir.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -33,17 +26,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     // 2. PLANTILLAS DE MÓDULOS ESTÁTICOS
     // =========================================================================
-    // Aquí puedes crear y editar el contenido de todos tus módulos fijos.
-    
     const welcomeModuleHTML = `<div class="bento-box welcome-module bento-box--4x1" data-id="static-welcome"><h2>Una Galería de Conocimiento Curada</h2><p>Explora la intersección entre tecnología, ciencia y cultura.</p></div>`;
     const topStaticModulesHTML = `<div class="bento-box bento-box--4x1" data-id="static-quote" style="cursor:default;"><div class="card-content" style="text-align: center;"><p style="font-size: 1.2rem; font-style: italic;">"El conocimiento es la única riqueza que no se puede robar."</p><h4 style="margin-top: 0.5rem;">- Anónimo</h4></div></div>`;
     const inFeedModuleHTML = `<div class="bento-box bento-box--2x1 bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;"><div class="card-content"><h3>¿Disfrutando el Contenido?</h3><p>Suscríbete a nuestro boletín para no perderte ninguna publicación.</p></div></div>`;
     
-    // Módulos del final. Observa los nuevos `data-*` attributes en el módulo de video.
+    // Ejemplo de módulo fijo interactivo con video embebido.
     const endStaticModulesHTML = `
         <div class="bento-box zenodo-module bento-box--2x2" data-id="static-zenodo">
             <div class="card-content">
-                
+                <svg viewBox="0 0 24 24" fill="currentColor" style="width:100px; height:auto; margin: 0 auto 1rem;"><path d="M12.246 17.34l-4.14-4.132h2.802v-2.8H5.976l4.131-4.14L7.305 3.46l-6.84 6.832 6.84 6.84 2.802-2.801zm-.492-13.88l6.839 6.84-6.84 6.839 2.802 2.802 6.84-6.84-6.84-6.84-2.801 2.803zm-1.89 7.02h5.364v2.8H9.864v-2.8z"></path></svg>
                 <h3>Conocimiento Citable</h3>
                 <p>Accede a nuestros datasets y preprints.</p>
                 <a href="#" class="btn">Visitar Repositorio</a>
@@ -60,7 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         </div>`;
 
-
     // =========================================================================
     // 3. ESTADO DE LA APLICACIÓN
     // =========================================================================
@@ -69,7 +59,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     // 4. FUNCIONES PRINCIPALES
     // =========================================================================
-
     async function loadPosts() {
         if (!bentoGrid) { console.error('Error Crítico: El contenedor .bento-grid no fue encontrado.'); return; }
         bentoGrid.innerHTML = '<div class="loading">Cargando publicaciones...</div>';
@@ -120,43 +109,45 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Abre el panel lateral. AHORA es más inteligente y maneja tanto posts
-     * de Substack como módulos fijos con contenido personalizado.
+     * Abre el panel lateral y lo puebla con el contenido correspondiente a la tarjeta clickeada.
      * @param {HTMLElement} cardElement - El elemento de la tarjeta que fue clickeado.
      */
     function openSidePanel(cardElement) {
         const dataset = cardElement.dataset;
-        let contentHTML = ''; // El HTML que se inyectará en el panel.
-        let shareableLink = window.location.href; // Un enlace por defecto para compartir.
+        let contentHTML = '';
+        let shareableLink = window.location.href;
 
-        // CASO 1: Es un módulo fijo con contenido para embeber (video, playlist, etc.).
+        // CASO 1: Módulo fijo con contenido para embeber (ej. video).
         if (dataset.panelType === 'embed' && dataset.embedSrc) {
             const title = dataset.panelTitle || 'Contenido Adicional';
+            shareableLink = dataset.embedSrc;
+            
+            // --- MODIFICACIÓN AQUÍ ---
+            // Añadimos la clase 'full-bleed-mobile' al contenedor del iframe.
             contentHTML = `
                 <h2>${title}</h2>
                 <div class="post-body">
-                    <div class="iframe-container">
+                    <div class="iframe-container full-bleed-mobile">
                         <iframe src="${dataset.embedSrc}" title="${title}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                     </div>
                 </div>
             `;
-            shareableLink = dataset.embedSrc; // El enlace a compartir es el del video.
         
-        // CASO 2: Es un post normal de Substack.
+        // CASO 2: Post normal de Substack.
         } else {
             const postData = allPostsData.find(p => p.guid === dataset.id);
             if (!postData) return;
 
-            shareableLink = postData.link; // El enlace a compartir es el del post.
+            shareableLink = postData.link;
             const postDate = new Date(postData.pubDate).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
             
-            // --- CORRECCIÓN: Posición del reproductor de audio ---
             let audioPlayerHTML = '';
             if (postData.enclosure?.link?.endsWith('.mp3')) {
-                audioPlayerHTML = `<audio controls controlsList="nodownload" src="${postData.enclosure.link}"></audio>`;
+                // --- MODIFICACIÓN AQUÍ ---
+                // Añadimos la clase 'full-bleed-mobile' al reproductor de audio.
+                audioPlayerHTML = `<audio class="full-bleed-mobile" controls controlsList="nodownload" src="${postData.enclosure.link}"></audio>`;
             }
 
-            // Construimos el HTML en el orden correcto.
             contentHTML = `
                 <h2>${postData.title}</h2>
                 <div class="post-meta">Publicado por ${postData.author} el ${postDate}</div>
@@ -165,10 +156,10 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
 
-        // El resto de la función se encarga de mostrar el contenido generado.
+        // El resto de la función se encarga de mostrar el contenido.
         sidePanelContent.innerHTML = contentHTML;
         cleanupPostContent();
-        setupShareButtons({ link: shareableLink }); // Pasamos un objeto con el enlace correcto.
+        setupShareButtons({ link: shareableLink, title: dataset.panelTitle });
         sidePanel.classList.add('is-open');
         overlay.classList.add('is-open');
         document.body.style.overflow = 'hidden';
@@ -229,25 +220,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================================
-    // 7. MANEJADORES DE EVENTOS (EVENT LISTENERS) - ACTUALIZADO
+    // 7. MANEJADORES DE EVENTOS (EVENT LISTENERS)
     // =========================================================================
     if (themeSwitcherDesktop) themeSwitcherDesktop.addEventListener('click', toggleTheme);
     if (themeSwitcherMobile) themeSwitcherMobile.addEventListener('click', toggleTheme);
     if(sidePanelClose) sidePanelClose.addEventListener('click', closeSidePanel);
     if (overlay) { overlay.addEventListener('click', () => { closeSidePanel(); if (mobileMoreMenu) mobileMoreMenu.classList.remove('is-open'); }); }
-    
-    // Este listener ahora es más simple y potente.
-    if (bentoGrid) {
-        bentoGrid.addEventListener('click', e => {
-            // Busca la tarjeta más cercana que tenga un data-id, sea estática o no.
-            const clickedCard = e.target.closest('.bento-box[data-id]');
-            // Si encuentra una, llama a la función pasándole el elemento completo.
-            if (clickedCard) {
-                openSidePanel(clickedCard);
-            }
-        });
-    }
-
+    if (bentoGrid) { bentoGrid.addEventListener('click', e => { const clickedCard = e.target.closest('.bento-box[data-id]'); if (clickedCard) { openSidePanel(clickedCard); } }); }
     if (mobileMoreBtn) { mobileMoreBtn.addEventListener('click', e => { e.stopPropagation(); if (mobileMoreMenu) mobileMoreMenu.classList.toggle('is-open'); }); }
     if (mobileMoreMenuClose) { mobileMoreMenuClose.addEventListener('click', () => { if (mobileMoreMenu) mobileMoreMenu.classList.remove('is-open'); }); }
 
