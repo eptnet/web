@@ -3,7 +3,7 @@
  * Lógica para los Reproductores de Video (Versión Dividida)
  * - Plyr.io para el video destacado.
  * - Player.js para las historias.
- * Versión Final: Añade el parámetro 'origin' a las URLs de Player.js
+ * Versión Final v2: Corrige errores de inicialización y 'postMessage'.
  * =========================================================================
  */
 document.addEventListener('DOMContentLoaded', () => {
@@ -18,9 +18,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // --- 1. REPRODUCTOR DESTACADO (PLYR.IO) ---
-        // Esta configuración es correcta y funciona.
+        // Soluciona el error 'postMessage' y los iconos duplicados.
         try {
-            new Plyr(featuredWrapper, {
+            const featuredPlayer = new Plyr(featuredWrapper, {
                 youtube: {
                     playerVars: {
                         origin: window.location.origin,
@@ -29,20 +29,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             });
+            // Asignamos la fuente desde JS para asegurar que las opciones se apliquen
+            featuredPlayer.source = {
+                type: 'video',
+                sources: [{
+                    src: '2Vq_N_wgUkk',
+                    provider: 'youtube',
+                }]
+            };
         } catch (e) {
             console.error("Error inicializando el reproductor destacado (Plyr):", e);
         }
 
         // --- 2. REPRODUCTOR DE HISTORIAS (PLAYER.JS) ---
-        // La corrección clave está en cómo construimos las URLs en la lista.
+        // Soluciona el error 'TypeError' y 'postMessage'
         try {
-            // Construimos la URL base para el origen dinámicamente.
+            // Construimos el parámetro de origen dinámicamente
             const originParam = `?enablejsapi=1&origin=${window.location.origin}`;
 
             const storiesPlaylist = [
-                { title: 'Historia 1', file: `https://youtube.com/shorts/2E0mxIYMGAM?feature=share${originParam}` },
-                { title: 'Historia 2', file: `https://youtube.com/shorts/8GvLr9-DCF0?feature=share${originParam}` },
-                { title: 'Historia 3', file: `https://youtube.com/shorts/S2etubPd-ko?feature=share${originParam}` },
+                { title: 'Historia 1', file: `https://youtube.com/shorts/2E0mxIYMGAM{originParam}` },
+                { title: 'Historia 2', file: `https://youtube.com/shorts/8GvLr9-DCF0{originParam}` },
+                { title: 'Historia 3', file: `https://youtube.com/shorts/S2etubPd-ko{originParam}` },
             ];
 
             const storiesPlayer = new Playerjs({

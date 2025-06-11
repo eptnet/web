@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const welcomeModuleHTML = `<div class="bento-box welcome-module bento-box--4x1" data-id="static-welcome"><h2>Una Galería de Conocimiento Curada</h2><p>Explora la intersección entre tecnología, ciencia y cultura.</p></div>`;
     const topStaticModulesHTML = `<div class="bento-box bento-box--4x1" data-id="static-quote" style="cursor:default;"><div class="card-content" style="text-align: center;"><p style="font-size: 1.2rem; font-style: italic;">"El conocimiento es la única riqueza que no se puede robar."</p><h4 style="margin-top: 0.5rem;">- Anónimo</h4></div></div>`;
     
-    // Plantilla para Player.js (Historias)
+    /// --- Plantillas con contenedores vacíos para ser controlados 100% por JS ---
     const videoStoriesModuleHTML = `
         <div class="bento-box bento-box--1x3 video-stories-module" data-id="static-video-stories">
             <div id="video-stories-player"></div>
@@ -39,10 +39,10 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         </div>
     `;
-    // Plantilla para Plyr.io (Destacado)
+    // El reproductor destacado ya no tiene atributos data-plyr-*
     const videoFeaturedModuleHTML = `
         <div class="bento-box bento-box--2x2 video-featured-module" data-id="static-video-featured">
-             <div id="video-featured-player" data-plyr-provider="youtube" data-plyr-embed-id="2Vq_N_wgUkk"></div>
+             <div id="video-featured-player"></div>
         </div>
     `;
     
