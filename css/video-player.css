@@ -1,10 +1,8 @@
 /* ==========================================================================
-   ESTILOS PARA MÓDULOS DE VIDEO (Ambas Librerías)
+   ESTILOS PARA MÓDULOS DE VIDEO (PLYR.IO)
    ========================================================================== */
 
-.video-stories-module,
 .video-featured-module {
-    position: relative;
     padding: 0;
     overflow: hidden;
     background-color: var(--color-border);
@@ -12,14 +10,6 @@
     height: 100%;
 }
 
-/* --- Estilos para Player.js (Historias) --- */
-#video-stories-player iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
-}
-
-/* --- Estilos para Plyr.io (Destacado) --- */
 .plyr {
     width: 100%;
     height: 100%;
@@ -29,37 +19,6 @@
     display: none;
 }
 
-/* Oculta el botón de play grande de Plyr cuando es un video de YouTube */
 .plyr--youtube .plyr__control--overlaid {
     display: none;
-}
-
-/* --- Estilos para Botones Personalizados (Común a ambos) --- */
-.story-controls {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.story-button {
-    background-color: rgba(0, 0, 0, 0.4);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    font-size: 1.2rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.2s ease;
-}
-
-.story-button:hover {
-    background-color: rgba(0, 0, 0, 0.7);
 }
