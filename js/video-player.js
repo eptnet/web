@@ -1,76 +1,82 @@
 /**
  * =========================================================================
- * Lógica para Reproductores Plyr.io
- * VERSIÓN DE DEPURACIÓN: Añade logs a la consola.
+ * Lógica para los Reproductores de Video (usando Plyr.io)
+ * Versión Definitiva: Corrige el error 'postMessage' y la lógica del carrusel.
  * =========================================================================
  */
 document.addEventListener('DOMContentLoaded', () => {
 
     function initializeVideoPlayers() {
-        console.log('[PLYR DEBUG] Buscando elementos de reproductores...');
         const storyPlayerElements = document.querySelectorAll('.story-player');
+        const featuredWrapper = document.getElementById('video-featured-player');
         
-        if (storyPlayerElements.length === 0) {
-            setTimeout(initializeVideoPlayers, 200); 
+        if (storyPlayerElements.length === 0 || !featuredWrapper) {
+            setTimeout(initializeVideoPlayers, 200);
             return;
         }
-        console.log(`[PLYR DEBUG] Encontrados ${storyPlayerElements.length} reproductores de historias.`);
 
-        // --- REPRODUCTOR DESTACADO ---
-        try {
-            const featuredPlayer = new Plyr('#video-featured-player');
-            console.log('[PLYR DEBUG] Reproductor destacado inicializado con éxito.');
-        } catch (e) {
-            console.error('[PLYR DEBUG] Falló la inicialización del reproductor destacado:', e);
-        }
-
-        // --- REPRODUCTOR DE HISTORIAS ---
-        const nextButton = document.getElementById('story-next-btn');
-        const volumeButton = document.getElementById('story-volume-btn');
-
-        const storiesPlayerOptions = {
-            controls: [],
-            autoplay: false,
-            muted: true,
-            clickToPlay: false,
-            tooltips: { controls: false, seek: false },
-             youtube: {
+        // --- Configuración Esencial para YouTube ---
+        const plyrYoutubeOptions = {
+            youtube: {
                 playerVars: {
-                    playsinline: 1,
+                    origin: window.location.origin, // Permite la comunicación con tu dominio
                     controls: 0,
+                    showinfo: 0,
                     rel: 0,
-                    showinfo: 0
+                    iv_load_policy: 3,
+                    modestbranding: 1,
+                    playsinline: 1 // Clave para reproducción fluida
                 }
             }
         };
 
-        console.log('[PLYR DEBUG] Inicializando todas las instancias de historias con Plyr.setup...');
-        const storyPlayerInstances = Plyr.setup('.story-player', storiesPlayerOptions);
+        // --- 1. REPRODUCTOR DESTACADO ---
+        // Lo inicializamos con JS para asegurarnos de que recibe las opciones correctas.
+        const featuredPlayer = new Plyr(featuredWrapper, plyrYoutubeOptions);
 
-        if (!storyPlayerInstances || storyPlayerInstances.length === 0) {
-            console.error('[PLYR DEBUG] Plyr.setup no devolvió instancias para las historias.');
-            return;
-        }
-        console.log(`[PLYR DEBUG] Se crearon ${storyPlayerInstances.length} instancias de Plyr para las historias.`);
 
+        // --- 2. REPRODUCTOR DE HISTORIAS ---
+        const nextButton = document.getElementById('story-next-btn');
+        const volumeButton = document.getElementById('story-volume-btn');
+        let storyPlayerInstances = [];
         let currentVideoIndex = 0;
 
-        function showStory(index) {
-            console.log(`[PLYR DEBUG] showStory llamado para el índice: ${index}`);
-            storyPlayerInstances.forEach((player, i) => {
-                const playerContainer = player.elements.container?.parentNode; 
-                
-                if (!playerContainer) {
-                    console.error(`[PLYR DEBUG] No se encontró el contenedor para el reproductor de historias #${i}`);
-                    return;
-                }
+        const storiesPlayerOptions = {
+            controls: [],
+            autoplay: true, // Dejamos que Plyr intente el autoplay inicial
+            muted: true,
+            clickToPlay: false,
+            ...plyrYoutubeOptions // Unimos las opciones de YouTube
+        };
 
+        // Bucle para inicializar cada reproductor de historia individualmente
+        storyPlayerElements.forEach((wrapper, index) => {
+            const player = new Plyr(wrapper, storiesPlayerOptions);
+            
+            player.on('ready', event => {
+                // Cuando un reproductor está listo, nos aseguramos de que se reproduzca si es el activo
+                if (index === currentVideoIndex && document.hasFocus()) {
+                    player.play();
+                }
+            });
+
+            player.on('ended', () => {
+                // Cuando un video termina, avanza al siguiente
+                nextStory();
+            });
+
+            storyPlayerInstances.push(player);
+        });
+
+        if (storyPlayerInstances.length === 0) return;
+
+        function showStory(index) {
+            storyPlayerInstances.forEach((player, i) => {
+                const playerContainer = player.elements.container.parentNode;
+                
                 if (i === index) {
                     playerContainer.classList.add('is-active');
-                    console.log(`[PLYR DEBUG] Mostrando historia #${i}. Intentando play.`);
-                    if (document.hasFocus()) {
-                       player.play();
-                    }
+                    player.play();
                 } else {
                     playerContainer.classList.remove('is-active');
                     player.stop();
@@ -79,22 +85,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         function nextStory() {
-            console.log('[PLYR DEBUG] nextStory llamado.');
             currentVideoIndex = (currentVideoIndex + 1) % storyPlayerInstances.length;
             showStory(currentVideoIndex);
         }
 
-        storyPlayerInstances.forEach((player, index) => {
-            player.on('ready', () => console.log(`[PLYR DEBUG] Reproductor de historia #${index} está listo (ready).`));
-            player.on('playing', () => console.log(`[PLYR DEBUG] Reproductor de historia #${index} está reproduciendo (playing).`));
-            player.on('pause', () => console.log(`[PLYR DEBUG] Reproductor de historia #${index} pausado.`));
-            player.on('ended', () => {
-                console.log(`[PLYR DEBUG] Reproductor de historia #${index} ha terminado (ended).`);
-                nextStory();
-            });
-        });
-
-        if (nextButton) nextButton.addEventListener('click', nextStory);
+        if (nextButton) {
+            nextButton.addEventListener('click', nextStory);
+        }
         
         if (volumeButton) {
             volumeButton.addEventListener('click', () => {
@@ -106,9 +103,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         
-        console.log('[PLYR DEBUG] Mostrando la primera historia...');
+        // Muestra la primera historia (el reproductor ya tiene la fuente desde el HTML)
         showStory(currentVideoIndex);
     }
 
+    // Inicia el proceso
     initializeVideoPlayers();
 });
