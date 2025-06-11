@@ -7,7 +7,7 @@
     <title>Epistecnologia, plaforma de divulgción</title>
     <meta name="description" content="Epistecnología: Un ecosistema para la divulgación de conocimiento académico. Explora artículos, podcasts e investigaciones en un diseño modular y elegante.">
     
-    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
 
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/video-player.css">
@@ -19,7 +19,6 @@
 </head>
 
 <body>
-
     <header class="desktop-nav">
         <div class="container">
             <a href="#" class="logo">
@@ -40,18 +39,15 @@
             </div>
         </div>
     </header>
-    
     <section class="category-feature container">
         <h2 class="category-title">
             <i class="fa-solid fa-palette"></i> Cultura
         </h2>
         <div class="category-grid" id="cultura-grid"></div>
     </section>
-
     <main class="container">
         <div class="bento-grid" id="bento-grid"></div>
     </main>
-    
     <aside class="side-panel" id="side-panel">
         <button class="side-panel__close" id="side-panel-close" aria-label="Cerrar panel"><i class="fa-solid fa-xmark"></i></button>
         <div class="side-panel__content" id="side-panel-content"></div>
@@ -63,15 +59,12 @@
             <button class="share-btn" id="copy-link" aria-label="Copiar enlace"><i class="fa-solid fa-link"></i></button>
         </div>
     </aside>
-    
     <div class="overlay" id="overlay"></div>
-
     <footer class="site-footer">
         <div class="container">
             <p>© 2025 Epistecnologia. Todos los derechos reservados. | Enlace a ORCID</p>
         </div>
     </footer>
-
     <nav class="mobile-nav">
         <a href="#" class="mobile-nav__link active" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
         <a href="#" class="mobile-nav__link" aria-label="Explorar"><i class="fa-solid fa-search"></i></a>
@@ -79,7 +72,6 @@
         <a href="#" class="mobile-nav__link" aria-label="Publicaciones"><i class="fa-solid fa-book-open"></i></a>
         <button class="mobile-nav__link" id="mobile-more-btn" aria-label="Más opciones"><i class="fa-solid fa-bars"></i></button>
     </nav>
-
     <div class="mobile-more-menu" id="mobile-more-menu">
         <div class="mobile-more-menu__content">
             <a href="#" class="mobile-more-menu__item"><i class="fa-solid fa-user"></i><span>Login / ORCID</span></a>
@@ -88,7 +80,7 @@
         </div>
     </div>
     
-    <script src="https://vjs.zencdn.net/8.10.0/video.min.js" defer></script>
+    <script src="https://cdn.plyr.io/3.7.8/plyr.js" defer></script>
     <script src="js/app.js" defer></script>
     <script src="js/video-player.js" defer></script>
 
