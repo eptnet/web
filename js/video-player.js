@@ -1,25 +1,21 @@
 /**
  * =========================================================================
  * Lógica para Reproductores de Video
- * - Inicializa el reproductor destacado.
- * - Maneja el lanzamiento del carrusel de historias en el panel lateral.
- * Versión Final Definitiva: Añade playsinline a las opciones de YouTube.
+ * Versión Final: Utiliza URLs de embed completas y corrige el error 'postMessage'.
  * =========================================================================
  */
 document.addEventListener('DOMContentLoaded', () => {
 
-    // Contenedor principal de la página para encontrar los módulos
     const mainContainer = document.querySelector('main.container');
-    // Elementos del panel lateral que ya existen en el HTML
     const sidePanel = document.getElementById('side-panel');
     const sidePanelContent = document.getElementById('side-panel-content');
     const sidePanelCloseBtn = document.getElementById('side-panel-close');
     const overlay = document.getElementById('overlay');
 
-    let storiesPlayerInstance = null; // Guardaremos la instancia del reproductor aquí
+    let storiesPlayerInstance = null; 
 
     function initializeFeaturedPlayer() {
-        const featuredWrapper = document.getElementById('video-featured-player');
+        const featuredWrapper = document.querySelector('[data-plyr-embed-id*="youtube.com/embed"]');
         if (!featuredWrapper) {
             setTimeout(initializeFeaturedPlayer, 100);
             return;
@@ -37,14 +33,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function launchStoriesPlayer() {
-        // 1. Limpiar y preparar el panel lateral
         sidePanelContent.innerHTML = '';
         sidePanelContent.classList.add('side-panel__content--video');
         sidePanel.classList.add('is-open');
         overlay.classList.add('is-open');
         document.body.style.overflow = 'hidden';
 
-        // 2. Crear la estructura del reproductor y los controles
         sidePanelContent.innerHTML = `
             <div id="panel-player-container">
                 <div id="panel-player"></div>
@@ -55,33 +49,29 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
 
-        // 3. Definir la lista de reproducción
         const storiesPlaylist = [
-            { provider: 'youtube', embedId: 'MlJYzpXrlq8' },
-            { provider: 'youtube', embedId: '2E0mxIYMGAM' },
-            { provider: 'youtube', embedId: 'ldeQjvd6x5U' }
+            { provider: 'youtube', embedId: 'https://www.youtube.com/embed/MlJYzpXrlq8' },
+            { provider: 'youtube', embedId: 'https://www.youtube.com/embed/2E0mxIYMGAM' },
+            { provider: 'youtube', embedId: 'https://www.youtube.com/embed/ldeQjvd6x5U' }
         ];
         let currentVideoIndex = 0;
 
-        // 4. Inicializar Plyr con la configuración COMPLETA para YouTube
         storiesPlayerInstance = new Plyr('#panel-player', {
             controls: [],
             autoplay: true,
             muted: true,
             clickToPlay: false,
-            // --- LA CORRECCIÓN CLAVE ESTÁ AQUÍ ---
             youtube: {
                 playerVars: {
                     origin: window.location.origin,
-                    playsinline: 1,      // Permite la reproducción automática en todos los entornos
-                    iv_load_policy: 3,   // Sin anotaciones
-                    modestbranding: 1,   // Logo de YouTube mínimo
-                    rel: 0               // Sin videos relacionados
+                    playsinline: 1,
+                    iv_load_policy: 3,
+                    modestbranding: 1,
+                    rel: 0
                 }
             }
         });
         
-        // 5. Lógica para manejar la lista de reproducción
         const playVideo = (index) => {
             if (storiesPlayerInstance) {
                 const video = storiesPlaylist[index];
@@ -100,7 +90,6 @@ document.addEventListener('DOMContentLoaded', () => {
         storiesPlayerInstance.on('ready', event => event.detail.plyr.play());
         storiesPlayerInstance.on('ended', nextStory);
 
-        // 6. Conectar los botones a las funciones
         document.getElementById('panel-next-btn').addEventListener('click', nextStory);
         document.getElementById('panel-volume-btn').addEventListener('click', () => {
             if (storiesPlayerInstance) {
@@ -111,7 +100,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Iniciar con el primer video
         playVideo(currentVideoIndex);
     }
 
@@ -124,7 +112,6 @@ document.addEventListener('DOMContentLoaded', () => {
         sidePanelContent.classList.remove('side-panel__content--video');
     }
 
-    // --- INICIALIZACIÓN Y MANEJADORES DE EVENTOS ---
     initializeFeaturedPlayer();
 
     mainContainer.addEventListener('click', (event) => {
