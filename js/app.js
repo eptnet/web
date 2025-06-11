@@ -29,20 +29,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const welcomeModuleHTML = `<div class="bento-box welcome-module bento-box--4x1" data-id="static-welcome"><h2>Una Galería de Conocimiento Curada</h2><p>Explora la intersección entre tecnología, ciencia y cultura.</p></div>`;
     const topStaticModulesHTML = `<div class="bento-box bento-box--4x1" data-id="static-quote" style="cursor:default;"><div class="card-content" style="text-align: center;"><p style="font-size: 1.2rem; font-style: italic;">"El conocimiento es la única riqueza que no se puede robar."</p><h4 style="margin-top: 0.5rem;">- Anónimo</h4></div></div>`;
     
-    // Plantillas para Plyr.io
+    // Plantilla para Player.js (Historias)
     const videoStoriesModuleHTML = `
         <div class="bento-box bento-box--1x3 video-stories-module" data-id="static-video-stories">
-            <div class="story-player-wrapper">
-                <div class="story-player is-active" data-plyr-provider="youtube" data-plyr-embed-id="MlJYzpXrlq8"></div>
-                <div class="story-player" data-plyr-provider="youtube" data-plyr-embed-id="2E0mxIYMGAM"></div>
-                <div class="story-player" data-plyr-provider="youtube" data-plyr-embed-id="ldeQjvd6x5U"></div>
-            </div>
+            <div id="video-stories-player"></div>
             <div class="story-controls">
                 <button class="story-button" id="story-volume-btn" aria-label="Activar sonido"><i class="fa-solid fa-volume-xmark"></i></button>
                 <button class="story-button" id="story-next-btn" aria-label="Siguiente historia"><i class="fa-solid fa-angle-right"></i></button>
             </div>
         </div>
     `;
+    // Plantilla para Plyr.io (Destacado)
     const videoFeaturedModuleHTML = `
         <div class="bento-box bento-box--2x2 video-featured-module" data-id="static-video-featured">
              <div id="video-featured-player" data-plyr-provider="youtube" data-plyr-embed-id="2Vq_N_wgUkk"></div>
