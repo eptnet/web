@@ -3,6 +3,7 @@
  * Lógica para los Reproductores de Video (Versión Dividida)
  * - Plyr.io para el video destacado.
  * - Player.js para las historias.
+ * Versión Final: Añade el parámetro 'origin' a las URLs de Player.js
  * =========================================================================
  */
 document.addEventListener('DOMContentLoaded', () => {
@@ -17,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // --- 1. REPRODUCTOR DESTACADO (PLYR.IO) ---
-        // Soluciona el error 'postMessage' y los iconos duplicados.
+        // Esta configuración es correcta y funciona.
         try {
             new Plyr(featuredWrapper, {
                 youtube: {
@@ -33,12 +34,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // --- 2. REPRODUCTOR DE HISTORIAS (PLAYER.JS) ---
-        // Usa la librería especializada en playlists de múltiples fuentes.
+        // La corrección clave está en cómo construimos las URLs en la lista.
         try {
+            // Construimos la URL base para el origen dinámicamente.
+            const originParam = `?enablejsapi=1&origin=${window.location.origin}`;
+
             const storiesPlaylist = [
-                { title: 'Historia 1', file: 'https://youtube.com/shorts/2E0mxIYMGAM' },
-                { title: 'Historia 2', file: 'https://youtube.com/shorts/8GvLr9-DCF0' },
-                { title: 'Historia 3', file: 'https://youtube.com/shorts/S2etubPd-ko' },
+                { title: 'Historia 1', file: `https://youtube.com/shorts/2E0mxIYMGAM?feature=share${originParam}` },
+                { title: 'Historia 2', file: `https://youtube.com/shorts/8GvLr9-DCF0?feature=share${originParam}` },
+                { title: 'Historia 3', file: `https://youtube.com/shorts/S2etubPd-ko?feature=share${originParam}` },
             ];
 
             const storiesPlayer = new Playerjs({
