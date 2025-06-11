@@ -1,84 +1,103 @@
 /**
  * =========================================================================
  * Lógica para los Reproductores de Video (usando Plyr.io)
- * Versión Final: Lógica de carrusel declarativa.
+ * Versión Final v6: Corrige error de 'postMessage' con inicialización JS.
  * =========================================================================
  */
 document.addEventListener('DOMContentLoaded', () => {
 
     function initializeVideoPlayers() {
-        const storyPlayerElements = document.querySelectorAll('.story-player');
+        // Contenedores
+        const storiesPlayerWrappers = document.querySelectorAll('.story-player');
+        const featuredWrapper = document.getElementById('video-featured-player');
         
-        if (storyPlayerElements.length === 0) {
-            // Reintentar si app.js aún no ha añadido los divs al DOM
-            setTimeout(initializeVideoPlayers, 200); 
+        if (storiesPlayerWrappers.length === 0 || !featuredWrapper) {
+            setTimeout(initializeVideoPlayers, 200);
             return;
         }
 
+        // --- Opciones de Configuración para YouTube en Plyr ---
+        // Esto soluciona el error 'postMessage' y los botones duplicados
+        const plyrYoutubeOptions = {
+            youtube: {
+                playerVars: {
+                    origin: window.location.origin, // Permite la comunicación segura con tu dominio
+                    controls: 0,
+                    iv_load_policy: 3,
+                    modestbranding: 1,
+                    showinfo: 0,
+                    rel: 0
+                }
+            }
+        };
+
         // --- 1. REPRODUCTOR DESTACADO ---
-        // Se autoinicializa desde el HTML. Solo lo instanciamos para poder controlarlo si es necesario.
-        const featuredPlayer = new Plyr('#video-featured-player');
+        const featuredPlayer = new Plyr(featuredWrapper, plyrYoutubeOptions);
 
         // --- 2. REPRODUCTOR DE HISTORIAS ---
         const nextButton = document.getElementById('story-next-btn');
         const volumeButton = document.getElementById('story-volume-btn');
+        
+        const storiesPlaylist = [
+            { provider: 'youtube', embedId: 'MlJYzpXrlq8' },
+            { provider: 'youtube', embedId: '2E0mxIYMGAM' },
+            { provider: 'youtube', embedId: 'ldeQjvd6x5U' }
+        ];
+        let currentVideoIndex = 0;
+        let storyPlayerInstances = [];
 
-        // Plyr.setup inicializa todos los reproductores que coinciden con el selector
-        // y devuelve un array de las instancias de Plyr que ha creado.
-        const storyPlayerInstances = Plyr.setup('.story-player', {
+        // Opciones específicas para las historias
+        const storiesPlayerOptions = {
             controls: [],
-            autoplay: false, // El autoplay lo manejamos nosotros para tener más control
+            autoplay: true,
             muted: true,
             clickToPlay: false,
-            tooltips: { controls: false, seek: false },
-             youtube: {
-                playerVars: {
-                    playsinline: 1,
-                    controls: 0,
-                    rel: 0,
-                    showinfo: 0
-                }
-            }
+            ...plyrYoutubeOptions // Unimos las opciones de YouTube
+        };
+
+        // Inicializamos una instancia de Plyr para cada div de historia
+        storiesPlayerWrappers.forEach((wrapper, index) => {
+            const player = new Plyr(wrapper, storiesPlayerOptions);
+            storyPlayerInstances.push(player);
         });
 
-        if (storyPlayerInstances.length === 0) return;
-
-        let currentVideoIndex = 0;
-
-        // Función que muestra una historia y oculta las demás
-        function showStory(index) {
+        function playStory(index) {
             storyPlayerInstances.forEach((player, i) => {
-                // el.elements.container es el div del reproductor, .parentNode es el div con la clase .story-player
-                const playerContainer = player.elements.container.parentNode; 
-                
+                const playerContainer = player.elements.container.parentNode;
                 if (i === index) {
                     playerContainer.classList.add('is-active');
-                    // Solo reproducir si la ventana está activa para evitar errores
-                    if (document.hasFocus()) {
-                       player.play();
-                    }
+                    // Asignamos la fuente solo al que vamos a reproducir
+                    player.source = {
+                        type: 'video',
+                        sources: [{
+                            src: storiesPlaylist[i].embedId,
+                            provider: storiesPlaylist[i].provider,
+                        }]
+                    };
                 } else {
                     playerContainer.classList.remove('is-active');
-                    player.stop(); // Detenemos los videos que no están visibles
+                    player.stop();
                 }
             });
         }
         
-        // Función para avanzar a la siguiente historia
         function nextStory() {
-            currentVideoIndex = (currentVideoIndex + 1) % storyPlayerInstances.length; // Avanza y vuelve al inicio
-            showStory(currentVideoIndex);
+            currentVideoIndex = (currentVideoIndex + 1) % storyPlayerInstances.length;
+            playStory(currentVideoIndex);
         }
 
-        // Asignamos el evento 'ended' a CADA reproductor de la lista
-        storyPlayerInstances.forEach(player => {
+        storyPlayerInstances.forEach((player, index) => {
+            // Cuando el video está listo, nos aseguramos de que se reproduzca
+            player.on('ready', event => {
+                if (index === currentVideoIndex && document.hasFocus()) {
+                    event.detail.plyr.play();
+                }
+            });
+            // Cuando un video termina, llamamos a nextStory
             player.on('ended', nextStory);
         });
 
-        // Asignamos los eventos a nuestros botones personalizados
-        if (nextButton) {
-            nextButton.addEventListener('click', nextStory);
-        }
+        if (nextButton) nextButton.addEventListener('click', nextStory);
         
         if (volumeButton) {
             volumeButton.addEventListener('click', () => {
@@ -90,10 +109,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         
-        // Inicia el carrusel mostrando la primera historia
-        showStory(currentVideoIndex);
+        // Carga y muestra la primera historia
+        playStory(currentVideoIndex);
     }
 
-    // Inicia todo el proceso
+    // Inicia el proceso
     initializeVideoPlayers();
 });
