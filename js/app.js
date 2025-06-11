@@ -31,11 +31,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Plantillas para Plyr.io
     const videoStoriesModuleHTML = `
-         <div class="bento-box bento-box--1x3 video-stories-module" data-id="static-video-stories">
+        <div class="bento-box bento-box--1x3 video-stories-module" data-id="static-video-stories">
             <div class="story-player-wrapper">
-                <div class="story-player is-active"></div>
-                <div class="story-player"></div>
-                <div class="story-player"></div>
+                <div class="story-player is-active" data-plyr-provider="youtube" data-plyr-embed-id="MlJYzpXrlq8"></div>
+                <div class="story-player" data-plyr-provider="youtube" data-plyr-embed-id="2E0mxIYMGAM"></div>
+                <div class="story-player" data-plyr-provider="youtube" data-plyr-embed-id="ldeQjvd6x5U"></div>
             </div>
             <div class="story-controls">
                 <button class="story-button" id="story-volume-btn" aria-label="Activar sonido"><i class="fa-solid fa-volume-xmark"></i></button>
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
     const videoFeaturedModuleHTML = `
         <div class="bento-box bento-box--2x2 video-featured-module" data-id="static-video-featured">
-             <div id="video-featured-player"></div>
+             <div id="video-featured-player" data-plyr-provider="youtube" data-plyr-embed-id="2Vq_N_wgUkk"></div>
         </div>
     `;
     
