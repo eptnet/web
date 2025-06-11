@@ -19,6 +19,55 @@
     display: none;
 }
 
+/* Ocultar el botón de play grande de Plyr cuando el proveedor es YouTube */
 .plyr--youtube .plyr__control--overlaid {
     display: none;
+}
+
+
+/* --- NUEVO: Estilos para el reproductor inmersivo en el panel lateral --- */
+
+/* Forzamos que el panel de contenido sea negro y sin padding cuando es para video */
+.side-panel__content.side-panel__content--video {
+    background-color: #000;
+    padding: 0;
+    overflow: hidden;
+}
+
+/* El contenedor del reproductor dentro del panel */
+#panel-player-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+/* Los controles personalizados que irán sobre el video en el panel */
+#panel-player-container .story-controls {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Estilos para los botones (reutilizamos la clase .story-button) */
+.story-button {
+    background-color: rgba(0, 0, 0, 0.4);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+}
+
+.story-button:hover {
+    background-color: rgba(0, 0, 0, 0.7);
 }
