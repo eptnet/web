@@ -48,9 +48,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         try {
             // --- INICIO DE LA MODIFICACIÓN ---
-            // Cambiamos a la API de 'search' para poder filtrar por el texto '#Short'.
+            // Cambiamos a la API de 'search' para poder filtrar por el texto '#Shorts'.
             // q=%23Shorts busca el hashtag, y order=date nos da los más recientes primero.
-            const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&maxResults=15&q=%23Short&type=video&order=date&key=${YOUTUBE_API_KEY}`;
+            const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&maxResults=15&q=%23Shorts&type=video&order=date&key=${YOUTUBE_API_KEY}`;
             // --- FIN DE LA MODIFICACIÓN ---
 
             const response = await fetch(apiUrl);
@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     videoId: videoId,
                     playerVars: {
                         'autoplay': 0, 
-                        'controls': 0, 'mute': 1, 'rel': 0,
+                        'controls': 0, 'mute': 0, 'rel': 0,
                         'iv_load_policy': 3, 'modestbranding': 1, 'playsinline': 1
                     },
                     events: {
