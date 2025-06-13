@@ -322,13 +322,31 @@ body.dark-theme .bento-box:hover {
     transform: translateX(0);
 }
 .side-panel__close {
-    position: absolute;
+    position: fixed; /* Fijo en la pantalla, no en el panel */
     top: 1rem;
     right: 1.5rem;
-    color: var(--color-text-primary);
-    z-index: 10;
-    font-size: 1.5rem;
+    z-index: 1003; /* Por encima de todo lo demás */
+    color: white; /* Siempre visible en el fondo negro del video */
+    background-color: rgba(30, 30, 30, 0.6);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    font-size: 1.4rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, background-color 0.2s ease;
 }
+
+.side-panel__close:hover {
+    background-color: rgba(0, 0, 0, 0.8);
+    transform: scale(1.1);
+}
+
 .side-panel__content {
     padding: 2.5rem;
     padding-top: 4.5rem;

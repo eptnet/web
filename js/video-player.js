@@ -1,7 +1,7 @@
 /**
  * =========================================================================
  * Lógica para el Reproductor de Historias Inmersivo con Swiper.js y YouTube API
- * VERSIÓN FINAL (Filtrando solo por #Shorts)
+ * VERSIÓN FINAL 2.0 (Búsqueda de Shorts mejorada)
  * =========================================================================
  */
 document.addEventListener('DOMContentLoaded', () => {
@@ -47,10 +47,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.style.overflow = 'hidden';
         
         try {
-            // --- INICIO DE LA MODIFICACIÓN ---
-            // Cambiamos a la API de 'search' para poder filtrar por el texto '#Shorts'.
-            // q=%23Shorts busca el hashtag, y order=date nos da los más recientes primero.
-            const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&maxResults=15&q=%23Shorts&type=video&order=date&key=${YOUTUBE_API_KEY}`;
+            // --- INICIO DE LA MODIFICACIÓN: Búsqueda Mejorada ---
+            // Buscamos videos con "#Shorts" O "#Short" Y que duren menos de 4 minutos.
+            // El símbolo | funciona como un "OR" en la búsqueda de YouTube.
+            // El parámetro videoDuration=short es un filtro adicional muy eficaz.
+            const searchQuery = encodeURIComponent('"#Shorts" | "#Short"');
+            const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&maxResults=15&q=${searchQuery}&type=video&order=date&videoDuration=short&key=${YOUTUBE_API_KEY}`;
             // --- FIN DE LA MODIFICACIÓN ---
 
             const response = await fetch(apiUrl);
@@ -62,15 +64,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             
             if (!data.items || data.items.length === 0) {
-                 throw new Error('No se encontraron videos con la etiqueta #Shorts.');
+                 throw new Error('No se encontraron videos que cumplan con el criterio de Shorts.');
             }
             
-            // --- INICIO DE LA MODIFICACIÓN ---
-            // La estructura de la respuesta de la API de 'search' es diferente. El ID está en 'item.id.videoId'.
             const videoIds = data.items.map(item => item.id.videoId);
-            // --- FIN DE LA MODIFICACIÓN ---
             
             buildSwiper(videoIds);
+
+            // --- INICIO DE MODIFICACIÓN: API de Historial ---
+            // Justo después de que el try...catch termine y antes de que cierre la función
+            // empujamos un estado al historial.
+            history.pushState({ epistecnologia_shorts_panel: 'open' }, 'Historias');
+            // --- FIN DE MODIFICACIÓN ---
 
         } catch (error) {
             console.error('Error al lanzar el reproductor de historias:', error);
@@ -78,6 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Reemplaza esta función en video-player.js
     function buildSwiper(videoIds) {
         const slidesHTML = videoIds.map(id => `
             <div class="swiper-slide">
@@ -85,17 +91,24 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `).join('');
 
+        // --- INICIO DE LA MODIFICACIÓN: Preloader ---
+        // Añadimos un contenedor para el preloader y ocultamos el swiper inicialmente.
+        // Puedes cambiar la URL del GIF por uno que te guste.
         sidePanelContent.innerHTML = `
-            <div class="swiper swiper-container-vertical">
+            <div id="shorts-preloader" style="display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;">
+                <img src="https://i.imgur.com/dWSya2H.gif" alt="Cargando historias..." style="width: 50px; height: 50px;" />
+            </div>
+            <div class="swiper swiper-container-vertical" style="display: none;">
                 <div class="swiper-wrapper">${slidesHTML}</div>
                 <div class="swiper-button-next"></div>
                 <div class="swiper-button-prev"></div>
             </div>
         `;
+        // --- FIN DE LA MODIFICACIÓN ---
 
         swiperInstance = new Swiper('.swiper-container-vertical', {
             direction: 'vertical',
-            loop: videoIds.length > 1, // El bucle solo tiene sentido si hay más de un video
+            loop: videoIds.length > 1,
             navigation: {
                 nextEl: '.swiper-button-next',
                 prevEl: '.swiper-button-prev',
@@ -125,25 +138,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function createYouTubePlayers(currentSwiper) {
-        currentSwiper.slides.forEach((slide, index) => {
-            const playerElement = slide.querySelector('.player-wrapper');
-            const videoId = playerElement.id.split('-')[1];
+    currentSwiper.slides.forEach((slide, index) => {
+        const playerElement = slide.querySelector('.player-wrapper');
+        const videoId = playerElement.id.split('-')[1];
 
-            if (playerElement && !players[videoId]) { 
-                players[videoId] = new YT.Player(playerElement.id, {
-                    videoId: videoId,
-                    playerVars: {
-                        'autoplay': 0, 
-                        'controls': 0, 'mute': 0, 'rel': 0,
-                        'iv_load_policy': 3, 'modestbranding': 1, 'playsinline': 1
+        if (playerElement && !players[videoId]) {
+            players[videoId] = new YT.Player(playerElement.id, {
+                videoId: videoId,
+                playerVars: {
+                    'autoplay': 0, 'controls': 0, 'mute': 0, // Iniciar con audio
+                    'rel': 0, 'iv_load_policy': 3, 'modestbranding': 1, 'playsinline': 1
+                },
+                events: {
+                    'onReady': (event) => {
+                        // --- INICIO DE LA MODIFICACIÓN: Ocultar Preloader ---
+                        // Si este es el primer video, al estar listo, ocultamos el preloader y mostramos el reproductor.
+                        if (index === currentSwiper.realIndex) {
+                            const preloader = document.getElementById('shorts-preloader');
+                            const swiperContainer = document.querySelector('.swiper-container-vertical');
+                            if (preloader) preloader.style.display = 'none';
+                            if (swiperContainer) swiperContainer.style.display = 'block';
+                            
+                            event.target.playVideo();
+                        }
+                        // --- FIN DE LA MODIFICACIÓN ---
                     },
-                    events: {
-                        'onReady': (event) => {
-                             // Comprobamos el slide activo usando el índice REAL de Swiper.
-                            if (index === currentSwiper.realIndex) {
-                                event.target.playVideo();
-                            }
-                        },
                         'onStateChange': (event) => {
                             if (event.data === YT.PlayerState.ENDED) {
                                 currentSwiper.slideNext();
@@ -153,14 +172,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         });
-         // Aseguramos que el primer video se reproduzca si la API tardó en cargar
         const firstPlayer = players[currentSwiper.realIndex];
         if (firstPlayer && typeof firstPlayer.playVideo === 'function') {
             firstPlayer.playVideo();
         }
     }
 
-    function destroyStoriesPlayer() {
+        function destroyStoriesPlayer() {
         if (swiperInstance) {
             swiperInstance.destroy(true, true);
             swiperInstance = null;
@@ -173,11 +191,25 @@ document.addEventListener('DOMContentLoaded', () => {
         players = {};
         sidePanelContent.innerHTML = '';
         sidePanelContent.classList.remove('side-panel__content--video');
+        
+        // --- NUEVO: Cerramos el panel sin manipular el historial directamente ---
+        sidePanel.classList.remove('is-open');
+        overlay.classList.remove('is-open');
+        document.body.style.overflow = '';
     }
 
-    document.addEventListener('launch-stories', launchStoriesPlayer);
-    sidePanelCloseBtn.addEventListener('click', destroyStoriesPlayer);
-    overlay.addEventListener('click', destroyStoriesPlayer);
-    
-    loadYouTubeAPI();
+        document.addEventListener('launch-stories', launchStoriesPlayer);
+        sidePanelCloseBtn.addEventListener('click', destroyStoriesPlayer);
+        overlay.addEventListener('click', destroyStoriesPlayer);
+        
+        loadYouTubeAPI();
+
+        window.addEventListener('popstate', (event) => {
+        // Si el usuario presiona "atrás" y el panel está abierto, lo cerramos.
+        if (sidePanel.classList.contains('is-open')) {
+            // El event.state será null porque ya hemos retrocedido.
+            // La simple presencia de la clase 'is-open' es suficiente para saber que debemos cerrar.
+            destroyStoriesPlayer();
+        }
+    });
 });
