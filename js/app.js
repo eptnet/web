@@ -1,7 +1,7 @@
 /**
  * =========================================================================
  * Script Principal para la funcionalidad de Epistecnologia.com
- * Versión 2.0 - Refactorizado para mayor legibilidad y mantenibilidad
+ * Versión 2.2 - Refactorizado, Completo y con Bug de Tema Corregido
  * =========================================================================
  */
 document.addEventListener('DOMContentLoaded', () => {
@@ -23,10 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     // 2. CONSTANTES Y PLANTILLAS HTML
     // =========================================================================
-    const apiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua&count=13';
+    const apiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed';
     const audioPostBackground = 'https://i.ibb.co/vvPbhLpV/Leonardo-Phoenix-10-A-modern-and-minimalist-design-for-a-scien-2.jpg';
-
-    // --- Plantillas para Módulos Estáticos ---
 
     const welcomeModuleHTML = `
         <div class="bento-box welcome-module bento-box--4x1" data-id="static-welcome" style="cursor: default;">
@@ -62,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>`;
     
     const inFeedModuleHTML = `
-        <div class="bento-box bento-box--1x1 bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;">
+        <div class="bento-box bento-box--2x1 bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;">
             <div class="card-content">
                 <h3>¿Disfrutando el Contenido?</h3>
                 <p>Suscríbete a nuestro boletín para no perderte ninguna publicación.</p>
@@ -84,16 +82,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h4>El Futuro de la Exploración Espacial</h4>
             </div>
         </div>`;
-
+        
     // =========================================================================
     // 3. LÓGICA PRINCIPAL (FUNCIONES)
     // =========================================================================
     
     let allPostsData = [];
 
-    /**
-     * Carga los posts desde la API de Substack (vía rss2json)
-     */
     async function loadPosts() {
         if (!bentoGrid) {
             console.error("Error Crítico: El contenedor .bento-grid no fue encontrado.");
@@ -103,13 +98,10 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(apiUrl);
             if (!response.ok) throw new Error(`Error en la red: ${response.statusText}`);
-            
             const data = await response.json();
             if (data.status === 'ok' && data.items) {
                 allPostsData = data.items;
-                bentoGrid.innerHTML = ""; // Limpiamos el 'cargando'
-                
-                // Rellenamos la cuadrícula principal y las de categorías
+                bentoGrid.innerHTML = "";
                 displayPosts(allPostsData);
                 displayCategoryPosts("Cultura", "cultura-grid", 3);
             } else {
@@ -120,150 +112,127 @@ document.addEventListener('DOMContentLoaded', () => {
             bentoGrid.innerHTML = '<div class="error">No se pudieron cargar las publicaciones.</div>';
         }
     }
-
-    /**
-     * Construye y muestra la cuadrícula bento con una mezcla de módulos estáticos y dinámicos.
-     * @param {Array} items - El array de posts de Substack.
-     */
+    
     function displayPosts(items) {
-        // 1. Añadimos los módulos iniciales
         bentoGrid.insertAdjacentHTML("beforeend", welcomeModuleHTML);
         bentoGrid.insertAdjacentHTML("beforeend", topStaticModulesHTML);
         bentoGrid.insertAdjacentHTML("beforeend", videoStoriesCardHTML);
         
-        // 2. Recorremos los posts de Substack y los intercalamos con módulos estáticos
         items.forEach((item, index) => {
-            // Insertamos el módulo de suscripción en la 5ª posición (índice 4)
             if (index === 4) {
                 bentoGrid.insertAdjacentHTML("beforeend", inFeedModuleHTML);
             }
-
-            // AHORA INSERTAMOS EL VIDEO DESTACADO en la 6ª posición (índice 5)
             if (index === 5) {
                 bentoGrid.insertAdjacentHTML("beforeend", videoFeaturedModuleHTML);
             }
-
-            // Definimos el tipo y tamaño de la tarjeta del post
             const isAudio = item.enclosure?.link?.endsWith(".mp3");
             const thumbnail = item.thumbnail || extractFirstImageUrl(item.content);
             const cardImageStyle = thumbnail ? `style="background-image: url(${thumbnail});"` : (isAudio ? `style="background-image: url(${audioPostBackground});"` : '');
             const cardType = isAudio ? "Podcast" : "Publicación";
-            
             let cardSizeClass = "";
             if (index === 0) cardSizeClass = "bento-box--2x2";
             else if (index % 5 === 1) cardSizeClass = "bento-box--1x2";
             else if (index % 5 === 3) cardSizeClass = "bento-box--2x1";
-
-            // Creamos y añadimos el HTML de la tarjeta del post
-            if (cardSizeClass) { // Solo añade si tiene un tamaño definido para no duplicar
+            if (cardSizeClass) {
                 const postCardHTML = `
                     <div class="bento-box post-card ${cardSizeClass}" data-id="${item.guid}" ${cardImageStyle}>
-                        <div class="card-content">
-                            <span class="card-category">${cardType}</span>
-                            <h4>${item.title}</h4>
-                        </div>
+                        <div class="card-content"><span class="card-category">${cardType}</span><h4>${item.title}</h4></div>
                     </div>`;
                 bentoGrid.insertAdjacentHTML("beforeend", postCardHTML);
             }
         });
-        
-        // 3. Añadimos los módulos finales
         bentoGrid.insertAdjacentHTML("beforeend", endStaticModulesHTML);
     }
-
-    /**
-     * Decide qué contenido mostrar en el panel lateral basado en el bento clicado.
-     * @param {HTMLElement} clickedElement - El elemento .bento-box que fue clicado.
-     */
+    
     function openSidePanel(clickedElement) {
         const dataset = clickedElement.dataset;
     
-        // CASO 1: Es la tarjeta de Historias -> Llama al reproductor de video
         if (dataset.id === "static-launch-stories") {
             document.dispatchEvent(new CustomEvent('launch-stories'));
             return;
         }
     
-        // CASO 2: Es un bento que no debe abrir el panel -> No hace nada
-        if (dataset.id === "static-video-featured" || dataset.id === "static-welcome" || dataset.id === "static-quote") {
+        if (dataset.id === "static-video-featured") {
             return;
         }
     
-        // CASO 3: Es un bento con un embed simple (definido con data-panel-type)
+        let contentHTML = "";
+        let shareLink = window.location.href;
+    
         if (dataset.panelType === 'embed' && dataset.embedSrc) {
-            const embedHTML = `
-                <h2>${dataset.panelTitle || "Contenido Adicional"}</h2>
-                <div class="post-body">
-                    <div class="iframe-container">
-                        <iframe src="${dataset.embedSrc}" title="${dataset.panelTitle || "Contenido Adicional"}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                    </div>
-                </div>`;
-            sidePanelContent.innerHTML = embedHTML;
-            setupShareButtons({ link: dataset.embedSrc });
+            contentHTML = `<h2>${dataset.panelTitle || "Contenido Adicional"}</h2><div class="post-body"><div class="iframe-container"><iframe src="${dataset.embedSrc}" title="${dataset.panelTitle || "Contenido Adicional"}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div></div>`;
+            shareLink = dataset.embedSrc;
         } else {
-            // CASO 4: Es un post de Substack -> Busca el post y muestra su contenido
             const post = allPostsData.find(p => p.guid === dataset.id);
             if (post) {
+                shareLink = post.link;
                 const postDate = new Date(post.pubDate).toLocaleDateString("es-ES", { year: "numeric", month: "long", day: "numeric" });
                 const audioPlayerHTML = post.enclosure?.link?.endsWith(".mp3") ? `<audio controls controlsList="nodownload" src="${post.enclosure.link}"></audio>` : "";
-                
-                const articleHTML = `
+                contentHTML = `
                     <h2>${post.title}</h2>
                     <div class="post-meta">Publicado por ${post.author} el ${postDate}</div>
                     ${audioPlayerHTML}
                     <div class="post-body">${post.content}</div>`;
-                sidePanelContent.innerHTML = articleHTML;
+                sidePanelContent.innerHTML = contentHTML;
                 setupShareButtons({ link: post.link });
             } else {
-                // Si no se encuentra el post, no hacemos nada.
                 return;
             }
         }
     
-        // Código común para abrir el panel (si no hemos salido antes)
+        sidePanelContent.innerHTML = contentHTML;
         cleanupPostContent();
+        setupShareButtons({ link: shareLink });
         sidePanel.classList.add("is-open");
         overlay.classList.add("is-open");
         document.body.style.overflow = "hidden";
     }
 
-    /** Cierra el panel lateral y restaura el estado de la página */
     function closeSidePanel() {
         sidePanel.classList.remove("is-open");
         overlay.classList.remove("is-open");
         document.body.style.overflow = "";
     }
 
-    /** Muestra posts de una categoría específica en su propia cuadrícula */
     function displayCategoryPosts(category, gridId, maxPosts) {
         const grid = document.getElementById(gridId);
         if (!grid) return;
-
         const categoryPosts = allPostsData.filter(p => p.categories && p.categories.includes(category)).slice(0, maxPosts);
         if (categoryPosts.length === 0) return;
-
-        grid.innerHTML = ""; // Limpiamos la cuadrícula de categoría
+        grid.innerHTML = "";
         categoryPosts.forEach(post => {
             const thumbnail = post.thumbnail || extractFirstImageUrl(post.content);
             const style = thumbnail ? `style="background-image: url(${thumbnail});"` : '';
-            const postHTML = `
-                <div class="bento-box post-card" data-id="${post.guid}" ${style}>
-                    <div class="card-content">
-                        <h4>${post.title}</h4>
-                    </div>
-                </div>`;
+            const postHTML = `<div class="bento-box post-card" data-id="${post.guid}" ${style}><div class="card-content"><h4>${post.title}</h4></div></div>`;
             grid.insertAdjacentHTML("beforeend", postHTML);
         });
     }
     
-    // --- Funciones de Utilidad (sin cambios) ---
-    function applyTheme(t) { document.body.classList.toggle("dark-theme", "dark" === t); }
-    function toggleTheme() { const t = "dark" === document.body.classList.contains("dark-theme") ? "light" : "dark"; localStorage.setItem("theme", t), applyTheme(t); }
-    function extractFirstImageUrl(t) { const e = new DOMParser, o = e.parseFromString(t, "text/html"), n = o.querySelector("img"); return n ? n.src : null }
-    function cleanupPostContent() { sidePanelContent.querySelectorAll(".pencraft.icon-container")?.forEach(t => t.parentElement.remove()); }
-    function setupShareButtons(t) { const e = encodeURIComponent(t.link), o = encodeURIComponent(t.title || document.title); document.getElementById("share-fb").onclick = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${e}`), document.getElementById("share-li").onclick = () => window.open(`https://www.linkedin.com/shareArticle?mini=true&url=${e}&title=${o}`), document.getElementById("share-wa").onclick = () => window.open(`https://api.whatsapp.com/send?text=${o}%20${e}`), document.getElementById("share-x").onclick = () => window.open(`https://twitter.com/intent/tweet?url=${e}&text=${o}`); const n = document.getElementById("copy-link"); n.onclick = () => { navigator.clipboard.writeText(t.link).then(() => { n.innerHTML = '<i class="fa-solid fa-check"></i>', setTimeout(() => { n.innerHTML = '<i class="fa-solid fa-link"></i>' }, 2e3) }).catch(t => console.error("Error al copiar el enlace:", t)) } }
-    function checkLiveStatus() { const t = !0, e = document.getElementById("nav-live-desktop"), o = document.getElementById("nav-live-mobile"); e && e.classList.toggle("is-live", t), o && (o.classList.toggle("is-live", t), o.style.color = t ? "var(--color-accent)" : "") }
+    // --- CORRECCIÓN DE FUNCIONES DE TEMA ---
+    function applyTheme(theme) {
+        document.body.classList.toggle("dark-theme", theme === "dark");
+        const iconClass = theme === "dark" ? "fa-sun" : "fa-moon";
+        
+        themeSwitcherDesktop?.querySelector('i')?.classList.remove('fa-moon', 'fa-sun');
+        themeSwitcherDesktop?.querySelector('i')?.classList.add('fa-solid', iconClass);
 
+        themeSwitcherMobile?.querySelector('i')?.classList.remove('fa-moon', 'fa-sun');
+        themeSwitcherMobile?.querySelector('i')?.classList.add('fa-solid', iconClass);
+    }
+
+    function toggleTheme() {
+        const isCurrentlyDark = document.body.classList.contains("dark-theme");
+        const newTheme = isCurrentlyDark ? "light" : "dark";
+        localStorage.setItem("theme", newTheme);
+        applyTheme(newTheme);
+    }
+    // --- FIN DE CORRECCIÓN ---
+
+    function extractFirstImageUrl(t){const e=new DOMParser,o=e.parseFromString(t,"text/html"),n=o.querySelector("img");return n?n.src:null}
+    function cleanupPostContent(){sidePanelContent.querySelectorAll(".pencraft.icon-container")?.forEach(t=>t.parentElement.remove())}
+    function setupShareButtons(t){const e=encodeURIComponent(t.link),o=encodeURIComponent(t.title||document.title);document.getElementById("share-fb").onclick=()=>window.open(`https://www.facebook.com/sharer/sharer.php?u=${e}`),document.getElementById("share-li").onclick=()=>window.open(`https://www.linkedin.com/shareArticle?mini=true&url=${e}&title=${o}`),document.getElementById("share-wa").onclick=()=>window.open(`https://api.whatsapp.com/send?text=${o}%20${e}`),document.getElementById("share-x").onclick=()=>window.open(`https://twitter.com/intent/tweet?url=${e}&text=${o}`);const n=document.getElementById("copy-link");n.onclick=()=>{navigator.clipboard.writeText(t.link).then(()=>{n.innerHTML='<i class="fa-solid fa-check"></i>',setTimeout(()=>{n.innerHTML='<i class="fa-solid fa-link"></i>'},2e3)}).catch(t=>console.error("Error al copiar el enlace:",t))}}
+    function checkLiveStatus(){const t=!0,e=document.getElementById("nav-live-desktop"),o=document.getElementById("nav-live-mobile");e&&e.classList.toggle("is-live",t),o&&(o.classList.toggle("is-live",t),o.style.color=t?"var(--color-accent)":"")}
+    
     // =========================================================================
     // 4. ASIGNACIÓN DE EVENTOS (EVENT LISTENERS)
     // =========================================================================
@@ -271,29 +240,29 @@ document.addEventListener('DOMContentLoaded', () => {
     themeSwitcherMobile?.addEventListener("click", toggleTheme);
     
     sidePanelClose?.addEventListener("click", closeSidePanel);
-    overlay?.addEventListener("click", () => {
+    overlay?.addEventListener("click",()=>{
         closeSidePanel();
         mobileMoreMenu?.classList.remove("is-open");
     });
     
-    bentoGrid?.addEventListener("click", (event) => {
+    bentoGrid?.addEventListener("click",(event)=>{
         const bentoBox = event.target.closest('.bento-box[data-id]');
-        if (bentoBox) openSidePanel(bentoBox);
+        if(bentoBox) openSidePanel(bentoBox);
     });
     
-    mobileMoreBtn?.addEventListener("click", (event) => {
+    mobileMoreBtn?.addEventListener("click",(event)=>{
         event.stopPropagation();
         mobileMoreMenu?.classList.toggle("is-open");
     });
     
-    mobileMoreMenuClose?.addEventListener("click", () => {
+    mobileMoreMenuClose?.addEventListener("click",()=>{
         mobileMoreMenu?.classList.remove("is-open");
     });
     
     // =========================================================================
     // 5. INICIALIZACIÓN
     // =========================================================================
-    function init() {
+    function init(){
         applyTheme(localStorage.getItem('theme') || 'light');
         loadPosts();
         checkLiveStatus();

@@ -1,7 +1,6 @@
 /**
  * =========================================================================
- * Lógica para el Reproductor de Historias Inmersivo con Swiper.js y YouTube API
- * VERSIÓN ESTABLE 4.0
+ * Lógica del Reproductor de Historias - VERSIÓN ESTABLE 4.2 (ROBUSTA)
  * =========================================================================
  */
 document.addEventListener('DOMContentLoaded', () => {
@@ -19,10 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let isApiReady = false;
 
     function loadYouTubeAPI() {
-        if (window.YT && window.YT.Player) {
-            isApiReady = true;
-            return;
-        }
+        if (window.YT && window.YT.Player) { isApiReady = true; return; }
         const tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         const firstScriptTag = document.getElementsByTagName('script')[0];
@@ -35,7 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     async function launchStoriesPlayer() {
-        sidePanelContent.innerHTML = '<div id="shorts-preloader" style="display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;"><img src="https://i.imgur.com/dWSya2H.gif" alt="Cargando..." style="width: 50px;" /></div>';
+        // --- CORRECCIÓN: URL de GIF funcional ---
+        sidePanelContent.innerHTML = `<div id="shorts-preloader" style="display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;"><img src="https://i.ibb.co/3kC0m1f/spinner.gif" alt="Cargando..." style="width: 50px;" /></div>`;
         sidePanelContent.classList.add('side-panel__content--video');
         sidePanel.classList.add('is-open');
         overlay.classList.add('is-open');
@@ -71,6 +68,13 @@ document.addEventListener('DOMContentLoaded', () => {
             loop: videoIds.length > 1,
             navigation: { nextEl: '.swiper-button-next', prevEl: '.swiper-button-prev' },
             mousewheel: { forceToAxis: true },
+            
+            // --- CORRECCIÓN: Opciones para robustecer la detección de gestos y cambios ---
+            observer: true,
+            observeParents: true,
+            parallax:true,
+            // --- FIN DE CORRECCIÓN ---
+
             on: {
                 init: (swiper) => { if (isApiReady) createYouTubePlayers(swiper); },
                 slideChangeTransitionEnd: (swiper) => {

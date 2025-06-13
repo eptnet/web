@@ -115,3 +115,8 @@
     color: white;
     font-size: 1.5rem;
 }
+
+/* Oculta la barra de compartir cuando el panel es de video */
+.side-panel__content--video + .side-panel__share {
+    display: none;
+}
