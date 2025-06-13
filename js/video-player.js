@@ -1,7 +1,7 @@
 /**
  * =========================================================================
  * Lógica para el Reproductor de Historias Inmersivo con Swiper.js y YouTube API
- * VERSIÓN ESTABLE 4.0
+ * VERSIÓN 4.1 (CON MEJORAS DE UX RESTAURADAS)
  * =========================================================================
  */
 document.addEventListener('DOMContentLoaded', () => {
@@ -17,12 +17,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let swiperInstance = null;
     let players = {};
     let isApiReady = false;
+    let isDestroying = false;
 
     function loadYouTubeAPI() {
-        if (window.YT && window.YT.Player) {
-            isApiReady = true;
-            return;
-        }
+        if (window.YT && window.YT.Player) { isApiReady = true; return; }
         const tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         const firstScriptTag = document.getElementsByTagName('script')[0];
@@ -35,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     async function launchStoriesPlayer() {
+        isDestroying = false;
         sidePanelContent.innerHTML = '<div id="shorts-preloader" style="display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;"><img src="https://i.imgur.com/dWSya2H.gif" alt="Cargando..." style="width: 50px;" /></div>';
         sidePanelContent.classList.add('side-panel__content--video');
         sidePanel.classList.add('is-open');
@@ -50,6 +49,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!data.items || data.items.length === 0) throw new Error('No se encontraron Shorts.');
             const videoIds = data.items.map(item => item.id.videoId);
             buildSwiper(videoIds);
+
+            // --- REINTRODUCCIÓN DE LA LÓGICA DEL HISTORIAL ---
+            history.pushState({ epistecnologia_shorts_panel: 'open' }, 'Historias');
+
         } catch (error) {
             console.error('Error al lanzar el reproductor:', error);
             sidePanelContent.innerHTML = `<p style="color:white;padding:2rem;text-align:center;">${error.message}</p>`;
@@ -70,7 +73,10 @@ document.addEventListener('DOMContentLoaded', () => {
             direction: 'vertical',
             loop: videoIds.length > 1,
             navigation: { nextEl: '.swiper-button-next', prevEl: '.swiper-button-prev' },
-            mousewheel: { forceToAxis: true },
+            mousewheel: { forceToAxis: true }, // Asegura scroll de ratón
+            simulateTouch: true, // Asegura gestos táctiles
+            touchRatio: 1,
+            grabCursor: true, // Muestra el cursor de "agarrar" en escritorio
             on: {
                 init: (swiper) => { if (isApiReady) createYouTubePlayers(swiper); },
                 slideChangeTransitionEnd: (swiper) => {
@@ -120,14 +126,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function destroyStoriesPlayer() {
-        if (swiperInstance) {
-            swiperInstance.destroy(true, true);
-            swiperInstance = null;
-        }
+        if (isDestroying) return;
+        isDestroying = true;
+        
         Object.values(players).forEach(player => {
             if (player?.stopVideo) player.stopVideo();
             if (player?.destroy) player.destroy();
         });
+        
+        if (swiperInstance) {
+            swiperInstance.destroy(true, true);
+            swiperInstance = null;
+        }
+        
         players = {};
         sidePanelContent.innerHTML = '';
         sidePanelContent.classList.remove('side-panel__content--video');
@@ -136,9 +147,27 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.style.overflow = '';
     }
 
-    document.addEventListener('launch-stories', launchStoriesPlayer);
-    sidePanelCloseBtn.addEventListener('click', destroyStoriesPlayer);
-    overlay.addEventListener('click', destroyStoriesPlayer);
+    // --- REINTRODUCCIÓN DE LA LÓGICA DE CIERRE ---
+    const closePanel = () => {
+        if (sidePanel.classList.contains('is-open')) {
+            if (history.state && history.state.epistecnologia_shorts_panel) {
+                history.back(); // Esto disparará el evento 'popstate'
+            } else {
+                destroyStoriesPlayer(); // Cierre de emergencia si el estado se pierde
+            }
+        }
+    };
     
+    document.addEventListener('launch-stories', launchStoriesPlayer);
+    sidePanelCloseBtn.addEventListener('click', closePanel);
+    overlay.addEventListener('click', closePanel);
+        
     loadYouTubeAPI();
+
+    // Este listener maneja el botón 'atrás' del navegador/celular
+    window.addEventListener('popstate', (event) => {
+        if (sidePanel.classList.contains('is-open')) {
+            destroyStoriesPlayer();
+        }
+    });
 });
