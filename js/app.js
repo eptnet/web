@@ -1,11 +1,14 @@
 /**
  * =========================================================================
  * Script Principal para la funcionalidad de Epistecnologia.com
- * VERSIÓN FINAL - CON VIDEO DESTACADO RESTAURADO
+ * Versión 2.0 - Refactorizado para mayor legibilidad y mantenibilidad
  * =========================================================================
  */
 document.addEventListener('DOMContentLoaded', () => {
 
+    // =========================================================================
+    // 1. SELECCIÓN DE ELEMENTOS DEL DOM
+    // =========================================================================
     const bentoGrid = document.getElementById('bento-grid');
     const sidePanel = document.getElementById('side-panel');
     const sidePanelContent = document.getElementById('side-panel-content');
@@ -17,32 +20,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const mobileMoreMenu = document.getElementById('mobile-more-menu');
     const mobileMoreMenuClose = document.getElementById('mobile-more-menu-close');
 
-    const apiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed';
+    // =========================================================================
+    // 2. CONSTANTES Y PLANTILLAS HTML
+    // =========================================================================
+    const apiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua&count=13';
     const audioPostBackground = 'https://i.ibb.co/vvPbhLpV/Leonardo-Phoenix-10-A-modern-and-minimalist-design-for-a-scien-2.jpg';
 
-    // --- PLANTILLAS DE MÓDULOS ---
-    const welcomeModuleHTML = `<div class="bento-box welcome-module bento-box--4x1" data-id="static-welcome"><h2>Una Galería de Conocimiento Curada</h2><p>Explora la intersección entre tecnología, ciencia y cultura.</p></div>`;
+    // --- Plantillas para Módulos Estáticos ---
+
+    const welcomeModuleHTML = `
+        <div class="bento-box welcome-module bento-box--4x1" data-id="static-welcome" style="cursor: default;">
+            <h2>Una Galería de Conocimiento Curada</h2>
+            <p>Explora la intersección entre tecnología, ciencia y cultura.</p>
+        </div>`;
+
     const topStaticModulesHTML = `
         <div class="bento-box bento-box--4x1" data-id="static-quote" style="cursor:default;">
             <div class="card-content" style="text-align: center;">
                 <p style="font-size: 1.2rem; font-style: italic;">"El conocimiento es la única riqueza que no se puede robar."</p>
                 <h4 style="margin-top: 0.5rem;">- Anónimo</h4>
             </div>
-        </div>
-    `;
+        </div>`;
     
     const videoStoriesCardHTML = `
         <div class="bento-box bento-box--1x3" data-id="static-launch-stories" style="background-image: url('https://i.ibb.co/hxm0qPFx/Leonardo-Phoenix-10-A-modern-and-minimalist-cover-art-featurin-1.jpg'); cursor: pointer; background-size: cover; background-position: center;">
-            <div class="card-content" border-radius: var(--border-radius);">
+            <div class="card-content">
                 <span class="card-category" style="color: white;">Colección</span>
                 <h4 style="color: white;">Ver Historias</h4>
             </div>
-        </div>
-    `;
+        </div>`;
 
-    // --- INICIO DE LA MODIFICACIÓN: Video Destacado Restaurado ---
-    // Usamos un iframe de YouTube directo con parámetros para una apariencia minimalista
-    // y para que solo recomiende videos de tu canal (rel=0).
     const videoFeaturedModuleHTML = `
         <div class="bento-box bento-box--2x3 video-featured-module" data-id="static-video-featured">
              <iframe 
@@ -52,17 +59,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                 allowfullscreen>
              </iframe>
-        </div>
-    `;
-    // --- FIN DE LA MODIFICACIÓN ---
+        </div>`;
     
     const inFeedModuleHTML = `
-        <div class="bento-box bento-box--2x1 bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;">
-            <div class="card-content"><h3>¿Disfrutando el Contenido?</h3>
+        <div class="bento-box bento-box--1x1 bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;">
+            <div class="card-content">
+                <h3>¿Disfrutando el Contenido?</h3>
                 <p>Suscríbete a nuestro boletín para no perderte ninguna publicación.</p>
             </div>
-        </div>
-        `;
+        </div>`;
 
     const endStaticModulesHTML = `
         <div class="bento-box zenodo-module bento-box--2x2" data-id="static-zenodo">
@@ -73,86 +78,223 @@ document.addEventListener('DOMContentLoaded', () => {
                 <a href="#" class="btn">Visitar Repositorio</a>
             </div>
         </div>
-
         <div class="bento-box bento-box--2x2 bento-box--imagen" data-id="static-video" data-panel-type="embed" data-panel-title="Video Destacado" data-embed-src="https://www.youtube.com/embed/dQw4w9WgXcQ">
             <div class="card-content">
                 <span class="card-category">Ver Ahora</span>
                 <h4>El Futuro de la Exploración Espacial</h4>
             </div>
         </div>`;
-        
-    let allPostsData=[];async function loadPosts(){if(!bentoGrid){console.error("Error Crítico: El contenedor .bento-grid no fue encontrado.");return}
-    bentoGrid.innerHTML='<div class="loading">Cargando publicaciones...</div>';try{const t=await fetch(apiUrl);if(!t.ok)throw new Error(`Error en la red: ${t.statusText}`);const e=await t.json();if("ok"===e.status&&e.items){allPostsData=e.items,bentoGrid.innerHTML="";const t=document.querySelectorAll(".category-grid");t.forEach(t=>t.innerHTML=""),displayPosts(allPostsData),displayCategoryPosts("Cultura","cultura-grid",3)}else throw new Error("La respuesta de la API no fue exitosa.")}catch(t){console.error("Falló la carga de publicaciones:",t),bentoGrid.innerHTML='<div class="error">No se pudieron cargar las publicaciones.</div>'}}
-    function displayPosts(t){bentoGrid.insertAdjacentHTML("beforeend",welcomeModuleHTML),bentoGrid.insertAdjacentHTML("beforeend",topStaticModulesHTML),bentoGrid.insertAdjacentHTML("beforeend",videoStoriesCardHTML),bentoGrid.insertAdjacentHTML("beforeend",videoFeaturedModuleHTML),t.forEach((t,e)=>{4===e&&bentoGrid.insertAdjacentHTML("beforeend",inFeedModuleHTML);const o=t.enclosure?.link?.endsWith(".mp3");let n=t.thumbnail||extractFirstImageUrl(t.content),i="",d="Artículo",a="";o?(i=`style="background-image: url(${audioPostBackground});"`,d="Podcast"):n&&(i=`style="background-image: url(${n});"`,d="Publicación"),0===e?a="bento-box--2x2":e%5==1?a="bento-box--1x2":e%5==3&&(a="bento-box--2x1"),"bento-box--1x3"===a||"bento-box--2x2"===a||bentoGrid.insertAdjacentHTML("beforeend",`<div class="bento-box post-card ${a}" data-id="${t.guid}" ${i}><div class="card-content"><span class="card-category">${d}</span><h4>${t.title}</h4></div></div>`)}),bentoGrid.insertAdjacentHTML("beforeend",endStaticModulesHTML)}
+
+    // =========================================================================
+    // 3. LÓGICA PRINCIPAL (FUNCIONES)
+    // =========================================================================
     
+    let allPostsData = [];
+
+    /**
+     * Carga los posts desde la API de Substack (vía rss2json)
+     */
+    async function loadPosts() {
+        if (!bentoGrid) {
+            console.error("Error Crítico: El contenedor .bento-grid no fue encontrado.");
+            return;
+        }
+        bentoGrid.innerHTML = '<div class="loading">Cargando publicaciones...</div>';
+        try {
+            const response = await fetch(apiUrl);
+            if (!response.ok) throw new Error(`Error en la red: ${response.statusText}`);
+            
+            const data = await response.json();
+            if (data.status === 'ok' && data.items) {
+                allPostsData = data.items;
+                bentoGrid.innerHTML = ""; // Limpiamos el 'cargando'
+                
+                // Rellenamos la cuadrícula principal y las de categorías
+                displayPosts(allPostsData);
+                displayCategoryPosts("Cultura", "cultura-grid", 3);
+            } else {
+                throw new Error("La respuesta de la API no fue exitosa.");
+            }
+        } catch (error) {
+            console.error("Falló la carga de publicaciones:", error);
+            bentoGrid.innerHTML = '<div class="error">No se pudieron cargar las publicaciones.</div>';
+        }
+    }
+
+    /**
+     * Construye y muestra la cuadrícula bento con una mezcla de módulos estáticos y dinámicos.
+     * @param {Array} items - El array de posts de Substack.
+     */
+    function displayPosts(items) {
+        // 1. Añadimos los módulos iniciales
+        bentoGrid.insertAdjacentHTML("beforeend", welcomeModuleHTML);
+        bentoGrid.insertAdjacentHTML("beforeend", topStaticModulesHTML);
+        bentoGrid.insertAdjacentHTML("beforeend", videoStoriesCardHTML);
+        
+        // 2. Recorremos los posts de Substack y los intercalamos con módulos estáticos
+        items.forEach((item, index) => {
+            // Insertamos el módulo de suscripción en la 5ª posición (índice 4)
+            if (index === 4) {
+                bentoGrid.insertAdjacentHTML("beforeend", inFeedModuleHTML);
+            }
+
+            // AHORA INSERTAMOS EL VIDEO DESTACADO en la 6ª posición (índice 5)
+            if (index === 5) {
+                bentoGrid.insertAdjacentHTML("beforeend", videoFeaturedModuleHTML);
+            }
+
+            // Definimos el tipo y tamaño de la tarjeta del post
+            const isAudio = item.enclosure?.link?.endsWith(".mp3");
+            const thumbnail = item.thumbnail || extractFirstImageUrl(item.content);
+            const cardImageStyle = thumbnail ? `style="background-image: url(${thumbnail});"` : (isAudio ? `style="background-image: url(${audioPostBackground});"` : '');
+            const cardType = isAudio ? "Podcast" : "Publicación";
+            
+            let cardSizeClass = "";
+            if (index === 0) cardSizeClass = "bento-box--2x2";
+            else if (index % 5 === 1) cardSizeClass = "bento-box--1x2";
+            else if (index % 5 === 3) cardSizeClass = "bento-box--2x1";
+
+            // Creamos y añadimos el HTML de la tarjeta del post
+            if (cardSizeClass) { // Solo añade si tiene un tamaño definido para no duplicar
+                const postCardHTML = `
+                    <div class="bento-box post-card ${cardSizeClass}" data-id="${item.guid}" ${cardImageStyle}>
+                        <div class="card-content">
+                            <span class="card-category">${cardType}</span>
+                            <h4>${item.title}</h4>
+                        </div>
+                    </div>`;
+                bentoGrid.insertAdjacentHTML("beforeend", postCardHTML);
+            }
+        });
+        
+        // 3. Añadimos los módulos finales
+        bentoGrid.insertAdjacentHTML("beforeend", endStaticModulesHTML);
+    }
+
+    /**
+     * Decide qué contenido mostrar en el panel lateral basado en el bento clicado.
+     * @param {HTMLElement} clickedElement - El elemento .bento-box que fue clicado.
+     */
     function openSidePanel(clickedElement) {
         const dataset = clickedElement.dataset;
     
+        // CASO 1: Es la tarjeta de Historias -> Llama al reproductor de video
         if (dataset.id === "static-launch-stories") {
             document.dispatchEvent(new CustomEvent('launch-stories'));
             return;
         }
     
-        if (dataset.id === "static-video-featured") {
-            return; // No hace nada, el iframe ya es interactivo por sí mismo.
+        // CASO 2: Es un bento que no debe abrir el panel -> No hace nada
+        if (dataset.id === "static-video-featured" || dataset.id === "static-welcome" || dataset.id === "static-quote") {
+            return;
         }
     
-        let contentHTML = "";
-        let shareLink = window.location.href;
-    
+        // CASO 3: Es un bento con un embed simple (definido con data-panel-type)
         if (dataset.panelType === 'embed' && dataset.embedSrc) {
-            contentHTML = `<h2>${dataset.panelTitle || "Contenido Adicional"}</h2><div class="post-body"><div class="iframe-container"><iframe src="${dataset.embedSrc}" title="${dataset.panelTitle || "Contenido Adicional"}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div></div>`;
-            shareLink = dataset.embedSrc;
+            const embedHTML = `
+                <h2>${dataset.panelTitle || "Contenido Adicional"}</h2>
+                <div class="post-body">
+                    <div class="iframe-container">
+                        <iframe src="${dataset.embedSrc}" title="${dataset.panelTitle || "Contenido Adicional"}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+                </div>`;
+            sidePanelContent.innerHTML = embedHTML;
+            setupShareButtons({ link: dataset.embedSrc });
         } else {
+            // CASO 4: Es un post de Substack -> Busca el post y muestra su contenido
             const post = allPostsData.find(p => p.guid === dataset.id);
             if (post) {
-                shareLink = post.link;
                 const postDate = new Date(post.pubDate).toLocaleDateString("es-ES", { year: "numeric", month: "long", day: "numeric" });
-                let audioPlayerHTML = "";
-                if (post.enclosure?.link?.endsWith(".mp3")) {
-                    audioPlayerHTML = `<audio controls controlsList="nodownload" src="${post.enclosure.link}"></audio>`;
-                }
-                contentHTML = `
+                const audioPlayerHTML = post.enclosure?.link?.endsWith(".mp3") ? `<audio controls controlsList="nodownload" src="${post.enclosure.link}"></audio>` : "";
+                
+                const articleHTML = `
                     <h2>${post.title}</h2>
                     <div class="post-meta">Publicado por ${post.author} el ${postDate}</div>
                     ${audioPlayerHTML}
-                    <div class="post-body">${post.content}</div>
-                `;
+                    <div class="post-body">${post.content}</div>`;
+                sidePanelContent.innerHTML = articleHTML;
+                setupShareButtons({ link: post.link });
+            } else {
+                // Si no se encuentra el post, no hacemos nada.
+                return;
             }
         }
     
-        sidePanelContent.innerHTML = contentHTML;
+        // Código común para abrir el panel (si no hemos salido antes)
         cleanupPostContent();
-        setupShareButtons({ link: shareLink });
         sidePanel.classList.add("is-open");
         overlay.classList.add("is-open");
         document.body.style.overflow = "hidden";
     }
 
-    function closeSidePanel(){sidePanel.classList.remove("is-open"),overlay.classList.remove("is-open"),document.body.style.overflow=""}
-    function displayCategoryPosts(t,e,o){const n=document.getElementById(e);if(!n)return;const i=allPostsData.filter(e=>e.categories&&e.categories.includes(t)).slice(0,o);if(0===i.length)return;n.innerHTML="",i.forEach(t=>{let e=t.thumbnail||extractFirstImageUrl(t.content),o=e?`style="background-image: url(${e});"`:"";const i=`<div class="bento-box post-card" data-id="${t.guid}" ${o}><div class="card-content"><h4>${t.title}</h4></div></div>`;n.insertAdjacentHTML("beforeend",i)})}
-    function applyTheme(t){document.body.classList.toggle("dark-theme","dark"===t)}
-    function toggleTheme(){const t="dark"===document.body.classList.contains("dark-theme")?"light":"dark";localStorage.setItem("theme",t),applyTheme(t)}
-    function extractFirstImageUrl(t){const e=new DOMParser,o=e.parseFromString(t,"text/html"),n=o.querySelector("img");return n?n.src:null}
-    function cleanupPostContent(){sidePanelContent.querySelectorAll(".pencraft.icon-container")?.forEach(t=>t.parentElement.remove())}
-    function setupShareButtons(t){const e=encodeURIComponent(t.link),o=encodeURIComponent(t.title||document.title);document.getElementById("share-fb").onclick=()=>window.open(`https://www.facebook.com/sharer/sharer.php?u=${e}`),document.getElementById("share-li").onclick=()=>window.open(`https://www.linkedin.com/shareArticle?mini=true&url=${e}&title=${o}`),document.getElementById("share-wa").onclick=()=>window.open(`https://api.whatsapp.com/send?text=${o}%20${e}`),document.getElementById("share-x").onclick=()=>window.open(`https://twitter.com/intent/tweet?url=${e}&text=${o}`);const n=document.getElementById("copy-link");n.onclick=()=>{navigator.clipboard.writeText(t.link).then(()=>{n.innerHTML='<i class="fa-solid fa-check"></i>',setTimeout(()=>{n.innerHTML='<i class="fa-solid fa-link"></i>'},2e3)}).catch(t=>console.error("Error al copiar el enlace:",t))}}
-    function checkLiveStatus(){const t=!0,e=document.getElementById("nav-live-desktop"),o=document.getElementById("nav-live-mobile");e&&e.classList.toggle("is-live",t),o&&(o.classList.toggle("is-live",t),o.style.color=t?"var(--color-accent)":"")}
+    /** Cierra el panel lateral y restaura el estado de la página */
+    function closeSidePanel() {
+        sidePanel.classList.remove("is-open");
+        overlay.classList.remove("is-open");
+        document.body.style.overflow = "";
+    }
+
+    /** Muestra posts de una categoría específica en su propia cuadrícula */
+    function displayCategoryPosts(category, gridId, maxPosts) {
+        const grid = document.getElementById(gridId);
+        if (!grid) return;
+
+        const categoryPosts = allPostsData.filter(p => p.categories && p.categories.includes(category)).slice(0, maxPosts);
+        if (categoryPosts.length === 0) return;
+
+        grid.innerHTML = ""; // Limpiamos la cuadrícula de categoría
+        categoryPosts.forEach(post => {
+            const thumbnail = post.thumbnail || extractFirstImageUrl(post.content);
+            const style = thumbnail ? `style="background-image: url(${thumbnail});"` : '';
+            const postHTML = `
+                <div class="bento-box post-card" data-id="${post.guid}" ${style}>
+                    <div class="card-content">
+                        <h4>${post.title}</h4>
+                    </div>
+                </div>`;
+            grid.insertAdjacentHTML("beforeend", postHTML);
+        });
+    }
     
-    themeSwitcherDesktop&&themeSwitcherDesktop.addEventListener("click",toggleTheme);
-    themeSwitcherMobile&&themeSwitcherMobile.addEventListener("click",toggleTheme);
-    sidePanelClose&&sidePanelClose.addEventListener("click",closeSidePanel);
-    overlay&&overlay.addEventListener("click",()=>{closeSidePanel(),mobileMoreMenu&&mobileMoreMenu.classList.remove("is-open")});
+    // --- Funciones de Utilidad (sin cambios) ---
+    function applyTheme(t) { document.body.classList.toggle("dark-theme", "dark" === t); }
+    function toggleTheme() { const t = "dark" === document.body.classList.contains("dark-theme") ? "light" : "dark"; localStorage.setItem("theme", t), applyTheme(t); }
+    function extractFirstImageUrl(t) { const e = new DOMParser, o = e.parseFromString(t, "text/html"), n = o.querySelector("img"); return n ? n.src : null }
+    function cleanupPostContent() { sidePanelContent.querySelectorAll(".pencraft.icon-container")?.forEach(t => t.parentElement.remove()); }
+    function setupShareButtons(t) { const e = encodeURIComponent(t.link), o = encodeURIComponent(t.title || document.title); document.getElementById("share-fb").onclick = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${e}`), document.getElementById("share-li").onclick = () => window.open(`https://www.linkedin.com/shareArticle?mini=true&url=${e}&title=${o}`), document.getElementById("share-wa").onclick = () => window.open(`https://api.whatsapp.com/send?text=${o}%20${e}`), document.getElementById("share-x").onclick = () => window.open(`https://twitter.com/intent/tweet?url=${e}&text=${o}`); const n = document.getElementById("copy-link"); n.onclick = () => { navigator.clipboard.writeText(t.link).then(() => { n.innerHTML = '<i class="fa-solid fa-check"></i>', setTimeout(() => { n.innerHTML = '<i class="fa-solid fa-link"></i>' }, 2e3) }).catch(t => console.error("Error al copiar el enlace:", t)) } }
+    function checkLiveStatus() { const t = !0, e = document.getElementById("nav-live-desktop"), o = document.getElementById("nav-live-mobile"); e && e.classList.toggle("is-live", t), o && (o.classList.toggle("is-live", t), o.style.color = t ? "var(--color-accent)" : "") }
+
+    // =========================================================================
+    // 4. ASIGNACIÓN DE EVENTOS (EVENT LISTENERS)
+    // =========================================================================
+    themeSwitcherDesktop?.addEventListener("click", toggleTheme);
+    themeSwitcherMobile?.addEventListener("click", toggleTheme);
     
-    bentoGrid&&bentoGrid.addEventListener("click",t=>{
-        const e=t.target.closest('.bento-box[data-id]');
-        e&&openSidePanel(e)
+    sidePanelClose?.addEventListener("click", closeSidePanel);
+    overlay?.addEventListener("click", () => {
+        closeSidePanel();
+        mobileMoreMenu?.classList.remove("is-open");
     });
     
-    mobileMoreBtn&&mobileMoreBtn.addEventListener("click",t=>{t.stopPropagation(),mobileMoreMenu&&mobileMoreMenu.classList.toggle("is-open")});
-    mobileMoreMenuClose&&mobileMoreMenuClose.addEventListener("click",()=>{mobileMoreMenu&&mobileMoreMenu.classList.remove("is-open")});
+    bentoGrid?.addEventListener("click", (event) => {
+        const bentoBox = event.target.closest('.bento-box[data-id]');
+        if (bentoBox) openSidePanel(bentoBox);
+    });
     
-    function init(){
-        applyTheme(localStorage.getItem('theme')||'light');
+    mobileMoreBtn?.addEventListener("click", (event) => {
+        event.stopPropagation();
+        mobileMoreMenu?.classList.toggle("is-open");
+    });
+    
+    mobileMoreMenuClose?.addEventListener("click", () => {
+        mobileMoreMenu?.classList.remove("is-open");
+    });
+    
+    // =========================================================================
+    // 5. INICIALIZACIÓN
+    // =========================================================================
+    function init() {
+        applyTheme(localStorage.getItem('theme') || 'light');
         loadPosts();
         checkLiveStatus();
     }
