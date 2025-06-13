@@ -359,17 +359,20 @@ body.dark-theme .bento-box:hover {
     margin-bottom: 0.5rem;
     line-height: 1.2;
 }
+
 .side-panel__content .post-meta {
     font-size: var(--font-size-small);
     color: var(--color-text-secondary);
     margin-bottom: 2rem;
     display: block;
 }
+
 .side-panel__content .post-body p {
     margin-bottom: 1.5rem;
     font-size: var(--font-size-base);
     color: var(--color-text-primary);
 }
+
 .side-panel__content .post-body img,
 .side-panel__content .post-body audio,
 .side-panel__content .post-body iframe {
@@ -497,14 +500,20 @@ body.dark-theme .bento-box:hover {
     body { padding-bottom: 80px; }
     .category-grid { grid-template-columns: 1fr; }
     .bento-grid { grid-template-columns: 1fr; }
-    .bento-box,
-    .bento-box--1x2, .bento-box--2x1, .bento-box--2x2, .bento-box--3x1, .bento-box--4x1, 
-    .bento-box--1x3, .bento-box--1x4, .bento-box--2x3, .bento-box--3x2, .bento-box--4x2 {
+    .bento-box {
         grid-column: span 1 !important;
         grid-row: span 1 !important;
         aspect-ratio: 4 / 3;
         min-height: unset;
     }
+
+    /* 2. REGLA DE EXCEPCIÓN PARA EL BENTO DE HISTORIAS */
+    /* Le decimos que mantenga una forma vertical y ocupe más espacio */
+    .bento-box.bento-box--1x3 {
+        grid-row: span 2 !important; /* Haz que ocupe 2 filas de alto */
+        aspect-ratio: 3 / 4; /* Proporción vertical */
+    }
+
     .bento-box[style*="background-image"] { justify-content: flex-end; }
 
     /* MEJORA PARA PANEL LATERAL EN MÓVIL */

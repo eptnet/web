@@ -1,8 +1,7 @@
 /* ==========================================================================
-   ESTILOS PARA MÓDULOS DE VIDEO
+   ESTILOS PARA MÓDULOS DE VIDEO (v. Estable)
    ========================================================================== */
 
-/* Estilos para el video destacado en la cuadrícula */
 .video-featured-module {
     padding: 0;
     overflow: hidden;
@@ -10,17 +9,11 @@
     cursor: default !important;
     height: 100%;
 }
-.plyr--youtube .plyr__control--overlaid {
-    display: none;
-}
-
-/* NUEVO: Regla para asegurar que el iframe del video destacado llene el contenedor */
 .video-featured-module iframe {
     width: 100%;
     height: 100%;
     border: 0;
 }
-
 
 /* ==========================================================================
    ESTILOS PARA REPRODUCTOR INMERSIVO (SWIPER + YOUTUBE)
@@ -56,15 +49,69 @@
 
 .swiper-button-next,
 .swiper-button-prev {
-    color: rgba(255, 255, 255, 0.7) !important;
-    transition: opacity 0.2s ease;
-}
-.swiper-button-next:hover,
-.swiper-button-prev:hover {
-    color: white !important;
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    z-index: 10;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    background-color: rgba(30, 30, 30, 0.6);
+    background-image: none !important;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10%;
+    transition: opacity 0.4s ease, transform 0.2s ease;
+    opacity: 0;
 }
 
-.loading-spinner {
+.swiper-container-vertical.show-controls .swiper-button-next,
+.swiper-container-vertical.show-controls .swiper-button-prev {
+    opacity: 1;
+}
+
+.swiper-button-next:hover,
+.swiper-button-prev:hover {
+    transform: scale(1.1);
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+/* --- CORRECCIÓN DE POSICIÓN DE FLECHAS --- */
+.swiper-button-prev {
+    top: calc(50% - 54px);
+    left: auto; /* Anula la posición 'left' por defecto */
+    right: 1.5rem; /* La posiciona a la derecha */
+}
+.swiper-button-next {
+    top: calc(50% + 10px);
+    right: 1.5rem; /* Asegura que también esté a la derecha */
+}
+
+/* Limpiamos el contenido por defecto de Swiper */
+.swiper-button-next::after,
+.swiper-button-prev::after {
+    content: '' !important;
+}
+
+/* Y AHORA definimos nuestro propio icono con Font Awesome */
+.swiper-button-prev::before {
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    font-size: 1.2rem;
+    content: '\f077'; /* Icono de flecha hacia arriba */
+}
+
+.swiper-button-next::before {
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    font-size: 1.2rem;
+    content: '\f078'; /* Icono de flecha hacia abajo */
+}
+
+.loading-spinner, #shorts-preloader {
     color: white;
     font-size: 1.5rem;
 }
