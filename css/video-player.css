@@ -1,122 +1,134 @@
 /* ==========================================================================
-   ESTILOS PARA MÓDULOS DE VIDEO (v. Estable)
+   ESTILOS DEL REPRODUCTOR DE VIDEO - VERSIÓN FINAL PULIDA
    ========================================================================== */
 
-.video-featured-module {
-    padding: 0;
-    overflow: hidden;
-    background-color: #000;
-    cursor: default !important;
-    height: 100%;
-}
+/* --- Módulo de Video Destacado en la Cuadrícula --- */
 .video-featured-module iframe {
     width: 100%;
     height: 100%;
     border: 0;
 }
 
-/* ==========================================================================
-   ESTILOS PARA REPRODUCTOR INMERSIVO (SWIPER + YOUTUBE)
-   ========================================================================== */
-
+/* --- Reproductor Inmersivo de Shorts --- */
 .side-panel__content.side-panel__content--video {
     background-color: #000;
     padding: 0;
     overflow: hidden;
+    position: relative;
     display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
-.swiper-container-vertical {
+/* Oculta la barra de compartir que está debajo cuando el video está activo */
+.side-panel:has(.side-panel__content--video) .side-panel__share {
+    display: none;
+}
+
+#main-player-container {
     width: 100%;
-    height: 100%;
+    flex-grow: 1; 
+    min-height: 0;
 }
-
-.swiper-slide {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: #000;
-}
-
-.player-wrapper,
-.player-wrapper iframe {
+#main-player-container iframe {
     width: 100%;
     height: 100%;
     border: none;
 }
 
-.swiper-button-next,
-.swiper-button-prev {
+/* --- NUEVO: Botón de Mute/Sonido --- */
+#player-mute-btn {
     position: absolute;
-    width: 60px;
-    height: 60px;
-    z-index: 10;
+    top: 1rem;
+    right: calc(1.5rem + 44px + 10px); /* Al lado del botón de cerrar */
+    width: 44px;
+    height: 44px;
+    z-index: 1004; /* Por encima de todo */
+    color: white;
+    background-color: rgba(30, 30, 30, 0.6);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
-    background-color: rgba(30, 30, 30, 0.6);
-    background-image: none !important;
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 10%;
-    transition: opacity 0.4s ease, transform 0.2s ease;
-    opacity: 0;
+    font-size: 1.2rem;
+    transition: transform 0.2s ease;
 }
-
-.swiper-container-vertical.show-controls .swiper-button-next,
-.swiper-container-vertical.show-controls .swiper-button-prev {
-    opacity: 1 !important; 
-}
-
-.swiper-button-next:hover,
-.swiper-button-prev:hover {
+#player-mute-btn:hover {
     transform: scale(1.1);
-    background-color: rgba(0, 0, 0, 0.8);
 }
 
-/* --- CORRECCIÓN DE POSICIÓN DE FLECHAS --- */
-.swiper-button-prev {
-    top: calc(50% - 54px);
-    left: auto; /* Anula la posición 'left' por defecto */
-    right: 1.5rem; /* La posiciona a la derecha */
+/* --- Carrusel de Miniaturas Flotante --- */
+#thumbnail-carousel-container {
+    position: absolute;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 85%;
+    max-width: 360px;
+    z-index: 20;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
 }
-.swiper-button-next {
-    top: calc(50% + 10px);
-    right: 1.5rem; /* Asegura que también esté a la derecha */
-}
-
-/* Limpiamos el contenido por defecto de Swiper */
-.swiper-button-next::after,
-.swiper-button-prev::after {
-    content: '' !important;
-}
-
-/* Y AHORA definimos nuestro propio icono con Font Awesome */
-.swiper-button-prev::before {
-    font-family: "Font Awesome 6 Free";
-    font-weight: 900;
-    font-size: 1.2rem;
-    content: '\f077'; /* Icono de flecha hacia arriba */
+#thumbnail-carousel-container.is-hidden {
+    transform: translateX(-50%) translateY(150%);
 }
 
-.swiper-button-next::before {
-    font-family: "Font Awesome 6 Free";
-    font-weight: 900;
-    font-size: 1.2rem;
-    content: '\f078'; /* Icono de flecha hacia abajo */
-}
-
-.loading-spinner, #shorts-preloader {
+#carousel-toggle-btn {
+    position: absolute;
+    top: -26px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 26px;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(12px);
     color: white;
-    font-size: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    cursor: pointer;
+    z-index: 21;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1rem;
+}
+#carousel-toggle-btn:hover {
+    background-color: rgba(0, 0, 0, 0.7);
 }
 
-/* Oculta la barra de compartir cuando el panel es de video */
-.side-panel__content--video + .side-panel__share {
-    display: none;
+#thumbnail-carousel-container .thumbnail-slide {
+    aspect-ratio: 9 / 16;
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 2px solid transparent;
+}
+#thumbnail-carousel-container .thumbnail-slide img { width: 100%; height: 100%; object-fit: cover; }
+#thumbnail-carousel-container .thumbnail-slide.thumbnail-active {
+    border-color: var(--color-accent);
+    transform: scale(1.05);
+}
+
+/* --- Precargador y Mensajes --- */
+.preloader-container, .player-error-message {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    color: white;
+    font-size: 1rem;
+    padding: 2rem;
+    text-align: center;
+}
+.preloader-container img { width: 60px; 
+
 }

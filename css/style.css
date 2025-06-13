@@ -1,21 +1,17 @@
 /* ==========================================================================
-   1. CONFIGURACIÓN GLOBAL Y VARIABLES
+   STYLE.CSS - VERSIÓN CORREGIDA Y DEFINITIVA
    ========================================================================== */
 
+/* --- 1. CONFIGURACIÓN GLOBAL Y VARIABLES (Sin cambios) --- */
 :root {
-    /* Paleta de Colores */
     --color-background: #f0f2f5;
     --color-surface: #ffffff;
     --color-text-primary: #1c1e21;
     --color-text-secondary: #65676b;
     --color-accent: #b72a1e;
     --color-border: #ddd;
-    
-    /* Estilos de Sombra y Bordes */
     --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.1);
     --border-radius: 12px;
-
-    /* Panel de Control de Tipografía */
     --font-size-base: 1rem;
     --font-size-h2: 2rem;
     --font-size-h3: 1.5rem;
@@ -23,7 +19,6 @@
     --font-size-small: 0.9rem;
     --font-size-category: 0.8rem;
 }
-
 body.dark-theme {
     --color-background: #18191a;
     --color-surface: #242526;
@@ -32,72 +27,22 @@ body.dark-theme {
     --color-border: #3a3b3c;
     --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-*, *::before, *::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-
-/* ==========================================================================
-   2. LAYOUT Y UTILIDADES
-   ========================================================================== */
-
-body {
-    font-family: 'Inter', sans-serif;
-    background-color: var(--color-background);
-    color: var(--color-text-primary);
-    line-height: 1.6;
-    transition: background-color 0.3s, color 0.3s;
-}
-
-.container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 2rem;
-}
-
-a {
-    color: var(--color-text-secondary);
-    text-decoration: none;
-    transition: color 0.2s ease;
-}
-
-a:hover, a.active {
-    color: var(--color-accent);
-}
-
+/* --- 2. LAYOUT Y UTILIDADES (Sin cambios) --- */
+body { font-family: 'Inter', sans-serif; background-color: var(--color-background); color: var(--color-text-primary); line-height: 1.6; transition: background-color 0.3s, color 0.3s; }
+.container { max-width: 1400px; margin: 0 auto; padding: 0 2rem; }
+a { color: var(--color-text-secondary); text-decoration: none; transition: color 0.2s ease; }
+a:hover, a.active { color: var(--color-accent); }
 ul { list-style: none; }
+button { background: none; border: none; cursor: pointer; font-family: inherit; padding: 0; color: inherit; }
 
-button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-family: inherit;
-    padding: 0;
-    color: inherit;
-}
+/* --- 3. COMPONENTES --- */
 
-
-/* ==========================================================================
-   3. COMPONENTES
-   ========================================================================== */
-
-/* --- 3.1 NAVEGACIÓN --- */
-.desktop-nav {
-    padding: 1rem 0;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
-    background-color: rgba(240, 242, 245, 0.8);
-    transition: background-color 0.3s;
-}
-body.dark-theme .desktop-nav {
-    background-color: rgba(24, 25, 26, 0.8);
-}
+/* 3.1 NAVEGACIÓN (Sin cambios) */
+/* ... (todo el código de navegación va aquí, no lo borres de tu archivo) ... */
+.desktop-nav { padding: 1rem 0; position: sticky; top: 0; z-index: 1000; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); background-color: rgba(240, 242, 245, 0.8); transition: background-color 0.3s; }
+body.dark-theme .desktop-nav { background-color: rgba(24, 25, 26, 0.8); }
 .desktop-nav .container { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
 .desktop-nav .logo img { height: 40px; display: block; }
 .bento-box-nav { display: flex; align-items: center; gap: 0.5rem; background-color: var(--color-surface); padding: 0.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow-light); transition: background-color 0.3s; }
@@ -118,8 +63,8 @@ body.dark-theme .desktop-nav {
 .mobile-more-menu__item:hover, .mobile-more-menu__item:active { background-color: var(--color-background); }
 .mobile-more-menu__item i { width: 24px; text-align: center; font-size: 1.2rem; color: var(--color-text-secondary); }
 
-
-/* --- 3.2 BENTO GRID Y TARJETAS --- */
+/* 3.2 BENTO GRID (Sin cambios) */
+/* ... (todo el código de bento grid va aquí, no lo borres de tu archivo) ... */
 .bento-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; padding: 2rem 0; }
 .bento-box { background-color: var(--color-surface); border-radius: var(--border-radius); box-shadow: var(--shadow-light); padding: 1.5rem; transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.3s; cursor: pointer; display: flex; flex-direction: column; overflow: hidden; position: relative; }
 .bento-box:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1); }
@@ -137,39 +82,53 @@ body.dark-theme .bento-box:hover { box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3); }
 .bento-box--2x4 { grid-column: span 2; grid-row: span 4; }
 .bento-box[style*="background-image"] { background-size: cover; background-position: center; }
 .bento-box[style*="background-image"]::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0.1)); opacity: 1; transition: opacity 0.3s; pointer-events: none; }
-.bento-box[style*="background-image"] h3,
-.bento-box[style*="background-image"] h4,
-.bento-box[style*="background-image"] p,
-.bento-box[style*="background-image"] .card-category { color: white; }
+.bento-box[style*="background-image"] h3, .bento-box[style*="background-image"] h4, .bento-box[style*="background-image"] p, .bento-box[style*="background-image"] .card-category { color: white; }
 .card-content { flex-grow: 1; display: flex; flex-direction: column; position: relative; z-index: 2; justify-content: flex-end; pointer-events: none; }
 .card-content > * { pointer-events: auto; }
 .card-category { font-size: var(--font-size-category); font-weight: 500; color: var(--color-accent); margin-bottom: 0.5rem; }
+.bento-box.video-featured-module {
+    padding: 0;
+}
 
-
-/* --- 3.3 PANEL LATERAL --- */
+/* --- 3.3 PANEL LATERAL (CON LA CORRECCIÓN IMPORTANTE) --- */
 .side-panel { position: fixed; top: 0; right: 0; width: 100%; max-width: 650px; height: 100%; background-color: var(--color-surface); z-index: 1002; transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); box-shadow: -5px 0 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; border-top-left-radius: var(--border-radius); border-bottom-left-radius: var(--border-radius); }
 .side-panel.is-open { transform: translateX(0); }
 .side-panel__close { position: fixed; top: 1rem; right: 1.5rem; z-index: 1003; color: white; background-color: rgba(30, 30, 30, 0.6); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50%; width: 44px; height: 44px; font-size: 1.4rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s ease, background-color 0.2s ease; }
 .side-panel__close:hover { background-color: rgba(0, 0, 0, 0.8); transform: scale(1.1); }
 
-/* --- INICIO DE LA CORRECCIÓN DE ESTILOS DEL PANEL --- */
+/* --- INICIO DE LA CORRECCIÓN DE LAYOUT --- */
 
-/* ESTILO POR DEFECTO para el contenido de texto (con scroll y padding) */
-/* Usamos :not() para que estas reglas NO se apliquen si el panel es para video */
+/* 1. REGLA BASE PARA EL CONTENEDOR DE CONTENIDO */
+/* Esta regla se aplica SIEMPRE y le dice al contenedor que crezca. */
+.side-panel__content {
+    flex-grow: 1;
+    min-height: 0; /* Un hack de flexbox para asegurar que se comporte bien */
+    display: flex; /* Lo hacemos flex para controlar su contenido interno */
+    flex-direction: column;
+}
+
+/* 2. REGLA PARA CUANDO MUESTRA TEXTO */
+/* Solo aplica padding y scroll si NO es un video */
 .side-panel__content:not(.side-panel__content--video) {
     padding: 2.5rem;
     padding-top: 4.5rem;
     overflow-y: auto;
-    flex-grow: 1;
 }
 
-/* Y nos aseguramos de que los estilos de texto solo se apliquen en este contexto */
-.side-panel__content:not(.side-panel__content--video) h2 { font-size: var(--font-size-h2); color: var(--color-text-primary); margin-bottom: 0.5rem; line-height: 1.2; }
-.side-panel__content:not(.side-panel__content--video) .post-meta { font-size: var(--font-size-small); color: var(--color-text-secondary); margin-bottom: 2rem; display: block; }
-.side-panel__content:not(.side-panel__content--video) .post-body p { margin-bottom: 1.5rem; font-size: var(--font-size-base); color: var(--color-text-primary); }
-.side-panel__content:not(.side-panel__content--video) .post-body img,
-.side-panel__content:not(.side-panel__content--video) .post-body audio,
-.side-panel__content:not(.side-panel__content--video) .post-body iframe { max-width: 100%; height: auto; border-radius: var(--border-radius); margin-top: 1rem; margin-bottom: 1.5rem; }
+/* 3. REGLA PARA CUANDO MUESTRA VIDEO */
+/* Solo aplica fondo negro si SÍ es un video */
+.side-panel__content.side-panel__content--video {
+    background-color: #000;
+    overflow: hidden;
+}
+
+/* 4. REGLAS PARA LOS TEXTOS (Sin cambios, pero las dejamos aquí para asegurar) */
+.side-panel__content h2 { font-size: var(--font-size-h2); color: var(--color-text-primary); margin-bottom: 0.5rem; line-height: 1.2; }
+.side-panel__content .post-meta { font-size: var(--font-size-small); color: var(--color-text-secondary); margin-bottom: 2rem; display: block; }
+.side-panel__content .post-body p { margin-bottom: 1.5rem; font-size: var(--font-size-base); color: var(--color-text-primary); }
+.side-panel__content .post-body img,
+.side-panel__content .post-body audio,
+.side-panel__content .post-body iframe { max-width: 100%; height: auto; border-radius: var(--border-radius); margin-top: 1rem; margin-bottom: 1.5rem; }
 
 /* --- FIN DE LA CORRECCIÓN --- */
 
@@ -179,22 +138,18 @@ body.dark-theme .bento-box:hover { box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3); }
 .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1001; opacity: 0; visibility: hidden; transition: opacity 0.4s, visibility 0.4s; }
 .overlay.is-open { opacity: 1; visibility: visible; }
 
-
-/* --- 3.4 WIDGETS Y CONTENIDO EMBEBIDO --- */
+/* --- 3.4 y 3.5 (Sin cambios) --- */
+/* ... (el resto del código de componentes va aquí, no lo borres de tu archivo) ... */
 .iframe-container { position: relative; overflow: hidden; width: 100%; padding-top: 56.25%; border-radius: var(--border-radius); margin-bottom: 1.5rem; }
 .iframe-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
-
-
-/* --- 3.5 SECCIONES DE CATEGORÍAS DESTACADAS --- */
 .category-feature { padding-top: 2rem; padding-bottom: 1rem; }
 .category-title { font-size: 1.8rem; font-weight: 700; color: var(--color-text-primary); margin-bottom: 1.5rem; border-bottom: 2px solid var(--color-border); padding-bottom: 0.75rem; }
 .category-title i { color: var(--color-accent); margin-right: 0.75rem; }
 .category-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
 
 
-/* ==========================================================================
-   4. REGLAS RESPONSIVAS (@MEDIA QUERIES)
-   ========================================================================== */
+/* --- 4. REGLAS RESPONSIVAS (Sin cambios) --- */
+/* ... (todo el código de media queries va aquí, no lo borres de tu archivo) ... */
 @media (max-width: 1024px) {
     .bento-grid { grid-template-columns: repeat(2, 1fr); }
     .category-grid { grid-template-columns: repeat(2, 1fr); }

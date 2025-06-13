@@ -28,8 +28,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const welcomeModuleHTML = `
         <div class="bento-box welcome-module bento-box--4x1" data-id="static-welcome" style="cursor: default;">
-            <h2>Una Galería de Conocimiento Curada</h2>
-            <p>Explora la intersección entre tecnología, ciencia y cultura.</p>
+            <h2>Epistecnología</h2>
+            <p>Explora la intersección entre tecnología, ciencia y cultura a traves de la divulgación.</p>
         </div>`;
 
     const topStaticModulesHTML = `
@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>`;
     
     const inFeedModuleHTML = `
-        <div class="bento-box bento-box--2x1 bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;">
+        <div class="bento-box bento-box--1x1 bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;">
             <div class="card-content">
                 <h3>¿Disfrutando el Contenido?</h3>
                 <p>Suscríbete a nuestro boletín para no perderte ninguna publicación.</p>
