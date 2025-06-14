@@ -126,9 +126,24 @@ body.dark-theme .bento-box:hover { box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3); }
 .side-panel__content h2 { font-size: var(--font-size-h2); color: var(--color-text-primary); margin-bottom: 0.5rem; line-height: 1.2; }
 .side-panel__content .post-meta { font-size: var(--font-size-small); color: var(--color-text-secondary); margin-bottom: 2rem; display: block; }
 .side-panel__content .post-body p { margin-bottom: 1.5rem; font-size: var(--font-size-base); color: var(--color-text-primary); }
+
+/* Regla para elementos visuales (imágenes y videos) */
 .side-panel__content .post-body img,
-.side-panel__content .post-body audio,
-.side-panel__content .post-body iframe { max-width: 100%; height: auto; border-radius: var(--border-radius); margin-top: 1rem; margin-bottom: 1.5rem; }
+.side-panel__content .post-body iframe {
+    max-width: 100%;
+    height: auto; /* 'auto' funciona bien aquí para mantener la proporción */
+    border-radius: var(--border-radius);
+    margin-top: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Regla específica para el reproductor de AUDIO */
+.side-panel__content .post-body audio {
+    width: 100%;  /* Hacemos que ocupe todo el ancho */
+    height: 54px; /* Le damos una altura fija y estándar */
+    margin-top: 1rem;
+    margin-bottom: 1.5rem;
+}
 
 /* --- FIN DE LA CORRECCIÓN --- */
 
@@ -166,4 +181,42 @@ body.dark-theme .bento-box:hover { box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3); }
     .bento-box.bento-box--1x3 { grid-row: span 2 !important; aspect-ratio: 3 / 4; }
     .bento-box[style*="background-image"] { justify-content: flex-end; }
     .side-panel { width: 100%; max-width: 100%; height: 100%; border-radius: 0; transition: transform 0.3s ease-in-out; }
+}
+
+/* ==========================================================================
+   ESTILOS PARA REPRODUCTOR DE AUDIO WAVESURFER
+   ========================================================================== */
+
+#audio-player-container {
+    width: 100%;
+    margin-top: 1rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background-color: var(--color-background);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+}
+
+#waveform {
+    flex-grow: 1;
+    cursor: pointer;
+}
+
+#audio-controls button {
+    width: 50px;
+    height: 50px;
+    background-color: var(--color-accent);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem;
+    transition: transform 0.2s ease;
+}
+
+#audio-controls button:hover {
+    transform: scale(1.1);
 }

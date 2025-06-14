@@ -102,9 +102,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 slidesPerView: 3.5,
                 spaceBetween: 10,
                 centeredSlides: true,
-                loop: false,
+                // --- CORRECCIÓN: Desactivamos el bucle para un scroll infinito real ---
+                loop: false, 
                 slideToClickedSlide: true,
             });
+
+            // --- CORRECCIÓN: Nueva lógica de clic y carga infinita ---
             this.thumbnailSwiper.on('click', (swiper) => {
                 const clickedSlide = swiper.clickedSlide;
                 if (clickedSlide) {
@@ -112,7 +115,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.updateActiveThumbnail(parseInt(clickedSlide.dataset.index, 10));
                 }
             });
-            this.thumbnailSwiper.on('reachEnd', () => { this.loadMoreVideos(); });
+            
+            // En lugar de 'reachEnd', usamos 'slideChange' para cargar antes de llegar al final
+            this.thumbnailSwiper.on('slideChange', (swiper) => {
+                // Si el índice de la última diapositiva visible está cerca del final de la lista...
+                if (swiper.activeIndex >= this.videos.length - 3) {
+                    this.loadMoreVideos(); // ...cargamos más videos.
+                }
+            });
         },
 
         async loadMoreVideos() {

@@ -79,6 +79,14 @@
     transform: translateX(-50%) translateY(150%);
 }
 
+/* --- NUEVO: Estado colapsado del carrusel --- */
+#thumbnail-carousel-container.is-collapsed {
+    max-height: 10px;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-color: transparent;
+}
+
 #carousel-toggle-btn {
     position: absolute;
     top: -26px;
