@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 spaceBetween: 10,
                 centeredSlides: true,
                 // --- CORRECCIÓN: Desactivamos el bucle para un scroll infinito real ---
-                loop: false, 
+                loop: true, 
                 slideToClickedSlide: true,
             });
 
