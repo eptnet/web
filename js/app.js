@@ -27,12 +27,70 @@ document.addEventListener('DOMContentLoaded', () => {
     const audioPostBackground = 'https://i.ibb.co/vvPbhLpV/Leonardo-Phoenix-10-A-modern-and-minimalist-design-for-a-scien-2.jpg';
 
     // ... (Plantillas HTML como welcomeModuleHTML, etc. van aquí) ...
-    const welcomeModuleHTML = `<div class="bento-box welcome-module bento-box--4x1" data-id="static-welcome" style="cursor: default;"><h2>Una Galería de Conocimiento Curada</h2><p>Explora la intersección entre tecnología, ciencia y cultura.</p></div>`;
-    const topStaticModulesHTML = `<div class="bento-box bento-box--4x1" data-id="static-quote" style="cursor:default;"><div class="card-content" style="text-align: center;"><p style="font-size: 1.2rem; font-style: italic;">"El conocimiento es la única riqueza que no se puede robar."</p><h4 style="margin-top: 0.5rem;">- Anónimo</h4></div></div>`;
-    const videoStoriesCardHTML = `<div class="bento-box bento-box--1x3" data-id="static-launch-stories" style="background-image: url('https://i.ibb.co/hxm0qPFx/Leonardo-Phoenix-10-A-modern-and-minimalist-cover-art-featurin-1.jpg'); cursor: pointer; background-size: cover; background-position: center;"><div class="card-content"><span class="card-category" style="color: white;">Colección</span><h4 style="color: white;">Ver Historias</h4></div></div>`;
-    const videoFeaturedModuleHTML = `<div class="bento-box bento-box--2x3 video-featured-module" data-id="static-video-featured"><iframe src="https://www.youtube.com/embed/6PSKbO5yfDQ?rel=0&modestbranding=1&playsinline=1" title="Video destacado de YouTube" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
-    const inFeedModuleHTML = `<div class="bento-box bento-box--2x1 bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;"><div class="card-content"><h3>¿Disfrutando el Contenido?</h3><p>Suscríbete a nuestro boletín para no perderte ninguna publicación.</p></div></div>`;
-    const endStaticModulesHTML = `<div class="bento-box zenodo-module bento-box--2x2" data-id="static-zenodo"><div class="card-content"><svg viewBox="0 0 24 24" fill="currentColor" style="width:100px; height:auto; margin: 0 auto 1rem;"><path d="M12.246 17.34l-4.14-4.132h2.802v-2.8H5.976l4.131-4.14L7.305 3.46l-6.84 6.832 6.84 6.84 2.802-2.801zm-.492-13.88l6.839 6.84-6.84 6.839 2.802 2.802 6.84-6.84-6.84-6.84-2.801 2.803zm-1.89 7.02h5.364v2.8H9.864v-2.8z"></path></svg><h3>Conocimiento Citable</h3><p>Accede a nuestros datasets y preprints.</p><a href="#" class="btn">Visitar Repositorio</a></div></div><div class="bento-box bento-box--2x2 bento-box--imagen" data-id="static-video" data-panel-type="embed" data-panel-title="Video Destacado" data-embed-src="https://www.youtube.com/embed/dQw4w9WgXcQ"><div class="card-content"><span class="card-category">Ver Ahora</span><h4>El Futuro de la Exploración Espacial</h4></div></div>`;
+    const welcomeModuleHTML = `
+        <div class="bento-box welcome-module bento-box--4x1" data-id="static-welcome" style="cursor: default;">
+            <h2>Epistecnología</h2>
+            <p>Explora la intersección entre tecnología, ciencia y cultura y su divulgación con Sabiduría.</p>
+        </div>
+    `;
+
+    const topStaticModulesHTML = `
+        <div class="bento-box bento-box--4x1" data-id="static-quote" style="cursor:default;">
+            <div class="card-content" style="text-align: center;">
+                <p style="font-size: 1.2rem; font-style: italic;">"El conocimiento es la única riqueza que no se puede robar."</p>
+                <h4 style="margin-top: 0.5rem;">- Anónimo</h4>
+            </div>
+        </div>
+    `;
+
+    const videoStoriesCardHTML = `
+        <div class="bento-box bento-box--1x3" data-id="static-launch-stories" style="background-image: url('https://i.ibb.co/hxm0qPFx/Leonardo-Phoenix-10-A-modern-and-minimalist-cover-art-featurin-1.jpg'); cursor: pointer; background-size: cover; background-position: center;">
+            <div class="card-content">
+                <span class="card-category" style="color: white;">Colección</span>
+                <h4 style="color: white;">Ver Historias</h4>
+            </div>
+        </div>
+    `;
+
+    const videoFeaturedModuleHTML = `
+        <div class="bento-box bento-box--2x3 video-featured-module" data-id="static-video-featured">
+            <iframe src="https://www.youtube.com/embed/6PSKbO5yfDQ?rel=0&modestbranding=1&playsinline=1" 
+                title="Video destacado de YouTube" 
+                frameborder="0" 
+                allow="accelerometer; 
+                autoplay; clipboard-write; 
+                encrypted-media; gyroscope; 
+                picture-in-picture" 
+                allowfullscreen>
+            </iframe>
+        </div>
+    `;
+
+    const inFeedModuleHTML = `
+        <div class="bento-box bento-box--1x1 bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;">
+            <div class="card-content">
+                <h3>¿Disfrutando el Contenido?</h3>
+                <p>Suscríbete a nuestro boletín para no perderte ninguna publicación.</p>
+            </div>
+        </div>
+    `;
+
+    const endStaticModulesHTML = `
+            <div class="bento-box zenodo-module bento-box--2x2" data-id="static-zenodo">
+                <div class="card-content">
+                    
+                    <h3>Conocimiento Citable</h3>
+                    <p>Accede a nuestros datasets y preprints.</p>
+                    <a href="#" class="btn">Visitar Repositorio</a>
+                </div>
+            </div>
+        <div class="bento-box bento-box--2x2 bento-box--imagen" data-id="static-video" data-panel-type="embed" data-panel-title="Video Destacado" data-embed-src="https://www.youtube.com/embed/dQw4w9WgXcQ">
+            <div class="card-content">
+                <span class="card-category">Ver Ahora</span>
+                <h4>El Futuro de la Exploración Espacial</h4>
+            </div>
+        </div>
+    `;
 
     // =========================================================================
     // 3. LÓGICA PRINCIPAL (FUNCIONES)
