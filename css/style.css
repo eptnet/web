@@ -249,14 +249,14 @@ body.dark-theme
     max-width: 700px; /* Ancho máximo de la tarjeta */
     height: 450px; /* Altura fija para la tarjeta */
     border-radius: 24px; /* Esquinas redondeadas */
-    box-shadow: 0 30px 60px rgba(35, 25, 17, 0.2);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.571);
 }
 
 .atropos-inner {
     border-radius: 24px;
     overflow: hidden; /* Asegura que la imagen no se salga de los bordes redondeados */
     /* La imagen que me pasaste, aplicada como fondo */
-    background-image: url('https://i.ibb.co/hJ5jsbv9/Leonardo-Phoenix-10-A-vibrant-and-dynamic-scene-depicting-the-2.jpg');
+    background-image: url('https://i.ibb.co/9kDJPK5K/Whisk-7b4dfc4406.jpg');
     background-size: cover;
     background-position: center;
     display: flex;
@@ -276,11 +276,11 @@ body.dark-theme
     justify-content: flex-end;  /* Alineación vertical: flex-start (arriba), center (centro), flex-end (abajo) */
     align-items: flex-start; /* Alineación horizontal: flex-start (izquierda), center (centro), flex-end (derecha) */
     text-align: left;         /* Alineación del texto en sí */
-    padding: 2.5rem;          /* Añade un poco de espacio interior */
+    padding: 2rem;          /* Añade un poco de espacio interior */
 }
 
 .hero-card-content h1 {
-    font-size: 3.5rem;
+    font-size: 3rem;
     font-weight: 700;
 }
 
