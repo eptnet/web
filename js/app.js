@@ -6,6 +6,8 @@
  */
 document.addEventListener('DOMContentLoaded', () => {
 
+    let contentObserver = null; // <-- AÑADE ESTA LÍNEA
+
     // =========================================================================
     // 1. SELECCIÓN DE ELEMENTOS DEL DOM
     // =========================================================================
@@ -172,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
         bentoGrid.insertAdjacentHTML("beforeend", endStaticModulesHTML);
     }
     
-    function openSidePanel(clickedElement) {
+function openSidePanel(clickedElement) {
     const dataset = clickedElement.dataset;
     if (sidePanel.classList.contains('is-open')) return;
 
@@ -202,6 +204,25 @@ document.addEventListener('DOMContentLoaded', () => {
     overlay.classList.add("is-open");
     document.body.style.overflow = "hidden";
     document.dispatchEvent(new CustomEvent('panel-opened'));
+
+    // --- INICIO DE LA NUEVA LÓGICA DEL VIGILANTE ---
+
+    // Primero, si había un vigilante anterior, lo desconectamos para limpiar.
+    if (contentObserver) contentObserver.disconnect();
+
+    // Creamos nuestro vigilante. Su única misión es llamar a la función de limpieza.
+    contentObserver = new MutationObserver((mutations) => {
+        cleanupPostContent();
+    });
+
+    // Le decimos al vigilante que observe el panel de contenido y a todos sus descendientes.
+    contentObserver.observe(sidePanelContent, {
+        childList: true, // Observa si se añaden o quitan hijos
+        subtree: true    // Observa también en los sub-niveles
+    });
+
+    // Hacemos una limpieza inicial por si acaso.
+    cleanupPostContent();
 
     // Si el post tiene un audio, ahora intentamos inicializar Wavesurfer
     if (post.enclosure?.link?.endsWith(".mp3")) {
@@ -249,6 +270,12 @@ document.addEventListener('DOMContentLoaded', () => {
 }
 
     function closeSidePanel() {
+        // --- NUEVO: Desconectamos al vigilante ---
+        if (contentObserver) {
+            contentObserver.disconnect();
+            contentObserver = null;
+        }
+
         if (wavesurferInstance) {
             wavesurferInstance.destroy();
             wavesurferInstance = null;
@@ -301,8 +328,39 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function cleanupPostContent() {
-        sidePanelContent.querySelectorAll(".pencraft.icon-container")?.forEach(el => el.parentElement.remove());
+        // Lista de selectores de CSS para los elementos que queremos eliminar.
+        const selectorsToRemove = [
+            // --- Selectores que ya tenías, ahora con la sintaxis correcta ---
+            '.pencraft.icon-container',
+            '.post-actions-wrapper',
+            '.reader-actions',
+            '.pencraft', // Este es un selector amplio, podría eliminar el contenedor de los demás.
+            
+            // Clases compuestas unidas con puntos, sin espacios
+            '.pencraft.pc-display-flex.pc-gap-8.pc-reset',
+            '.pencraft.pc-reset.icon-container.restack-image',
+            '.pencraft.pc-reset.icon-container.view-image',
+            '.button.primary' // Para elementos con class="button primary"
+        ];
+
+        console.log("Iniciando limpieza de contenido del post...");
+
+        selectorsToRemove.forEach(selector => {
+            try {
+                const elements = sidePanelContent.querySelectorAll(selector);
+                
+                if (elements.length > 0) {
+                    console.log(`Encontrados y eliminados ${elements.length} elementos con el selector: "${selector}"`);
+                    elements.forEach(element => element.remove());
+                }
+            } catch (e) {
+                // Si un selector tiene un error de sintaxis, lo informamos en la consola
+                // pero no detenemos la ejecución del resto de la limpieza.
+                console.error(`El selector "${selector}" no es válido y no se pudo procesar.`, e.message);
+            }
+        });
     }
+
 
     function setupShareButtons(config) {
         const link = encodeURIComponent(config.link);
