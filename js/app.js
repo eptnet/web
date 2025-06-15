@@ -150,43 +150,80 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function openSidePanel(clickedElement) {
-        if (sidePanel.classList.contains('is-open')) return;
-        const dataset = clickedElement.dataset;
+    const dataset = clickedElement.dataset;
+    if (sidePanel.classList.contains('is-open')) return;
 
-        if (dataset.id === "static-launch-stories") {
-            document.dispatchEvent(new CustomEvent('launch-stories'));
+    if (dataset.id === "static-launch-stories") {
+        document.dispatchEvent(new CustomEvent('launch-stories'));
+        return;
+    }
+    if (dataset.id === "static-video-featured" || dataset.id === "static-welcome" || dataset.id === "static-quote") {
+        return;
+    }
+
+    const post = allPostsData.find(p => p.guid === dataset.id);
+    if (!post) return;
+
+    const postDate = new Date(post.pubDate).toLocaleDateString("es-ES", { year: "numeric", month: "long", day: "numeric" });
+    let audioPlayerHTML = "";
+
+    // Si es un post de audio, preparamos el contenedor para Wavesurfer.
+    if (post.enclosure?.link?.endsWith(".mp3")) {
+        audioPlayerHTML = `<div id="audio-player-container"><div id="waveform"></div><div id="audio-controls"><button id="play-pause-btn" aria-label="Reproducir/Pausar"><i class="fa-solid fa-play"></i></button></div></div>`;
+    }
+    
+    const contentHTML = `<h2>${post.title}</h2><div class="post-meta">Publicado por ${post.author} el ${postDate}</div>${audioPlayerHTML}<div class="post-body">${post.content}</div>`;
+    
+    sidePanelContent.innerHTML = contentHTML;
+    sidePanel.classList.add("is-open");
+    overlay.classList.add("is-open");
+    document.body.style.overflow = "hidden";
+    document.dispatchEvent(new CustomEvent('panel-opened'));
+
+    // Si el post tiene un audio, ahora intentamos inicializar Wavesurfer
+    if (post.enclosure?.link?.endsWith(".mp3")) {
+        if (typeof WaveSurfer === 'undefined') {
+            console.error('Wavesurfer.js no está cargado.');
+            // Si la librería no carga, mostramos el reproductor nativo directamente
+            const playerContainer = document.getElementById('audio-player-container');
+            if(playerContainer) playerContainer.innerHTML = `<audio controls autoplay controlsList="nodownload" src="${post.enclosure.link}" style="width: 100%;"></audio>`;
             return;
         }
-        if (dataset.id === "static-video-featured" || dataset.id === "static-welcome" || dataset.id === "static-quote") {
-            return;
-        }
 
-        const post = allPostsData.find(p => p.guid === dataset.id);
-        if (!post) return;
-
-        const postDate = new Date(post.pubDate).toLocaleDateString("es-ES", { year: "numeric", month: "long", day: "numeric" });
-        const audioPlayerHTML = post.enclosure?.link?.endsWith(".mp3") ? `<div id="audio-player-container"><button id="play-pause-btn" aria-label="Reproducir/Pausar"><i class="fa-solid fa-play"></i></button><div id="waveform"></div></div>` : "";
-        const contentHTML = `<h2>${post.title}</h2><div class="post-meta">Publicado por ${post.author} el ${postDate}</div>${audioPlayerHTML}<div class="post-body">${post.content}</div>`;
+        const audioUrl = post.enclosure.link;
+        const playerContainer = document.getElementById('audio-player-container');
         
-        sidePanelContent.innerHTML = contentHTML;
-        sidePanel.classList.add("is-open");
-        overlay.classList.add("is-open");
-        document.body.style.overflow = "hidden";
-        
-        document.dispatchEvent(new CustomEvent('panel-opened', { detail: { type: 'article' } }));
+        // Usamos un proxy para intentar evitar el bloqueo de CORS
+        const proxiedUrl = `https://thingproxy.freeboard.io/fetch/${audioUrl}`;
 
-        if (post.enclosure?.link?.endsWith(".mp3")) {
-            if (typeof WaveSurfer === 'undefined') return console.error('Wavesurfer.js no cargado.');
-            wavesurferInstance = WaveSurfer.create({ container: '#waveform', waveColor: 'rgb(200, 200, 200)', progressColor: 'rgb(183, 42, 30)', url: post.enclosure.link, barWidth: 3, barRadius: 3, barGap: 2, height: 80 });
-            const playPauseBtn = document.getElementById('play-pause-btn');
-            const icon = playPauseBtn?.querySelector('i');
-            if (playPauseBtn && icon) {
-                playPauseBtn.addEventListener('click', () => wavesurferInstance.playPause());
-                wavesurferInstance.on('play', () => { icon.className = 'fa-solid fa-pause'; });
-                wavesurferInstance.on('pause', () => { icon.className = 'fa-solid fa-play'; });
+        wavesurferInstance = WaveSurfer.create({
+            container: '#waveform',
+            waveColor: 'rgb(200, 200, 200)',
+            progressColor: 'rgb(183, 42, 30)',
+            url: proxiedUrl, // PLAN A: Intentamos cargar vía proxy
+            barWidth: 3, barRadius: 3, barGap: 2, height: 80,
+        });
+
+        // --- INICIO DE LA LÓGICA DEL PLAN B (RESTAURADA) ---
+        wavesurferInstance.on('error', (err) => {
+            console.warn('Wavesurfer falló (probablemente por CORS). Usando reproductor nativo como alternativa.', err);
+            wavesurferInstance.destroy(); // Destruimos la instancia fallida
+            // Reemplazamos el contenedor con el reproductor de audio nativo (nuestro Plan B)
+            if (playerContainer) {
+                playerContainer.innerHTML = `<audio controls autoplay controlsList="nodownload" src="${audioUrl}" style="width: 100%;"></audio>`;
             }
+        });
+        // --- FIN DE LA LÓGICA DEL PLAN B ---
+
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        const icon = playPauseBtn?.querySelector('i');
+        if (playPauseBtn && icon) {
+            playPauseBtn.addEventListener('click', () => wavesurferInstance.playPause());
+            wavesurferInstance.on('play', () => { icon.className = 'fa-solid fa-pause'; });
+            wavesurferInstance.on('pause', () => { icon.className = 'fa-solid fa-play'; });
         }
     }
+}
 
     function closeSidePanel() {
         if (wavesurferInstance) {
