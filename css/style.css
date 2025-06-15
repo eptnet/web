@@ -273,19 +273,19 @@ body.dark-theme
     height: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;  /* Alineación vertical: flex-start (arriba), center (centro), flex-end (abajo) */
+    justify-content: flex-start;  /* Alineación vertical: flex-start (arriba), center (centro), flex-end (abajo) */
     align-items: flex-start; /* Alineación horizontal: flex-start (izquierda), center (centro), flex-end (derecha) */
     text-align: left;         /* Alineación del texto en sí */
     padding: 2rem;          /* Añade un poco de espacio interior */
 }
 
 .hero-card-content h1 {
-    font-size: 3rem;
+    font-size: 3.5rem;
     font-weight: 700;
 }
 
 .hero-card-content p {
-    font-size: 1.2rem;
+    font-size: 1.5rem;
     font-weight: 400;
 }
 
