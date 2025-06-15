@@ -42,9 +42,12 @@ button { background: none; border: none; cursor: pointer; font-family: inherit; 
 /* 3.1 NAVEGACIÓN (Sin cambios) */
 /* ... (todo el código de navegación va aquí, no lo borres de tu archivo) ... */
 .desktop-nav { padding: 1rem 0; position: sticky; top: 0; z-index: 1000; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); background-color: rgba(240, 242, 245, 0.8); transition: background-color 0.3s; }
-body.dark-theme .desktop-nav { background-color: rgba(24, 25, 26, 0.8); }
-.desktop-nav .container { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
-.desktop-nav .logo img { height: 40px; display: block; }
+body.dark-theme 
+.desktop-nav { background-color: rgba(24, 25, 26, 0.8); }
+.desktop-nav 
+.container { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.desktop-nav 
+.logo img { height: 40px; display: block; }
 .bento-box-nav { display: flex; align-items: center; gap: 0.5rem; background-color: var(--color-surface); padding: 0.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow-light); transition: background-color 0.3s; }
 .main-menu { flex-grow: 1; justify-content: center; }
 .nav-icon { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 8px; transition: background-color 0.2s ease, color 0.2s ease; color: var(--color-text-secondary); font-size: 1.1rem; }
@@ -68,21 +71,26 @@ body.dark-theme .desktop-nav { background-color: rgba(24, 25, 26, 0.8); }
 .bento-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; padding: 2rem 0; }
 .bento-box { background-color: var(--color-surface); border-radius: var(--border-radius); box-shadow: var(--shadow-light); padding: 1.5rem; transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.3s; cursor: pointer; display: flex; flex-direction: column; overflow: hidden; position: relative; }
 .bento-box:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1); }
-body.dark-theme .bento-box:hover { box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3); }
+body.dark-theme 
+.bento-box:hover { box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3); }
 .post-card { min-height: 250px; }
 .bento-box--1x2 { grid-column: span 1; grid-row: span 2; }
+.bento-box--1x3 { grid-column: span 1; grid-row: span 3; }
+.bento-box--1x4 { grid-column: span 1; grid-row: span 4; }
 .bento-box--2x1 { grid-column: span 2; grid-row: span 1; }
 .bento-box--2x2 { grid-column: span 2; grid-row: span 2; }
 .bento-box--2x3 { grid-column: span 2; grid-row: span 3; }
 .bento-box--3x1 { grid-column: span 3; grid-row: span 1; }
 .bento-box--3x4 { grid-column: span 3; grid-row: span 4; }
 .bento-box--4x1 { grid-column: span 4; grid-row: span 1; }
-.bento-box--1x3 { grid-column: span 1; grid-row: span 3; }
-.bento-box--1x4 { grid-column: span 1; grid-row: span 4; }
 .bento-box--2x4 { grid-column: span 2; grid-row: span 4; }
 .bento-box[style*="background-image"] { background-size: cover; background-position: center; }
 .bento-box[style*="background-image"]::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0.1)); opacity: 1; transition: opacity 0.3s; pointer-events: none; }
-.bento-box[style*="background-image"] h3, .bento-box[style*="background-image"] h4, .bento-box[style*="background-image"] p, .bento-box[style*="background-image"] .card-category { color: white; }
+.bento-box[style*="background-image"] h3, 
+.bento-box[style*="background-image"] h4, 
+.bento-box[style*="background-image"] p, 
+.bento-box[style*="background-image"] 
+.card-category { color: white; }
 .card-content { flex-grow: 1; display: flex; flex-direction: column; position: relative; z-index: 2; justify-content: flex-end; pointer-events: none; }
 .card-content > * { pointer-events: auto; }
 .card-category { font-size: var(--font-size-category); font-weight: 500; color: var(--color-accent); margin-bottom: 0.5rem; }

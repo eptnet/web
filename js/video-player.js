@@ -1,6 +1,6 @@
 /**
  * =========================================================================
- * ShortsPlayerManager - VERSIÓN FINAL REESCRITA Y ROBUSTA v13.0
+ * ShortsPlayerManager - VERSIÓN FINAL v14.0 (Lógica de Cierre Externa)
  * =========================================================================
  */
 document.addEventListener('DOMContentLoaded', () => {
@@ -26,7 +26,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1. INICIALIZACIÓN
         init() {
             this.loadYouTubeAPI();
+            // Escucha la orden de app.js para abrirse
             document.addEventListener('launch-stories', () => this.launch());
+            // Escucha la orden de app.js para cerrarse
+            document.addEventListener('close-shorts-player', () => this.destroy());
         },
 
         loadYouTubeAPI() {
@@ -83,10 +86,8 @@ document.addEventListener('DOMContentLoaded', () => {
             sidePanel.classList.add('is-open');
             document.getElementById('overlay').classList.add('is-open');
             document.body.style.overflow = 'hidden';
-
-            // --- NUEVO: Añadimos una entrada al historial ---
-            history.pushState({ panelOpen: 'shorts' }, '');
-            
+            // Avisa a app.js que un panel se ha abierto para que gestione el historial
+            document.dispatchEvent(new CustomEvent('panel-opened'));
         },
 
         // 3. CONSTRUCCIÓN DE LA INTERFAZ
@@ -119,10 +120,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 videoId: this.videos[0].id,
                 playerVars: { 'autoplay': 1, 'controls': 0, 'mute': 0, 'rel': 0, 'playsinline': 1, 'origin': this.APP_ORIGIN },
                 events: {
-                    'onReady': () => this.updateActiveThumbnail(0),
-                    'onStateChange': (e) => {
-                        if (e.data === YT.PlayerState.ENDED) this.playVideoByIndex(this.currentVideoIndex + 1);
-                    }
+                    'onReady': () => { this.updateActiveThumbnail(0); this.setupMuteToggle(); },
+                    'onStateChange': (e) => { if (e.data === YT.PlayerState.ENDED) this.playVideoByIndex(this.currentVideoIndex + 1); }
                 }
             });
         },
@@ -133,13 +132,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 spaceBetween: 10,
                 centeredSlides: true,
                 loop: false,
-                slideToClickedSlide: false, // El clic lo manejamos nosotros
+                slideToClickedSlide: false,
             });
         },
 
         // 4. LÓGICA DE REPRODUCCIÓN Y EVENTOS
         addEventListeners() {
-            document.getElementById('carousel-toggle-btn')?.addEventListener('click', this.toggleCarousel);
+            document.getElementById('carousel-toggle-btn')?.addEventListener('click', this.toggleCarousel.bind(this));
             document.getElementById('player-mute-btn')?.addEventListener('click', () => this.toggleMute());
             this.swiper?.on('click', (swiper) => {
                 if (swiper.clickedSlide) {
@@ -147,22 +146,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
             this.swiper?.on('slideChange', (swiper) => {
+                this.updateActiveThumbnail(swiper.realIndex);
                 if (swiper.activeIndex >= this.videos.length - 3) this.loadMoreVideos();
             });
-            document.getElementById('side-panel-close').addEventListener('click', () => this.destroy(), { once: true });
-            document.getElementById('overlay').addEventListener('click', () => this.destroy(), { once: true });
         },
 
         playVideoByIndex(index) {
-            // Normalizamos el índice para el bucle
             const newIndex = index >= this.videos.length ? 0 : index;
             const video = this.videos[newIndex];
-            
             if (!video || !this.mainPlayer) return;
-
             this.currentVideoIndex = newIndex;
             this.mainPlayer.loadVideoById(video.id);
-            this.updateActiveThumbnail(newIndex);
             this.swiper.slideTo(newIndex);
         },
 
@@ -171,11 +165,11 @@ document.addEventListener('DOMContentLoaded', () => {
             this.swiper?.slides[index]?.classList.add('thumbnail-active');
         },
 
-        toggleCarousel() {
-            const container = document.getElementById('thumbnail-carousel-container');
-            const icon = this.querySelector('i');
-            container.classList.toggle('is-collapsed');
-            icon.className = container.classList.contains('is-collapsed') ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down';
+        toggleCarousel(event) {
+            const carouselContainer = document.getElementById('thumbnail-carousel-container');
+            const icon = event.currentTarget.querySelector('i');
+            carouselContainer.classList.toggle('is-collapsed');
+            icon.className = carouselContainer.classList.contains('is-collapsed') ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down';
         },
 
         toggleMute() {
@@ -200,11 +194,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch(apiUrl);
                 if (!response.ok) throw new Error('No se pudo cargar más.');
                 const data = await response.json();
-                
                 this.nextPageToken = data.nextPageToken;
                 const newVideos = data.items.map(item => ({ id: item.id.videoId, thumbUrl: item.snippet.thumbnails.high.url }));
                 const newSlidesHTML = newVideos.map((video, index) => `<div class="swiper-slide thumbnail-slide" data-video-id="${video.id}" data-index="${this.videos.length + index}"><img src="${video.thumbUrl}" alt="miniatura"/></div>`).join('');
-                
                 this.swiper.appendSlide(newSlidesHTML);
                 this.videos.push(...newVideos);
                 this.setCache(this.videos, this.nextPageToken);
@@ -224,9 +216,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const cached = localStorage.getItem(this.CACHE_KEY);
             if (!cached) return { videos: null, nextPageToken: null };
             const cache = JSON.parse(cached);
+            this.nextPageToken = cache.nextPageToken;
             const isExpired = (new Date().getTime() - cache.timestamp) > this.CACHE_DURATION_HOURS * 60 * 60 * 1000;
             return isExpired ? { videos: null, nextPageToken: null } : { videos: cache.videos, nextPageToken: cache.nextPageToken };
         },
+
         destroy() {
             document.querySelector('.side-panel__share').style.display = 'flex';
             this.mainPlayer?.destroy();
