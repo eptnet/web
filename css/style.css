@@ -238,7 +238,7 @@ body.dark-theme
     justify-content: center;
     align-items: center;
     position: relative; /* Para posicionar el botón de scroll */
-    background-image: url('https://i.ibb.co/21r6L721/Leonardo-Phoenix-10-A-softly-blurred-background-with-a-minimal-0.jpg');
+    background-image: url('https://i.ibb.co/bjDQctrc/BG-Leonardo-Phoenix-10-A-softly-blurred-background-with-a-minimal-2.jpg');
     background-size: cover;
     background-position: center; 
 }
@@ -367,3 +367,18 @@ body.dark-theme
     }
 }
 
+/* AÑADE ESTO AL FINAL DE TU style.css */
+
+/* ==========================================================================
+   6. AJUSTES FINALES DE INTERFAZ
+   ========================================================================== */
+
+/* Transición suave para el menú móvil */
+.mobile-nav {
+    transition: transform 0.3s ease-in-out;
+}
+
+/* Clase para ocultar el menú móvil moviéndolo hacia abajo */
+.mobile-nav.is-hidden {
+    transform: translateY(100%);
+}

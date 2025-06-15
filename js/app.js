@@ -46,7 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>`;
     
     const videoStoriesCardHTML = `
-        <div class="bento-box bento-box--1x3" data-id="static-launch-stories" style="background-image: url('https://i.ibb.co/hxm0qPFx/Leonardo-Phoenix-10-A-modern-and-minimalist-cover-art-featurin-1.jpg'); cursor: pointer; background-size: cover; background-position: center;">
+        <div class="bento-box bento-box--1x3" data-id="static-launch-stories" 
+        style="background-image: url('https://i.ibb.co/cSX1NWyR/sterieweb-Whisk-3577df53ea.jpg'); cursor: pointer; background-size: cover; background-position: center;">
             <div class="card-content">
                 <span class="card-category" style="color: white;">Colección</span>
                 <h4 style="color: white;">Minuto cultural</h4>
@@ -128,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
 
         items.forEach((item, index) => {
-            if (index === 4) {
+            if (index === 5) {
                 bentoGrid.insertAdjacentHTML("beforeend", videoFeaturedModuleHTML);
             }
 
@@ -392,14 +393,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     el: '.my-atropos',
                     activeOffset: 40,
                     shadow: true,
-                    shadowScale: 1.05,
+                    shadowScale: 2.05,
                 });
             }
 
     function initHero() {
             const heroButton = document.getElementById('scroll-to-content-btn');
             // La sección de categorías ya no es el objetivo, sino el <main>
-            const mainContent = document.querySelector('main.container'); 
+            const mainContent = document.querySelector('.desktop-nav'); 
 
             if (heroButton && mainContent) {
                 heroButton.addEventListener('click', () => {
