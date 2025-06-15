@@ -26,13 +26,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const apiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua&order_dir=desc&count=13';
     const audioPostBackground = 'https://i.ibb.co/vvPbhLpV/Leonardo-Phoenix-10-A-modern-and-minimalist-design-for-a-scien-2.jpg';
 
-    const welcomeModuleHTML = `
+    /* const welcomeModuleHTML = `
         <div class="bento-box welcome-module bento-box--3x1" data-id="static-welcome" style="cursor: default;">
             <h2>Epistecnología</h2>
             <p>Explora la intersección entre tecnología, ciencia y cultura y su divulgación con Sabiduría.</p>
-        </div>`;
+        </div>`; */
 
     const topStaticModulesHTML = `
+        <div class="bento-box welcome-module bento-box--3x1" data-id="static-welcome" style="cursor: default;">
+            <h2>Epistecnología</h2>
+            <p>Explora la intersección entre tecnología, ciencia y cultura y su divulgación con Sabiduría.</p>
+        </div>
+        
         <div class="bento-box bento-box--1x1" data-id="static-quote" style="cursor:default;">
             <div class="card-content" style="text-align: center;">
                 <p style="font-size: 1.2rem; font-style: italic;">"El conocimiento es la única riqueza que no se puede robar."</p>
@@ -44,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="bento-box bento-box--1x3" data-id="static-launch-stories" style="background-image: url('https://i.ibb.co/hxm0qPFx/Leonardo-Phoenix-10-A-modern-and-minimalist-cover-art-featurin-1.jpg'); cursor: pointer; background-size: cover; background-position: center;">
             <div class="card-content">
                 <span class="card-category" style="color: white;">Colección</span>
-                <h4 style="color: white;">Ver Historias</h4>
+                <h4 style="color: white;">Minuto cultural</h4>
             </div>
         </div>`;
 
@@ -114,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function displayPosts(items) {
-        bentoGrid.insertAdjacentHTML("beforeend", welcomeModuleHTML);
+        // bentoGrid.insertAdjacentHTML("beforeend", welcomeModuleHTML);
         bentoGrid.insertAdjacentHTML("beforeend", topStaticModulesHTML);
         
         // Mover el video destacado a la tercera posición
@@ -377,8 +382,57 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     function init() {
         applyTheme(localStorage.getItem('theme') || 'light');
+        initHero();
         loadPosts();
         checkLiveStatus();
+
+         // Inicializa Atropos en nuestro nuevo banner
+            if (document.querySelector('.my-atropos')) {
+                Atropos({
+                    el: '.my-atropos',
+                    activeOffset: 40,
+                    shadow: true,
+                    shadowScale: 1.05,
+                });
+            }
+
+    function initHero() {
+            const heroButton = document.getElementById('scroll-to-content-btn');
+            // La sección de categorías ya no es el objetivo, sino el <main>
+            const mainContent = document.querySelector('main.container'); 
+
+            if (heroButton && mainContent) {
+                heroButton.addEventListener('click', () => {
+                    mainContent.scrollIntoView({ behavior: 'smooth' });
+                });
+            }
+
+            // Lógica para hacer el menú transparente en la cima
+            const desktopNav = document.querySelector('.desktop-nav');
+            if (desktopNav) {
+                const checkNavPosition = () => {
+                    // Si el scroll es cero (estamos arriba del todo), añadimos la clase
+                    if (window.scrollY < 50) {
+                        desktopNav.classList.add('is-at-top');
+                    } else {
+                        desktopNav.classList.remove('is-at-top');
+                    }
+                };
+                
+                // Ejecutamos la función al cargar y cada vez que se hace scroll
+                window.addEventListener('scroll', checkNavPosition);
+                checkNavPosition(); // La llamamos una vez para el estado inicial
+                }
+                
+                // Inicializa Atropos
+            if (document.querySelector('.my-atropos')) {
+                Atropos({
+                    el: '.my-atropos',
+                    activeOffset: 40,
+                    shadow: false,
+                });
+            }
+        }
     }
 
     init();
