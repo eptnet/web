@@ -123,6 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
+    // Lógica ACTUAL en displayPosts ----------------------------------- ///////////
     function displayPosts(items) {
         bentoGrid.insertAdjacentHTML("beforeend", welcomeModuleHTML);
         bentoGrid.insertAdjacentHTML("beforeend", topStaticModulesHTML);
@@ -150,12 +151,15 @@ document.addEventListener('DOMContentLoaded', () => {
         bentoGrid.insertAdjacentHTML("beforeend", endStaticModulesHTML);
     }
     
+    // Controlar Clis y Contenido del Panel --------------- ///////////////
     function openSidePanel(clickedElement) {
         const dataset = clickedElement.dataset;
         if (dataset.id === "static-launch-stories") {
             document.dispatchEvent(new CustomEvent('launch-stories'));
             return;
         }
+
+        // AÑADE aquí el ID del bento que quieres ignorar el cliqueo -----------
         if (dataset.id === "static-video-featured" || dataset.id === "static-welcome" || dataset.id === "static-quote") {
             return;
         }
@@ -193,6 +197,9 @@ document.addEventListener('DOMContentLoaded', () => {
         sidePanel.classList.add("is-open");
         overlay.classList.add("is-open");
         document.body.style.overflow = "hidden";
+
+        // --- NUEVO: Añadimos una entrada al historial para los artículos ---
+        history.pushState({ panelOpen: 'article' }, '');
 
         if (postToProcess && postToProcess.enclosure?.link?.endsWith(".mp3")) {
             if (typeof WaveSurfer === 'undefined') {
@@ -342,10 +349,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     themeSwitcherDesktop?.addEventListener("click", toggleTheme);
     themeSwitcherMobile?.addEventListener("click", toggleTheme);
-    sidePanelClose?.addEventListener("click", closeSidePanel);
+    sidePanelClose?.addEventListener("click", () => history.back());
     overlay?.addEventListener("click", () => {
-        closeSidePanel();
-        mobileMoreMenu?.classList.remove("is-open");
+        // El overlay puede cerrar tanto el panel como el menú móvil
+        if(sidePanel.classList.contains('is-open')) {
+            history.back();
+        }
+        mobileMoreMenu?.classList.remove("is-open")
     });
     bentoGrid?.addEventListener("click", (event) => {
         const bentoBox = event.target.closest('.bento-box[data-id]');
@@ -370,3 +380,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     init();
 });
+
+    // El "Oyente" global que se encarga de cerrar todo
+    window.addEventListener('popstate', (event) => {
+        // Si el panel está abierto, lo cerramos, sin importar qué tipo sea
+        if (sidePanel.classList.contains('is-open')) {
+            // Verificamos si es el panel de video para llamar a su destructor específico
+            if (sidePanelContent.classList.contains('side-panel__content--video')) {
+                document.dispatchEvent(new CustomEvent('close-shorts-player'));
+            } else {
+                // Si es un panel de artículo, llamamos a su destructor
+                closeSidePanel();
+            }
+        }
+    });

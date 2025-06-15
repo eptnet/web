@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
         init() {
             this.loadYouTubeAPI();
             document.addEventListener('launch-stories', () => this.launch());
+            document.addEventListener('close-shorts-player', () => this.destroy());
         },
 
         loadYouTubeAPI() {
@@ -83,6 +84,10 @@ document.addEventListener('DOMContentLoaded', () => {
             sidePanel.classList.add('is-open');
             document.getElementById('overlay').classList.add('is-open');
             document.body.style.overflow = 'hidden';
+
+            // --- NUEVO: Añadimos una entrada al historial ---
+            history.pushState({ panelOpen: 'shorts' }, '');
+            
         },
 
         // 3. CONSTRUCCIÓN DE LA INTERFAZ
@@ -145,8 +150,11 @@ document.addEventListener('DOMContentLoaded', () => {
             this.swiper?.on('slideChange', (swiper) => {
                 if (swiper.activeIndex >= this.videos.length - 3) this.loadMoreVideos();
             });
-            document.getElementById('side-panel-close').addEventListener('click', () => this.destroy(), { once: true });
-            document.getElementById('overlay').addEventListener('click', () => this.destroy(), { once: true });
+            addCloseListeners() {
+            // El botón X y el overlay ahora simulan un "atrás"
+            document.getElementById('side-panel-close').addEventListener('click', () => history.back(), { once: true });
+            document.getElementById('overlay').addEventListener('click', () => history.back(), { once: true });
+            };
         },
 
         playVideoByIndex(index) {
