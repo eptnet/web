@@ -27,13 +27,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const audioPostBackground = 'https://i.ibb.co/vvPbhLpV/Leonardo-Phoenix-10-A-modern-and-minimalist-design-for-a-scien-2.jpg';
 
     const welcomeModuleHTML = `
-        <div class="bento-box welcome-module bento-box--4x1" data-id="static-welcome" style="cursor: default;">
+        <div class="bento-box welcome-module bento-box--3x1" data-id="static-welcome" style="cursor: default;">
             <h2>Epistecnología</h2>
             <p>Explora la intersección entre tecnología, ciencia y cultura y su divulgación con Sabiduría.</p>
         </div>`;
 
     const topStaticModulesHTML = `
-        <div class="bento-box bento-box--4x1" data-id="static-quote" style="cursor:default;">
+        <div class="bento-box bento-box--1x1" data-id="static-quote" style="cursor:default;">
             <div class="card-content" style="text-align: center;">
                 <p style="font-size: 1.2rem; font-style: italic;">"El conocimiento es la única riqueza que no se puede robar."</p>
                 <h4 style="margin-top: 0.5rem;">- Anónimo</h4>
@@ -131,20 +131,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 bentoGrid.insertAdjacentHTML("beforeend", inFeedModuleHTML);
             }
             
+            // --- INICIO DE LA CORRECCIÓN ---
             const isAudio = item.enclosure?.link?.endsWith(".mp3");
             const thumbnail = item.thumbnail || extractFirstImageUrl(item.content);
             const cardImageStyle = thumbnail ? `style="background-image: url(${thumbnail});"` : (isAudio ? `style="background-image: url(${audioPostBackground});"` : '');
             const cardType = isAudio ? "Podcast" : "Publicación";
             
             let cardSizeClass = "";
-            if (index === 0) cardSizeClass = "bento-box--2x2";
-            else if (index % 5 === 1) cardSizeClass = "bento-box--1x2";
-            else if (index % 5 === 3) cardSizeClass = "bento-box--2x1";
-
-            if (cardSizeClass) {
-                const postCardHTML = `<div class="bento-box post-card ${cardSizeClass}" data-id="${item.guid}" ${cardImageStyle}><div class="card-content"><span class="card-category">${cardType}</span><h4>${item.title}</h4></div></div>`;
-                bentoGrid.insertAdjacentHTML("beforeend", postCardHTML);
+            // Asignamos tamaños especiales para dar variedad
+            if (index === 0) {
+                cardSizeClass = "bento-box--2x2";
+            } else if (index % 5 === 1) {
+                cardSizeClass = "bento-box--1x2";
+            } else if (index % 5 === 3) {
+                cardSizeClass = "bento-box--2x1";
+            } else {
+                // ¡ESTA ES LA LÍNEA CLAVE!
+                // Si un post no tiene un tamaño especial, le damos uno por defecto (1x1).
+                cardSizeClass = "bento-box--1x1"; 
             }
+
+            // Ahora, como todos los posts tienen un tamaño, siempre se crearán.
+            const postCardHTML = `
+                <div class="bento-box post-card ${cardSizeClass}" data-id="${item.guid}" ${cardImageStyle}>
+                    <div class="card-content">
+                        <span class="card-category">${cardType}</span>
+                        <h4>${item.title}</h4>
+                    </div>
+                </div>`;
+            bentoGrid.insertAdjacentHTML("beforeend", postCardHTML);
+            // --- FIN DE LA CORRECCIÓN ---
+            
         });
         bentoGrid.insertAdjacentHTML("beforeend", endStaticModulesHTML);
     }
