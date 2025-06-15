@@ -27,7 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
         init() {
             this.loadYouTubeAPI();
             document.addEventListener('launch-stories', () => this.launch());
-            document.addEventListener('close-shorts-player', () => this.destroy());
         },
 
         loadYouTubeAPI() {
@@ -150,11 +149,8 @@ document.addEventListener('DOMContentLoaded', () => {
             this.swiper?.on('slideChange', (swiper) => {
                 if (swiper.activeIndex >= this.videos.length - 3) this.loadMoreVideos();
             });
-            addCloseListeners() {
-            // El botón X y el overlay ahora simulan un "atrás"
-            document.getElementById('side-panel-close').addEventListener('click', () => history.back(), { once: true });
-            document.getElementById('overlay').addEventListener('click', () => history.back(), { once: true });
-            };
+            document.getElementById('side-panel-close').addEventListener('click', () => this.destroy(), { once: true });
+            document.getElementById('overlay').addEventListener('click', () => this.destroy(), { once: true });
         },
 
         playVideoByIndex(index) {
