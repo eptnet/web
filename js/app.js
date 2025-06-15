@@ -399,33 +399,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function initHero() {
             const heroButton = document.getElementById('scroll-to-content-btn');
-            // La sección de categorías ya no es el objetivo, sino el <main>
-            const mainContent = document.querySelector('.desktop-nav'); 
+            const desktopScrollTarget = document.querySelector('.desktop-nav');
+            const desktopNav = document.querySelector('.desktop-nav');
+            const mobileNav = document.querySelector('.mobile-nav');
 
-            if (heroButton && mainContent) {
+            // Lógica para el botón de scroll
+            if (heroButton && desktopScrollTarget) {
                 heroButton.addEventListener('click', () => {
-                    mainContent.scrollIntoView({ behavior: 'smooth' });
+                    desktopScrollTarget.scrollIntoView({ behavior: 'smooth' });
                 });
             }
-
-            // Lógica para hacer el menú transparente en la cima
-            const desktopNav = document.querySelector('.desktop-nav');
-            if (desktopNav) {
+            
+            // Lógica para ambos menús al hacer scroll
+            if (desktopNav && mobileNav) {
                 const checkNavPosition = () => {
-                    // Si el scroll es cero (estamos arriba del todo), añadimos la clase
                     if (window.scrollY < 50) {
+                        // Escritorio: transparente
                         desktopNav.classList.add('is-at-top');
+                        // Móvil: NO visible
+                        mobileNav.classList.remove('is-visible'); 
                     } else {
+                        // Escritorio: con fondo
                         desktopNav.classList.remove('is-at-top');
+                        // Móvil: SÍ visible
+                        mobileNav.classList.add('is-visible');
                     }
                 };
                 
-                // Ejecutamos la función al cargar y cada vez que se hace scroll
                 window.addEventListener('scroll', checkNavPosition);
-                checkNavPosition(); // La llamamos una vez para el estado inicial
-                }
-                
-                // Inicializa Atropos
+                checkNavPosition();
+            }
+            
+            // Inicializa Atropos
             if (document.querySelector('.my-atropos')) {
                 Atropos({
                     el: '.my-atropos',
