@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>`;
 
     const videoFeaturedModuleHTML = `
-        <div class="bento-box bento-box--2x3 video-featured-module" data-id="static-video-featured">
+        <div class="bento-box bento-box--2x2 video-featured-module" data-id="static-video-featured">
              <iframe 
                 src="https://www.youtube.com/embed/6PSKbO5yfDQ?rel=0&modestbranding=1&playsinline=1" 
                 title="Video destacado de YouTube" 

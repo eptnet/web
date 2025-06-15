@@ -285,7 +285,7 @@ body.dark-theme
 
 .hero-card-content {
     /* El texto y otros elementos dentro de la tarjeta */
-    text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.852);
     width: 100%;
     height: 100%;
     display: flex;
@@ -293,7 +293,7 @@ body.dark-theme
     justify-content: flex-start;  /* Alineación vertical: flex-start (arriba), center (centro), flex-end (abajo) */
     align-items: flex-start; /* Alineación horizontal: flex-start (izquierda), center (centro), flex-end (derecha) */
     text-align: left;         /* Alineación del texto en sí */
-    padding: 2rem;          /* Añade un poco de espacio interior */
+    padding: 1rem;          /* Añade un poco de espacio interior */
 }
 
 .hero-card-content h1 {
