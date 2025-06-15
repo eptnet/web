@@ -186,27 +186,6 @@ body.dark-theme
 .category-title i { color: var(--color-accent); margin-right: 0.75rem; }
 .category-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
 
-
-/* --- 4. REGLAS RESPONSIVAS (Sin cambios) --- */
-/* ... (todo el código de media queries va aquí, no lo borres de tu archivo) ... */
-@media (max-width: 1024px) {
-    .bento-grid { grid-template-columns: repeat(2, 1fr); }
-    .category-grid { grid-template-columns: repeat(2, 1fr); }
-    .welcome-module, .collaborators-module, .bento-box--3x1, .bento-box--4x1, .bento-box--3x2, .bento-box--4x2 { grid-column: span 2; }
-}
-@media (max-width: 768px) {
-    .container { padding: 0 1rem; }
-    .desktop-nav { display: none; }
-    .mobile-nav { display: flex !important; }
-    body { padding-bottom: 80px; }
-    .category-grid { grid-template-columns: 1fr; }
-    .bento-grid { grid-template-columns: 1fr; }
-    .bento-box { grid-column: span 1 !important; grid-row: span 1 !important; aspect-ratio: 4 / 3; min-height: unset; }
-    .bento-box.bento-box--1x3 { grid-row: span 2 !important; aspect-ratio: 3 / 4; }
-    .bento-box[style*="background-image"] { justify-content: flex-end; }
-    .side-panel { width: 100%; max-width: 100%; height: 100%; border-radius: 0; transition: transform 0.3s ease-in-out; }
-}
-
 /* ==========================================================================
    ESTILOS PARA REPRODUCTOR DE AUDIO WAVESURFER
    ========================================================================== */
@@ -253,15 +232,15 @@ body.dark-theme
 .hero-container {
     height: 100vh;
     width: 100%;
-    background-color: var(--color-background); /* Fondo de color sólido del tema */
+    background-color: var(--color-background); /* Fondo de color sólido del tema "var(--color-background)" */
     display: flex;
     flex-direction: column; /* Alinea los hijos verticalmente */
     justify-content: center;
     align-items: center;
     position: relative; /* Para posicionar el botón de scroll */
-    /* background-image: url('URL_DE_TU_IMAGEN.jpg');
+    background-image: url('https://i.ibb.co/21r6L721/Leonardo-Phoenix-10-A-softly-blurred-background-with-a-minimal-0.jpg');
     background-size: cover;
-    background-position: center; */
+    background-position: center; 
 }
 
 /* La "Tarjeta" Atropos */
@@ -270,14 +249,14 @@ body.dark-theme
     max-width: 700px; /* Ancho máximo de la tarjeta */
     height: 450px; /* Altura fija para la tarjeta */
     border-radius: 24px; /* Esquinas redondeadas */
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 30px 60px rgba(35, 25, 17, 0.2);
 }
 
 .atropos-inner {
     border-radius: 24px;
     overflow: hidden; /* Asegura que la imagen no se salga de los bordes redondeados */
     /* La imagen que me pasaste, aplicada como fondo */
-    background-image: url('https://i.ibb.co/vx57ZyXs/Leonardo-Kino-XL-Diseo-creativo-moderno-y-minimalista-de-una-e-0.jpg');
+    background-image: url('https://i.ibb.co/hJ5jsbv9/Leonardo-Phoenix-10-A-vibrant-and-dynamic-scene-depicting-the-2.jpg');
     background-size: cover;
     background-position: center;
     display: flex;
@@ -290,6 +269,14 @@ body.dark-theme
 .hero-card-content {
     /* El texto y otros elementos dentro de la tarjeta */
     text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;  /* Alineación vertical: flex-start (arriba), center (centro), flex-end (abajo) */
+    align-items: flex-start; /* Alineación horizontal: flex-start (izquierda), center (centro), flex-end (derecha) */
+    text-align: left;         /* Alineación del texto en sí */
+    padding: 2.5rem;          /* Añade un poco de espacio interior */
 }
 
 .hero-card-content h1 {
@@ -344,3 +331,39 @@ body.dark-theme
     -webkit-backdrop-filter: none;
     box-shadow: none;
 }
+
+/* --- 4. REGLAS RESPONSIVAS (Sin cambios) --- */
+/* ... (todo el código de media queries va aquí, no lo borres de tu archivo) ... */
+@media (max-width: 1024px) {
+    .bento-grid { grid-template-columns: repeat(2, 1fr); }
+    .category-grid { grid-template-columns: repeat(2, 1fr); }
+    .welcome-module, .collaborators-module, .bento-box--3x1, .bento-box--4x1, .bento-box--3x2, .bento-box--4x2 { grid-column: span 2; }
+}
+@media (max-width: 768px) {
+    .container { padding: 0 1rem; }
+    .desktop-nav { display: none; }
+    .mobile-nav { display: flex !important; }
+    body { padding-bottom: 80px; }
+    .category-grid { grid-template-columns: 1fr; }
+    .bento-grid { grid-template-columns: 1fr; }
+    .bento-box { grid-column: span 1 !important; grid-row: span 1 !important; aspect-ratio: 4 / 3; min-height: unset; }
+    .bento-box.bento-box--1x3 { grid-row: span 2 !important; aspect-ratio: 3 / 4; }
+    .bento-box[style*="background-image"] { justify-content: flex-end; }
+    .side-panel { width: 100%; max-width: 100%; height: 100%; border-radius: 0; transition: transform 0.3s ease-in-out; }
+
+    /* --- Ajustes para el Banner Héroe en Móvil --- */
+    .hero-card-content h1 {
+        font-size: 2rem; /* Reducimos el tamaño del título principal */
+        line-height: 1.1;  /* Ajustamos el interlineado */
+    }
+
+    .hero-card-content p {
+        font-size: 1.1rem; /* Ajustamos el subtítulo */
+        padding: 0 1rem;   /* Añadimos un pequeño padding para que no toque los bordes */
+    }
+
+    .hero-button {
+        bottom: 90px; /* Subimos el botón para que no lo tape el menú inferior */
+    }
+}
+
