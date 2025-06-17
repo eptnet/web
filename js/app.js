@@ -36,8 +36,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const topStaticModulesHTML = `
         <div class="bento-box welcome-module bento-box--3x1" data-id="static-welcome" style="cursor: default;">
-            <h2>Epistecnología</h2>
-            <p>Explora la intersección entre tecnología, ciencia y cultura y su divulgación con Sabiduría.</p>
+            <h2>¿Investigas, divulgas o simplemente quieres entender mejor el mundo?</h2>
+                <p>
+                Te damos la bienvenida a <strong>Epistecnología</strong>, una <strong>plataforma abierta de divulgación científica y cultural</strong> que pone la <strong>tecnología al servicio del conocimiento con sabiduría</strong>.  
+                Aquí, investigadores, docentes, divulgadores y curiosos del saber encuentran un espacio para <strong>crear, compartir y explorar contenidos académicos</strong>, desde artículos y podcasts hasta <strong>videos, transmisiones en vivo y publicaciones indexadas</strong>.
+                </p>
         </div>
         
         <div class="bento-box bento-box--1x1" data-id="static-quote" style="cursor:default;">
@@ -68,10 +71,21 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>`;
     
     const inFeedModuleHTML = `
-        <div class="bento-box bento-box--1x1 bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;">
+        <div class="bento-box bento-box--2x2 bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;">
             <div class="card-content">
                 <h3>¿Disfrutando el Contenido?</h3>
-                <p>Suscríbete a nuestro boletín para no perderte ninguna publicación.</p>
+                <p>Suscríbete AQUÍ a nuestro newslettr para no perderte ninguna publicación ni próximos eventos.</p>
+                </br>
+                <iframe src="https://eptnews.substack.com/embed" 
+                    width="100%" 
+                    height="320" 
+                    style="border:0px 
+                    solid #EEE; 
+                    background:white;" 
+                    frameborder="0" 
+                    scrolling="no">
+                </iframe>
+
             </div>
         </div>`;
 
@@ -131,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
 
         items.forEach((item, index) => {
-            if (index === 5) {
+            if (index === 3) {
                 bentoGrid.insertAdjacentHTML("beforeend", videoFeaturedModuleHTML);
             }
 
@@ -185,6 +199,40 @@ function openSidePanel(clickedElement) {
     if (dataset.id === "static-video-featured" || dataset.id === "static-welcome" || dataset.id === "static-quote") {
         return;
     }
+
+    // ==================================================================
+    // --- AÑADE ESTE BLOQUE DE CÓDIGO NUEVO AQUÍ ---
+    // ==================================================================
+    if (dataset.id === "static-in-feed-promo") {
+        // Creamos el HTML usando el iframe exacto de Substack
+        const subscribeHTML = `
+            <h2>Suscríbete al Newsletter</h2>
+            <div class="post-body" style="padding-top: 1rem;">
+                <iframe src="https://eptnews.substack.com/embed" 
+                    width="100%" 
+                    height="320" 
+                    style="border:1px 
+                    solid #EEE; 
+                    background:white;" 
+                    frameborder="0" 
+                    crolling="no">
+                </iframe>
+            </div>
+        `;
+
+        // Abrimos el panel con este contenido personalizado
+        sidePanelContent.innerHTML = subscribeHTML;
+        setupShareButtons({ link: "https://eptnews.substack.com" });
+        sidePanel.classList.add("is-open");
+        overlay.classList.add("is-open");
+        document.body.style.overflow = "hidden";
+
+        // IMPORTANTE: detenemos la función aquí para que no siga buscando
+        return; 
+    }
+    // ==================================================================
+    // --- FIN DEL BLOQUE NUEVO ---
+    // ==================================================================
 
     const post = allPostsData.find(p => p.guid === dataset.id);
     if (!post) return;
