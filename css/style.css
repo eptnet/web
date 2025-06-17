@@ -114,6 +114,8 @@ body.dark-theme
 .bento-box--2x2 { grid-column: span 2; grid-row: span 2; }
 .bento-box--2x3 { grid-column: span 2; grid-row: span 3; }
 .bento-box--3x1 { grid-column: span 3; grid-row: span 1; }
+.bento-box--3x2 { grid-column: span 3; grid-row: span 2; }
+.bento-box--3x3 { grid-column: span 3; grid-row: span 3; }
 .bento-box--3x4 { grid-column: span 3; grid-row: span 4; }
 .bento-box--4x1 { grid-column: span 4; grid-row: span 1; }
 .bento-box--2x4 { grid-column: span 2; grid-row: span 4; }
@@ -349,52 +351,108 @@ body.dark-theme
     box-shadow: none;
 }
 
-/* ========================================================================== 
-              --- 4. REGLAS RESPONSIVAS (Sin cambios) 
-/* ========================================================================== */
-/* ... (todo el código de media queries va aquí, no lo borres de tu archivo) ... */
-@media (max-width: 1024px) {
-    .bento-grid { grid-template-columns: repeat(2, 1fr); }
-    .category-grid { grid-template-columns: repeat(2, 1fr); }
-    .welcome-module, .collaborators-module, .bento-box--3x1, .bento-box--4x1, .bento-box--3x2, .bento-box--4x2 { grid-column: span 2; }
+/* ==========================================================================
+   4. REGLAS RESPONSIVAS (VERSIÓN REESTRUCTURADA Y LIMPIA)
+   ========================================================================== */
+
+/* --- VISTA TABLET --- */
+/* Se aplica a pantallas entre 769px y 1024px de ancho */
+@media (min-width: 769px) and (max-width: 1024px) {
+    /* La cuadrícula principal tendrá 3 columnas */
+    .bento-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    .category-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* --- Adaptación de los Bentos a 3 columnas --- */
+    
+    /* Los bentos que ocupaban el ancho completo (3 o 4 col) ahora ocuparán 3 */
+    .bento-box--4x1,
+    .bento-box--3x1 {
+        grid-column: span 3;
+    }
+
+    /* El bento de video destacado (2x3 en escritorio) será de 2x2 en tablet */
+    .bento-box.video-featured-module {
+        grid-column: span 2;
+        grid-row: span 2;
+    }
+
+    /* El bento de historias (1x3 en escritorio) será de 1x3 en tablet */
+    .bento-box.bento-box--1x3 {
+        grid-column: span 1;
+        grid-row: span 3;
+    }
 }
+
+
+/* --- VISTA MÓVIL --- */
+/* Se aplica a pantallas de 768px de ancho o menos */
 @media (max-width: 768px) {
     .container { padding: 0 1rem; }
     .desktop-nav { display: none; }
     .mobile-nav { display: flex !important; }
     body { padding-bottom: 80px; }
+    
+    /* La cuadrícula principal tendrá 2 columnas */
     .category-grid { grid-template-columns: 1fr; }
-    .bento-grid { grid-template-columns: 1fr; }
-    .bento-box { 
-        grid-column: 
-        span 1 !important; 
-        grid-row: span 1 !important; 
-        /* aspect-ratio: 4 / 3; */ /* <-- Comenta o elimina esta línea */ 
-        min-height: unset; }
-    .bento-box.bento-box--1x3 { grid-row: span 2 !important; aspect-ratio: 3 / 4; }
-    .bento-box[style*="background-image"] { justify-content: flex-end; }
+    .bento-grid { 
+        grid-template-columns: repeat(2, 1fr);
+    }
 
-    /* Nueva clase para que un bento ocupe las dos columnas en móvil */
+    /* --- Adaptación de los Bentos a 2 columnas --- */
+
+    /* Por defecto, todos los bentos ocupan 1x1 */
+     /* 1. Regla base: por defecto, todos los bentos ocupan 1x1 */
+    .bento-box { 
+        grid-column: span 1; 
+        grid-row: span 1;
+    }
+
+    /* 2. Excepciones para bentos que deben ocupar todo el ANCHO */
+    .bento-box.mobile-full-width,
+    .bento-box--2x2,
+    .bento-box--2x3 {
+        grid-column: span 2;
+    }
+
+    /* 3. Excepción para el bento de historias, que debe ser más ALTO */
+    .bento-box.bento-box--1x3 {
+        grid-row: span 2 !important; /* Forzamos a que ocupe 2 filas de alto */
+    }
+
+    /* --- EXCEPCIONES Y TAMAÑOS ESPECIALES EN MÓVIL --- */
+
+    /* Los bentos anchos ocuparán el ancho completo (2 columnas) */
+    .bento-box--4x1,
+    .bento-box--3x1,
+    .bento-box--2x1,
+    .bento-box--2x2,
+    .bento-box--2x3 {
+        grid-column: span 2;
+    }
+    
+    /* El video destacado (2x3) será un rectángulo grande (2x2) */
+    .bento-box.video-featured-module {
+        grid-column: span 2;
+        grid-row: span 2;
+    }
+
+    /* Clase de ayuda para forzar que cualquier bento ocupe el ancho completo */
     .bento-box.mobile-full-width {
         grid-column: span 2 !important;
-}
-
-    .side-panel { width: 100%; max-width: 100%; height: 100%; border-radius: 0; transition: transform 0.3s ease-in-out; }
-
-    /* --- Ajustes para el Banner Héroe en Móvil --- */
-    .hero-card-content h1 {
-        font-size: 2rem; /* Reducimos el tamaño del título principal */
-        line-height: 1.1;  /* Ajustamos el interlineado */
     }
 
-    .hero-card-content p {
-        font-size: 1.1rem; /* Ajustamos el subtítulo */
-        padding: 0 1rem;   /* Añadimos un pequeño padding para que no toque los bordes */
-    }
+    /* El bento de suscripción (1x1) se queda como está (1x1) */
 
-    .hero-button {
-        bottom: 90px; /* Subimos el botón para que no lo tape el menú inferior */
-    }
+    /* Otros ajustes visuales para móvil */
+    .bento-box[style*="background-image"] { justify-content: flex-end; }
+    .side-panel { width: 100%; max-width: 100%; height: 100%; border-radius: 0; }
+    .hero-card-content h1 { font-size: 2.8rem; line-height: 1.1; }
+    .hero-card-content p { font-size: 1.1rem; padding: 0 1rem; }
+    .hero-button { bottom: 40px; }
 }
 
 /* AÑADE ESTO AL FINAL DE TU style.css */

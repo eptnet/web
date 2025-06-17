@@ -34,30 +34,34 @@ document.addEventListener('DOMContentLoaded', () => {
             <p>Explora la intersección entre tecnología, ciencia y cultura y su divulgación con Sabiduría.</p>
         </div>`; */
 
+    // REEMPLAZA esta sección completa en tu app.js
+
     const topStaticModulesHTML = `
-        <div class="bento-box welcome-module bento-box--3x1" data-id="static-welcome" style="cursor: default;">
+        <div class="bento-box welcome-module bento-box--2x2" data-id="static-welcome" style="cursor: default;">
             <h2>¿Investigas, divulgas o simplemente quieres entender mejor el mundo?</h2>
                 <p>
                 Te damos la bienvenida a <strong>Epistecnología</strong>, una <strong>plataforma abierta de divulgación científica y cultural</strong> que pone la <strong>tecnología al servicio del conocimiento con sabiduría</strong>.  
                 Aquí, investigadores, docentes, divulgadores y curiosos del saber encuentran un espacio para <strong>crear, compartir y explorar contenidos académicos</strong>, desde artículos y podcasts hasta <strong>videos, transmisiones en vivo y publicaciones indexadas</strong>.
                 </p>
         </div>
-        
-        <div class="bento-box bento-box--1x1" data-id="static-quote" style="cursor:default;">
-            <div class="card-content" style="text-align: center;">
-                <p style="font-size: 1.2rem; font-style: italic;">"El conocimiento es la única riqueza que no se puede robar."</p>
-                <h4 style="margin-top: 0.5rem;">- Anónimo</h4>
-            </div>
-        </div>`;
+        `;
     
     const videoStoriesCardHTML = `
-        <div class="bento-box bento-box--1x3"  data-id="static-launch-stories" 
+        <div class="bento-box bento-box--1x3" data-id="static-launch-stories" 
         style="background-image: url('https://i.ibb.co/cSX1NWyR/sterieweb-Whisk-3577df53ea.jpg'); cursor: pointer; background-size: cover; background-position: center;">
             <div class="card-content">
                 <span class="card-category" style="color: white;">Colección</span>
                 <h4 style="color: white;">Minuto cultural</h4>
             </div>
-        </div>`;
+        </div>
+        
+         <div class="bento-box bento-box--1x2" data-id="static-quote" style="cursor:default;">
+            <div class="card-content" style="text-align: center;">
+                <p style="font-size: 1.2rem; font-style: italic;">"El conocimiento es la única riqueza que no se puede robar."</p>
+                <h4 style="margin-top: 0.5rem;">- Anónimo</h4>
+            </div>
+        </div>
+        `;
 
     const videoFeaturedModuleHTML = `
         <div class="bento-box bento-box--2x2 video-featured-module" data-id="static-video-featured">
@@ -71,16 +75,15 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>`;
     
     const inFeedModuleHTML = `
-        <div class="bento-box bento-box--2x2 bento-box--acento" mobile-full-width" data-id="static-in-feed-promo" style="cursor:pointer;">
+        <div class="bento-box bento-box--2x2 mobile-full-width bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;">
             <div class="card-content">
                 <h3>¿Disfrutando el Contenido?</h3>
                 <p>Suscríbete AQUÍ a nuestro newslettr para no perderte ninguna publicación ni próximos eventos.</p>
-                </br>
+                <br>
                 <iframe src="https://eptnews.substack.com/embed" 
                     width="100%" 
                     height="100%" 
-                    style="border:0px 
-                    solid #fff; 
+                    style="border:0px solid #fff;" 
                     frameborder="0" 
                     scrolling="no">
                 </iframe>
@@ -144,11 +147,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
 
         items.forEach((item, index) => {
-            if (index === 3) {
+            if (index === 2) {
                 bentoGrid.insertAdjacentHTML("beforeend", videoFeaturedModuleHTML);
             }
 
-            if (index === 6) {
+            if (index === 7) {
                 bentoGrid.insertAdjacentHTML("beforeend", inFeedModuleHTML);
             }
             
@@ -162,10 +165,13 @@ document.addEventListener('DOMContentLoaded', () => {
             // Asignamos tamaños especiales para dar variedad
             if (index === 0) {
                 cardSizeClass = "bento-box--2x2";
+
             } else if (index % 5 === 1) {
                 cardSizeClass = "bento-box--1x2";
+
             } else if (index % 5 === 3) {
                 cardSizeClass = "bento-box--2x1";
+
             } else {
                 // ¡ESTA ES LA LÍNEA CLAVE!
                 // Si un post no tiene un tamaño especial, le damos uno por defecto (1x1).
