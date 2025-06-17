@@ -78,10 +78,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 </br>
                 <iframe src="https://eptnews.substack.com/embed" 
                     width="100%" 
-                    height="320" 
+                    height="100%" 
                     style="border:0px 
-                    solid #EEE; 
-                    background:white;" 
+                    solid #fff; 
                     frameborder="0" 
                     scrolling="no">
                 </iframe>
