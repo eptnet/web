@@ -349,7 +349,9 @@ body.dark-theme
     box-shadow: none;
 }
 
-/* --- 4. REGLAS RESPONSIVAS (Sin cambios) --- */
+/* ========================================================================== 
+              --- 4. REGLAS RESPONSIVAS (Sin cambios) 
+/* ========================================================================== */
 /* ... (todo el código de media queries va aquí, no lo borres de tu archivo) ... */
 @media (max-width: 1024px) {
     .bento-grid { grid-template-columns: repeat(2, 1fr); }
@@ -363,9 +365,20 @@ body.dark-theme
     body { padding-bottom: 80px; }
     .category-grid { grid-template-columns: 1fr; }
     .bento-grid { grid-template-columns: 1fr; }
-    .bento-box { grid-column: span 1 !important; grid-row: span 1 !important; aspect-ratio: 4 / 3; min-height: unset; }
+    .bento-box { 
+        grid-column: 
+        span 1 !important; 
+        grid-row: span 1 !important; 
+        /* aspect-ratio: 4 / 3; */ /* <-- Comenta o elimina esta línea */ 
+        min-height: unset; }
     .bento-box.bento-box--1x3 { grid-row: span 2 !important; aspect-ratio: 3 / 4; }
     .bento-box[style*="background-image"] { justify-content: flex-end; }
+
+    /* Nueva clase para que un bento ocupe las dos columnas en móvil */
+    .bento-box.mobile-full-width {
+        grid-column: span 2 !important;
+}
+
     .side-panel { width: 100%; max-width: 100%; height: 100%; border-radius: 0; transition: transform 0.3s ease-in-out; }
 
     /* --- Ajustes para el Banner Héroe en Móvil --- */

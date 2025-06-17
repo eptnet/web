@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>`;
     
     const videoStoriesCardHTML = `
-        <div class="bento-box bento-box--1x3" data-id="static-launch-stories" 
+        <div class="bento-box bento-box--1x3"  data-id="static-launch-stories" 
         style="background-image: url('https://i.ibb.co/cSX1NWyR/sterieweb-Whisk-3577df53ea.jpg'); cursor: pointer; background-size: cover; background-position: center;">
             <div class="card-content">
                 <span class="card-category" style="color: white;">Colección</span>
@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>`;
     
     const inFeedModuleHTML = `
-        <div class="bento-box bento-box--2x2 bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;">
+        <div class="bento-box bento-box--2x2 bento-box--acento" mobile-full-width" data-id="static-in-feed-promo" style="cursor:pointer;">
             <div class="card-content">
                 <h3>¿Disfrutando el Contenido?</h3>
                 <p>Suscríbete AQUÍ a nuestro newslettr para no perderte ninguna publicación ni próximos eventos.</p>
