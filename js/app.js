@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
 
         items.forEach((item, index) => {
-            if (index === 2) {
+            if (index === 3) {
                 bentoGrid.insertAdjacentHTML("beforeend", videoFeaturedModuleHTML);
             }
 
@@ -166,10 +166,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (index === 0) {
                 cardSizeClass = "bento-box--2x2";
 
-            } else if (index % 5 === 1) {
+            } else if (index % 3 === 2) {
                 cardSizeClass = "bento-box--1x2";
 
-            } else if (index % 5 === 3) {
+            } else if (index % 3 === 4) {
                 cardSizeClass = "bento-box--2x1";
 
             } else {

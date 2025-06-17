@@ -408,14 +408,14 @@ body.dark-theme
      /* 1. Regla base: por defecto, todos los bentos ocupan 1x1 */
     .bento-box { 
         grid-column: span 1; 
-        grid-row: span 1;
+        grid-row: span 2;
     }
 
     /* 2. Excepciones para bentos que deben ocupar todo el ANCHO */
     .bento-box.mobile-full-width,
     .bento-box--2x2,
     .bento-box--2x3 {
-        grid-column: span 2;
+        grid-column: span 2; 
     }
 
     /* 3. Excepción para el bento de historias, que debe ser más ALTO */
@@ -465,6 +465,8 @@ body.dark-theme
 .mobile-nav {
     transition: transform 0.3s ease-in-out;
 }
+
+.mobile-nav.is-visible { transform: translateY(0); }
 
 /* Clase para ocultar el menú móvil moviéndolo hacia abajo */
 .mobile-nav.is-hidden {
