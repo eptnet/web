@@ -60,11 +60,28 @@
             </div>
             
             <div class="user-actions bento-box-nav">
-                <a href="#" class="nav-icon" aria-label="Login / ORCID"><i class="fa-solid fa-user"></i></a>
-                <button class="theme-switcher nav-icon" id="theme-switcher-desktop" aria-label="Cambiar tema"><i class="fa-solid fa-moon"></i></button>
-                <a href="#" class="nav-icon" aria-label="Explorar"><i class="fa-solid fa-search"></i></a>
+                <div id="login-menu-container">
+                    <button id="login-menu-trigger" class="nav-icon" aria-label="Iniciar sesión">
+                        <i class="fa-solid fa-user"></i>
+                    </button>
+                    <div id="login-popover" class="login-popover">
+                        <p>Iniciar sesión con:</p>
+                        <a href="#" id="login-google-btn-desktop" class="login-provider-btn">
+                            <i class="fa-brands fa-google"></i> Google
+                        </a>
+                        <a href="#" id="login-github-btn-desktop" class="login-provider-btn">
+                            <i class="fa-brands fa-github"></i> GitHub
+                        </a>
+                        <a href="#" id="login-orcid-btn-desktop" class="login-provider-btn is-disabled">
+                            <i class="fa-brands fa-orcid"></i> ORCID (Próximamente)
+                        </a>
+                </div>
             </div>
-        </div>
+    <button class="theme-switcher nav-icon" id="theme-switcher-desktop" aria-label="Cambiar tema">
+        <i class="fa-solid fa-moon"></i>
+    </button>
+    <a href="#" class="nav-icon" aria-label="Explorar"><i class="fa-solid fa-search"></i></a>
+</div>
 
     </header>
 
@@ -101,24 +118,32 @@
 
     <div class="mobile-more-menu" id="mobile-more-menu">
         <div class="mobile-more-menu__content">
-            <a href="#" class="mobile-more-menu__item">
-                <i class="fa-solid fa-user"></i>
-                <span>Login / ORCID</span></a>
-                <button class="mobile-more-menu__item" id="theme-switcher-mobile">
-                    <i class="fa-solid fa-moon"></i>
-                    <span>Cambiar Tema</span>
-                </button><button class="mobile-more-menu__item" id="mobile-more-menu-close">
-                    <i class="fa-solid fa-xmark"></i>
-                    <span>Cerrar</span></button>
+            <a href="#" id="login-google-btn-mobile" class="mobile-more-menu__item login-provider-btn">
+                <i class="fa-brands fa-google"></i><span>Iniciar con Google</span>
+            </a>
+            <a href="#" id="login-github-btn-mobile" class="mobile-more-menu__item login-provider-btn">
+                <i class="fa-brands fa-github"></i><span>Iniciar con GitHub</span>
+            </a>
+            <a href="#" class="mobile-more-menu__item is-disabled">
+                <i class="fa-brands fa-orcid"></i><span>ORCID (Próximamente)</span>
+            </a>
+            <button class="mobile-more-menu__item" id="theme-switcher-mobile">
+                <i class="fa-solid fa-moon"></i><span>Cambiar Tema</span>
+            </button>
+            <button class="mobile-more-menu__item" id="mobile-more-menu-close">
+                <i class="fa-solid fa-xmark"></i><span>Cerrar</span>
+            </button>
         </div>
     </div>
     
     <script src="https://unpkg.com/wavesurfer.js@7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script> 
     <script src="https://cdn.plyr.io/3.7.8/plyr.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/atropos@2/atropos.min.js"></script>
+    
     <script src="js/app.js" defer></script>
     <script src="js/video-player.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/atropos@2/atropos.min.js"></script>
 
 </body>
 </html>

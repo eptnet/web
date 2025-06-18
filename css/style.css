@@ -473,3 +473,73 @@ body.dark-theme
 .mobile-nav.is-hidden {
     transform: translateY(100%);
 }
+
+/* ==========================================================================
+   7. COMPONENTE DE LOGIN DESPLEGABLE
+   ========================================================================== */
+#login-menu-container {
+    position: relative; /* Permite posicionar el popover dentro */
+}
+
+.login-popover {
+    position: absolute;
+    top: calc(100% + 10px); /* Se posiciona 10px debajo del botón */
+    right: 0;
+    width: 220px;
+    background-color: var(--color-surface);
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border: 1px solid var(--color-border);
+    padding: 1rem;
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    
+    /* Por defecto está oculto */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+}
+
+.login-popover.is-open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.login-popover p {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.25rem;
+}
+
+.login-provider-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--color-text-primary);
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+.login-provider-btn:hover {
+    background-color: var(--color-background);
+}
+
+.login-provider-btn i {
+    width: 20px;
+    text-align: center;
+    font-size: 1.2rem;
+}
+
+.login-provider-btn.is-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: transparent !important;
+}
