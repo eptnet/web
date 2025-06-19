@@ -429,6 +429,8 @@ body.dark-theme
     .category-grid { grid-template-columns: 1fr; }
     .bento-grid { 
         grid-template-columns: repeat(2, 1fr); /* Cuadrícula de 2 columnas */
+        grid-auto-rows: minmax(140px, auto); /* Cada fila tendrá al menos 140px de alto */
+
     }
 
     /* 3. Estilos por defecto para TODAS las cajas bento */
