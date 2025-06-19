@@ -60,28 +60,39 @@
             </div>
             
             <div class="user-actions bento-box-nav">
-                <div id="login-menu-container">
-                    <button id="login-menu-trigger" class="nav-icon" aria-label="Iniciar sesión">
-                        <i class="fa-solid fa-user"></i>
-                    </button>
-                    <div id="login-popover" class="login-popover">
-                        <p>Iniciar sesión con:</p>
-                        <a href="#" id="login-google-btn-desktop" class="login-provider-btn">
-                            <i class="fa-brands fa-google"></i> Google
-                        </a>
-                        <a href="#" id="login-github-btn-desktop" class="login-provider-btn">
-                            <i class="fa-brands fa-github"></i> GitHub
-                        </a>
-                        <a href="#" id="login-orcid-btn-desktop" class="login-provider-btn is-disabled">
-                            <i class="fa-brands fa-orcid"></i> ORCID (Próximamente)
-                        </a>
-                </div>
+
+    <div id="guest-view">
+        <div id="login-menu-container">
+            <button id="login-menu-trigger" class="nav-icon" aria-label="Iniciar sesión">
+                <i class="fa-solid fa-user"></i>
+            </button>
+            <div id="login-popover" class="login-popover">
+                <p>Iniciar sesión con:</p>
+                <a href="#" id="login-google-btn-desktop" class="login-provider-btn">
+                    <i class="fa-brands fa-google"></i> Google
+                </a>
+                <a href="#" id="login-github-btn-desktop" class="login-provider-btn">
+                    <i class="fa-brands fa-github"></i> GitHub
+                </a>
+                <a href="#" class="login-provider-btn is-disabled">
+                    <i class="fa-brands fa-orcid"></i> ORCID (Próximamente)
+                </a>
             </div>
-    <button class="theme-switcher nav-icon" id="theme-switcher-desktop" aria-label="Cambiar tema">
-        <i class="fa-solid fa-moon"></i>
-    </button>
-    <a href="#" class="nav-icon" aria-label="Explorar"><i class="fa-solid fa-search"></i></a>
-</div>
+        </div>
+    </div>
+
+    <div id="user-view" style="display: none;"> <a href="/dashboard.html" id="user-avatar-link" class="nav-icon" title="Ir al Dashboard">
+                </a>
+            <button id="logout-btn" class="nav-icon" title="Cerrar Sesión">
+                <i class="fa-solid fa-right-from-bracket"></i>
+            </button>
+        </div>
+
+        <button class="theme-switcher nav-icon" id="theme-switcher-desktop" aria-label="Cambiar tema">
+            <i class="fa-solid fa-moon"></i>
+        </button>
+        <a href="#" class="nav-icon" aria-label="Explorar"><i class="fa-solid fa-search"></i></a>
+    </div>
 
     </header>
 
@@ -141,7 +152,7 @@
     <script src="https://cdn.plyr.io/3.7.8/plyr.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/atropos@2/atropos.min.js"></script>
-    
+
     <script src="js/app.js" defer></script>
     <script src="js/video-player.js" defer></script>
 
