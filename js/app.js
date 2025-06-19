@@ -101,8 +101,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // 5. LÓGICA DE AUTENTICACIÓN Y EVENTOS
     function showUserUI(user) { const userView = document.getElementById('user-view'); const guestView = document.getElementById('guest-view'); const avatarLink = document.getElementById('user-avatar-link'); const logoutBtn = document.getElementById('logout-btn'); if (userView && guestView && avatarLink) { guestView.style.display = 'none'; userView.style.display = 'flex'; const avatarUrl = user.user_metadata?.avatar_url || 'img/default-avatar.png'; const userName = user.user_metadata?.full_name || user.email; avatarLink.innerHTML = `<img src="${avatarUrl}" alt="Avatar de ${userName}" style="width: 32px; height: 32px; border-radius: 50%;">`; logoutBtn?.addEventListener('click', async () => { await supabaseClient.auth.signOut(); }, { once: true }); } }
     function showGuestUI() { const userView = document.getElementById('user-view'); const guestView = document.getElementById('guest-view'); if (userView && guestView) { userView.style.display = 'none'; guestView.style.display = 'flex'; } }
-    supabaseClient.auth.onAuthStateChange((event, session) => { if (session && session.user) { showUserUI(session.user); if (event === 'SIGNED_IN') { window.location.href = '/inv/dashboard.html'; } } else { showGuestUI(); } });
-    async function handleOAuthLogin(provider) { const { error } = await supabaseClient.auth.signInWithOAuth({ provider, options: { redirectTo: window.location.origin + '/inv/dashboard.html' } }); if (error) console.error(`Error al iniciar sesión con ${provider}:`, error); }
+    supabaseClient.auth.onAuthStateChange((event, session) => { if (session && session.user) { showUserUI(session.user); 
+        if (event === 'SIGNED_IN') { window.location.href = '/inv/dashboard.html'; } } else { showGuestUI(); } });
+    async function handleOAuthLogin(provider) { 
+        const { error } = await supabaseClient.auth.signInWithOAuth({ 
+            provider, options: { redirectTo: window.location.origin + '/inv/dashboard.html' } }); 
+        if (error) console.error(`Error al iniciar sesión con ${provider}:`, error); }
     const loginMenuTrigger = document.getElementById('login-menu-trigger'); const loginPopover = document.getElementById('login-popover');
     loginMenuTrigger?.addEventListener('click', (e) => { e.stopPropagation(); loginPopover?.classList.toggle('is-open'); });
     document.addEventListener('click', (e) => { if (!loginMenuTrigger?.contains(e.target) && !loginPopover?.contains(e.target)) loginPopover?.classList.remove('is-open'); });

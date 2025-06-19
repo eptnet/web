@@ -459,6 +459,18 @@ body.dark-theme
         grid-row: span 2;
         /* Como ya tiene la clase .mobile-full-width en app.js, será de 2 columnas de ancho */
     }
+
+    /* Regla contundente para el bento de video destacado */
+    .bento-grid .bento-box.video-featured-module {
+        grid-row: span 2 !important;
+        aspect-ratio: auto !important;
+    }
+
+    /* Regla contundente para el bento de historias */
+    .bento-grid .bento-box.bento-box--1x3 {
+        grid-row: span 2 !important;
+        aspect-ratio: auto !important;
+    }
 }
 
 /* AÑADE ESTO AL FINAL DE TU style.css */
