@@ -5,106 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Epistecnologia, plaforma de divulgción</title>
     <meta name="description" content="Epistecnología: Un ecosistema para la divulgación de conocimiento académico. Explora artículos, podcasts e investigaciones en un diseño modular y elegante.">
-    <link rel="icon" type="image/png" sizes="32x32" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
 
+    <link rel="icon" type="image/png" href="/img/favicon.png">
+    <link rel="apple-touch-icon" href="/img/favicon.png">
+
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/video-player.css">
+    
     <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
-
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/video-player.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/atropos@2/atropos.min.css" />
 </head>
 <body>
-
     <section class="hero-container">
-
-        <div class="atropos my-atropos">
-            <div class="atropos-scale">
-                <div class="atropos-rotate">
-                    <div class="atropos-inner">
-                        <div class="hero-card-content">
-                            <h1>Epistecnología</h1>
-                            <p>Plataforma de divulgación científica y cultural hecha con Sabiduría</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <button id="scroll-to-content-btn" class="hero-button" aria-label="Iniciar navegación">
-            <i class="fa-solid fa-chevron-down"></i>
-        </button>
-
-    </section>
+        </section>
 
     <div id="header-placeholder"></div>
 
     <main class="container">
+        <section class="category-feature">
+            <h2 class="category-title"><i class="fa-solid fa-palette"></i> Cultura</h2>
+            <div class="category-grid" id="cultura-grid"></div>
+        </section>
         <div class="bento-grid" id="bento-grid"></div>
     </main>
 
-    <aside class="side-panel" id="side-panel">
-        <button class="side-panel__close" id="side-panel-close" aria-label="Cerrar panel"><i class="fa-solid fa-xmark"></i></button>
-            <div class="side-panel__content" id="side-panel-content"></div>
-            <div class="side-panel__share">
-                <button class="share-btn" id="share-fb" aria-label="Compartir en Facebook"><i class="fa-brands fa-facebook-f"></i></button>
-                <button class="share-btn" id="share-li" aria-label="Compartir en LinkedIn"><i class="fa-brands fa-linkedin-in"></i></button>
-                <button class="share-btn" id="share-wa" aria-label="Compartir en WhatsApp"><i class="fa-brands fa-whatsapp"></i></button>
-                <button class="share-btn" id="share-x" aria-label="Compartir en X"><i class="fa-brands fa-x-twitter"></i></button>
-                <button class="share-btn" id="copy-link" aria-label="Copiar enlace"><i class="fa-solid fa-link"></i></button>
-            </div>
-    </aside>
-
+    <aside class="side-panel" id="side-panel"></aside>
     <div class="overlay" id="overlay"></div>
-    <footer class="site-footer">
-        <div class="container">
-            <p>© 2025 Epistecnologia. Todos los derechos reservados. | Enlace a ORCID</p>
-        </div>
-    </footer>
-
-    <nav class="mobile-nav">
-        <a href="#" class="mobile-nav__link active" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
-        <a href="https://eptnews.substack.com/" class="mobile-nav__link" aria-label="Publicaciones"><i class="fa-solid fa-newspaper"></i></a>
-        <a href="#" class="mobile-nav__link" aria-label="Explorar"><i class="fa-solid fa-search"></i></a>
-        <a href="https://www.youtube.com/@epistecnologia?sub_confirmation=1" class="mobile-nav__link" id="nav-live-mobile" aria-label="En Vivo"><i class="fa-solid fa-satellite-dish"></i></a>
-        <button class="mobile-nav__link" id="mobile-more-btn" aria-label="Más opciones"><i class="fa-solid fa-bars"></i></button>
-    </nav>
-
-    <div class="mobile-more-menu" id="mobile-more-menu">
-        <div class="mobile-more-menu__content">
-            <a href="#" id="login-google-btn-mobile" class="mobile-more-menu__item login-provider-btn">
-                <i class="fa-brands fa-google"></i><span>Iniciar con Google</span>
-            </a>
-            <a href="#" id="login-github-btn-mobile" class="mobile-more-menu__item login-provider-btn">
-                <i class="fa-brands fa-github"></i><span>Iniciar con GitHub</span>
-            </a>
-            <a href="#" class="mobile-more-menu__item is-disabled">
-                <i class="fa-brands fa-orcid"></i><span>ORCID (Próximamente)</span>
-            </a>
-            <button class="mobile-more-menu__item" id="theme-switcher-mobile">
-                <i class="fa-solid fa-moon"></i><span>Cambiar Tema</span>
-            </button>
-            <button class="mobile-more-menu__item" id="mobile-more-menu-close">
-                <i class="fa-solid fa-xmark"></i><span>Cerrar</span>
-            </button>
-        </div>
-    </div>
+    <footer class="site-footer"></footer>
+    <nav class="mobile-nav"></nav>
+    <div class="mobile-more-menu" id="mobile-more-menu"></div>
     
     <script src="https://unpkg.com/wavesurfer.js@7"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script> 
-    <script src="https://cdn.plyr.io/3.7.8/plyr.js" defer></script>
+    <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/atropos@2/atropos.min.js"></script>
-
-    <script src="js/app.js" defer></script>
-    <script src="js/video-player.js" defer></script>
-    <script src="js/main.js"></script>
-
+    
+    <script src="/js/main.js"></script>
+    <script src="/js/app.js"></script>
+    <script src="/js/video-player.js"></script>
 </body>
 </html>
