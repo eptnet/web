@@ -129,14 +129,24 @@ document.addEventListener('DOMContentLoaded', () => {
         setCache(videos, token) { const cache = { timestamp: new Date().getTime(), videos, nextPageToken: token }; localStorage.setItem(this.CACHE_KEY, JSON.stringify(cache)); },
         getCache() { const cached = localStorage.getItem(this.CACHE_KEY); if (!cached) return { videos: null, nextPageToken: null }; const cache = JSON.parse(cached); this.nextPageToken = cache.nextPageToken; const isExpired = (new Date().getTime() - cache.timestamp) > this.CACHE_DURATION_HOURS * 60 * 60 * 1000; return isExpired ? { videos: null, nextPageToken: null } : { videos: cache.videos, nextPageToken: cache.nextPageToken }; },
 
-        destroy() {
+       destroy() {
+            // Restaura la barra de compartir que ocultamos
             document.querySelector('.side-panel__share').style.display = 'flex';
+
+            // Detiene y destruye el reproductor de video y el carrusel
             this.mainPlayer?.destroy();
-            this.swiper?.destroy();
-            this.mainPlayer = null; this.swiper = null; this.videos = []; this.nextPageToken = null;
+            this.thumbnailSwiper?.destroy();
+
+            // Limpia todas las variables internas para evitar fugas de memoria
+            this.mainPlayer = null; 
+            this.thumbnailSwiper = null; 
+            this.videos = []; 
+            this.nextPageToken = null;
+
+            // Limpia el contenido del panel y la clase de video (¡esto arregla los estilos!)
             this.sidePanelContent.innerHTML = '';
             this.sidePanelContent.classList.remove('side-panel__content--video');
-        }
+        },
     };
     
     ShortsPlayerManager.init();
