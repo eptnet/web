@@ -2,6 +2,7 @@
  * =========================================================================
  * Script Principal de la Aplicación (main.js)
  * Carga componentes compartidos e inicializa la lógica global (Header, Auth).
+ * Versión Final Estable 11.0
  * =========================================================================
  */
 document.addEventListener('DOMContentLoaded', () => {
@@ -12,40 +13,39 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Creamos el cliente UNA SOLA VEZ y lo hacemos global para que otros scripts lo puedan usar.
     window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log("Supabase client creado y disponible globalmente.");
+    console.log("main.js: Supabase client creado y disponible globalmente.");
 
     // 2. CARGADOR DE COMPONENTES
     const loadComponent = (componentPath, placeholderId) => {
         const placeholder = document.getElementById(placeholderId);
         if (placeholder) {
+            // Usamos una ruta absoluta desde la raíz para que funcione en todas las páginas
             fetch(componentPath)
                 .then(response => {
-                    if (!response.ok) throw new Error(`Componente no encontrado: ${componentPath}`);
+                    if (!response.ok) throw new Error(`Componente no encontrado en ${componentPath}`);
                     return response.text();
                 })
                 .then(html => {
-                    placeholder.outerHTML = html;
-                    // Avisamos que el componente está listo
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+                    // Reemplazamos el placeholder con el contenido real del header
+                    placeholder.replaceWith(...tempDiv.childNodes);
+                    // Enviamos una señal para avisar a los otros scripts que el header ya está en la página.
                     document.dispatchEvent(new CustomEvent('componentLoaded', { detail: { id: placeholderId } }));
                 })
                 .catch(error => console.error(`Error cargando componente:`, error));
         }
     };
-
-    // 3. CARGAMOS LOS COMPONENTES COMPARTIDOS
-    // Usamos rutas absolutas para que funcione desde cualquier página
+    
     loadComponent('/_header.html', 'header-placeholder');
-    // Podríamos cargar el footer de la misma manera si quisiéramos
-    // loadComponent('/_footer.html', 'footer-placeholder');
 });
 
-
-// 4. LÓGICA DE INTERACTIVIDAD DEL HEADER
+// 3. LÓGICA DE INTERACTIVIDAD DEL HEADER
 // Esta lógica espera la señal de que el header ha sido cargado antes de ejecutarse.
 document.addEventListener('componentLoaded', (e) => {
     if (e.detail.id !== 'header-placeholder') return;
 
-    console.log("Header cargado. Inicializando interactividad del menú...");
+    console.log("main.js: Header cargado. Inicializando toda la interactividad del header.");
 
     // --- SELECCIÓN DE ELEMENTOS DEL HEADER ---
     const themeSwitcherDesktop = document.getElementById('theme-switcher-desktop');
@@ -59,23 +59,11 @@ document.addEventListener('componentLoaded', (e) => {
     const logoutBtn = document.getElementById('logout-btn-header');
     const loginMenuTrigger = document.getElementById('login-menu-trigger');
     const loginPopover = document.getElementById('login-popover');
-
     const googleLoginDesktop = document.getElementById('login-google-btn-desktop');
     const githubLoginDesktop = document.getElementById('login-github-btn-desktop');
     const googleLoginMobile = document.getElementById('login-google-btn-mobile');
     const githubLoginMobile = document.getElementById('login-github-btn-mobile');
     const liveIconDesktop = document.getElementById('nav-live-desktop');
-
-    // --- AÑADE ESTE BLOQUE PARA EL MENÚ "MÁS OPCIONES" ---
-    mobileMoreBtn?.addEventListener("click", (event) => {
-        event.stopPropagation(); // Evita que otros clics interfieran
-        mobileMoreMenu?.classList.toggle("is-open");
-    });
-
-    mobileMoreMenuClose?.addEventListener("click", () => {
-        mobileMoreMenu?.classList.remove("is-open");
-    });
-    // --- FIN DEL BLOQUE NUEVO ---
 
     // --- FUNCIONES DE UI DEL HEADER ---
     const showUserUI = (user) => {
@@ -104,13 +92,18 @@ document.addEventListener('componentLoaded', (e) => {
         applyTheme(newTheme);
     };
     const handleOAuthLogin = async (provider) => {
-        await window.supabaseClient.auth.signInWithOAuth({ provider, options: { redirectTo: `${window.location.origin}/inv/dashboard.html` } });
+        const { error } = await window.supabaseClient.auth.signInWithOAuth({ provider, options: { redirectTo: `${window.location.origin}/inv/dashboard.html` } });
+        if (error) console.error(`Error al iniciar sesión con ${provider}:`, error);
+    };
+    const handleLogout = async () => {
+        await window.supabaseClient.auth.signOut();
+        window.location.href = '/';
     };
 
     // --- ASIGNACIÓN DE EVENTOS DEL HEADER ---
     themeSwitcherDesktop?.addEventListener("click", toggleTheme);
     themeSwitcherMobile?.addEventListener("click", toggleTheme);
-    logoutBtn?.addEventListener('click', async () => { await window.supabaseClient.auth.signOut(); window.location.href = '/'; });
+    logoutBtn?.addEventListener('click', handleLogout);
     loginMenuTrigger?.addEventListener('click', (e) => { e.stopPropagation(); loginPopover?.classList.toggle('is-open'); });
     document.addEventListener('click', (e) => { if (!loginMenuTrigger?.contains(e.target) && !loginPopover?.contains(e.target)) loginPopover?.classList.remove('is-open'); });
     googleLoginDesktop?.addEventListener('click', (e) => { e.preventDefault(); handleOAuthLogin('google'); });
@@ -119,15 +112,16 @@ document.addEventListener('componentLoaded', (e) => {
     githubLoginMobile?.addEventListener('click', (e) => { e.preventDefault(); handleOAuthLogin('github'); });
     mobileMoreBtn?.addEventListener("click", (event) => { event.stopPropagation(); mobileMoreMenu?.classList.toggle("is-open"); });
     mobileMoreMenuClose?.addEventListener("click", () => { mobileMoreMenu?.classList.remove("is-open"); });
+    if(liveIconDesktop) liveIconDesktop.classList.add("is-live");
 
     // --- LÓGICA DE INICIALIZACIÓN DEL HEADER ---
     applyTheme(localStorage.getItem('theme') || 'light');
-    if(liveIconDesktop) liveIconDesktop.classList.add("is-live"); // Activa el icono de Live
     
-    // "Vigilante" de sesión que actualiza la UI
+    // "Vigilante" de sesión que actualiza la UI en tiempo real
     window.supabaseClient.auth.onAuthStateChange((_event, session) => {
         session?.user ? showUserUI(session.user) : showGuestUI();
     });
+    
     // Comprobación inicial para mostrar la UI correcta al cargar la página
     async function checkInitialSession() {
         const { data: { session } } = await window.supabaseClient.auth.getSession();
