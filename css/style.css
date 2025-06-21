@@ -65,18 +65,22 @@ main.container {
     background-color: var(--color-background); /* Importante para que no sea transparente */
 }
 
-.desktop-nav {
-    /* Esta ya tiene un z-index alto (1000), lo cual es correcto */
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-}
-
 /* --- 3. COMPONENTES --- */
 
 /* 3.1 NAVEGACIÓN (Sin cambios) */
 /* ... (todo el código de navegación va aquí, no lo borres de tu archivo) ... */
-.desktop-nav { padding: 1rem 0; position: sticky; top: 0; z-index: 1000; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); background-color: rgba(240, 242, 245, 0.8); transition: background-color 0.3s; }
+.desktop-nav { 
+
+    padding: 1rem 0; 
+    position: sticky; 
+    top: 0; 
+    z-index: 1000; 
+    -webkit-backdrop-filter: blur(10px); 
+    backdrop-filter: blur(10px); 
+    background-color: rgba(240, 242, 245, 0.8); 
+    transition: background-color 0.3s; 
+
+}
 
 body.dark-theme 
 .desktop-nav { background-color: rgba(24, 25, 26, 0.8); }
@@ -144,7 +148,18 @@ body.dark-theme
 /* 3.2 BENTO GRID (Sin cambios) */
 /* ... (todo el código de bento grid va aquí, no lo borres de tu archivo) ... */
 .bento-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; padding: 2rem 0; }
-.bento-box { background-color: var(--color-surface); border-radius: var(--border-radius); box-shadow: var(--shadow-light); padding: 1.5rem; transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.3s; cursor: pointer; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+.bento-box { 
+    background-color: var(--color-surface); 
+    border-radius: var(--border-radius); 
+    box-shadow: var(--shadow-light); 
+    padding: 1.5rem; 
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.3s; 
+    cursor: pointer; 
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden; 
+    position: relative; 
+}
 .bento-box:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1); }
 body.dark-theme 
 .bento-box:hover { box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3); }
