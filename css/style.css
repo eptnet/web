@@ -279,9 +279,9 @@ body.dark-theme
     justify-content: center;
     align-items: center;
     position: relative; /* Para posicionar el botón de scroll */
-    background-image: url('https://i.ibb.co/bjDQctrc/BG-Leonardo-Phoenix-10-A-softly-blurred-background-with-a-minimal-2.jpg');
+    /* background-image: url('https://i.ibb.co/bjDQctrc/BG-Leonardo-Phoenix-10-A-softly-blurred-background-with-a-minimal-2.jpg');
     background-size: cover;
-    background-position: center; 
+    background-position: center; */
 }
 
 /* La "Tarjeta" Atropos */
