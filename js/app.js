@@ -1,17 +1,88 @@
 /**
  * =========================================================================
- * Script Principal para la Página de Inicio - VERSIÓN FINAL ESTABLE v12.0
- * CORRECCIÓN: Lógica del menú móvil separada y robustecida.
+ * Script de la Página de Inicio (app.js) - VERSIÓN CORREGIDA
+ * Espera a que main.js termine y luego inicializa la lógica específica
+ * de la página de inicio (Bento, Panel Lateral, Atropos, etc.).
  * =========================================================================
  */
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('mainReady', () => {
 
-    console.log("app.js para la página de inicio cargado.");
+    console.log("Evento 'mainReady' recibido. app.js comienza su ejecución.");
 
-    // 1. SELECCIÓN DE ELEMENTOS DEL DOM
-    const bentoGrid = document.getElementById('bento-grid');
+    // --- SELECCIÓN DE ELEMENTOS ---
+    const bentoGrid = document.getElementById("bento-grid");
     const sidePanel = document.getElementById('side-panel');
     const sidePanelContent = document.getElementById('side-panel-content');
+    const sidePanelClose = document.getElementById('side-panel-close');
+    const overlay = document.getElementById('overlay');
+    const scrollToContentBtn = document.getElementById('scroll-to-content-btn');
+
+    // --- INICIALIZADORES ---
+
+    // Inicializador para el efecto parallax de Atropos en el banner
+    function initAtropos() {
+        const myAtropos = Atropos({
+            el: '.my-atropos',
+            activeOffset: 40,
+            shadowScale: 1.05,
+            onEnter() {
+                console.log('Atropos Enter');
+            },
+            onLeave() {
+                console.log('Atropos Leave');
+            },
+            onRotate(x, y) {
+                // console.log('Atropos Rotate', x, y);
+            }
+        });
+        console.log("Atropos inicializado.");
+    }
+    
+    // El resto de tu código de app.js (loadPosts, displayPosts, openSidePanel, closeSidePanel, etc.)
+    // va aquí dentro, sin ningún cambio en su lógica interna.
+    
+    // Por ejemplo:
+    async function loadPosts() {
+        // ... tu código para cargar posts
+    }
+    
+    function displayPosts(items) {
+        // ... tu código para mostrar los posts
+    }
+    
+    function openSidePanel(contentHTML) {
+        // ... tu código para abrir el panel
+    }
+    
+    function closeSidePanel() {
+        sidePanel.classList.remove('is-open');
+        overlay.classList.remove('is-open');
+        document.body.style.overflow = '';
+    }
+    
+    // --- ASIGNACIÓN DE EVENTOS ---
+    sidePanelClose?.addEventListener('click', closeSidePanel);
+    overlay?.addEventListener('click', closeSidePanel);
+
+    bentoGrid?.addEventListener("click", async (e) => {
+        const postCard = e.target.closest(".post-card");
+        if (!postCard || !postCard.dataset.content) return;
+
+        const content = JSON.parse(postCard.dataset.content);
+        const contentHTML = `
+            <h2>${content.title}</h2>
+            <span class="post-meta">Por ${content.author}</span>
+            <div class="post-body">${content.html}</div>
+        `;
+        openSidePanel(contentHTML);
+    });
+    
+    scrollToContentBtn?.addEventListener('click', () => {
+        const header = document.querySelector('.desktop-nav');
+        if(header) {
+            header.scrollIntoView({ behavior: 'smooth' });
+        }
+    });
     
     // 2. CONSTANTES Y PLANTILLAS HTML (No cambian)
     const apiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua&order_dir=desc&count=13';

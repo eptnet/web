@@ -35,6 +35,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const githubLoginMobile = document.getElementById('login-github-btn-mobile');
     const liveIconDesktop = document.getElementById('nav-live-desktop');
 
+    // Avisamos al resto de la aplicación que la inicialización principal ha terminado.
+    document.dispatchEvent(new CustomEvent('mainReady'));
+    console.log("Evento 'mainReady' disparado. main.js ha completado su ejecución.");
+
     // --- FUNCIONES DE UI DEL HEADER ---
     const showUserUI = (user) => {
         if(guestView) guestView.style.display = 'none';
