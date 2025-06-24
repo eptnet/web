@@ -1,7 +1,7 @@
 /**
  * =========================================================================
- * Script Principal de la Aplicación (main.js) - VERSIÓN CORREGIDA
- * Carga componentes compartidos e inicializa la lógica global (Header, Auth).
+ * Script Principal de la Aplicación (main.js) - VERSIÓN SIMPLIFICADA
+ * Inicializa la lógica global (Auth) e interactividad del header.
  * =========================================================================
  */
 document.addEventListener('DOMContentLoaded', () => {
@@ -13,47 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
     window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     console.log("Supabase client creado y disponible globalmente.");
 
-    // 2. CARGADOR DE COMPONENTES ASÍNCRONO
-    const loadComponent = async (componentPath, placeholderId) => {
-        const placeholder = document.getElementById(placeholderId);
-        if (!placeholder) {
-            console.warn(`Placeholder con ID "${placeholderId}" no encontrado.`);
-            return;
-        }
-        try {
-            const response = await fetch(componentPath);
-            if (!response.ok) throw new Error(`Componente no encontrado: ${componentPath}`);
-            const html = await response.text();
-            placeholder.outerHTML = html;
-            document.dispatchEvent(new CustomEvent('componentLoaded', { detail: { id: placeholderId } }));
-            console.log(`Componente "${placeholderId}" cargado correctamente.`);
-        } catch (error) {
-            console.error(`Error cargando componente:`, error);
-        }
-    };
-
-    // 3. FUNCIÓN PRINCIPAL PARA INICIALIZAR LA APP
-    const initializeApp = async () => {
-        // Cargamos componentes en paralelo para mayor eficiencia
-        await Promise.all([
-            loadComponent('/_header.html', 'header-placeholder'),
-            loadComponent('/_footer.html', 'footer-placeholder')
-        ]);
-        
-        // La lógica de autenticación y UI se ejecuta después de que los componentes estén listos,
-        // especialmente el header que contiene los botones de login/logout.
-    };
-
-    // 4. INICIAMOS LA APLICACIÓN
-    initializeApp();
-});
-
-// 5. LÓGICA DE INTERACTIVIDAD DEL HEADER
-// Se ejecuta solo cuando el header confirma que ha sido cargado.
-document.addEventListener('componentLoaded', (e) => {
-    if (e.detail.id !== 'header-placeholder') return;
-
-    console.log("Header cargado. Inicializando interactividad del menú...");
+    // 2. LÓGICA DE INTERACTIVIDAD DEL HEADER (Ahora se ejecuta directamente)
+    console.log("Inicializando interactividad del menú...");
 
     // --- SELECCIÓN DE ELEMENTOS DEL HEADER ---
     const themeSwitcherDesktop = document.getElementById('theme-switcher-desktop');
@@ -92,12 +53,8 @@ document.addEventListener('componentLoaded', (e) => {
         const iconClass = theme === "dark" ? "fa-sun" : "fa-moon";
         const themeIconDesktop = themeSwitcherDesktop?.querySelector('i');
         const themeIconMobile = themeSwitcherMobile?.querySelector('i');
-        if (themeIconDesktop) {
-            themeIconDesktop.className = `fa-solid ${iconClass}`;
-        }
-        if (themeIconMobile) {
-            themeIconMobile.className = `fa-solid ${iconClass}`;
-        }
+        if (themeIconDesktop) { themeIconDesktop.className = `fa-solid ${iconClass}`; }
+        if (themeIconMobile) { themeIconMobile.className = `fa-solid ${iconClass}`; }
     };
     const toggleTheme = () => {
         const newTheme = document.body.classList.contains("dark-theme") ? "light" : "dark";
@@ -108,7 +65,7 @@ document.addEventListener('componentLoaded', (e) => {
         await window.supabaseClient.auth.signInWithOAuth({ provider, options: { redirectTo: `${window.location.origin}/inv/dashboard.html` } });
     };
 
-    // --- ASIGNACIÓN DE EVENTOS DEL HEADER ---
+    // --- ASIGNACIÓN DE EVENTOS ---
     themeSwitcherDesktop?.addEventListener("click", toggleTheme);
     themeSwitcherMobile?.addEventListener("click", toggleTheme);
     logoutBtn?.addEventListener('click', async () => { await window.supabaseClient.auth.signOut(); window.location.href = '/'; });
@@ -123,14 +80,16 @@ document.addEventListener('componentLoaded', (e) => {
     mobileMoreBtn?.addEventListener("click", (event) => { event.stopPropagation(); mobileMoreMenu?.classList.toggle("is-open"); });
     mobileMoreMenuClose?.addEventListener("click", () => { mobileMoreMenu?.classList.remove("is-open"); });
 
-    // --- LÓGICA DE INICIALIZACIÓN DEL HEADER ---
+    // --- LÓGICA DE INICIALIZACIÓN ---
     applyTheme(localStorage.getItem('theme') || 'light');
     liveIconDesktop?.classList.add("is-live");
     
+    // "Vigilante" de sesión que actualiza la UI
     window.supabaseClient.auth.onAuthStateChange((_event, session) => {
         session?.user ? showUserUI(session.user) : showGuestUI();
     });
 
+    // Comprobación inicial para mostrar la UI correcta al cargar la página
     (async () => {
         const { data: { session } } = await window.supabaseClient.auth.getSession();
         session?.user ? showUserUI(session.user) : showGuestUI();

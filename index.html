@@ -36,7 +36,41 @@
         </button>
     </section>
 
-    <div id="header-placeholder"></div>
+    <header class="desktop-nav">
+        <div class="container">
+            <a href="/" class="logo">
+                <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Epistecnologia Logo">
+            </a>
+            <nav class="main-menu bento-box-nav">
+                <a href="/" class="nav-icon active" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
+                <a href="https://eptnews.substack.com/" class="nav-icon" aria-label="Newsletter"><i class="fa-solid fa-newspaper"></i></a>
+                <a href="https://nas.io/es-mx/ept" class="nav-icon" aria-label="Comunidad"><i class="fa-solid fa-users"></i></a>
+            </nav>
+            <div class="live-channels bento-box-nav">
+                <a href="/live.html" class="nav-icon" id="nav-live-desktop" aria-label="En Vivo"><i class="fa-solid fa-satellite-dish"></i></a>
+                <a href="https://nas.io/es-mx/ept/events" class="nav-icon" aria-label="Eventos"><i class="fa-solid fa-calendar-days"></i></a>
+            </div>
+            <div class="user-actions bento-box-nav">
+                <div id="guest-view">
+                    <div id="login-menu-container">
+                        <button id="login-menu-trigger" class="nav-icon" aria-label="Iniciar sesión"><i class="fa-solid fa-user"></i></button>
+                        <div id="login-popover" class="login-popover">
+                            <p>Iniciar sesión con:</p>
+                            <a href="#" id="login-google-btn-desktop" class="login-provider-btn"><i class="fa-brands fa-google"></i> Google</a>
+                            <a href="#" id="login-github-btn-desktop" class="login-provider-btn"><i class="fa-brands fa-github"></i> GitHub</a>
+                            <a href="#" class="mobile-more-menu__item is-disabled"><i class="fa-brands fa-orcid"></i><span>ORCID (Próximamente)</span></a>
+                        </div>
+                    </div>
+                </div>
+                <div id="user-view" style="display: none;">
+                    <a href="/inv/dashboard.html" id="user-avatar-link" class="nav-icon" title="Ir al Dashboard"></a>
+                    <button id="logout-btn-header" class="nav-icon" title="Cerrar Sesión"><i class="fa-solid fa-right-from-bracket"></i></button>
+                </div>
+                <button class="theme-switcher nav-icon" id="theme-switcher-desktop" aria-label="Cambiar tema"><i class="fa-solid fa-moon"></i></button>
+                <a href="#" class="nav-icon" aria-label="Explorar"><i class="fa-solid fa-search"></i></a>
+            </div>
+        </div>
+    </header>
 
     <main class="container">
         <div class="bento-grid" id="bento-grid"></div>
@@ -45,7 +79,6 @@
     <aside class="side-panel" id="side-panel">
         <button class="side-panel__close" id="side-panel-close" aria-label="Cerrar panel"><i class="fa-solid fa-xmark"></i></button>
         <div class="side-panel__content" id="side-panel-content"></div>
-        
         <div class="side-panel__share">
             <button class="share-btn" id="share-fb" aria-label="Compartir en Facebook"><i class="fa-brands fa-facebook-f"></i></button>
             <button class="share-btn" id="share-li" aria-label="Compartir en LinkedIn"><i class="fa-brands fa-linkedin-in"></i></button>
@@ -65,35 +98,25 @@
 
     <div class="mobile-more-menu" id="mobile-more-menu">
         <div class="mobile-more-menu__content">
-            <a href="#" id="login-google-btn-mobile" class="mobile-more-menu__item login-provider-btn">
-                <i class="fa-brands fa-google"></i><span>Iniciar con Google</span>
-            </a>
-            <a href="#" id="login-github-btn-mobile" class="mobile-more-menu__item login-provider-btn">
-                <i class="fa-brands fa-github"></i><span>Iniciar con GitHub</span>
-            </a>
-            <a href="#" class="mobile-more-menu__item is-disabled">
-                <i class="fa-brands fa-orcid"></i><span>ORCID (Próximamente)</span>
-            </a>
+            <a href="#" id="login-google-btn-mobile" class="mobile-more-menu__item login-provider-btn"><i class="fa-brands fa-google"></i><span>Iniciar con Google</span></a>
+            <a href="#" id="login-github-btn-mobile" class="mobile-more-menu__item login-provider-btn"><i class="fa-brands fa-github"></i><span>Iniciar con GitHub</span></a>
+            <a href="#" class="mobile-more-menu__item is-disabled"><i class="fa-brands fa-orcid"></i><span>ORCID (Próximamente)</span></a>
             <hr style="border: none; border-top: 1px solid var(--color-border); margin: 0.5rem 0;">
-            <a href="https://nas.io/es-mx/ept" class="mobile-more-menu__item">
-                <i class="fa-solid fa-users"></i><span>Comunidad</span>
-            </a>
-            <a href="https://nas.io/es-mx/ept/events" class="mobile-more-menu__item">
-                <i class="fa-solid fa-calendar-days"></i><span>Eventos</span>
-            </a>
+            <a href="https://nas.io/es-mx/ept" class="mobile-more-menu__item"><i class="fa-solid fa-users"></i><span>Comunidad</span></a>
+            <a href="https://nas.io/es-mx/ept/events" class="mobile-more-menu__item"><i class="fa-solid fa-calendar-days"></i><span>Eventos</span></a>
             <hr style="border: none; border-top: 1px solid var(--color-border); margin: 0.5rem 0;">
-            <button class="mobile-more-menu__item" id="theme-switcher-mobile">
-                <i class="fa-solid fa-moon"></i><span>Cambiar Tema</span>
-            </button>
-            <button class="mobile-more-menu__item" id="mobile-more-menu-close">
-                <i class="fa-solid fa-xmark"></i><span>Cerrar</span>
-            </button>
+            <button class="mobile-more-menu__item" id="theme-switcher-mobile"><i class="fa-solid fa-moon"></i><span>Cambiar Tema</span></button>
+            <button class="mobile-more-menu__item" id="mobile-more-menu-close"><i class="fa-solid fa-xmark"></i><span>Cerrar</span></button>
         </div>
     </div>
     
     <div class="overlay" id="overlay"></div>
-
-    <div id="footer-placeholder"></div>
+    
+    <footer class="site-footer">
+        <div class="container">
+            <p>© 2025 Epistecnologia. Todos los derechos reservados.</p>
+        </div>
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
