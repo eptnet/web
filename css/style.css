@@ -2,7 +2,7 @@
    STYLE.CSS - VERSIÓN CORREGIDA Y DEFINITIVA
    ========================================================================== */
 
-/* --- 1. CONFIGURACIÓN GLOBAL Y VARIABLES (Sin cambios) --- */
+/* --- 1. CONFIGURACIÓN GLOBAL Y VARIABLES --- */
 :root {
     --color-background: #f0f2f5;
     --color-surface: #ffffff;
@@ -29,7 +29,7 @@ body.dark-theme {
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* --- 2. LAYOUT Y UTILIDADES (Sin cambios) --- */
+/* --- 2. LAYOUT Y UTILIDADES --- */
 body { 
     font-family: 'Inter', sans-serif; 
     background-color: var(--color-background);
@@ -41,11 +41,6 @@ body {
     max-width: 1400px; 
     margin: 0 auto; 
     padding: 0 2rem; 
-}
-/* Hacemos que el contenido principal tenga un fondo para que no sea transparente */
-main.container {
-    position: relative; /* Clave: para que respete el z-index */
-    background-color: var(--color-background); /* Le damos el color de fondo aquí */
 }
 
 a { color: var(--color-text-secondary); text-decoration: none; transition: color 0.2s ease; }
@@ -67,10 +62,8 @@ main.container {
 
 /* --- 3. COMPONENTES --- */
 
-/* 3.1 NAVEGACIÓN (Sin cambios) */
-/* ... (todo el código de navegación va aquí, no lo borres de tu archivo) ... */
+/* 3.1 NAVEGACIÓN */
 .desktop-nav { 
-
     padding: 1rem 0; 
     position: sticky; 
     top: 0; 
@@ -79,15 +72,10 @@ main.container {
     backdrop-filter: blur(10px); 
     background-color: rgba(240, 242, 245, 0.8); 
     transition: background-color 0.3s; 
-
 }
-
-body.dark-theme 
-.desktop-nav { background-color: rgba(24, 25, 26, 0.8); }
-.desktop-nav 
-.container { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
-.desktop-nav 
-.logo img { height: 40px; display: block; }
+body.dark-theme .desktop-nav { background-color: rgba(24, 25, 26, 0.8); }
+.desktop-nav .container { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.desktop-nav .logo img { height: 40px; display: block; }
 .bento-box-nav { display: flex; align-items: center; gap: 0.5rem; background-color: var(--color-surface); padding: 0.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow-light); transition: background-color 0.3s; }
 .main-menu { flex-grow: 1; justify-content: center; }
 .nav-icon { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 8px; transition: background-color 0.2s ease, color 0.2s ease; color: var(--color-text-secondary); font-size: 1.1rem; }
@@ -96,14 +84,8 @@ body.dark-theme
 @keyframes pulse-live { 0% { box-shadow: 0 0 0 0 rgba(183, 42, 30, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(183, 42, 30, 0); } 100% { box-shadow: 0 0 0 0 rgba(183, 42, 30, 0); } }
 .nav-icon.is-live { background-color: var(--color-accent); color: white; animation: pulse-live 2s infinite; border-radius: 8px; }
 
-/* ==========================================================================
-   REGLA DE PRUEBA PARA EL MENÚ MÓVIL (Siempre Visible)
-   ========================================================================== */
 .mobile-nav {
-    /* Por defecto, en pantallas grandes, no se muestra */
     display: none; 
-    
-    /* Estilos de posicionamiento y visuales */
     position: fixed;
     bottom: 0;
     left: 0;
@@ -115,15 +97,6 @@ body.dark-theme
     padding: 0.25rem 0;
     justify-content: space-around;
 }
-
-/* En pantallas móviles, forzamos a que sea visible con display:flex */
-@media (max-width: 768px) {
-    .mobile-nav {
-        display: flex;
-    }
-}
-
-/* Las reglas para los iconos internos no cambian */
 .mobile-nav__link {
     flex-grow: 1;
     color: var(--color-text-secondary);
@@ -133,11 +106,9 @@ body.dark-theme
     height: 54px;
     font-size: 1.5rem;
 }
-.mobile-nav__link.active {
-    color: var(--color-accent);
-}
-
+.mobile-nav__link.active { color: var(--color-accent); }
 .mobile-nav__text { display: none; }
+
 .mobile-more-menu { position: fixed; bottom: 0; left: 0; width: 100%; z-index: 1001; background-color: var(--color-surface); border-top-left-radius: var(--border-radius); border-top-right-radius: var(--border-radius); box-shadow: 0 -5px 15px rgba(0,0,0,0.1); transform: translateY(100%); transition: transform 0.3s ease-out; }
 .mobile-more-menu.is-open { transform: translateY(0); }
 .mobile-more-menu__content { padding: 1.5rem; }
@@ -145,24 +116,11 @@ body.dark-theme
 .mobile-more-menu__item:hover, .mobile-more-menu__item:active { background-color: var(--color-background); }
 .mobile-more-menu__item i { width: 24px; text-align: center; font-size: 1.2rem; color: var(--color-text-secondary); }
 
-/* 3.2 BENTO GRID (Sin cambios) */
-/* ... (todo el código de bento grid va aquí, no lo borres de tu archivo) ... */
+/* 3.2 BENTO GRID */
 .bento-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; padding: 2rem 0; }
-.bento-box { 
-    background-color: var(--color-surface); 
-    border-radius: var(--border-radius); 
-    box-shadow: var(--shadow-light); 
-    padding: 1.5rem; 
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.3s; 
-    cursor: pointer; 
-    display: flex; 
-    flex-direction: column; 
-    overflow: hidden; 
-    position: relative; 
-}
+.bento-box { background-color: var(--color-surface); border-radius: var(--border-radius); box-shadow: var(--shadow-light); padding: 1.5rem; transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.3s; cursor: pointer; display: flex; flex-direction: column; overflow: hidden; position: relative; }
 .bento-box:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1); }
-body.dark-theme 
-.bento-box:hover { box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3); }
+body.dark-theme .bento-box:hover { box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3); }
 .post-card { min-height: 250px; }
 .bento-box--1x2 { grid-column: span 1; grid-row: span 2; }
 .bento-box--1x3 { grid-column: span 1; grid-row: span 3; }
@@ -178,83 +136,32 @@ body.dark-theme
 .bento-box--2x4 { grid-column: span 2; grid-row: span 4; }
 .bento-box[style*="background-image"] { background-size: cover; background-position: center; }
 .bento-box[style*="background-image"]::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0.1)); opacity: 1; transition: opacity 0.3s; pointer-events: none; }
-.bento-box[style*="background-image"] h3, 
-.bento-box[style*="background-image"] h4, 
-.bento-box[style*="background-image"] p, 
-.bento-box[style*="background-image"] 
-.card-category { color: white; }
+.bento-box[style*="background-image"] h3, .bento-box[style*="background-image"] h4, .bento-box[style*="background-image"] p, .bento-box[style*="background-image"] .card-category { color: white; }
 .card-content { flex-grow: 1; display: flex; flex-direction: column; position: relative; z-index: 2; justify-content: flex-end; pointer-events: none; }
 .card-content > * { pointer-events: auto; }
 .card-category { font-size: var(--font-size-category); font-weight: 500; color: var(--color-accent); margin-bottom: 0.5rem; }
-.bento-box.video-featured-module {
-    padding: 0;
-}
+.bento-box.video-featured-module { padding: 0; }
 
-/* --- 3.3 PANEL LATERAL (CON LA CORRECCIÓN IMPORTANTE) --- */
+/* 3.3 PANEL LATERAL */
 .side-panel { position: fixed; top: 0; right: 0; width: 100%; max-width: 650px; height: 100%; background-color: var(--color-surface); z-index: 1002; transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); box-shadow: -5px 0 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; border-top-left-radius: var(--border-radius); border-bottom-left-radius: var(--border-radius); }
 .side-panel.is-open { transform: translateX(0); }
 .side-panel__close { position: fixed; top: 1rem; right: 1.5rem; z-index: 1003; color: white; background-color: rgba(30, 30, 30, 0.6); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50%; width: 44px; height: 44px; font-size: 1.4rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s ease, background-color 0.2s ease; }
 .side-panel__close:hover { background-color: rgba(0, 0, 0, 0.8); transform: scale(1.1); }
-
-/* --- INICIO DE LA CORRECCIÓN DE LAYOUT --- */
-
-/* 1. REGLA BASE PARA EL CONTENEDOR DE CONTENIDO */
-/* Esta regla se aplica SIEMPRE y le dice al contenedor que crezca. */
-.side-panel__content {
-    flex-grow: 1;
-    min-height: 0; /* Un hack de flexbox para asegurar que se comporte bien */
-    display: flex; /* Lo hacemos flex para controlar su contenido interno */
-    flex-direction: column;
-}
-
-/* 2. REGLA PARA CUANDO MUESTRA TEXTO */
-/* Solo aplica padding y scroll si NO es un video */
-.side-panel__content:not(.side-panel__content--video) {
-    padding: 2.5rem;
-    padding-top: 4.5rem;
-    overflow-y: auto;
-}
-
-/* 3. REGLA PARA CUANDO MUESTRA VIDEO */
-/* Solo aplica fondo negro si SÍ es un video */
-.side-panel__content.side-panel__content--video {
-    background-color: #000;
-    overflow: hidden;
-}
-
-/* 4. REGLAS PARA LOS TEXTOS (Sin cambios, pero las dejamos aquí para asegurar) */
+.side-panel__content { flex-grow: 1; min-height: 0; display: flex; flex-direction: column; }
+.side-panel__content:not(.side-panel__content--video) { padding: 2.5rem; padding-top: 4.5rem; overflow-y: auto; }
+.side-panel__content.side-panel__content--video { background-color: #000; overflow: hidden; }
 .side-panel__content h2 { font-size: var(--font-size-h2); color: var(--color-text-primary); margin-bottom: 0.5rem; line-height: 1.2; }
 .side-panel__content .post-meta { font-size: var(--font-size-small); color: var(--color-text-secondary); margin-bottom: 2rem; display: block; }
 .side-panel__content .post-body p { margin-bottom: 1.5rem; font-size: var(--font-size-base); color: var(--color-text-primary); }
-
-/* Regla para elementos visuales (imágenes y videos) */
-.side-panel__content .post-body img,
-.side-panel__content .post-body iframe {
-    max-width: 100%;
-    height: auto; /* 'auto' funciona bien aquí para mantener la proporción */
-    border-radius: var(--border-radius);
-    margin-top: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-/* Regla específica para el reproductor de AUDIO */
-.side-panel__content .post-body audio {
-    width: 100%;  /* Hacemos que ocupe todo el ancho */
-    height: 54px; /* Le damos una altura fija y estándar */
-    margin-top: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-/* --- FIN DE LA CORRECCIÓN --- */
-
+.side-panel__content .post-body img, .side-panel__content .post-body iframe { max-width: 100%; height: auto; border-radius: var(--border-radius); margin-top: 1rem; margin-bottom: 1.5rem; }
+.side-panel__content .post-body audio { width: 100%; height: 54px; margin-top: 1rem; margin-bottom: 1.5rem; }
 .side-panel__share { padding: 1rem 2.5rem; border-top: 1px solid var(--color-border); background-color: var(--color-surface); flex-shrink: 0; display: flex; gap: 0.75rem; border-bottom-left-radius: var(--border-radius); }
 .share-btn { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--color-border); color: var(--color-text-secondary); display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; font-size: 1.2rem; }
 .share-btn:hover { background-color: var(--color-accent); color: white; border-color: var(--color-accent); }
 .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1001; opacity: 0; visibility: hidden; transition: opacity 0.4s, visibility 0.4s; }
 .overlay.is-open { opacity: 1; visibility: visible; }
 
-/* --- 3.4 y 3.5 (Sin cambios) --- */
-/* ... (el resto del código de componentes va aquí, no lo borres de tu archivo) ... */
+/* 3.4 OTROS COMPONENTES */
 .iframe-container { position: relative; overflow: hidden; width: 100%; padding-top: 56.25%; border-radius: var(--border-radius); margin-bottom: 1.5rem; }
 .iframe-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
 .category-feature { padding-top: 2rem; padding-bottom: 1rem; }
@@ -262,193 +169,50 @@ body.dark-theme
 .category-title i { color: var(--color-accent); margin-right: 0.75rem; }
 .category-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
 
-/* ==========================================================================
-   ESTILOS PARA REPRODUCTOR DE AUDIO WAVESURFER
-   ========================================================================== */
+/* 3.5 REPRODUCTOR DE AUDIO WAVESURFER */
+#audio-player-container { width: 100%; margin-top: 1rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; background-color: var(--color-background); padding: 1rem; border-radius: var(--border-radius); }
+#waveform { flex-grow: 1; cursor: pointer; }
+#audio-controls button { width: 50px; height: 50px; background-color: var(--color-accent); color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; transition: transform 0.2s ease; }
+#audio-controls button:hover { transform: scale(1.1); }
 
-#audio-player-container {
-    width: 100%;
-    margin-top: 1rem;
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    background-color: var(--color-background);
-    padding: 1rem;
-    border-radius: var(--border-radius);
-}
-
-#waveform {
-    flex-grow: 1;
-    cursor: pointer;
-}
-
-#audio-controls button {
-    width: 50px;
-    height: 50px;
-    background-color: var(--color-accent);
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 1.2rem;
-    transition: transform 0.2s ease;
-}
-
-#audio-controls button:hover {
-    transform: scale(1.1);
-}
-
-/* ==========================================================================
-   5. SECCIÓN DE HÉROE CON TARJETA ATROPOS (Versión Final)
-   ========================================================================== */
-
-/* El "Lienzo" a pantalla completa */
+/* 3.6 SECCIÓN DE HÉROE CON TARJETA ATROPOS */
 .hero-container {
     height: 100vh;
     width: 100%;
-    background-color: var(--color-background); /* Fondo de color sólido del tema "var(--color-background)" */
-    display: flex;
-    flex-direction: column; /* Alinea los hijos verticalmente */
-    justify-content: center;
-    align-items: center;
-    position: relative; /* Para posicionar el botón de scroll */
-    /* background-image: url('https://i.ibb.co/bjDQctrc/BG-Leonardo-Phoenix-10-A-softly-blurred-background-with-a-minimal-2.jpg');
-    background-size: cover;
-    background-position: center; */
-}
-
-/* La "Tarjeta" Atropos */
-.my-atropos {
-    width: 90%;
-    max-width: 700px; /* Ancho máximo de la tarjeta */
-    height: 450px; /* Altura fija para la tarjeta */
-    border-radius: 20px; /* Esquinas redondeadas */
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.571);
-}
-
-.atropos-inner {
-    border-radius: 20px;
-    overflow: hidden; /* Asegura que la imagen no se salga de los bordes redondeados */
-    /* La imagen que me pasaste, aplicada como fondo */
-    background-image: url('https://i.ibb.co/ymN2p1T5/Portada-EPT-WEB-2.jpg');
-    background-size: cover;
-    background-position: center;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    color: white;
-}
-
-.hero-card-content {
-    /* El texto y otros elementos dentro de la tarjeta */
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.852);
-    width: 100%;
-    height: 100%;
+    background-color: var(--color-background);
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;  /* Alineación vertical: flex-start (arriba), center (centro), flex-end (abajo) */
-    align-items: center; /* Alineación horizontal: flex-start (izquierda), center (centro), flex-end (derecha) */
-    text-align: center;         /* Alineación del texto en sí */
-    padding: 1rem;          /* Añade un poco de espacio interior */
+    justify-content: center;
+    align-items: center;
+    position: relative;
 }
+.my-atropos { width: 90%; max-width: 700px; height: 450px; border-radius: 20px; box-shadow: 0 30px 60px rgba(0, 0, 0, 0.571); }
+.atropos-inner { border-radius: 20px; overflow: hidden; background-image: url('https://i.ibb.co/ymN2p1T5/Portada-EPT-WEB-2.jpg'); background-size: cover; background-position: center; display: flex; justify-content: center; align-items: center; text-align: center; color: white; }
+.hero-card-content { text-shadow: 0 2px 8px rgba(0, 0, 0, 0.852); width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; text-align: center; padding: 1rem; }
+.hero-card-content h1 { font-size: 3.5rem; font-weight: 700; }
+.hero-card-content p { font-size: 1.5rem; font-weight: 400; text-align: center; }
+.hero-button { position: absolute; bottom: 90px; width: 50px; height: 50px; border: 2px solid #f2f3f4; border-radius: 50%; font-size: 1.5rem; color: #f2f3f4; background: transparent; transition: background-color 0.3s, transform 0.3s; animation: bounce 2s infinite; }
+.hero-button:hover { background-color: var(--color-surface); transform: scale(1.1); animation-play-state: paused; }
+@keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }
 
-.hero-card-content h1 {
-    font-size: 3.5rem;
-    font-weight: 700;
-}
+.desktop-nav.is-at-top { background-color: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; }
 
-.hero-card-content p {
-    font-size: 1.5rem;
-    font-weight: 400;
-    text-align: center;
-}
+/* 3.7 COMPONENTE DE LOGIN DESPLEGABLE */
+#login-menu-container { position: relative; }
+.login-popover { position: absolute; top: calc(100% + 10px); right: 0; width: 220px; background-color: var(--color-surface); border-radius: var(--border-radius); box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 1px solid var(--color-border); padding: 1rem; z-index: 1001; display: flex; flex-direction: column; gap: 0.75rem; opacity: 0; visibility: hidden; transform: translateY(-10px); transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease; }
+.login-popover.is-open { opacity: 1; visibility: visible; transform: translateY(0); }
+.login-popover p { font-size: 0.9rem; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 0.25rem; }
+.login-provider-btn { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; border-radius: 8px; text-decoration: none; color: var(--color-text-primary); font-weight: 500; transition: background-color 0.2s ease; }
+.login-provider-btn:hover { background-color: var(--color-background); }
+.login-provider-btn i { width: 20px; text-align: center; font-size: 1.2rem; }
+.login-provider-btn.is-disabled { opacity: 0.5; cursor: not-allowed; background-color: transparent !important; }
 
-/* El botón para bajar al contenido */
-.hero-button {
-    position: absolute;
-    bottom: 90px; /* Lo posicionamos en la parte inferior de la sección */
-    width: 50px;
-    height: 50px;
-    border: 2px solid #f2f3f4;
-    border-radius: 50%;
-    font-size: 1.5rem;
-    color: #f2f3f4;
-    background: transparent;
-    transition: background-color 0.3s, transform 0.3s;
-    animation: bounce 2s infinite;
-}
-
-.hero-button:hover {
-    background-color: var(--color-surface);
-    transform: scale(1.1);
-    animation-play-state: paused;
-}
-
-@keyframes bounce {
-  0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
-  40% {transform: translateY(-10px);}
-  60% {transform: translateY(-5px);}
-}
-
-/* Estilo del menú flotante (sin cambios, pero lo verificamos) */
-.desktop-nav {
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    transition: background-color 0.4s ease;
-}
-
-/* Clase para cuando el menú está "en la cima", sobre el banner */
-.desktop-nav.is-at-top {
-    background-color: transparent;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    box-shadow: none;
-}
 
 /* ==========================================================================
-   4. REGLAS RESPONSIVAS (VERSIÓN REESTRUCTURADA Y LIMPIA)
+   4. REGLAS RESPONSIVAS (VERSIÓN CORREGIDA Y LIMPIA)
    ========================================================================== */
 
-/* --- VISTA TABLET --- */
-/* Se aplica a pantallas entre 769px y 1024px de ancho */
-@media (min-width: 769px) and (max-width: 1024px) {
-    /* La cuadrícula principal tendrá 3 columnas */
-    .bento-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-    .category-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    /* --- Adaptación de los Bentos a 3 columnas --- */
-    
-    /* Los bentos que ocupaban el ancho completo (3 o 4 col) ahora ocuparán 3 */
-    .bento-box--4x1,
-    .bento-box--3x1 {
-        grid-column: span 3;
-    }
-
-    /* El bento de video destacado (2x3 en escritorio) será de 2x2 en tablet */
-    .bento-box.video-featured-module {
-        grid-column: span 2;
-        grid-row: span 2;
-    }
-
-    /* El bento de historias (1x3 en escritorio) será de 1x3 en tablet */
-    .bento-box.bento-box--1x3 {
-        grid-column: span 1;
-        grid-row: span 3;
-    }
-}
-
-
-/* --- VISTA MÓVIL --- */
-/* Se aplica a pantallas de 768px de ancho o menos */
-@media (max-width: 768px) {/* --- VISTA TABLET (769px a 1024px) --- */
+/* --- VISTA TABLET (entre 769px y 1024px) --- */
 @media (min-width: 769px) and (max-width: 1024px) {
     .bento-grid {
         grid-template-columns: repeat(3, 1fr);
@@ -469,14 +233,13 @@ body.dark-theme
         grid-row: span 3;
     }
 }
-}
 
 /* --- VISTA MÓVIL (768px o menos) --- */
 @media (max-width: 768px) {
     /* 1. Configuración general de la página en móvil */
     .container { padding: 0 1rem; }
     .desktop-nav { display: none; }
-    .mobile-nav { display: flex !important; }
+    .mobile-nav { display: flex; }
     body { padding-bottom: 80px; }
     .side-panel { width: 100%; max-width: 100%; height: 100%; border-radius: 0; }
     .hero-button { bottom: 90px; }
@@ -485,137 +248,26 @@ body.dark-theme
     /* 2. Definición de la cuadrícula base */
     .category-grid { grid-template-columns: 1fr; }
     .bento-grid { 
-        grid-template-columns: repeat(2, 1fr); /* Cuadrícula de 2 columnas */
-        grid-auto-rows: minmax(140px, auto); /* Cada fila tendrá al menos 140px de alto */
-
+        grid-template-columns: repeat(2, 1fr);
+        grid-auto-rows: minmax(140px, auto);
     }
 
     /* 3. Estilos por defecto para TODAS las cajas bento */
     .bento-box { 
-        grid-column: span 1; /* Por defecto, todas ocupan 1 columna de ancho */
-        grid-row: span 1;    /* Por defecto, todas ocupan 1 fila de alto */
+        grid-column: span 1;
+        grid-row: span 1;
     }
 
-    /* 4. EXCEPCIONES: Ahora definimos los tamaños especiales */
-
-    /* La clase de ayuda para forzar el ancho completo */
-    .bento-box.mobile-full-width {
-        grid-column: span 2;
-    }
-
+    /* 4. EXCEPCIONES: Tamaños especiales en móvil */
+    .bento-box.mobile-full-width,
     .bento-box.welcome-module {
         grid-column: span 2;
     }
     
-    /* El bento de video destacado será un rectángulo grande de 2x2 */
-    .bento-box.video-featured-module {
-        grid-row: span 2;
-        /* Como ya tiene la clase .mobile-full-width en app.js, será de 2 columnas de ancho */
-    }
-
-    /* El bento de historias también será más alto, ocupando 2 filas */
+    .bento-box.video-featured-module,
     .bento-box.bento-box--1x3 {
+        grid-column: span 2;
         grid-row: span 2;
-        /* Como ya tiene la clase .mobile-full-width en app.js, será de 2 columnas de ancho */
-    }
-
-    /* Regla contundente para el bento de video destacado */
-    .bento-grid .bento-box.video-featured-module {
-        grid-row: span 2 !important;
         aspect-ratio: auto !important;
     }
-
-    /* Regla contundente para el bento de historias */
-    .bento-grid .bento-box.bento-box--1x3 {
-        grid-row: span 2 !important;
-        aspect-ratio: auto !important;
-    }
-}
-
-/* AÑADE ESTO AL FINAL DE TU style.css */
-
-/* ==========================================================================
-   6. AJUSTES FINALES DE INTERFAZ
-   ========================================================================== */
-
-/* Transición suave para el menú móvil */
-/* .mobile-nav {
-    transition: transform 0.4s ease-in-out;
-} */
-
-/* .mobile-nav.is-visible { transform: translateY(0); }
-
-/* Clase para ocultar el menú móvil moviéndolo hacia abajo */
-/* .mobile-nav.is-hidden {
-    transform: translateY(100%);
-}
-*/
-/* ==========================================================================
-   7. COMPONENTE DE LOGIN DESPLEGABLE
-   ========================================================================== */
-#login-menu-container {
-    position: relative; /* Permite posicionar el popover dentro */
-}
-
-.login-popover {
-    position: absolute;
-    top: calc(100% + 10px); /* Se posiciona 10px debajo del botón */
-    right: 0;
-    width: 220px;
-    background-color: var(--color-surface);
-    border-radius: var(--border-radius);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    border: 1px solid var(--color-border);
-    padding: 1rem;
-    z-index: 1001;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    
-    /* Por defecto está oculto */
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-10px);
-    transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
-}
-
-.login-popover.is-open {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-}
-
-.login-popover p {
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--color-text-secondary);
-    margin-bottom: 0.25rem;
-}
-
-.login-provider-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem;
-    border-radius: 8px;
-    text-decoration: none;
-    color: var(--color-text-primary);
-    font-weight: 500;
-    transition: background-color 0.2s ease;
-}
-
-.login-provider-btn:hover {
-    background-color: var(--color-background);
-}
-
-.login-provider-btn i {
-    width: 20px;
-    text-align: center;
-    font-size: 1.2rem;
-}
-
-.login-provider-btn.is-disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    background-color: transparent !important;
 }
