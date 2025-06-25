@@ -62,7 +62,7 @@ main.container {
     display: flex;
     justify-content: center;
     align-items: flex-start; /* MODIFICADO: Mueve el contenido hacia arriba */
-    text-align: left;
+    text-align: center;
     overflow: hidden;
     background-color: #18191a;
     z-index: 1;
@@ -208,6 +208,34 @@ body.dark-theme .bento-box:hover { box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3); }
 .card-content > * { pointer-events: auto; }
 .card-category { font-size: var(--font-size-category); font-weight: 500; color: var(--color-accent); margin-bottom: 0.5rem; }
 .bento-box.video-featured-module { padding: 0; }
+
+/* ==========================================================================
+   4.2.1 BENTO GRID - ESTILOS ADICIONALES (NUEVA SECCIÓN)
+   ========================================================================== */
+
+/* Estilo "Plano": Sin fondo ni sombra, ideal para texto o citas. */
+.bento-style--flat {
+    background-color: transparent;
+    box-shadow: none;
+    border: 0px solid var(--color-border);
+}
+
+/* Estilo "Círculo": Perfecto para avatares, logos o destacar algo.
+   Funciona mejor en bentos cuadrados (ej. bento-box--1x1). */
+.bento-style--circle {
+    border-radius: 50%;
+    aspect-ratio: 1 / 1; /* Mantiene la forma de círculo perfecto */
+    align-items: center;   /* Centra el contenido verticalmente */
+    justify-content: center; /* Centra el contenido horizontalmente */
+    text-align: center;
+}
+
+/* Estilo "Forma de L": Crea un recorte visual.
+   Requiere un bento cuadrado (ej. bento-box--2x2) para verse bien. */
+.bento-style--l-shape {
+    -webkit-clip-path: polygon(0% 0%, 100% 0%, 100% 48%, 52% 48%, 52% 100%, 0% 100%);
+    clip-path: polygon(0% 0%, 100% 0%, 100% 48%, 52% 48%, 52% 100%, 0% 100%);
+}
 
 /* 4.3 PANEL LATERAL */
 .side-panel { position: fixed; top: 0; right: 0; width: 100%; max-width: 650px; height: 100%; background-color: var(--color-surface); z-index: 1002; transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); box-shadow: -5px 0 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; border-top-left-radius: var(--border-radius); border-bottom-left-radius: var(--border-radius); }
