@@ -3,67 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Epistecnologia</title>
-    <meta name="description" content="Epistecnología: Un ecosistema para la divulgación de conocimiento académico.">
-    
+    <title>Dashboard - Epistecnología</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
-    <link rel="apple-touch-icon" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
-
-    <link rel="stylesheet" href="/css/style.css">
+    <!-- Font Awesome para los iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <!-- Hoja de estilos del Dashboard -->
     <link rel="stylesheet" href="/inv/css/dashboard.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
 <body>
-    
-    <header class="desktop-nav">
-        <div class="container">
-            <a href="/" class="logo">
-                <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Epistecnologia Logo">
-            </a>
-            <nav class="main-menu bento-box-nav">
-                <a href="/" class="nav-icon active" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
-                <a href="https://eptnews.substack.com/" class="nav-icon" aria-label="Newsletter"><i class="fa-solid fa-newspaper"></i></a>
-                <a href="https://nas.io/es-mx/ept" class="nav-icon" aria-label="Comunidad"><i class="fa-solid fa-users"></i></a>
-            </nav>
-            <div class="live-channels bento-box-nav">
-                <a href="/live.html" class="nav-icon" id="nav-live-desktop" aria-label="En Vivo"><i class="fa-solid fa-satellite-dish"></i></a>
-                <a href="https://nas.io/es-mx/ept/events" class="nav-icon" aria-label="Eventos"><i class="fa-solid fa-calendar-days"></i></a>
+    <div class="dashboard-container">
+        <!-- Menú de Navegación Lateral -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo" class="logo">
+                <h2>Dashboard</h2>
             </div>
-            <div class="user-actions bento-box-nav">
-                <div id="guest-view">
-                    <div id="login-menu-container">
-                        <button id="login-menu-trigger" class="nav-icon" aria-label="Iniciar sesión"><i class="fa-solid fa-user"></i></button>
-                        <div id="login-popover" class="login-popover">
-                            <p>Iniciar sesión con:</p>
-                            <a href="#" id="login-google-btn-desktop" class="login-provider-btn"><i class="fa-brands fa-google"></i> Google</a>
-                            <a href="#" id="login-github-btn-desktop" class="login-provider-btn"><i class="fa-brands fa-github"></i> GitHub</a>
-                            <a href="#" class="mobile-more-menu__item is-disabled"><i class="fa-brands fa-orcid"></i><span>ORCID (Próximamente)</span></a>
-                        </div>
+            <nav class="sidebar-nav">
+                <a href="#profile" class="nav-link active" data-section="profile-section"><i class="fa-solid fa-user-edit"></i><span>Mi Perfil</span></a>
+                <a href="#studio" class="nav-link" data-section="studio-section"><i class="fa-solid fa-podcast"></i><span>Estudio de Grabación</span></a>
+                <a href="#services" class="nav-link" data-section="services-section"><i class="fa-solid fa-briefcase"></i><span>Servicios</span></a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="/" class="nav-link"><i class="fa-solid fa-globe"></i><span>Volver a la web</span></a>
+                <button id="logout-btn" class="nav-link"><i class="fa-solid fa-right-from-bracket"></i><span>Cerrar Sesión</span></button>
+            </div>
+        </aside>
+
+        <!-- Área de Contenido Principal -->
+        <main class="main-content">
+            <header class="main-header">
+                <h1>Bienvenido, <span id="user-name-header">Investigador</span></h1>
+                <p>Gestiona tu perfil y crea contenido increíble para el mundo.</p>
+            </header>
+
+            <!-- Sección: Mi Perfil -->
+            <section id="profile-section" class="content-section active">
+                <h2>Tu Perfil Público</h2>
+                <p>Esta información podrá ser mostrada en tus transmisiones en vivo.</p>
+                <form id="profile-form" class="profile-form">
+                    <div class="form-group">
+                        <label for="display-name">Nombre a Mostrar</label>
+                        <input type="text" id="display-name" placeholder="Ej: Dra. Ada Lovelace">
+                    </div>
+                    <div class="form-group">
+                        <label for="bio">Biografía Corta</label>
+                        <textarea id="bio" rows="4" placeholder="Ej: Pionera en computación y entusiasta de la divulgación científica."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="website-url">Sitio Web o Blog</label>
+                        <input type="url" id="website-url" placeholder="https://ejemplo.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="twitter-url">Perfil de X (Twitter)</label>
+                        <input type="url" id="twitter-url" placeholder="https://x.com/usuario">
+                    </div>
+                    <div class="form-group">
+                        <label for="linkedin-url">Perfil de LinkedIn</label>
+                        <input type="url" id="linkedin-url" placeholder="https://linkedin.com/in/usuario">
+                    </div>
+                    <div class="form-group">
+                        <label for="orcid-url">ORCID</label>
+                        <input type="url" id="orcid-url" placeholder="https://orcid.org/0000-0000-0000-0000">
+                    </div>
+                    <button type="submit" class="btn-primary">
+                        <span class="btn-text">Guardar Cambios</span>
+                        <span class="btn-loader" style="display: none;">Guardando...</span>
+                    </button>
+                    <p id="form-message" class="form-message"></p>
+                </form>
+            </section>
+
+            <!-- Sección: Estudio de Grabación (con enlaces actualizados) -->
+            <section id="studio-section" class="content-section">
+                <h2>Estudio de Grabación y Transmisión</h2>
+                <p>Selecciona una sala para empezar a crear. Cada sala está pre-configurada para un propósito específico.</p>
+                <div class="studio-grid">
+                    <div class="studio-card">
+                        <i class="fa-solid fa-microphone-lines icon"></i>
+                        <h3>Sala de Podcast (Solo Audio)</h3>
+                        <p>Graba tu voz con alta calidad. Ideal para episodios de podcast o narraciones.</p>
+                        <!-- Ejemplo de URL: se usa un parámetro 'room' para identificar la sala -->
+                        <a href="https://vdo.epistecnologia.com/?room=PodcastSala1&audioonly" target="_blank" class="btn-secondary">Ingresar a la Sala</a>
+                    </div>
+                    <div class="studio-card">
+                        <i class="fa-solid fa-desktop icon"></i>
+                        <h3>Presentación Individual</h3>
+                        <p>Transmite o graba con tu cámara y tu pantalla compartida. Perfecto para ponencias y tutoriales.</p>
+                        <a href="https://vdo.epistecnologia.com/?room=PresentacionSala1&screenshare" target="_blank" class="btn-secondary">Ingresar a la Sala</a>
+                    </div>
+                    <div class="studio-card">
+                        <i class="fa-solid fa-users icon"></i>
+                        <h3>Sala de Entrevista (2 Personas)</h3>
+                        <p>Un espacio para conversar con otro investigador, cada uno con su cámara.</p>
+                        <a href="https://vdo.epistecnologia.com/?room=EntrevistaSala1" target="_blank" class="btn-secondary">Ingresar a la Sala</a>
                     </div>
                 </div>
-                <div id="user-view" style="display: none;">
-                    <a href="/inv/dashboard.html" id="user-avatar-link" class="nav-icon" title="Ir al Dashboard"></a>
-                    <button id="logout-btn-header" class="nav-icon" title="Cerrar Sesión"><i class="fa-solid fa-right-from-bracket"></i></button>
+            </section>
+            
+            <!-- Sección: Servicios -->
+            <section id="services-section" class="content-section">
+                <h2>Nuestros Servicios</h2>
+                <p>En Epistecnología, no solo te damos la plataforma, también te ayudamos a crear y gestionar tu contenido.</p>
+                <div class="services-grid">
+                    <div class="service-card">
+                        <h3>Producción de Contenido</h3>
+                        <p>Te ayudamos a transformar tus investigaciones en videos, podcasts y artículos atractivos.</p>
+                    </div>
+                    <div class="service-card">
+                        <h3>Diseño Instruccional</h3>
+                        <p>Creamos experiencias de aprendizaje efectivas a partir de tu material académico.</p>
+                    </div>
+                    <div class="service-card">
+                        <h3>Gestión de Comunidad</h3>
+                        <p>Construimos y dinamizamos tu comunidad de seguidores y colaboradores.</p>
+                    </div>
                 </div>
-                <button class="theme-switcher nav-icon" id="theme-switcher-desktop" aria-label="Cambiar tema"><i class="fa-solid fa-moon"></i></button>
-                <a href="#" class="nav-icon" aria-label="Explorar"><i class="fa-solid fa-search"></i></a>
-            </div>
-        </div>
-    </header>
+            </section>
 
-    <main class="container dashboard-container">
-        <h1>Tu Panel</h1>
-        <p>Desde aquí puedes gestionar tu contenido en la plataforma.</p>
-        <div id="user-info">Tu correo es: <strong id="user-email">Cargando...</strong></div>
-        <div class="bento-grid dashboard-grid">
-            <div class="bento-box dashboard-bento"><i class="fa-solid fa-pen-to-square"></i><h3>Publicar Artículo</h3><p>Crea una nueva publicación.</p></div>
-            <div class="bento-box dashboard-bento"><i class="fa-solid fa-headphones"></i><h3>Subir Podcast</h3><p>Añade un nuevo episodio.</p></div>
-            <div class="bento-box dashboard-bento"><i class="fa-solid fa-video"></i><h3>Gestionar Videos</h3><p>Organiza tus colecciones.</p></div>
-            <div class="bento-box dashboard-bento"><i class="fa-solid fa-tower-broadcast"></i><h3>Programar Live</h3><p>Anuncia tus transmisiones.</p></div>
-        </div>
-    </main>
+        </main>
+    </div>
+
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/js/main.js"></script>
-    <script src="/inv/js/dashboard.js"></script>
+    <script type="module" src="/inv/js/dashboard.js"></script>
 </body>
 </html>
