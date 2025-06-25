@@ -1,109 +1,108 @@
 /**
  * =========================================================================
- * DASHBOARD.JS - VERSIÓN CONECTADA A BASE DE DATOS
- * - Se conecta a Firestore para persistir los datos del perfil.
- * - Utiliza el SDK de Firebase para interactuar con la base de datos.
+ * DASHBOARD.JS - VERSIÓN CON FLUJO DE TRABAJO GUIADO
+ * - Implementa la nueva sección "Inicio" como vista principal.
+ * - Prepara la estructura para la futura gestión de proyectos.
+ * - Centraliza la navegación y la lógica de la UI.
  * =========================================================================
  */
-// Importamos los módulos necesarios de Firebase
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-
-// --- 1. INICIALIZACIÓN Y CONFIGURACIÓN ---
+// --- 1. CONFIGURACIÓN E INICIALIZACIÓN ---
 const supabaseUrl = 'https://seyknzlheaxmwztkfxmk.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
-const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-// *** IMPORTANTE ***
-// Pega aquí el objeto de configuración de tu proyecto de Firebase.
-// Lo encuentras en la Consola de Firebase > Configuración del proyecto > General.
 const firebaseConfig = {
-    apiKey: "AIza...",
-    authDomain: "tu-proyecto.firebaseapp.com",
-    projectId: "tu-proyecto",
-    storageBucket: "tu-proyecto.appspot.com",
-    messagingSenderId: "...",
-    appId: "..."
+    apiKey: "TU_API_KEY",
+    authDomain: "TU_AUTH_DOMAIN",
+    projectId: "TU_PROJECT_ID",
+    storageBucket: "TU_STORAGE_BUCKET",
+    messagingSenderId: "TU_SENDER_ID",
+    appId: "TU_APP_ID"
 };
 
-// Inicializamos Firebase y obtenemos acceso a los servicios
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app); // Podríamos usar Firebase Auth directamente en el futuro
+const firebaseApp = window.firebase.initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
 
-console.log('Dashboard script loaded and Firebase initialized.');
+console.log('Dashboard script loaded. Supabase and Firebase are ready.');
 
-// --- 2. GESTIÓN DE AUTENTICACIÓN ---
+// --- 2. LÓGICA DE AUTENTICACIÓN ---
 let currentUserId = null;
 
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        console.log('User signed in:', user);
-        currentUserId = user.uid;
-        initializeDashboard(user);
+async function handleUserSession(session) {
+    if (session && session.user) {
+        currentUserId = session.user.id;
+        initializeDashboard(session.user);
     } else {
-        console.log('User is signed out or not authenticated.');
-        // Para mayor seguridad, redirigimos si el estado de auth cambia a "no logueado"
-        window.location.href = '/'; 
-    }
-});
-
-// Verificación inicial de sesión al cargar la página (como fallback)
-(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-        console.log('No active Supabase session, redirecting.');
         window.location.href = '/';
     }
-})();
+}
 
+(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    await handleUserSession(session);
+    supabase.auth.onAuthStateChange((_event, session) => {
+        handleUserSession(session);
+    });
+})();
 
 // --- 3. LÓGICA DEL DASHBOARD ---
 
 function initializeDashboard(user) {
     const userNameHeader = document.getElementById('user-name-header');
     if (userNameHeader) {
-        // Usamos el nombre de Firebase Auth o el email como fallback
-        userNameHeader.textContent = user.displayName || user.email;
+        userNameHeader.textContent = user.user_metadata?.full_name || user.email;
     }
     
     setupNavigation();
-    setupProfileForm();
-    loadProfileData(user.uid);
-
+    setupProfileForm(user.id);
+    setupHomeSection(user.id);
+    
     const logoutBtn = document.getElementById('logout-btn');
     logoutBtn.addEventListener('click', async () => {
-        await signOut(auth); // Usamos el signOut de Firebase
-        await supabase.auth.signOut(); // También cerramos la sesión de Supabase por si acaso
+        await supabase.auth.signOut();
     });
 }
 
-function setupNavigation() { /* Sin cambios */
+function setupNavigation() {
     const navLinks = document.querySelectorAll('.sidebar-nav .nav-link');
     const contentSections = document.querySelectorAll('.content-section');
+
+    const switchSection = (targetSectionId) => {
+        navLinks.forEach(l => {
+            l.classList.toggle('active', l.dataset.section === targetSectionId);
+        });
+        contentSections.forEach(section => {
+            section.classList.toggle('active', section.id === targetSectionId);
+        });
+    };
+
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
-            navLinks.forEach(l => l.classList.remove('active'));
-            link.classList.add('active');
             const targetSectionId = link.dataset.section;
-            contentSections.forEach(section => {
-                section.classList.toggle('active', section.id === targetSectionId);
-            });
+            switchSection(targetSectionId);
+            window.location.hash = targetSectionId.replace('-section', '');
+        });
+    });
+
+    // Manejar la navegación desde la sección de inicio
+    const creationCards = document.querySelectorAll('.creation-card');
+    creationCards.forEach(card => {
+        card.addEventListener('click', () => {
+            const targetSectionId = card.dataset.targetSection;
+            switchSection(targetSectionId);
         });
     });
 }
 
-function setupProfileForm() {
+// --- 4. LÓGICA DEL PERFIL Y PROYECTOS (FIRESTORE) ---
+
+function setupProfileForm(userId) {
     const profileForm = document.getElementById('profile-form');
     profileForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        if (!currentUserId) {
-            alert('Error: No se ha podido identificar al usuario.');
-            return;
-        }
         
         const saveButton = profileForm.querySelector('.btn-primary');
         const btnText = saveButton.querySelector('.btn-text');
@@ -114,7 +113,6 @@ function setupProfileForm() {
         btnLoader.style.display = 'inline';
         saveButton.disabled = true;
         formMessage.textContent = '';
-        formMessage.className = 'form-message';
         
         const profileData = {
             displayName: document.getElementById('display-name').value,
@@ -126,53 +124,77 @@ function setupProfileForm() {
             updatedAt: new Date().toISOString()
         };
 
-        // Guardamos los datos en Firestore
-        await saveProfileData(currentUserId, profileData);
+        try {
+            await saveProfileData(userId, profileData);
+            formMessage.textContent = '¡Perfil actualizado con éxito!';
+            formMessage.className = 'form-message success';
+        } catch (error) {
+            formMessage.textContent = 'Error al guardar el perfil.';
+            formMessage.className = 'form-message error';
+        } finally {
+            btnText.style.display = 'inline';
+            btnLoader.style.display = 'none';
+            saveButton.disabled = false;
+        }
+    });
+    
+    // Cargar datos del perfil al inicializar
+    loadProfileData(userId);
+}
 
-        btnText.style.display = 'inline';
-        btnLoader.style.display = 'none';
-        saveButton.disabled = false;
-        formMessage.textContent = '¡Perfil actualizado con éxito!';
-        formMessage.classList.add('success');
+function setupHomeSection(userId) {
+    const projectDropdown = document.getElementById('project-dropdown');
+    
+    // Lógica para cargar proyectos del usuario
+    const loadProjects = async () => {
+        const userProfile = await loadProfileData(userId);
+        projectDropdown.innerHTML = ''; // Limpiar opciones
+        
+        if (userProfile && userProfile.projects && userProfile.projects.length > 0) {
+            userProfile.projects.forEach(project => {
+                const option = document.createElement('option');
+                option.value = project.doi;
+                option.textContent = project.title;
+                projectDropdown.appendChild(option);
+            });
+        } else {
+             const option = document.createElement('option');
+             option.textContent = 'Aún no tienes proyectos registrados';
+             projectDropdown.appendChild(option);
+        }
+    };
+    
+    loadProjects();
+
+    // Placeholder para el botón de añadir proyecto
+    const addProjectBtn = document.getElementById('add-project-btn');
+    addProjectBtn.addEventListener('click', () => {
+        alert('Funcionalidad para registrar proyectos con DOI/Zenodo próximamente.');
     });
 }
 
 
-// --- 4. INTERACCIÓN CON FIRESTORE ---
-
 async function saveProfileData(userId, data) {
-    try {
-        const profileRef = doc(db, "user_profiles", userId);
-        // Usamos setDoc con merge:true para crear el documento si no existe, o actualizarlo si ya existe.
-        await setDoc(profileRef, data, { merge: true });
-        console.log('Profile data saved to Firestore for user:', userId);
-    } catch (error) {
-        console.error("Error saving profile data to Firestore:", error);
-        const formMessage = document.getElementById('form-message');
-        formMessage.textContent = 'Error al guardar el perfil.';
-        formMessage.classList.add('error');
-    }
+    const profileRef = doc(db, "user_profiles", userId);
+    await setDoc(profileRef, data, { merge: true });
+    console.log('Profile data saved to Firestore for user:', userId);
 }
 
 async function loadProfileData(userId) {
-    try {
-        const profileRef = doc(db, "user_profiles", userId);
-        const docSnap = await getDoc(profileRef);
-        
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            console.log("Profile data loaded from Firestore:", data);
-            // Rellenar el formulario con los datos cargados
-            document.getElementById('display-name').value = data.displayName || '';
-            document.getElementById('bio').value = data.bio || '';
-            document.getElementById('website-url').value = data.website || '';
-            document.getElementById('twitter-url').value = data.twitter || '';
-            document.getElementById('linkedin-url').value = data.linkedin || '';
-            document.getElementById('orcid-url').value = data.orcid || '';
-        } else {
-            console.log("No profile document exists in Firestore for this user. A new one will be created on save.");
-        }
-    } catch (error) {
-        console.error("Error loading profile data from Firestore:", error);
+    const profileRef = doc(db, "user_profiles", userId);
+    const docSnap = await getDoc(profileRef);
+    
+    if (docSnap.exists()) {
+        const data = docSnap.data();
+        document.getElementById('display-name').value = data.displayName || '';
+        document.getElementById('bio').value = data.bio || '';
+        document.getElementById('website-url').value = data.website || '';
+        document.getElementById('twitter-url').value = data.twitter || '';
+        document.getElementById('linkedin-url').value = data.linkedin || '';
+        document.getElementById('orcid-url').value = data.orcid || '';
+        return data; // Devolvemos los datos para usarlos en otras funciones
+    } else {
+        console.log("No profile document yet for this user.");
+        return null;
     }
 }

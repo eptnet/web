@@ -75,6 +75,7 @@ body {
     font-weight: 500;
     margin-bottom: 0.5rem;
     transition: background-color 0.2s ease, color 0.2s ease;
+    cursor: pointer;
 }
 .nav-link:hover {
     background-color: var(--color-background);
@@ -120,10 +121,6 @@ body {
 /* --- 5. SECCIONES DE CONTENIDO --- */
 .content-section {
     display: none;
-    background-color: var(--color-surface);
-    padding: 2rem;
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-light);
 }
 .content-section.active {
     display: block;
@@ -139,21 +136,38 @@ body {
     color: var(--color-text-secondary);
 }
 
-/* --- 6. ESTILOS DE FORMULARIO (MI PERFIL) --- */
-.profile-form {
-    max-width: 700px;
+/* --- 6. ESTILOS DEL NUEVO FLUJO "INICIO" --- */
+.workflow-step {
+    background-color: var(--color-surface);
+    padding: 2rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-light);
+    margin-bottom: 2rem;
 }
-.form-group {
-    margin-bottom: 1.5rem;
+.step-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
 }
-.form-group label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
+.step-number {
+    background-color: var(--color-accent);
+    color: white;
+    font-weight: 700;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
-.form-group input,
-.form-group textarea {
-    width: 100%;
+.project-selector {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+.project-dropdown {
+    flex-grow: 1;
     padding: 0.75rem 1rem;
     border: 1px solid var(--color-border);
     border-radius: var(--border-radius);
@@ -161,123 +175,74 @@ body {
     color: var(--color-text-primary);
     font-family: inherit;
     font-size: 1rem;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
-.form-group input:focus,
-.form-group textarea:focus {
-    outline: none;
-    border-color: var(--color-primary-cta);
-    box-shadow: 0 0 0 3px rgba(24, 119, 242, 0.2);
-}
-.form-message {
-    margin-top: 1rem;
-    font-weight: 500;
-}
-.form-message.success { color: #28a745; }
-.form-message.error { color: #dc3545; }
-
-/* --- 7. BOTONES --- */
-.btn-primary {
-    background-color: var(--color-primary-cta);
-    color: white;
-    padding: 0.8rem 1.5rem;
-    border-radius: var(--border-radius);
-    font-weight: 600;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-.btn-primary:hover {
-    background-color: #166fe5;
-}
-.btn-secondary {
-    background-color: var(--color-background);
-    color: var(--color-text-primary);
-    padding: 0.8rem 1.5rem;
-    border-radius: var(--border-radius);
-    font-weight: 600;
-    text-decoration: none;
-    display: inline-block;
-    border: 1px solid var(--color-border);
-    transition: background-color 0.2s ease, border-color 0.2s ease;
-}
-.btn-secondary:hover {
-    background-color: #e4e6e8;
-    border-color: #ced0d4;
-}
-
-/* --- 8. ESTILOS DE TARJETAS (ESTUDIO Y SERVICIOS) --- */
-.studio-grid, .services-grid {
+.creation-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1.5rem;
 }
-.studio-card, .service-card {
+.creation-card {
     background-color: var(--color-background);
     padding: 1.5rem;
     border-radius: var(--border-radius);
     border: 1px solid var(--color-border);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
-.studio-card:hover {
+.creation-card:hover {
     transform: translateY(-5px);
     box-shadow: var(--shadow-light);
+    border-color: var(--color-accent);
 }
-.studio-card .icon {
-    font-size: 2rem;
+.creation-card .icon {
+    font-size: 1.75rem;
     color: var(--color-accent);
     margin-bottom: 1rem;
     display: block;
 }
-.studio-card h3, .service-card h3 {
-    margin: 0 0 0.5rem 0;
-}
-.studio-card p, .service-card p {
-    margin: 0 0 1.5rem 0;
-    color: var(--color-text-secondary);
-    flex-grow: 1;
-}
+.creation-card h3 { margin: 0 0 0.5rem 0; }
+.creation-card p { margin: 0; color: var(--color-text-secondary); font-size: 0.9rem; }
+.placeholder-content { text-align: center; padding: 3rem; background-color: var(--color-background); border-radius: var(--border-radius); }
 
-/* --- 9. RESPONSIVE DESIGN --- */
+
+/* --- 7. ESTILOS DE FORMULARIO (MI PERFIL) --- */
+.profile-form { max-width: 700px; }
+.form-group { margin-bottom: 1.5rem; }
+.form-group label { display: block; font-weight: 600; margin-bottom: 0.5rem; }
+.form-group input,
+.form-group textarea { width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--color-border); border-radius: var(--border-radius); background-color: var(--color-background); color: var(--color-text-primary); font-family: inherit; font-size: 1rem; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+.form-group input:focus,
+.form-group textarea:focus { outline: none; border-color: var(--color-primary-cta); box-shadow: 0 0 0 3px rgba(24, 119, 242, 0.2); }
+.form-message { margin-top: 1rem; font-weight: 500; }
+.form-message.success { color: #28a745; }
+.form-message.error { color: #dc3545; }
+
+/* --- 8. BOTONES --- */
+.btn-primary { background-color: var(--color-primary-cta); color: white; padding: 0.8rem 1.5rem; border-radius: var(--border-radius); font-weight: 600; font-size: 1rem; cursor: pointer; transition: background-color 0.2s ease; }
+.btn-primary:hover { background-color: #166fe5; }
+.btn-secondary { background-color: var(--color-background); color: var(--color-text-primary); padding: 0.8rem 1.5rem; border-radius: var(--border-radius); font-weight: 600; text-decoration: none; display: inline-block; border: 1px solid var(--color-border); transition: background-color 0.2s ease, border-color 0.2s ease; }
+.btn-secondary:hover { background-color: #e4e6e8; border-color: #ced0d4; }
+
+/* --- 9. ESTILOS DE TARJETAS (ESTUDIO Y SERVICIOS) --- */
+.studio-grid, .services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+.studio-card, .service-card { background-color: var(--color-background); padding: 1.5rem; border-radius: var(--border-radius); border: 1px solid var(--color-border); display: flex; flex-direction: column; }
+.studio-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-light); }
+.studio-card .icon { font-size: 2rem; color: var(--color-accent); margin-bottom: 1rem; display: block; }
+.studio-card h3, .service-card h3 { margin: 0 0 0.5rem 0; }
+.studio-card p, .service-card p { margin: 0 0 1.5rem 0; color: var(--color-text-secondary); flex-grow: 1; }
+.studio-card-actions { margin-top: auto; display: flex; justify-content: space-between; align-items: center; }
+.link-tutorial { font-size: 0.9rem; color: var(--color-text-secondary); text-decoration: none; font-weight: 500; }
+.link-tutorial:hover { color: var(--color-accent); }
+
+/* --- 10. RESPONSIVE DESIGN --- */
 @media (max-width: 992px) {
-    .dashboard-container {
-        flex-direction: column;
-    }
-    .sidebar {
-        width: 100%;
-        height: auto;
-        border-right: none;
-        border-bottom: 1px solid var(--color-border);
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1rem;
-    }
-    .sidebar-header {
-        padding: 0;
-        border: none;
-    }
-    .sidebar-header h2 {
-        display: none;
-    }
-    .sidebar-nav {
-        display: flex;
-        gap: 0.5rem;
-        margin: 0;
-    }
-    .nav-link span {
-        display: none;
-    }
-    .nav-link i {
-        margin: 0;
-    }
-    .sidebar-footer {
-        display: flex;
-        gap: 0.5rem;
-        border: none;
-        padding: 0;
-    }
-    .main-content {
-        padding: 1.5rem;
-    }
+    .dashboard-container { flex-direction: column; }
+    .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--color-border); flex-direction: row; justify-content: space-between; align-items: center; padding: 1rem; }
+    .sidebar-header { padding: 0; border: none; }
+    .sidebar-header h2 { display: none; }
+    .sidebar-nav { display: flex; gap: 0.5rem; margin: 0; }
+    .nav-link span { display: none; }
+    .nav-link i { margin: 0; }
+    .sidebar-footer { display: flex; gap: 0.5rem; border: none; padding: 0; }
+    .main-content { padding: 1.5rem; }
 }

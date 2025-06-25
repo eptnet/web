@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Epistecnología</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
-    <!-- Font Awesome para los iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    <!-- Hoja de estilos del Dashboard -->
     <link rel="stylesheet" href="/inv/css/dashboard.css">
 </head>
 <body>
@@ -19,8 +17,11 @@
                 <h2>Dashboard</h2>
             </div>
             <nav class="sidebar-nav">
-                <a href="#profile" class="nav-link active" data-section="profile-section"><i class="fa-solid fa-user-edit"></i><span>Mi Perfil</span></a>
+                <!-- 'active' ahora está en Inicio -->
+                <a href="#home" class="nav-link active" data-section="home-section"><i class="fa-solid fa-house"></i><span>Inicio</span></a>
+                <a href="#creator-studio" class="nav-link" data-section="creator-studio-section"><i class="fa-solid fa-magic-sparkles"></i><span>Crear Contenido</span></a>
                 <a href="#studio" class="nav-link" data-section="studio-section"><i class="fa-solid fa-podcast"></i><span>Estudio de Grabación</span></a>
+                <a href="#profile" class="nav-link" data-section="profile-section"><i class="fa-solid fa-user-edit"></i><span>Editar Perfil</span></a>
                 <a href="#services" class="nav-link" data-section="services-section"><i class="fa-solid fa-briefcase"></i><span>Servicios</span></a>
             </nav>
             <div class="sidebar-footer">
@@ -33,71 +34,118 @@
         <main class="main-content">
             <header class="main-header">
                 <h1>Bienvenido, <span id="user-name-header">Investigador</span></h1>
-                <p>Gestiona tu perfil y crea contenido increíble para el mundo.</p>
+                <p>Empecemos a divulgar tu conocimiento.</p>
             </header>
+            
+            <!-- Sección: Inicio (NUEVA SECCIÓN GUÍA) -->
+            <section id="home-section" class="content-section active">
+                <div class="workflow-step">
+                    <div class="step-header">
+                        <span class="step-number">1</span>
+                        <h2>Selecciona tu Proyecto</h2>
+                    </div>
+                    <p>Elige el trabajo de investigación que quieres divulgar hoy. Todo el contenido que generes quedará vinculado a este proyecto.</p>
+                    <div class="project-selector">
+                        <select id="project-dropdown" class="project-dropdown">
+                            <option value="">Cargando proyectos...</option>
+                            <!-- Los proyectos se cargarán aquí desde la base de datos -->
+                        </select>
+                        <button class="btn-secondary" id="add-project-btn"><i class="fa-solid fa-plus"></i> Registrar Nuevo Proyecto (DOI/Zenodo)</button>
+                    </div>
+                </div>
 
-            <!-- Sección: Mi Perfil -->
-            <section id="profile-section" class="content-section active">
-                <h2>Tu Perfil Público</h2>
-                <p>Esta información podrá ser mostrada en tus transmisiones en vivo.</p>
-                <form id="profile-form" class="profile-form">
-                    <div class="form-group">
-                        <label for="display-name">Nombre a Mostrar</label>
-                        <input type="text" id="display-name" placeholder="Ej: Dra. Ada Lovelace">
+                <div class="workflow-step">
+                    <div class="step-header">
+                        <span class="step-number">2</span>
+                        <h2>¿Cómo quieres divulgar hoy?</h2>
                     </div>
-                    <div class="form-group">
-                        <label for="bio">Biografía Corta</label>
-                        <textarea id="bio" rows="4" placeholder="Ej: Pionera en computación y entusiasta de la divulgación científica."></textarea>
+                    <p>Elige una herramienta para transformar tu investigación en contenido atractivo.</p>
+                    <div class="creation-grid">
+                        <div class="creation-card" data-target-section="creator-studio-section">
+                            <i class="fa-solid fa-file-pen icon"></i>
+                            <h3>Generar Textos Sociales</h3>
+                            <p>Transforma un texto denso en un artículo de blog y posts para redes sociales con ayuda de IA.</p>
+                        </div>
+                         <div class="creation-card" data-target-section="studio-section" data-target-card="podcast">
+                            <i class="fa-solid fa-microphone-lines icon"></i>
+                            <h3>Grabar Audio Podcast</h3>
+                            <p>Comunica tus avances o reflexiones en un formato de audio fácil de consumir.</p>
+                        </div>
+                        <div class="creation-card" data-target-section="studio-section" data-target-card="presentation">
+                            <i class="fa-solid fa-desktop icon"></i>
+                            <h3>Grabar Video Presentación</h3>
+                            <p>Grábate explicando tu trabajo con tu cámara y compartiendo tu pantalla.</p>
+                        </div>
+                        <div class="creation-card" data-target-section="studio-section" data-target-card="interview">
+                            <i class="fa-solid fa-users icon"></i>
+                            <h3>Grabar Video Entrevista</h3>
+                            <p>Invita a un colega a una sala de grabación para una conversación enriquecedora.</p>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="website-url">Sitio Web o Blog</label>
-                        <input type="url" id="website-url" placeholder="https://ejemplo.com">
-                    </div>
-                    <div class="form-group">
-                        <label for="twitter-url">Perfil de X (Twitter)</label>
-                        <input type="url" id="twitter-url" placeholder="https://x.com/usuario">
-                    </div>
-                    <div class="form-group">
-                        <label for="linkedin-url">Perfil de LinkedIn</label>
-                        <input type="url" id="linkedin-url" placeholder="https://linkedin.com/in/usuario">
-                    </div>
-                    <div class="form-group">
-                        <label for="orcid-url">ORCID</label>
-                        <input type="url" id="orcid-url" placeholder="https://orcid.org/0000-0000-0000-0000">
-                    </div>
-                    <button type="submit" class="btn-primary">
-                        <span class="btn-text">Guardar Cambios</span>
-                        <span class="btn-loader" style="display: none;">Guardando...</span>
-                    </button>
-                    <p id="form-message" class="form-message"></p>
-                </form>
+                </div>
+            </section>
+            
+             <!-- Sección: Crear Contenido (NUEVA) -->
+            <section id="creator-studio-section" class="content-section">
+                <h2>Estudio de Creación de Textos</h2>
+                <p>Pega un extracto de tu investigación y nuestra IA te ayudará a generar borradores para tu blog y redes sociales.</p>
+                <!-- Aquí irá el futuro formulario para interactuar con la IA -->
+                <div class="placeholder-content">
+                    <h3>Próximamente...</h3>
+                    <p>Esta herramienta está en desarrollo y pronto podrás usarla para agilizar tu divulgación escrita.</p>
+                </div>
             </section>
 
-            <!-- Sección: Estudio de Grabación (con enlaces actualizados) -->
+            <!-- Sección: Estudio de Grabación -->
             <section id="studio-section" class="content-section">
                 <h2>Estudio de Grabación y Transmisión</h2>
                 <p>Selecciona una sala para empezar a crear. Cada sala está pre-configurada para un propósito específico.</p>
                 <div class="studio-grid">
-                    <div class="studio-card">
+                    <div class="studio-card" id="podcast-card">
                         <i class="fa-solid fa-microphone-lines icon"></i>
                         <h3>Sala de Podcast (Solo Audio)</h3>
                         <p>Graba tu voz con alta calidad. Ideal para episodios de podcast o narraciones.</p>
-                        <!-- Ejemplo de URL: se usa un parámetro 'room' para identificar la sala -->
-                        <a href="https://vdo.epistecnologia.com/?room=PodcastSala1&audioonly" target="_blank" class="btn-secondary">Ingresar a la Sala</a>
+                        <div class="studio-card-actions">
+                            <a href="https://vdo.epistecnologia.com/?room=PodcastSala1&audioonly" target="_blank" class="btn-secondary">Ingresar a la Sala</a>
+                            <a href="/tutoriales/podcast" class="link-tutorial">Ver tutorial <i class="fa-solid fa-arrow-right"></i></a>
+                        </div>
                     </div>
-                    <div class="studio-card">
+                    <div class="studio-card" id="presentation-card">
                         <i class="fa-solid fa-desktop icon"></i>
                         <h3>Presentación Individual</h3>
                         <p>Transmite o graba con tu cámara y tu pantalla compartida. Perfecto para ponencias y tutoriales.</p>
-                        <a href="https://vdo.epistecnologia.com/?room=PresentacionSala1&screenshare" target="_blank" class="btn-secondary">Ingresar a la Sala</a>
+                        <div class="studio-card-actions">
+                             <a href="https://vdo.epistecnologia.com/?room=PresentacionSala1&screenshare" target="_blank" class="btn-secondary">Ingresar a la Sala</a>
+                             <a href="/tutoriales/presentacion" class="link-tutorial">Ver tutorial <i class="fa-solid fa-arrow-right"></i></a>
+                        </div>
                     </div>
-                    <div class="studio-card">
+                    <div class="studio-card" id="interview-card">
                         <i class="fa-solid fa-users icon"></i>
                         <h3>Sala de Entrevista (2 Personas)</h3>
                         <p>Un espacio para conversar con otro investigador, cada uno con su cámara.</p>
-                        <a href="https://vdo.epistecnologia.com/?room=EntrevistaSala1" target="_blank" class="btn-secondary">Ingresar a la Sala</a>
+                         <div class="studio-card-actions">
+                            <a href="https://vdo.epistecnologia.com/?room=EntrevistaSala1" target="_blank" class="btn-secondary">Ingresar a la Sala</a>
+                            <a href="/tutoriales/entrevista" class="link-tutorial">Ver tutorial <i class="fa-solid fa-arrow-right"></i></a>
+                        </div>
                     </div>
                 </div>
+            </section>
+            
+            <!-- Sección: Mi Perfil -->
+            <section id="profile-section" class="content-section">
+                <h2>Tu Perfil Público</h2>
+                <p>Esta información podrá ser mostrada en tus transmisiones en vivo.</p>
+                <form id="profile-form" class="profile-form">
+                    <!-- El formulario no cambia -->
+                    <div class="form-group"><label for="display-name">Nombre a Mostrar</label><input type="text" id="display-name" placeholder="Ej: Dra. Ada Lovelace"></div>
+                    <div class="form-group"><label for="bio">Biografía Corta</label><textarea id="bio" rows="4" placeholder="Ej: Pionera en computación..."></textarea></div>
+                    <div class="form-group"><label for="website-url">Sitio Web o Blog</label><input type="url" id="website-url" placeholder="https://ejemplo.com"></div>
+                    <div class="form-group"><label for="twitter-url">Perfil de X (Twitter)</label><input type="url" id="twitter-url" placeholder="https://x.com/usuario"></div>
+                    <div class="form-group"><label for="linkedin-url">Perfil de LinkedIn</label><input type="url" id="linkedin-url" placeholder="https://linkedin.com/in/usuario"></div>
+                    <div class="form-group"><label for="orcid-url">ORCID</label><input type="url" id="orcid-url" placeholder="https://orcid.org/0000-0000-0000-0000"></div>
+                    <button type="submit" class="btn-primary"><span class="btn-text">Guardar Cambios</span><span class="btn-loader" style="display: none;">Guardando...</span></button>
+                    <p id="form-message" class="form-message"></p>
+                </form>
             </section>
             
             <!-- Sección: Servicios -->
@@ -105,18 +153,9 @@
                 <h2>Nuestros Servicios</h2>
                 <p>En Epistecnología, no solo te damos la plataforma, también te ayudamos a crear y gestionar tu contenido.</p>
                 <div class="services-grid">
-                    <div class="service-card">
-                        <h3>Producción de Contenido</h3>
-                        <p>Te ayudamos a transformar tus investigaciones en videos, podcasts y artículos atractivos.</p>
-                    </div>
-                    <div class="service-card">
-                        <h3>Diseño Instruccional</h3>
-                        <p>Creamos experiencias de aprendizaje efectivas a partir de tu material académico.</p>
-                    </div>
-                    <div class="service-card">
-                        <h3>Gestión de Comunidad</h3>
-                        <p>Construimos y dinamizamos tu comunidad de seguidores y colaboradores.</p>
-                    </div>
+                     <div class="service-card"><h3>Producción de Contenido</h3><p>Te ayudamos a transformar tus investigaciones en videos, podcasts y artículos atractivos.</p></div>
+                    <div class="service-card"><h3>Diseño Instruccional</h3><p>Creamos experiencias de aprendizaje efectivas a partir de tu material académico.</p></div>
+                    <div class="service-card"><h3>Gestión de Comunidad</h3><p>Construimos y dinamizamos tu comunidad de seguidores y colaboradores.</p></div>
                 </div>
             </section>
 
@@ -125,6 +164,7 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module">import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"; window.firebase = { initializeApp };</script>
     <script type="module" src="/inv/js/dashboard.js"></script>
 </body>
 </html>
