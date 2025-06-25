@@ -61,8 +61,8 @@ main.container {
     position: relative;
     display: flex;
     justify-content: center;
-    align-items: center;
-    text-align: center;
+    align-items: flex-start; /* MODIFICADO: Mueve el contenido hacia arriba */
+    text-align: left;
     overflow: hidden;
     background-color: #18191a;
     z-index: 1;
@@ -98,10 +98,11 @@ main.container {
     color: white;
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
     padding: 1rem;
+    padding-top: 20vh; /* AÑADIDO: Espacio desde arriba (puedes ajustar este valor) */
 }
 
 .hero-content h1 {
-    font-size: 3.5rem;
+    font-size: 4.5rem;
     font-weight: 700;
 }
 
@@ -285,7 +286,7 @@ body.dark-theme .bento-box:hover { box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3); }
     .mobile-nav { display: flex; }
     body { padding-bottom: 80px; }
     
-    .hero-content h1 { font-size: 2.8rem; }
+    .hero-content h1 { font-size: 2.5rem; }
     
     .side-panel { width: 100%; max-width: 100%; height: 100%; border-radius: 0; }
     

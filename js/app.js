@@ -91,7 +91,7 @@ document.addEventListener('mainReady', () => {
         <div class="bento-box welcome-module bento-box--2x2" data-id="static-welcome" style="cursor: default;">
             <h2>¿Investigas, divulgas o simplemente quieres entender mejor el mundo?</h2>
                 <p>
-                Te damos la bienvenida a <strong>Epistecnología</strong>, una <strong>plataforma abierta de divulgación científica y cultural</strong> que pone la <strong>tecnología al servicio del conocimiento con sabiduría</strong>.  
+                Te damos la bienvenida a <strong>Epistecnología</strong>, una <strong>plataforma abierta de divulgación científica y cultural</strong> que pone la <strong>tecnología al servicio del conocimiento con Sabiduría</strong>.  
                 Aquí, investigadores, docentes, divulgadores y curiosos del saber encuentran un espacio para <strong>crear, compartir y explorar contenidos académicos</strong>, desde artículos y podcasts hasta <strong>videos, transmisiones en vivo y publicaciones indexadas</strong>.
                 </p>
         </div>`;
