@@ -216,14 +216,14 @@ body.dark-theme .bento-box:hover { box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3); }
 /* Estilo "Plano": Sin fondo ni sombra, ideal para texto o citas. */
 .bento-style--flat {
     background-color: transparent;
-    box-shadow: none;
+    box-shadow: none !important;
     border: 0px solid var(--color-border);
 }
 
 /* Estilo "Círculo": Perfecto para avatares, logos o destacar algo.
    Funciona mejor en bentos cuadrados (ej. bento-box--1x1). */
 .bento-style--circle {
-    border-radius: 50%;
+    border-radius: 50% !important;
     aspect-ratio: 1 / 1; /* Mantiene la forma de círculo perfecto */
     align-items: center;   /* Centra el contenido verticalmente */
     justify-content: center; /* Centra el contenido horizontalmente */

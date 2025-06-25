@@ -37,14 +37,14 @@ document.addEventListener('mainReady', () => {
     // Simplemente copia, pega, o mueve las líneas en este array.
     const grid_layout = [
         
-        { type: 'module', id: 'stories' },
         { type: 'module', id: 'welcome' },
+        { type: 'module', id: 'stories' },
         
         { type: 'post' }, // Post 1 (índice 0 del feed)
         { type: 'post' }, // Post 2 (índice 1 del feed)
 
         { type: 'module', id: 'quote' },
-        
+
         { type: 'post' }, // Post 3 (índice 2 del feed)
         { type: 'module', id: 'videoFeatured' }, // Módulo estático insertado
         { type: 'post' }, // Post 4 (índice 3 del feed)
