@@ -14,7 +14,6 @@
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
-    
 </head>
 <body>
     
@@ -71,17 +70,24 @@
         <div class="bento-grid" id="bento-grid"></div>
     </main>
 
-    <aside class="side-panel" id="side-panel">
-        <button class="side-panel__close" id="side-panel-close" aria-label="Cerrar panel"><i class="fa-solid fa-xmark"></i></button>
-        <div class="side-panel__content" id="side-panel-content"></div>
-        <div class="side-panel__share">
-            <button class="share-btn" id="share-fb" aria-label="Compartir en Facebook"><i class="fa-brands fa-facebook-f"></i></button>
-            <button class="share-btn" id="share-li" aria-label="Compartir en LinkedIn"><i class="fa-brands fa-linkedin-in"></i></button>
-            <button class="share-btn" id="share-wa" aria-label="Compartir en WhatsApp"><i class="fa-brands fa-whatsapp"></i></button>
-            <button class="share-btn" id="share-x" aria-label="Compartir en X"><i class="fa-brands fa-x-twitter"></i></button>
-            <button class="share-btn" id="copy-link" aria-label="Copiar enlace"><i class="fa-solid fa-link"></i></button>
+    <!-- *** INICIO DEL NUEVO MODAL DE INMERSIÓN *** -->
+    <!-- Este reemplaza por completo el antiguo <aside class="side-panel"> -->
+    <div id="immersion-modal-overlay" class="modal-overlay">
+        <div id="modal-container" class="modal-container">
+            <button id="modal-close-btn" class="modal-close-btn" aria-label="Cerrar">&times;</button>
+            <div id="modal-content" class="modal-content">
+                <!-- El contenido se inyectará aquí con JavaScript -->
+            </div>
+             <div id="modal-share-footer" class="modal-share-footer">
+                <button class="share-btn" id="share-fb" aria-label="Compartir en Facebook"><i class="fa-brands fa-facebook-f"></i></button>
+                <button class="share-btn" id="share-li" aria-label="Compartir en LinkedIn"><i class="fa-brands fa-linkedin-in"></i></button>
+                <button class="share-btn" id="share-wa" aria-label="Compartir en WhatsApp"><i class="fa-brands fa-whatsapp"></i></button>
+                <button class="share-btn" id="share-x" aria-label="Compartir en X"><i class="fa-brands fa-x-twitter"></i></button>
+                <button class="share-btn" id="copy-link" aria-label="Copiar enlace"><i class="fa-solid fa-link"></i></button>
+            </div>
         </div>
-    </aside>
+    </div>
+    <!-- *** FIN DEL MODAL *** -->
     
     <nav class="mobile-nav">
         <a href="/" class="mobile-nav__link active" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
