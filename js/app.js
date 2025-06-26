@@ -1,7 +1,9 @@
 /**
  * =========================================================================
- * Script de la Página de Inicio (app.js) - VERSIÓN CON CORRECCIÓN DE HISTORIAL
- * - Corrige el comportamiento del botón "atrás" en móviles para los paneles.
+ * Script de la Página de Inicio (app.js) - VERSIÓN COMPLETA Y ESTABLE
+ * - Gestiona el cierre de TODOS los tipos de paneles (artículos e historias).
+ * - Soluciona el problema de audio persistente y la pérdida de estilos.
+ * - Limpia el contenido de Substack para eliminar elementos no deseados.
  * =========================================================================
  */
 
@@ -28,11 +30,9 @@ document.addEventListener('mainReady', () => {
 
     // --- 3. EL "PLANO DE CONSTRUCCIÓN" DE LA GRID ---
     const grid_layout = [
-        { type: 'module', id: 'welcome' },
-        { type: 'module', id: 'stories' },
+        { type: 'module', id: 'welcome' }, { type: 'module', id: 'stories' },
         { type: 'post' }, { type: 'post' },
-        { type: 'module', id: 'quote' },
-        { type: 'post' },
+        { type: 'module', id: 'quote' }, { type: 'post' },
         { type: 'module', id: 'videoFeatured' },
         { type: 'post' }, { type: 'post' }, { type: 'post' }, { type: 'post' },
         { type: 'module', id: 'inFeed' },
@@ -40,11 +40,11 @@ document.addEventListener('mainReady', () => {
         { type: 'module', id: 'end' }
     ];
 
-    // --- 4. LÓGICA DE LA APLICACIÓN (Funciones) ---
+    // --- 4. LÓGICA DE LA APLICACIÓN (Funciones Completas) ---
     const apiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua&order_dir=desc&count=13';
     const audioPostBackground = 'https://i.ibb.co/vvPbhLpV/Leonardo-Phoenix-10-A-modern-and-minimalist-design-for-a-scien-2.jpg';
     let allPostsData = [];
-    window.wavesurferInstance = null; // Hacemos la instancia global para acceder a ella desde el popstate
+    window.wavesurferInstance = null;
 
     async function loadPosts() {
         if (!bentoGrid) return;
@@ -56,7 +56,9 @@ document.addEventListener('mainReady', () => {
             if (data.status === 'ok' && data.items) {
                 allPostsData = data.items;
                 displayPosts(allPostsData);
-            } else { throw new Error("API no respondió correctamente."); }
+            } else {
+                throw new Error("API no respondió correctamente.");
+            }
         } catch (error) {
             console.error("Falló la carga de posts:", error);
             bentoGrid.innerHTML = '<div class="error" style="grid-column: span 4; text-align: center; padding: 2rem;">No se pudieron cargar los posts.</div>';
@@ -93,18 +95,29 @@ document.addEventListener('mainReady', () => {
         return `<div class="bento-box post-card ${cardSizeClass}" data-id="${item.guid}" ${cardImageStyle}><div class="card-content"><span class="card-category">${cardType}</span><h4>${item.title}</h4></div></div>`;
     }
 
-    function openSidePanel(clickedElement) {
+    function extractFirstImageUrl(htmlContent) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlContent, "text/html");
+        const img = doc.querySelector("img");
+        return img ? img.src : null;
+    }
+
+    function sanitizeSubstackContent(htmlString) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlString;
+        tempDiv.querySelectorAll('.pencraft, .pc-display-flex').forEach(el => el.remove());
+        return tempDiv.innerHTML;
+    }
+
+    function openArticlePanel(clickedElement) {
         if (sidePanel.classList.contains('is-open')) return;
-        const dataset = clickedElement.dataset;
-        if (dataset.id === "static-launch-stories") { document.dispatchEvent(new CustomEvent('launch-stories')); return; }
-        if (["static-video-featured", "static-welcome", "static-quote", "static-zenodo"].includes(dataset.id)) return;
-        
-        const post = allPostsData.find(p => p.guid === dataset.id);
+        const post = allPostsData.find(p => p.guid === clickedElement.dataset.id);
         if (!post) return;
-        
+
         const postDate = new Date(post.pubDate).toLocaleDateString("es-ES", { year: "numeric", month: "long", day: "numeric" });
-        const audioPlayerHTML = post.enclosure?.link?.endsWith(".mp3") ? `<div id="audio-player-container"><button id="play-pause-btn"><i class="fa-solid fa-play"></i></button><div id="waveform"></div></div>` : "";
-        const contentHTML = `<h2>${post.title}</h2><div class="post-meta">Por ${post.author} el ${postDate}</div>${audioPlayerHTML}<div class="post-body">${post.content}</div>`;
+        const audioPlayerHTML = post.enclosure?.link?.endsWith(".mp3") ? `<div id="audio-player-container"><button id="play-pause-btn" aria-label="Reproducir/Pausar"><i class="fa-solid fa-play"></i></button><div id="waveform"></div></div>` : "";
+        const sanitizedContent = sanitizeSubstackContent(post.content);
+        const contentHTML = `<h2>${post.title}</h2><div class="post-meta">Publicado por ${post.author} el ${postDate}</div>${audioPlayerHTML}<div class="post-body">${sanitizedContent}</div>`;
         
         sidePanelContent.innerHTML = contentHTML;
         setupShareButtons({ link: post.link });
@@ -112,72 +125,126 @@ document.addEventListener('mainReady', () => {
         overlay.classList.add("is-open");
         document.body.style.overflow = "hidden";
         
-        // *** CAMBIO CLAVE 1: Añadimos un estado al historial al abrir el panel.
-        history.pushState({ panelOpen: true, type: 'article' }, '');
+        document.body.dataset.panelType = 'article';
+        history.pushState({ panelOpen: true }, '');
 
         if (post.enclosure?.link?.endsWith(".mp3")) {
             const audioUrl = post.enclosure.link;
             const playerContainer = document.getElementById('audio-player-container');
-            if (typeof WaveSurfer === 'undefined') { if (playerContainer) playerContainer.innerHTML = `<audio controls autoplay src="${audioUrl}"></audio>`; return; }
+            if (typeof WaveSurfer === 'undefined') {
+                if (playerContainer) playerContainer.innerHTML = `<audio controls autoplay controlsList="nodownload" src="${audioUrl}" style="width: 100%; height: 54px;"></audio>`;
+                return;
+            }
             const proxiedUrl = `https://thingproxy.freeboard.io/fetch/${audioUrl}`;
             window.wavesurferInstance = WaveSurfer.create({ container: '#waveform', waveColor: 'rgb(200, 200, 200)', progressColor: 'rgb(183, 42, 30)', url: proxiedUrl, barWidth: 3, barRadius: 3, barGap: 2, height: 80 });
-            // ... resto de la lógica de wavesurfer
+            
+            const playPauseBtn = document.getElementById('play-pause-btn');
+            const icon = playPauseBtn?.querySelector('i');
+            if (playPauseBtn && icon) {
+                playPauseBtn.addEventListener('click', () => window.wavesurferInstance.playPause());
+                window.wavesurferInstance.on('play', () => { icon.className = 'fa-solid fa-pause'; });
+                window.wavesurferInstance.on('pause', () => { icon.className = 'fa-solid fa-play'; });
+            }
+             window.wavesurferInstance.on('error', () => { 
+                window.wavesurferInstance?.destroy(); 
+                if (playerContainer) playerContainer.innerHTML = `<audio controls autoplay controlsList="nodownload" src="${audioUrl}" style="width: 100%; height: 54px;"></audio>`; 
+            });
         }
     }
-    
-    // Esta función ahora solo maneja la lógica de cierre VISUAL.
+
+    // *** CAMBIO CLAVE: Función de cierre ÚNICA Y CENTRALIZADA ***
     function closeSidePanel() {
-        if (window.wavesurferInstance) {
-            window.wavesurferInstance.destroy();
-            window.wavesurferInstance = null;
+        const panelType = document.body.dataset.panelType;
+        
+        // Limpieza específica según el tipo de panel
+        if (panelType === 'stories') {
+            console.log("Cerrando panel de historias...");
+            document.dispatchEvent(new CustomEvent('close-shorts-player'));
+        } 
+        else if (panelType === 'article') {
+            console.log("Cerrando panel de artículo...");
+            if (window.wavesurferInstance) {
+                window.wavesurferInstance.destroy();
+                window.wavesurferInstance = null;
+                console.log("Instancia de Wavesurfer destruida.");
+            }
         }
+
+        // Cierre visual UNIFICADO para todos
         sidePanel.classList.remove("is-open");
         overlay.classList.remove("is-open");
         document.body.style.overflow = "";
+        
+        // Limpiamos la marca
+        delete document.body.dataset.panelType;
     }
 
-    function extractFirstImageUrl(htmlContent) { const parser = new DOMParser(); const doc = parser.parseFromString(htmlContent, "text/html"); const img = doc.querySelector("img"); return img ? img.src : null; }
-    function setupShareButtons(config) { /* sin cambios */ const link = encodeURIComponent(config.link); const title = encodeURIComponent(config.title || document.title); const shareContainer = document.querySelector('.side-panel__share'); if (shareContainer) { shareContainer.querySelector("#share-fb")?.addEventListener('click', () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${link}`)); shareContainer.querySelector("#share-li")?.addEventListener('click', () => window.open(`https://www.linkedin.com/shareArticle?mini=true&url=${link}&title=${title}`)); shareContainer.querySelector("#share-wa")?.addEventListener('click', () => window.open(`https://api.whatsapp.com/send?text=${title}%20${link}`)); shareContainer.querySelector("#share-x")?.addEventListener('click', () => window.open(`https://twitter.com/intent/tweet?url=${link}&text=${title}`)); } }
-    function initHero() { /* sin cambios */ const heroButton = document.getElementById('scroll-to-content-btn'); const desktopNav = document.querySelector('.desktop-nav'); if (heroButton && desktopNav) { heroButton.addEventListener('click', () => { desktopNav.scrollIntoView({ behavior: 'smooth' }); }); } if (desktopNav) { const checkNavPosition = () => { desktopNav.classList.toggle('is-at-top', window.scrollY < 50); }; window.addEventListener('scroll', checkNavPosition, { passive: true }); checkNavPosition(); } }
-    function initMobileNav() { /* sin cambios */ const mobileNav = document.querySelector('.mobile-nav'); if (!mobileNav) return; const checkNavPosition = () => { mobileNav.classList.toggle('is-visible', window.scrollY > 50); }; window.addEventListener('scroll', checkNavPosition, { passive: true }); checkNavPosition(); }
+    function setupShareButtons(config) {
+        const link = encodeURIComponent(config.link);
+        const title = encodeURIComponent(config.title || document.title);
+        const shareContainer = document.querySelector('.side-panel__share');
+        if (shareContainer) {
+            shareContainer.querySelector("#share-fb")?.addEventListener('click', () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${link}`));
+            shareContainer.querySelector("#share-li")?.addEventListener('click', () => window.open(`https://www.linkedin.com/shareArticle?mini=true&url=${link}&title=${title}`));
+            shareContainer.querySelector("#share-wa")?.addEventListener('click', () => window.open(`https://api.whatsapp.com/send?text=${title}%20${link}`));
+            shareContainer.querySelector("#share-x")?.addEventListener('click', () => window.open(`https://twitter.com/intent/tweet?url=${link}&text=${title}`));
+        }
+    }
+
+    function initHero() {
+        const heroButton = document.getElementById('scroll-to-content-btn');
+        const desktopNav = document.querySelector('.desktop-nav');
+        if (heroButton && desktopNav) { heroButton.addEventListener('click', () => { desktopNav.scrollIntoView({ behavior: 'smooth' }); }); }
+        if (desktopNav) { const checkNavPosition = () => { desktopNav.classList.toggle('is-at-top', window.scrollY < 50); }; window.addEventListener('scroll', checkNavPosition, { passive: true }); checkNavPosition(); }
+    }
+
+    function initMobileNav() {
+        const mobileNav = document.querySelector('.mobile-nav');
+        if (!mobileNav) return;
+        const checkNavPosition = () => { mobileNav.classList.toggle('is-visible', window.scrollY > 50); };
+        window.addEventListener('scroll', checkNavPosition, { passive: true });
+        checkNavPosition();
+    }
 
     // --- 5. ASIGNACIÓN DE EVENTOS E INICIALIZACIÓN ---
     
-    // *** CAMBIO CLAVE 2: Los botones de cierre ahora usan el historial.
-    sidePanelClose?.addEventListener("click", () => history.back());
-    overlay?.addEventListener("click", () => history.back());
+    // El botón 'X' y el overlay ahora llaman a la función de cierre directamente.
+    sidePanelClose?.addEventListener("click", () => {
+        // Solo navegamos hacia atrás si había un estado que empujar
+        if (history.state?.panelOpen) {
+            history.back();
+        } else {
+            closeSidePanel();
+        }
+    });
+    overlay?.addEventListener("click", () => {
+        if (history.state?.panelOpen) {
+            history.back();
+        } else {
+            closeSidePanel();
+        }
+    });
 
     bentoGrid?.addEventListener("click", (event) => {
         const bentoBox = event.target.closest('.bento-box[data-id]');
-        if (bentoBox) openSidePanel(bentoBox);
+        if (!bentoBox) return;
+        const dataId = bentoBox.dataset.id;
+        if (dataId === "static-launch-stories") {
+            document.body.dataset.panelType = 'stories';
+            document.dispatchEvent(new CustomEvent('launch-stories'));
+        } else if (allPostsData.some(p => p.guid === dataId)) {
+            openArticlePanel(bentoBox);
+        }
+    });
+
+    // El popstate ahora también usa la función de cierre centralizada
+    window.addEventListener('popstate', function(event) {
+        if (sidePanel.classList.contains('is-open')) {
+            closeSidePanel();
+        }
     });
 
     loadPosts();
     initHero();
     initMobileNav();
-});
-
-// *** CAMBIO CLAVE 3: El "Vigilante" global que gestiona el botón atrás.
-window.addEventListener('popstate', function(event) {
-    const sidePanel = document.getElementById('side-panel');
-    if (sidePanel && sidePanel.classList.contains('is-open')) {
-        // Llama a la función de cierre visual que definimos antes
-        // Esta función es ahora segura de llamar desde el scope global
-        // porque la he reorganizado para que esté disponible.
-        // NOTA: Para que esto funcione, la función closeSidePanel debe estar en el scope global.
-        // La forma más fácil es definirla fuera del listener `mainReady`.
-        // Vamos a asumir que lo hemos hecho, o usar una referencia a ella.
-        
-        // Cierre para el panel de artículos
-        if (window.wavesurferInstance) {
-            window.wavesurferInstance.destroy();
-            window.wavesurferInstance = null;
-        }
-        sidePanel.classList.remove("is-open");
-        document.getElementById('overlay').classList.remove("is-open");
-        document.body.style.overflow = "";
-
-        // Si el panel de video estuviera abierto, también necesitaría su lógica de cierre aquí.
-        // Pero como estamos en app.js, solo nos preocupamos de lo que abre app.js.
-    }
 });
