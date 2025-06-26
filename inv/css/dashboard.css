@@ -245,20 +245,46 @@ body {
 /* --- 10. RESPONSIVE DESIGN --- */
 @media (max-width: 992px) {
     .dashboard-container { flex-direction: column; }
-    .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--color-border); flex-direction: row; justify-content: space-between; align-items: center; padding: 1rem; }
+    .sidebar { 
+        width: 100%; 
+        height: auto; 
+        border-right: none; 
+        border-bottom: 1px solid var(--color-border); 
+        flex-direction: row; 
+        justify-content: space-between; 
+        align-items: center; /* <-- ESTA LÍNEA CORRIGE LA ALINEACIÓN VERTICAL */
+        padding: 0.5rem 1rem; /* Ajuste de padding para móvil */
+    }
     .sidebar-header { padding: 0; border: none; }
     .sidebar-header h2 { display: none; }
     .sidebar-nav { display: flex; gap: 0.5rem; margin: 0; }
     .nav-link span { display: none; }
     .nav-link i { margin: 0; }
-    .sidebar-footer { display: flex; gap: 0.5rem; border: none; padding: 0; }
+    .nav-link { padding: 0.75rem; } /* Padding uniforme para iconos */
+
+    .sidebar-footer { 
+        display: flex; 
+        gap: 0.5rem; 
+        border: none; 
+        padding: 0; 
+    }
+    
+    /* *** CAMBIO CLAVE: Oculta/muestra elementos específicos *** */
+    .desktop-only { display: none; }
+    .mobile-only { display: flex !important; }
+
     .main-content { padding: 1.5rem; }
 }
+
+@media (min-width: 993px) {
+    /* Oculta el botón de perfil móvil en escritorio */
+    .mobile-only { display: none !important; }
+}
+
 
 @media (max-width: 600px) {
     .project-selector { flex-direction: column; align-items: stretch; }
     .project-dropdown { margin-bottom: 1rem; }
-}
 
 /* --- 11. MODAL STYLES --- */
 .modal-overlay {
