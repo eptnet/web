@@ -4,12 +4,13 @@
  * - Restaura el `grid_layout` para un control fácil del orden de los bentos.
  * - Añade un nuevo bento que carga un feed de podcast.
  * - Implementa un reproductor de audio persistente en la parte inferior.
+ * - Corrige el comportamiento del botón "atrás" del navegador.
  * =========================================================================
  */
 
 document.addEventListener('mainReady', () => {
 
-    console.log("app.js: Iniciado y listo con reproductor de podcast.");
+    console.log("app.js: Usando sistema de Modal de Inmersión y Reproductor de Podcast.");
 
     // --- 1. SELECCIÓN DE ELEMENTOS ---
     const bentoGrid = document.getElementById("bento-grid");
@@ -57,11 +58,16 @@ document.addEventListener('mainReady', () => {
         if (!bentoGrid) return;
         bentoGrid.innerHTML = '<div class="loading" style="grid-column: span 4; text-align: center; padding: 2rem;">Cargando...</div>';
         try {
-            const [articleResponse, podcastResponse] = await Promise.all([ fetch(articlesApiUrl), fetch(podcastApiUrl) ]);
+            const [articleResponse, podcastResponse] = await Promise.all([
+                fetch(articlesApiUrl),
+                fetch(podcastApiUrl)
+            ]);
+            
             const articleData = await articleResponse.json();
             const podcastData = await podcastResponse.json();
 
             if (articleData.status === 'ok' && articleData.items) {
+                // Filtramos para quitar los posts que son solo audio
                 allPostsData = articleData.items.filter(item => !item.enclosure?.link?.endsWith(".mp3"));
                 displayContent(allPostsData, podcastData.items);
             } else { throw new Error("API de artículos no respondió correctamente."); }
@@ -154,6 +160,10 @@ document.addEventListener('mainReady', () => {
         }
         modalOverlay.classList.add('is-visible');
         document.body.style.overflow = 'hidden';
+
+        if (!history.state?.modalOpen) {
+            history.pushState({ modalOpen: true }, '');
+        }
     }
 
     function closeModal() {
@@ -225,7 +235,7 @@ document.addEventListener('mainReady', () => {
             this.updatePlayingStatus();
         },
         playNext() {
-            this.playEpisode((this.currentIndex + 1) % this.playlist.length); // Loop
+            this.playEpisode((this.currentIndex + 1) % this.playlist.length);
         },
         playPrevious() {
             const newIndex = (this.currentIndex - 1 + this.playlist.length) % this.playlist.length;
@@ -235,6 +245,7 @@ document.addEventListener('mainReady', () => {
             if (this.audio.src) {
                 if (this.audio.paused) { this.audio.play(); } else { this.audio.pause(); }
                 this.playBtn.innerHTML = this.audio.paused ? '<i class="fa-solid fa-play"></i>' : '<i class="fa-solid fa-pause"></i>';
+                this.updatePlayingStatus();
             }
         },
         setVolume(value) {
@@ -299,9 +310,10 @@ document.addEventListener('mainReady', () => {
         }
     });
 
-    modalCloseBtn?.addEventListener('click', closeModal);
-    modalOverlay?.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
+    modalCloseBtn?.addEventListener('click', () => { if (history.state?.modalOpen) history.back(); else closeModal(); });
+    modalOverlay?.addEventListener('click', (e) => { if (e.target === modalOverlay) { if (history.state?.modalOpen) history.back(); else closeModal(); } });
     document.addEventListener('stories-ready', (e) => { openModal(e.detail.html, 'stories'); });
+    window.addEventListener('popstate', (event) => { if (modalOverlay.classList.contains('is-visible')) closeModal(); });
 
     loadContent();
     initHero();
