@@ -1,5 +1,5 @@
 /* ==========================================================================
-   DASHBOARD.CSS - ESTILOS PARA EL NUEVO CENTRO DE OPERACIONES
+   DASHBOARD.CSS - VERSIÓN FINAL Y CORREGIDA
    ========================================================================== */
 
 /* --- 1. CONFIGURACIÓN GLOBAL Y VARIABLES --- */
@@ -45,6 +45,7 @@ body {
     flex-direction: column;
     padding: 1.5rem 1rem;
     transition: background-color 0.3s, border-color 0.3s;
+    flex-shrink: 0;
 }
 .sidebar-header {
     display: flex;
@@ -52,6 +53,10 @@ body {
     gap: 0.75rem;
     padding: 0 0.5rem 1.5rem 0.5rem;
     border-bottom: 1px solid var(--color-border);
+}
+.sidebar-header .logo-link {
+    display: flex;
+    align-items: center;
 }
 .sidebar-header .logo {
     height: 32px;
@@ -125,14 +130,12 @@ body {
 .content-section.active {
     display: block;
 }
-/* CORRECCIÓN: Estilo de tarjeta para todas las secciones, excepto la de Inicio */
 .content-section:not(#home-section) {
     background-color: var(--color-surface);
     padding: 2rem;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-light);
 }
-
 .content-section h2 {
     margin-top: 0;
     margin-bottom: 0.5rem;
@@ -144,7 +147,7 @@ body {
     color: var(--color-text-secondary);
 }
 
-/* --- 6. ESTILOS DEL NUEVO FLUJO "INICIO" --- */
+/* --- 6. ESTILOS DEL FLUJO "INICIO" --- */
 .workflow-step {
     background-color: var(--color-surface);
     padding: 2rem;
@@ -168,6 +171,7 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 .project-selector {
     display: flex;
@@ -228,6 +232,7 @@ body {
 /* --- 8. BOTONES --- */
 .btn-primary { background-color: var(--color-primary-cta); color: white; padding: 0.8rem 1.5rem; border-radius: var(--border-radius); font-weight: 600; font-size: 1rem; cursor: pointer; transition: background-color 0.2s ease; }
 .btn-primary:hover { background-color: #166fe5; }
+.btn-primary:disabled { background-color: #a5b4c8; cursor: not-allowed; }
 .btn-secondary { background-color: var(--color-background); color: var(--color-text-primary); padding: 0.8rem 1.5rem; border-radius: var(--border-radius); font-weight: 600; text-decoration: none; display: inline-block; border: 1px solid var(--color-border); transition: background-color 0.2s ease, border-color 0.2s ease; }
 .btn-secondary:hover { background-color: #e4e6e8; border-color: #ced0d4; }
 
@@ -242,26 +247,84 @@ body {
 .link-tutorial { font-size: 0.9rem; color: var(--color-text-secondary); text-decoration: none; font-weight: 500; }
 .link-tutorial:hover { color: var(--color-accent); }
 
-/* --- 10. RESPONSIVE DESIGN --- */
+/* --- 10. ESTILOS DEL MODAL --- */
+/* *** CAMBIO CLAVE: Posición corregida para el overlay del modal *** */
+.modal-overlay {
+    display: none;
+    position: fixed; /* Esto asegura que se superponga a toda la página */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+}
+.modal-overlay.is-visible {
+    display: flex;
+}
+.modal {
+    background-color: var(--color-surface);
+    padding: 2rem;
+    border-radius: var(--border-radius);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    width: 90%;
+    max-width: 600px;
+    z-index: 2001;
+}
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+.modal-header h2 { margin: 0; }
+.modal-close-btn { font-size: 1.5rem; font-weight: bold; color: var(--color-text-secondary); background: none; border: none; cursor: pointer; }
+.doi-fetcher { display: flex; gap: 0.5rem; }
+#doi-fetch-status { font-size: 0.9rem; margin-top: 0.5rem; min-height: 1.2em; }
+.modal-footer { border-top: 1px solid var(--color-border); padding-top: 1.5rem; margin-top: 1.5rem; text-align: right; }
+
+/* --- 11. RESPONSIVE DESIGN --- */
 @media (max-width: 992px) {
     .dashboard-container { flex-direction: column; }
-    .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--color-border); flex-direction: row; justify-content: space-between; align-items: center; padding: 1rem; }
-    .sidebar-header { padding: 0; border: none; }
-    .sidebar-header h2 { display: none; }
-    .sidebar-nav { display: flex; gap: 0.5rem; margin: 0; }
-    .nav-link span { display: none; }
+    .sidebar {
+        width: 100%;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--color-border);
+        flex-direction: row;
+        padding: 0.5rem 1rem;
+        /* *** CAMBIO CLAVE: Alineación de iconos en móvil *** */
+        align-items: center;
+    }
+    .sidebar-header {
+        padding: 0;
+        border: none;
+    }
+    .desktop-only { display: none; }
+    .sidebar-nav {
+        flex-grow: 1;
+        display: flex;
+        justify-content: center;
+        gap: 0.25rem;
+        margin: 0;
+    }
+    .nav-link { padding: 0.75rem; margin: 0; }
     .nav-link i { margin: 0; }
-    .sidebar-footer { display: flex; gap: 0.5rem; border: none; padding: 0; }
+    .sidebar-footer { border: none; padding: 0; }
     .main-content { padding: 1.5rem; }
 }
 
-/* CORRECCIÓN: Ajuste para el selector de proyecto en móviles */
 @media (max-width: 600px) {
     .project-selector {
         flex-direction: column;
-        align-items: stretch; /* Para que ambos elementos ocupen el ancho completo */
+        align-items: stretch;
     }
     .project-dropdown {
-        margin-bottom: 1rem; /* Añade espacio entre el dropdown y el botón */
+        margin-bottom: 1rem;
     }
 }
