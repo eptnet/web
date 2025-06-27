@@ -1,14 +1,15 @@
 /**
  * =========================================================================
- * Script de la Página de Inicio (app.js) - VERSIÓN FINAL Y ESTABLE
- * - Soluciona el problema de reproducción de MP3s usando el reproductor nativo.
- * - Mantiene toda la lógica del Modal de Inmersión.
+ * Script de la Página de Inicio (app.js) - VERSIÓN COMPLETA Y ESTABLE
+ * - Restaura el `grid_layout` para un control fácil del orden de los bentos.
+ * - Añade un nuevo bento que carga un feed de podcast.
+ * - Implementa un reproductor de audio persistente en la parte inferior.
  * =========================================================================
  */
 
 document.addEventListener('mainReady', () => {
 
-    console.log("app.js: Usando sistema de Modal de Inmersión.");
+    console.log("app.js: Iniciado y listo con reproductor de podcast.");
 
     // --- 1. SELECCIÓN DE ELEMENTOS ---
     const bentoGrid = document.getElementById("bento-grid");
@@ -18,45 +19,59 @@ document.addEventListener('mainReady', () => {
     const modalCloseBtn = document.getElementById('modal-close-btn');
     const modalShareFooter = document.getElementById('modal-share-footer');
     
-    // --- 2. DEFINICIÓN DE MÓDULOS Y GRID LAYOUT ---
+    // --- 2. DEFINICIÓN DE MÓDULOS ESTÁTICOS ---
     const staticModules = {
-        welcome: `
-            <div class="bento-box welcome-module bento-box--3x2" data-id="static-welcome" style="cursor: default;">
-                <h2>¿Investigas, divulgas o simplemente quieres entender mejor el mundo?</h2>
-                <p>Te damos la bienvenida a <strong>Epistecnología</strong>, una <strong>plataforma abierta de divulgación científica y cultural</strong> que pone la <strong>tecnología al servicio del conocimiento con Sabiduría</strong>. Aquí, investigadores, docentes, divulgadores y curiosos del saber encuentran un espacio para <strong>crear, compartir y explorar contenidos académicos</strong>, desde artículos y podcasts hasta <strong>videos, transmisiones en vivo y publicaciones indexadas</strong>.</p>
-            </div>`,
+        welcome: `<div class="bento-box welcome-module bento-box--3x2" data-id="static-welcome" style="cursor: default;"><h2>¿Investigas, divulgas o simplemente quieres entender mejor el mundo?</h2><p>Te damos la bienvenida a <strong>Epistecnología</strong>, una <strong>plataforma abierta de divulgación científica y cultural</strong> que pone la <strong>tecnología al servicio del conocimiento con Sabiduría</strong>. Aquí, investigadores, docentes, divulgadores y curiosos del saber encuentran un espacio para <strong>crear, compartir y explorar contenidos académicos</strong>, desde artículos y podcasts hasta <strong>videos, transmisiones en vivo y publicaciones indexadas</strong>.</p></div>`,
         stories: `<div class="bento-box bento-box--1x3 mobile-full-width" data-id="static-launch-stories" style="background-image: url('https://i.ibb.co/cSX1NWyR/sterieweb-Whisk-3577df53ea.jpg'); cursor: pointer; background-size: cover; background-position: center;"><div class="card-content"><span class="card-category" style="color: white;">Colección</span><h4 style="color: white;">Minuto cultural</h4></div></div>`,
         quote: `<div class="bento-box bento-box--1x2 bento-style--flat" data-id="static-quote" style="cursor:default;"><div class="card-content" style="text-align: center;"><p style="font-size: 1.2rem; font-style: italic;">"El conocimiento es la única riqueza que no se puede robar."</p><h4 style="margin-top: 0.5rem;">- Anónimo</h4></div></div>`,
         videoFeatured: `<div class="bento-box bento-box--2x2 mobile-full-width video-featured-module" data-id="static-video-featured"><iframe src="https://www.youtube.com/embed/6PSKbO5yfDQ?rel=0&modestbranding=1&playsinline=1" title="Video destacado de YouTube" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`,
+        
+        // *** NUEVO MÓDULO DE PODCAST ***
+        podcastPlayer: `<div class="bento-box bento-box--2x2 bento-podcast-player" data-id="static-podcast"><h3>Últimos Episodios</h3><div class="podcast-episode-list"><p>Cargando episodios...</p></div></div>`,
+
         inFeed: `<div class="bento-box bento-box--2x2 mobile-full-width bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;"><div class="card-content"><h3>¿Disfrutando el Contenido?</h3><p>Suscríbete a nuestro newsletter.</p><br/><iframe src="https://eptnews.substack.com/embed" width="100%" height="100%" style="border:0;" frameborder="0" scrolling="no"></iframe></div></div>`,
         end: `<div class="bento-box zenodo-module bento-box--2x2" data-id="static-zenodo"><div class="card-content"><h3>Conocimiento Citable</h3><p>Accede a nuestros datasets y preprints.</p><a href="#" class="btn">Visitar Repositorio</a></div></div><div class="bento-box bento-box--2x2 bento-box--imagen" data-id="static-video" data-panel-type="embed" data-panel-title="Video Destacado" data-embed-src="https://www.youtube.com/embed/dQw4w9WgXcQ"><div class="card-content"><span class="card-category">Ver Ahora</span><h4>El Futuro de la Exploración Espacial</h4></div></div>`
     };
-    const grid_layout = [ { type: 'module', id: 'welcome' }, { type: 'module', id: 'stories' }, { type: 'post' }, { type: 'post' }, { type: 'module', id: 'quote' }, { type: 'post' }, { type: 'module', id: 'videoFeatured' }, { type: 'post' }, { type: 'post' }, { type: 'post' }, { type: 'post' }, { type: 'module', id: 'inFeed' }, { type: 'post' }, { type: 'post' }, { type: 'post' }, { type: 'post' }, { type: 'post' }, { type: 'post' }, { type: 'module', id: 'end' }];
+
+    // --- 3. EL "PLANO DE CONSTRUCCIÓN" DE LA GRID ---
+    const grid_layout = [
+        { type: 'module', id: 'welcome' }, 
+        { type: 'module', id: 'stories' }, 
+        { type: 'post' }, 
+        { type: 'post' }, 
+        { type: 'module', id: 'quote' }, 
+        { type: 'module', id: 'podcastPlayer' },
+        { type: 'module', id: 'videoFeatured' }, 
+        { type: 'post' }, { type: 'post' }, { type: 'post' }, { type: 'post' }, 
+        { type: 'module', id: 'inFeed' }, 
+        { type: 'post' }, { type: 'post' }, { type: 'post' }, { type: 'post' }, { type: 'post' }, { type: 'post' }, 
+        { type: 'module', id: 'end' }
+    ];
 
     // --- 4. LÓGICA DE LA APLICACIÓN ---
-    const apiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua&order_dir=desc&count=13';
-    const audioPostBackground = 'https://i.ibb.co/vvPbhLpV/Leonardo-Phoenix-10-A-modern-and-minimalist-design-for-a-scien-2.jpg';
+    const articlesApiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua&order_dir=desc&count=20';
+    const podcastApiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fapi.substack.com%2Ffeed%2Fpodcast%2F2867518%2Fs%2F186951.rss';
     let allPostsData = [];
-    // Ya no necesitamos una instancia global de wavesurfer
     
-    async function loadPosts() {
+    async function loadContent() {
         if (!bentoGrid) return;
         bentoGrid.innerHTML = '<div class="loading" style="grid-column: span 4; text-align: center; padding: 2rem;">Cargando...</div>';
         try {
-            const response = await fetch(apiUrl);
-            if (!response.ok) throw new Error(`Error de red: ${response.statusText}`);
-            const data = await response.json();
-            if (data.status === 'ok' && data.items) {
-                allPostsData = data.items;
-                displayPosts(allPostsData);
-            } else { throw new Error("API no respondió correctamente."); }
+            const [articleResponse, podcastResponse] = await Promise.all([ fetch(articlesApiUrl), fetch(podcastApiUrl) ]);
+            const articleData = await articleResponse.json();
+            const podcastData = await podcastResponse.json();
+
+            if (articleData.status === 'ok' && articleData.items) {
+                allPostsData = articleData.items.filter(item => !item.enclosure?.link?.endsWith(".mp3"));
+                displayContent(allPostsData, podcastData.items);
+            } else { throw new Error("API de artículos no respondió correctamente."); }
         } catch (error) {
-            console.error("Falló la carga de posts:", error);
-            bentoGrid.innerHTML = '<div class="error" style="grid-column: span 4; text-align: center; padding: 2rem;">No se pudieron cargar los posts.</div>';
+            console.error("Falló la carga de contenido:", error);
+            bentoGrid.innerHTML = '<div class="error" style="grid-column: span 4; text-align: center; padding: 2rem;">No se pudo cargar el contenido.</div>';
         }
     }
 
-    function displayPosts(items) {
+    function displayContent(articles, podcasts) {
         bentoGrid.innerHTML = "";
         let postIndex = 0;
         grid_layout.forEach(element => {
@@ -64,26 +79,51 @@ document.addEventListener('mainReady', () => {
             if (element.type === 'module') {
                 elementHTML = staticModules[element.id];
             } else if (element.type === 'post') {
-                const post = items[postIndex];
+                const post = articles[postIndex];
                 if (post) {
-                    elementHTML = createPostCardHTML(post, postIndex);
+                    elementHTML = createPostCardHTML(post);
                     postIndex++;
                 }
             }
             if (elementHTML) bentoGrid.insertAdjacentHTML("beforeend", elementHTML);
         });
+        
+        if (podcasts && podcasts.length > 0) {
+            audioPlayer.setPlaylist(podcasts);
+            populatePodcastPlayer(podcasts);
+        }
+    }
+    
+    function populatePodcastPlayer(episodes) {
+        const listContainer = document.querySelector('.podcast-episode-list');
+        if (!listContainer) return;
+        listContainer.innerHTML = '';
+        episodes.forEach((episode, index) => {
+            const episodeHTML = `
+                <div class="podcast-episode" data-index="${index}">
+                    <i class="fa-solid fa-play episode-play-icon"></i>
+                    <div class="episode-info">
+                        <p>${episode.title}</p>
+                        <span>${new Date(episode.pubDate).toLocaleDateString()}</span>
+                    </div>
+                </div>
+            `;
+            listContainer.insertAdjacentHTML('beforeend', episodeHTML);
+        });
+
+        listContainer.addEventListener('click', (e) => {
+            const episodeDiv = e.target.closest('.podcast-episode');
+            if (episodeDiv) {
+                const episodeIndex = parseInt(episodeDiv.dataset.index, 10);
+                audioPlayer.playEpisode(episodeIndex);
+            }
+        });
     }
 
-    function createPostCardHTML(item, index) {
-        const isAudio = item.enclosure?.link?.endsWith(".mp3");
+    function createPostCardHTML(item) {
         const thumbnail = item.thumbnail || extractFirstImageUrl(item.content);
-        const cardImageStyle = thumbnail ? `style="background-image: url('${thumbnail}');"` : (isAudio ? `style="background-image: url(${audioPostBackground});"` : '');
-        const cardType = isAudio ? "Podcast" : "Publicación";
-        let cardSizeClass = "bento-box--1x1";
-        if (index === 0) cardSizeClass = "bento-box--2x2";
-        else if (index % 3 === 2) cardSizeClass = "bento-box--1x2";
-        if (index === 4) cardSizeClass = "bento-box--1x1";
-        return `<div class="bento-box post-card ${cardSizeClass}" data-id="${item.guid}" ${cardImageStyle}><div class="card-content"><span class="card-category">${cardType}</span><h4>${item.title}</h4></div></div>`;
+        const cardImageStyle = thumbnail ? `style="background-image: url('${thumbnail}');"` : '';
+        return `<div class="bento-box post-card bento-box--1x1" data-id="${item.guid}" ${cardImageStyle}><div class="card-content"><span class="card-category">Publicación</span><h4>${item.title}</h4></div></div>`;
     }
 
     function extractFirstImageUrl(htmlContent) {
@@ -100,14 +140,10 @@ document.addEventListener('mainReady', () => {
         return tempDiv.innerHTML;
     }
     
-    // --- LÓGICA DEL MODAL DE INMERSIÓN ---
-
     function openModal(content, type = 'article', shareConfig = null) {
         if (!modalOverlay || !modalContent) return;
-
         document.body.dataset.modalType = type;
         modalContent.innerHTML = content;
-        
         if (type === 'stories') {
             modalContainer.classList.add('modal-container--video');
             modalShareFooter.style.display = 'none';
@@ -116,28 +152,16 @@ document.addEventListener('mainReady', () => {
             modalShareFooter.style.display = 'flex';
             if (shareConfig) setupShareButtons(shareConfig);
         }
-        
         modalOverlay.classList.add('is-visible');
         document.body.style.overflow = 'hidden';
     }
 
     function closeModal() {
         if (!modalOverlay || !modalOverlay.classList.contains('is-visible')) return;
-        
         const type = document.body.dataset.modalType;
-
         if (type === 'stories') {
             document.dispatchEvent(new CustomEvent('close-shorts-player'));
         }
-        
-        // *** CAMBIO CLAVE: Limpiamos CUALQUIER reproductor de audio nativo ***
-        const nativeAudioPlayer = modalContent.querySelector('audio');
-        if (nativeAudioPlayer) {
-            nativeAudioPlayer.pause();
-            nativeAudioPlayer.src = ''; // Detiene la descarga
-            nativeAudioPlayer.remove();
-        }
-
         modalOverlay.classList.remove('is-visible');
         document.body.style.overflow = '';
         modalContent.innerHTML = '';
@@ -153,47 +177,133 @@ document.addEventListener('mainReady', () => {
         modalShareFooter.querySelector("#share-x")?.addEventListener('click', () => window.open(`https://twitter.com/intent/tweet?url=${link}&text=${title}`));
     }
 
-    function initHero() { /* sin cambios */ }
-    function initMobileNav() { /* sin cambios */ }
-    
-    // --- 5. ASIGNACIÓN DE EVENTOS E INICIALIZACIÓN ---
+    const audioPlayer = {
+        playerElement: document.getElementById('persistent-audio-player'),
+        audio: new Audio(),
+        playlist: [],
+        currentIndex: -1,
+        
+        playBtn: document.getElementById('player-play-btn'),
+        closeBtn: document.getElementById('player-close-btn'),
+        forwardBtn: document.getElementById('player-forward-btn'),
+        rewindBtn: document.getElementById('player-rewind-btn'),
+        timeline: document.getElementById('player-timeline-slider'),
+        volumeSlider: document.getElementById('player-volume-slider'),
+        
+        trackTitle: document.getElementById('player-track-title'),
+        trackAuthor: document.getElementById('player-track-author'),
+        trackImage: document.getElementById('player-track-image'),
+        currentTimeEl: document.getElementById('player-current-time'),
+        durationEl: document.getElementById('player-duration'),
+
+        init() {
+            this.playBtn.addEventListener('click', () => this.togglePlay());
+            this.closeBtn.addEventListener('click', () => this.hide());
+            this.forwardBtn.addEventListener('click', () => this.playNext());
+            this.rewindBtn.addEventListener('click', () => this.playPrevious());
+            this.volumeSlider.addEventListener('input', (e) => this.setVolume(e.target.value));
+            this.audio.addEventListener('timeupdate', () => this.updateTimeline());
+            this.audio.addEventListener('loadedmetadata', () => this.updateTimeline());
+            this.audio.addEventListener('ended', () => this.playNext());
+            this.timeline.addEventListener('input', (e) => { if(this.audio.duration) this.audio.currentTime = (e.target.value / 100) * this.audio.duration; });
+        },
+        setPlaylist(playlist) {
+            this.playlist = playlist;
+        },
+        playEpisode(index) {
+            if (index < 0 || index >= this.playlist.length) return;
+            this.currentIndex = index;
+            const track = this.playlist[index];
+            
+            this.audio.src = track.enclosure.link;
+            this.trackTitle.textContent = track.title;
+            this.trackAuthor.textContent = track.author;
+            this.trackImage.src = track.thumbnail;
+            this.audio.play();
+            this.playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+            this.playerElement.classList.add('is-visible');
+            this.updatePlayingStatus();
+        },
+        playNext() {
+            this.playEpisode((this.currentIndex + 1) % this.playlist.length); // Loop
+        },
+        playPrevious() {
+            const newIndex = (this.currentIndex - 1 + this.playlist.length) % this.playlist.length;
+            this.playEpisode(newIndex);
+        },
+        togglePlay() {
+            if (this.audio.src) {
+                if (this.audio.paused) { this.audio.play(); } else { this.audio.pause(); }
+                this.playBtn.innerHTML = this.audio.paused ? '<i class="fa-solid fa-play"></i>' : '<i class="fa-solid fa-pause"></i>';
+            }
+        },
+        setVolume(value) {
+            this.audio.volume = value / 100;
+        },
+        updateTimeline() {
+            const formatTime = (secs) => {
+                if (isNaN(secs)) return '0:00';
+                const minutes = Math.floor(secs / 60);
+                const seconds = Math.floor(secs % 60);
+                return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            };
+            this.timeline.value = (this.audio.currentTime / this.audio.duration) * 100 || 0;
+            this.currentTimeEl.textContent = formatTime(this.audio.currentTime);
+            this.durationEl.textContent = formatTime(this.audio.duration);
+        },
+        updatePlayingStatus() {
+            document.querySelectorAll('.podcast-episode').forEach((el, index) => {
+                el.classList.toggle('is-playing', index === this.currentIndex);
+                const icon = el.querySelector('.episode-play-icon');
+                if (icon) {
+                    icon.className = (index === this.currentIndex && !this.audio.paused) ? 'fa-solid fa-pause episode-play-icon' : 'fa-solid fa-play episode-play-icon';
+                }
+            });
+        },
+        hide() {
+            this.audio.pause();
+            this.playerElement.classList.remove('is-visible');
+            this.updatePlayingStatus();
+            this.currentIndex = -1;
+        }
+    };
+    audioPlayer.init();
+
+    function initHero() {
+        const heroButton = document.getElementById('scroll-to-content-btn');
+        const desktopNav = document.querySelector('.desktop-nav');
+        if (heroButton && desktopNav) { heroButton.addEventListener('click', () => { desktopNav.scrollIntoView({ behavior: 'smooth' }); }); }
+        if (desktopNav) { const checkNavPosition = () => { desktopNav.classList.toggle('is-at-top', window.scrollY < 50); }; window.addEventListener('scroll', checkNavPosition, { passive: true }); checkNavPosition(); }
+    }
+
+    function initMobileNav() {
+        const mobileNav = document.querySelector('.mobile-nav');
+        if (!mobileNav) return;
+        const checkNavPosition = () => { mobileNav.classList.toggle('is-visible', window.scrollY > 50); };
+        window.addEventListener('scroll', checkNavPosition, { passive: true });
+        checkNavPosition();
+    }
     
     bentoGrid?.addEventListener("click", (event) => {
         const bentoBox = event.target.closest('.bento-box[data-id]');
         if (!bentoBox) return;
-        
         const dataId = bentoBox.dataset.id;
-
         if (dataId === "static-launch-stories") {
             document.dispatchEvent(new CustomEvent('launch-stories'));
         } else if (allPostsData.some(p => p.guid === dataId)) {
             const post = allPostsData.find(p => p.guid === dataId);
             const sanitizedContent = sanitizeSubstackContent(post.content);
             const postDate = new Date(post.pubDate).toLocaleDateString("es-ES", { year: "numeric", month: "long", day: "numeric" });
-            
-            // *** CAMBIO CLAVE: Lógica del reproductor simplificada ***
-            let audioPlayerHTML = '';
-            if (post.enclosure?.link?.endsWith(".mp3")) {
-                // Insertamos un reproductor de audio HTML5 estándar. ¡Es más robusto!
-                audioPlayerHTML = `<audio class="native-audio-player" controls autoplay src="${post.enclosure.link}"></audio>`;
-            }
-            
-            const contentHTML = `<h2>${post.title}</h2><div class="post-meta">Publicado por ${post.author} el ${postDate}</div>${audioPlayerHTML}<div class="post-body">${sanitizedContent}</div>`;
-            
+            const contentHTML = `<h2>${post.title}</h2><div class="post-meta">Publicado por ${post.author} el ${postDate}</div><div class="post-body">${sanitizedContent}</div>`;
             openModal(contentHTML, 'article', { link: post.link, title: post.title });
         }
     });
 
     modalCloseBtn?.addEventListener('click', closeModal);
-    modalOverlay?.addEventListener('click', (e) => {
-        if (e.target === modalOverlay) closeModal();
-    });
+    modalOverlay?.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
+    document.addEventListener('stories-ready', (e) => { openModal(e.detail.html, 'stories'); });
 
-    document.addEventListener('stories-ready', (e) => {
-        openModal(e.detail.html, 'stories');
-    });
-
-    loadPosts();
+    loadContent();
     initHero();
     initMobileNav();
 });

@@ -70,14 +70,10 @@
         <div class="bento-grid" id="bento-grid"></div>
     </main>
 
-    <!-- *** INICIO DEL NUEVO MODAL DE INMERSIÓN *** -->
-    <!-- Este reemplaza por completo el antiguo <aside class="side-panel"> -->
     <div id="immersion-modal-overlay" class="modal-overlay">
         <div id="modal-container" class="modal-container">
             <button id="modal-close-btn" class="modal-close-btn" aria-label="Cerrar">&times;</button>
-            <div id="modal-content" class="modal-content">
-                <!-- El contenido se inyectará aquí con JavaScript -->
-            </div>
+            <div id="modal-content" class="modal-content"></div>
              <div id="modal-share-footer" class="modal-share-footer">
                 <button class="share-btn" id="share-fb" aria-label="Compartir en Facebook"><i class="fa-brands fa-facebook-f"></i></button>
                 <button class="share-btn" id="share-li" aria-label="Compartir en LinkedIn"><i class="fa-brands fa-linkedin-in"></i></button>
@@ -87,7 +83,6 @@
             </div>
         </div>
     </div>
-    <!-- *** FIN DEL MODAL *** -->
     
     <nav class="mobile-nav">
         <a href="/" class="mobile-nav__link active" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
@@ -113,12 +108,43 @@
     
     <div class="overlay" id="overlay"></div>
     
+    <!-- *** INICIO DE LA ESTRUCTURA DEL REPRODUCTOR PERSISTENTE *** -->
+    <div id="persistent-audio-player" class="persistent-audio-player">
+        <div id="player-content" class="player-content">
+            <div class="track-info">
+                <img id="player-track-image" src="https://placehold.co/56x56/242526/e4e6eb?text=EPT" alt="Carátula del episodio">
+                <div>
+                    <p id="player-track-title">Selecciona un episodio</p>
+                    <p id="player-track-author">Epistecnología Podcast</p>
+                </div>
+            </div>
+            <div class="player-controls">
+                <button id="player-rewind-btn" title="Anterior"><i class="fa-solid fa-backward-step"></i></button>
+                <button id="player-play-btn" title="Reproducir/Pausa"><i class="fa-solid fa-play"></i></button>
+                <button id="player-forward-btn" title="Siguiente"><i class="fa-solid fa-forward-step"></i></button>
+            </div>
+            <div class="player-timeline">
+                <span id="player-current-time">0:00</span>
+                <input type="range" id="player-timeline-slider" value="0" min="0" max="100">
+                <span id="player-duration">0:00</span>
+            </div>
+            <!-- *** CAMBIO CLAVE: Añadido control de volumen *** -->
+            <div class="player-volume">
+                <i class="fa-solid fa-volume-high"></i>
+                <input type="range" id="player-volume-slider" value="100" min="0" max="100">
+            </div>
+            <button id="player-close-btn" title="Cerrar reproductor">&times;</button>
+        </div>
+    </div>
+    <!-- *** FIN DEL REPRODUCTOR *** -->
+
     <footer class="site-footer">
         <div class="container">
             <p>© 2025 Epistecnologia. Todos los derechos reservados.</p>
         </div>
     </footer>
 
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script src="https://unpkg.com/wavesurfer.js@7"></script>

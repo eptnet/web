@@ -1,5 +1,5 @@
 /* ==========================================================================
-   STYLE.CSS - VERSIÓN CON CORRECCIONES DE FORMATO
+   STYLE.CSS - VERSIÓN FINAL Y ESTABLE
    ========================================================================== */
 
 /* --- 1. CONFIGURACIÓN GLOBAL Y VARIABLES --- */
@@ -67,7 +67,6 @@ main.container {
     background-color: #18191a;
     z-index: 1;
 }
-/* ... (resto de estilos del hero sin cambios) ... */
 .hero-background-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('https://i.ibb.co/ymN2p1T5/Portada-EPT-WEB-2.jpg'); background-size: cover; background-position: center; animation: kenburns-effect 25s ease-in-out infinite; z-index: 1; }
 .hero-container::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.25); z-index: 2; }
 .hero-content { position: relative; z-index: 3; color: white; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7); padding: 1rem; padding-top: 20vh; }
@@ -83,21 +82,17 @@ main.container {
 
 /* 4.1 NAVEGACIÓN */
 .desktop-nav { padding: 1rem 0; position: sticky; top: 0; z-index: 1000; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); background-color: rgba(240, 242, 245, 0.8); transition: background-color 0.3s; }
-/* ... (resto de estilos de navegación sin cambios) ... */
 body.dark-theme .desktop-nav { background-color: rgba(24, 25, 26, 0.8); } .desktop-nav .container { display: flex; justify-content: space-between; align-items: center; gap: 1rem; } .desktop-nav .logo img { height: 40px; display: block; } .bento-box-nav { display: flex; align-items: center; gap: 0.5rem; background-color: var(--color-surface); padding: 0.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow-light); transition: background-color 0.3s; } .main-menu { flex-grow: 1; justify-content: center; } .nav-icon { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 8px; transition: background-color 0.2s ease, color 0.2s ease; color: var(--color-text-secondary); font-size: 1.1rem; } .nav-icon:hover { background-color: var(--color-background); color: var(--color-accent); } .nav-icon.active { background-color: var(--color-accent); color: white; } @keyframes pulse-live { 0% { box-shadow: 0 0 0 0 rgba(183, 42, 30, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(183, 42, 30, 0); } 100% { box-shadow: 0 0 0 0 rgba(183, 42, 30, 0); } } .nav-icon.is-live { background-color: var(--color-accent); color: white; animation: pulse-live 2s infinite; border-radius: 8px; } .desktop-nav.is-at-top { background-color: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; }
 .mobile-nav { display: none; position: fixed; bottom: 0; left: 0; width: 100%; z-index: 1000; background-color: var(--color-surface); border-top: 1px solid var(--color-border); box-shadow: 0 -2px 5px rgba(0,0,0,0.05); padding: 0.25rem 0; justify-content: space-around; } .mobile-nav__link { flex-grow: 1; color: var(--color-text-secondary); display: flex; align-items: center; justify-content: center; height: 54px; font-size: 1.5rem; } .mobile-nav__link.active { color: var(--color-accent); } .mobile-nav__text { display: none; } .mobile-more-menu { position: fixed; bottom: 0; left: 0; width: 100%; z-index: 1001; background-color: var(--color-surface); border-top-left-radius: var(--border-radius); border-top-right-radius: var(--border-radius); box-shadow: 0 -5px 15px rgba(0,0,0,0.1); transform: translateY(100%); transition: transform 0.3s ease-out; } .mobile-more-menu.is-open { transform: translateY(0); } .mobile-more-menu__content { padding: 1.5rem; } .mobile-more-menu__item { display: flex; align-items: center; gap: 1rem; padding: 1rem; font-size: 1rem; font-weight: 500; color: var(--color-text-primary); border-radius: 8px; } .mobile-more-menu__item:hover, .mobile-more-menu__item:active { background-color: var(--color-background); } .mobile-more-menu__item i { width: 24px; text-align: center; font-size: 1.2rem; color: var(--color-text-secondary); }
 
 /* 4.2 BENTO GRID */
 .bento-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; padding: 2rem 0; }
-/* ... (resto de estilos de bento grid sin cambios) ... */
 .bento-box { background-color: var(--color-surface); border-radius: var(--border-radius); box-shadow: var(--shadow-light); padding: 1.5rem; transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.3s; cursor: pointer; display: flex; flex-direction: column; overflow: hidden; position: relative; } .bento-box:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1); } body.dark-theme .bento-box:hover { box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3); } .post-card { min-height: 250px; } .bento-box--1x2 { grid-column: span 1; grid-row: span 2; } .bento-box--1x3 { grid-column: span 1; grid-row: span 3; } .bento-box--2x2 { grid-column: span 2; grid-row: span 2; } .bento-box--3x2 { grid-column: span 3; grid-row: span 2; } .bento-box[style*="background-image"] { background-size: cover; background-position: center; } .bento-box[style*="background-image"]::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0.1)); opacity: 1; transition: opacity 0.3s; pointer-events: none; } .bento-box[style*="background-image"] h3, .bento-box[style*="background-image"] h4, .bento-box[style*="background-image"] p, .bento-box[style*="background-image"] .card-category { color: white; } .card-content { flex-grow: 1; display: flex; flex-direction: column; position: relative; z-index: 2; justify-content: flex-end; pointer-events: none; } .card-content > * { pointer-events: auto; } .card-category { font-size: var(--font-size-category); font-weight: 500; color: var(--color-accent); margin-bottom: 0.5rem; } .bento-box.video-featured-module { padding: 0; }
 .bento-style--flat { background-color: transparent !important; box-shadow: none !important; border: none !important; }
 .bento-style--circle { border-radius: 50% !important; aspect-ratio: 1 / 1; align-items: center; justify-content: center; text-align: center; }
 .bento-style--l-shape { -webkit-clip-path: polygon(0 0, 100% 0, 100% 40%, 40% 40%, 40% 100%, 0 100%); clip-path: polygon(0 0, 100% 0, 100% 40%, 40% 40%, 40% 100%, 0 100%); }
 
-/* ==========================================================================
-   4.3 MODAL DE INMERSIÓN
-   ========================================================================== */
+/* 4.3 MODAL DE INMERSIÓN */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(18, 18, 18, 0.85); z-index: 2000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
 .modal-overlay.is-visible { opacity: 1; visibility: visible; }
 .modal-container { background-color: var(--color-surface); width: 90%; height: 90%; max-width: 1200px; max-height: 800px; border-radius: var(--border-radius); box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; flex-direction: column; position: relative; transform: scale(0.95); transition: transform 0.3s ease; }
@@ -108,40 +103,13 @@ body.dark-theme .desktop-nav { background-color: rgba(24, 25, 26, 0.8); } .deskt
 .modal-share-footer { flex-shrink: 0; padding: 1rem 2.5rem; border-top: 1px solid var(--color-border); display: flex; gap: 0.75rem; }
 .modal-share-footer .share-btn { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--color-border); color: var(--color-text-secondary); display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; font-size: 1.2rem; }
 .modal-share-footer .share-btn:hover { background-color: var(--color-accent); color: white; border-color: var(--color-accent); }
-
-/* *** INICIO DE LA CORRECCIÓN: ESTILOS PARA CONTENIDO RSS *** */
-.modal-content .post-body p {
-    margin-bottom: 1.5em;
-    line-height: 1.7;
-    color: var(--color-text-primary);
-}
-.modal-content .post-body img {
-    max-width: 100%;
-    height: auto;
-    border-radius: var(--border-radius);
-    margin: 2rem 0;
-}
-.modal-content .post-body blockquote {
-    border-left: 4px solid var(--color-accent);
-    padding-left: 1.5rem;
-    margin: 2rem 0;
-    font-style: italic;
-    color: var(--color-text-secondary);
-}
-.modal-content .post-body a {
-    color: var(--color-accent);
-    text-decoration: underline;
-}
-.modal-content h2 {
-    font-size: var(--font-size-h2);
-    margin-bottom: 0.5rem;
-}
-.modal-content .post-meta {
-    display: block;
-    margin-bottom: 2rem;
-    color: var(--color-text-secondary);
-}
-/* *** FIN DE LA CORRECCIÓN *** */
+.modal-content .post-body p { margin-bottom: 1.5em; line-height: 1.7; color: var(--color-text-primary); }
+.modal-content .post-body img { max-width: 100%; height: auto; border-radius: var(--border-radius); margin: 2rem 0; }
+.modal-content .post-body blockquote { border-left: 4px solid var(--color-accent); padding-left: 1.5rem; margin: 2rem 0; font-style: italic; color: var(--color-text-secondary); }
+.modal-content .post-body a { color: var(--color-accent); text-decoration: underline; }
+.modal-content h2 { font-size: var(--font-size-h2); margin-bottom: 0.5rem; }
+.modal-content .post-meta { display: block; margin-bottom: 2rem; color: var(--color-text-secondary); }
+.native-audio-player { width: 100%; margin: 1rem 0;}
 
 /* --- OTROS COMPONENTES --- */
 .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1001; opacity: 0; visibility: hidden; transition: opacity 0.4s, visibility 0.4s; }
@@ -154,22 +122,62 @@ body.dark-theme .desktop-nav { background-color: rgba(24, 25, 26, 0.8); } .deskt
 .login-provider-btn i { width: 20px; text-align: center; font-size: 1.2rem; }
 .login-provider-btn.is-disabled { opacity: 0.5; cursor: not-allowed; background-color: transparent !important; }
 
+/* ==========================================================================
+   NUEVO REPRODUCTOR DE PODCAST PERSISTENTE
+   ========================================================================== */
+.bento-podcast-player { display: flex; flex-direction: column; height: 100%; }
+.bento-podcast-player h3 { margin-bottom: 1rem; flex-shrink: 0; }
+.podcast-episode-list { flex-grow: 1; overflow-y: auto; margin: -1.5rem; padding: 0 1.5rem; }
+.podcast-episode { display: flex; align-items: center; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--color-border); cursor: pointer; }
+.podcast-episode:hover { background-color: rgba(0,0,0,0.03); }
+body.dark-theme .podcast-episode:hover { background-color: rgba(255,255,255,0.05); }
+.episode-play-icon { font-size: 1.5rem; color: var(--color-text-secondary); }
+.podcast-episode.is-playing .episode-play-icon { color: var(--color-accent); }
+.episode-info p { margin: 0; font-weight: 500; }
+.episode-info span { font-size: 0.8rem; color: var(--color-text-secondary); }
+
+.persistent-audio-player { position: fixed; bottom: 0; left: 0; width: 100%; background-color: var(--color-surface); box-shadow: 0 -5px 15px rgba(0,0,0,0.1); z-index: 1500; transform: translateY(100%); transition: transform 0.4s ease-in-out; }
+.persistent-audio-player.is-visible { transform: translateY(0); }
+.player-content { max-width: 1400px; margin: 0 auto; padding: 1rem 2rem; display: grid; grid-template-columns: 1fr auto 1.5fr auto auto; align-items: center; gap: 1.5rem; }
+.track-info { display: flex; align-items: center; gap: 1rem; }
+.track-info img { width: 56px; height: 56px; border-radius: 4px; object-fit: cover; }
+.track-info p { margin: 0; }
+#player-track-title { font-weight: 600; }
+#player-track-author { font-size: 0.9rem; color: var(--color-text-secondary); }
+.player-controls { display: flex; justify-content: center; align-items: center; gap: 1.5rem; }
+.player-controls button { font-size: 1.2rem; color: var(--color-text-secondary); }
+#player-play-btn { font-size: 2.2rem; color: var(--color-text-primary); }
+.player-timeline { display: flex; align-items: center; gap: 0.75rem; font-size: 0.8rem; color: var(--color-text-secondary); }
+#player-timeline-slider { flex-grow: 1; }
+.player-volume { display: flex; align-items: center; gap: 0.5rem; }
+#player-volume-slider { width: 80px; }
+#player-close-btn { position: absolute; top: 1rem; right: 1rem; background: none; color: var(--color-text-secondary); font-size: 1.5rem; }
+
+/* Estilos personalizados para los sliders */
+input[type="range"] { -webkit-appearance: none; appearance: none; background: transparent; cursor: pointer; }
+input[type="range"]::-webkit-slider-runnable-track { background: var(--color-border); height: 4px; border-radius: 4px; }
+input[type="range"]::-moz-range-track { background: var(--color-border); height: 4px; border-radius: 4px; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; margin-top: -6px; background-color: var(--color-accent); height: 16px; width: 16px; border-radius: 50%; }
+input[type="range"]::-moz-range-thumb { border: none; border-radius: 50%; background-color: var(--color-accent); height: 16px; width: 16px; }
+
 /* --- 5. REGLAS RESPONSIVAS --- */
+@media (max-width: 992px) {
+    .player-content { grid-template-columns: auto 1fr; grid-template-rows: auto auto; grid-template-areas: "info volume" "timeline timeline" "controls controls"; padding: 0.75rem 1rem; }
+    .track-info { grid-area: info; }
+    .player-controls { grid-area: controls; }
+    .player-timeline { grid-area: timeline; }
+    .player-volume { grid-area: volume; justify-content: flex-end; }
+    #player-track-author { display: none; }
+    #player-close-btn { top: 0.5rem; right: 0.5rem; }
+}
 @media (max-width: 768px) {
     .container { padding: 0 1rem; }
     .desktop-nav { display: none; }
     .mobile-nav { display: flex; }
-    body { padding-bottom: 80px; }
+    body { padding-bottom: 160px; } /* Espacio para menú y reproductor */
     .hero-content h1 { font-size: 2.5rem; }
     .bento-grid { grid-template-columns: repeat(2, 1fr); grid-auto-rows: minmax(140px, auto); }
     .bento-box { grid-column: span 1; grid-row: span 1; }
     .bento-box.mobile-full-width, .bento-box.welcome-module { grid-column: span 2; }
     .bento-box.video-featured-module, .bento-box.bento-box--1x3 { grid-column: span 2; grid-row: span 2; aspect-ratio: auto !important; }
-
-    /* *** CORRECCIÓN: El bento circular ocupa todo el ancho en móvil *** */
-    /* .bento-style--circle {
-        grid-column: span 2 !important;
-        aspect-ratio: unset !important; /* Desactiva la forma cuadrada */
-        border-radius: var(--border-radius) !important; /* Vuelve a ser un rectángulo redondeado */
-   /* }*/
 }
