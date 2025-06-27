@@ -1,9 +1,8 @@
 /**
  * =========================================================================
- * Script de la Página de Inicio (app.js) - VERSIÓN FINAL CON MODAL
- * - Dirige toda la lógica de apertura y cierre del modal.
- * - Corrige la reproducción de MP3s con Wavesurfer.
- * - Corrige el comportamiento del botón "atrás" del navegador.
+ * Script de la Página de Inicio (app.js) - VERSIÓN COMPLETA Y FINAL
+ * - Soluciona el problema de reproducción de MP3s usando el elemento <audio> nativo.
+ * - Mantiene toda la lógica del Modal de Inmersión y la carga de posts.
  * =========================================================================
  */
 
@@ -19,26 +18,33 @@ document.addEventListener('mainReady', () => {
     const modalCloseBtn = document.getElementById('modal-close-btn');
     const modalShareFooter = document.getElementById('modal-share-footer');
     
-    // --- 2. DEFINICIÓN DE MÓDULOS Y GRID LAYOUT ---
+    // --- 2. DEFINICIÓN DE MÓDULOS ESTÁTICOS ---
     const staticModules = {
-        welcome: `
-        <div class="bento-box welcome-module bento-box--3x2" data-id="static-welcome" style="cursor: default;">
-            <h2>¿Investigas, divulgas o simplemente quieres entender mejor el mundo?</h2>
-            <p>Te damos la bienvenida a <strong>Epistecnología</strong>, una <strong>plataforma abierta de divulgación científica y cultural</strong> que pone la <strong>tecnología al servicio del conocimiento con Sabiduría</strong>. Aquí, investigadores, docentes, divulgadores y curiosos del saber encuentran un espacio para <strong>crear, compartir y explorar contenidos académicos</strong>, desde artículos y podcasts hasta <strong>videos, transmisiones en vivo y publicaciones indexadas</strong>.</p>
-        </div>`,
+        welcome: `<div class="bento-box welcome-module bento-box--3x2" data-id="static-welcome" style="cursor: default;"><h2>¿Investigas, divulgas o simplemente quieres entender mejor el mundo?</h2><p>Te damos la bienvenida a <strong>Epistecnología</strong>, una <strong>plataforma abierta de divulgación científica y cultural</strong> que pone la <strong>tecnología al servicio del conocimiento con Sabiduría</strong>. Aquí, investigadores, docentes, divulgadores y curiosos del saber encuentran un espacio para <strong>crear, compartir y explorar contenidos académicos</strong>, desde artículos y podcasts hasta <strong>videos, transmisiones en vivo y publicaciones indexadas</strong>.</p></div>`,
         stories: `<div class="bento-box bento-box--1x3 mobile-full-width" data-id="static-launch-stories" style="background-image: url('https://i.ibb.co/cSX1NWyR/sterieweb-Whisk-3577df53ea.jpg'); cursor: pointer; background-size: cover; background-position: center;"><div class="card-content"><span class="card-category" style="color: white;">Colección</span><h4 style="color: white;">Minuto cultural</h4></div></div>`,
         quote: `<div class="bento-box bento-box--1x2 bento-style--flat" data-id="static-quote" style="cursor:default;"><div class="card-content" style="text-align: center;"><p style="font-size: 1.2rem; font-style: italic;">"El conocimiento es la única riqueza que no se puede robar."</p><h4 style="margin-top: 0.5rem;">- Anónimo</h4></div></div>`,
         videoFeatured: `<div class="bento-box bento-box--2x2 mobile-full-width video-featured-module" data-id="static-video-featured"><iframe src="https://www.youtube.com/embed/6PSKbO5yfDQ?rel=0&modestbranding=1&playsinline=1" title="Video destacado de YouTube" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`,
         inFeed: `<div class="bento-box bento-box--2x2 mobile-full-width bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;"><div class="card-content"><h3>¿Disfrutando el Contenido?</h3><p>Suscríbete a nuestro newsletter.</p><br/><iframe src="https://eptnews.substack.com/embed" width="100%" height="100%" style="border:0;" frameborder="0" scrolling="no"></iframe></div></div>`,
         end: `<div class="bento-box zenodo-module bento-box--2x2" data-id="static-zenodo"><div class="card-content"><h3>Conocimiento Citable</h3><p>Accede a nuestros datasets y preprints.</p><a href="#" class="btn">Visitar Repositorio</a></div></div><div class="bento-box bento-box--2x2 bento-box--imagen" data-id="static-video" data-panel-type="embed" data-panel-title="Video Destacado" data-embed-src="https://www.youtube.com/embed/dQw4w9WgXcQ"><div class="card-content"><span class="card-category">Ver Ahora</span><h4>El Futuro de la Exploración Espacial</h4></div></div>`
     };
-    const grid_layout = [ { type: 'module', id: 'welcome' }, { type: 'module', id: 'stories' }, { type: 'post' }, { type: 'post' }, { type: 'module', id: 'quote' }, { type: 'post' }, { type: 'module', id: 'videoFeatured' }, { type: 'post' }, { type: 'post' }, { type: 'post' }, { type: 'post' }, { type: 'module', id: 'inFeed' }, { type: 'post' }, { type: 'post' }, { type: 'post' }, { type: 'post' }, { type: 'post' }, { type: 'post' }, { type: 'module', id: 'end' }];
+
+    // --- 3. EL "PLANO DE CONSTRUCCIÓN" DE LA GRID ---
+    const grid_layout = [
+        { type: 'module', id: 'welcome' }, { type: 'module', id: 'stories' },
+        { type: 'post' }, { type: 'post' },
+        { type: 'module', id: 'quote' }, { type: 'post' },
+        { type: 'module', id: 'videoFeatured' },
+        { type: 'post' }, { type: 'post' }, { type: 'post' }, { type: 'post' },
+        { type: 'module', id: 'inFeed' },
+        { type: 'post' }, { type: 'post' }, { type: 'post' }, { type: 'post' }, { type: 'post' }, { type: 'post' },
+        { type: 'module', id: 'end' }
+    ];
 
     // --- 4. LÓGICA DE LA APLICACIÓN ---
     const apiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua&order_dir=desc&count=13';
+    const audioPostBackground = 'https://i.ibb.co/vvPbhLpV/Leonardo-Phoenix-10-A-modern-and-minimalist-design-for-a-scien-2.jpg';
     let allPostsData = [];
     window.wavesurferInstance = null;
-    const audioPostBackground = 'https://i.ibb.co/vvPbhLpV/Leonardo-Phoenix-10-A-modern-and-minimalist-design-for-a-scien-2.jpg';
 
     async function loadPosts() {
         if (!bentoGrid) return;
@@ -103,7 +109,7 @@ document.addEventListener('mainReady', () => {
     
     // --- LÓGICA DEL MODAL DE INMERSIÓN ---
 
-    function openModal(content, type = 'article', shareConfig = null) {
+    function openModal(content, type = 'article', shareConfig = null, audioSrc = null) {
         if (!modalOverlay || !modalContent) return;
 
         document.body.dataset.modalType = type;
@@ -116,13 +122,45 @@ document.addEventListener('mainReady', () => {
             modalContainer.classList.remove('modal-container--video');
             modalShareFooter.style.display = 'flex';
             if (shareConfig) setupShareButtons(shareConfig);
+
+            // *** INICIO DE LA CORRECCIÓN DE AUDIO ***
+            if (audioSrc) {
+                const playerContainer = document.getElementById('audio-player-container');
+                if (!playerContainer) return;
+                
+                const audioElement = new Audio(audioSrc);
+                audioElement.id = 'native-audio-player';
+                audioElement.crossOrigin = 'anonymous'; // Necesario para que wavesurfer pueda analizar el audio
+                playerContainer.appendChild(audioElement);
+
+                if (typeof WaveSurfer !== 'undefined') {
+                    window.wavesurferInstance = WaveSurfer.create({
+                        container: '#waveform',
+                        waveColor: 'rgb(200, 200, 200)',
+                        progressColor: 'rgb(183, 42, 30)',
+                        media: audioElement,
+                        barWidth: 3,
+                        barRadius: 3,
+                        barGap: 2,
+                        height: 80
+                    });
+
+                    const playPauseBtn = document.getElementById('play-pause-btn');
+                    const icon = playPauseBtn?.querySelector('i');
+                    if (playPauseBtn && icon) {
+                        playPauseBtn.addEventListener('click', () => wavesurferInstance.playPause());
+                        wavesurferInstance.on('play', () => { icon.className = 'fa-solid fa-pause'; });
+                        wavesurferInstance.on('pause', () => { icon.className = 'fa-solid fa-play'; });
+                    }
+                    
+                    audioElement.play().catch(e => console.error("Error al intentar reproducir audio:", e));
+                }
+            }
+            // *** FIN DE LA CORRECCIÓN DE AUDIO ***
         }
         
         modalOverlay.classList.add('is-visible');
         document.body.style.overflow = 'hidden';
-        
-        // Añadimos un estado al historial para poder interceptar el botón "atrás"
-        history.pushState({ modalOpen: true }, '');
     }
 
     function closeModal() {
@@ -185,23 +223,9 @@ document.addEventListener('mainReady', () => {
             const audioPlayerHTML = post.enclosure?.link?.endsWith(".mp3") ? `<div id="audio-player-container"><button id="play-pause-btn" aria-label="Reproducir/Pausar"><i class="fa-solid fa-play"></i></button><div id="waveform"></div></div>` : "";
             const contentHTML = `<h2>${post.title}</h2><div class="post-meta">Publicado por ${post.author} el ${postDate}</div>${audioPlayerHTML}<div class="post-body">${sanitizedContent}</div>`;
             
-            openModal(contentHTML, 'article', { link: post.link, title: post.title });
+            const audioSrc = post.enclosure?.link?.endsWith(".mp3") ? post.enclosure.link : null;
             
-            if (post.enclosure?.link?.endsWith(".mp3")) {
-                const audioUrl = post.enclosure.link;
-                const playerContainer = document.getElementById('audio-player-container');
-                if (typeof WaveSurfer === 'undefined') { if (playerContainer) playerContainer.innerHTML = `<audio controls autoplay src="${audioUrl}"></audio>`; return; }
-                const proxiedUrl = `https://thingproxy.freeboard.io/fetch/${audioUrl}`;
-                window.wavesurferInstance = WaveSurfer.create({ container: '#waveform', waveColor: 'rgb(200, 200, 200)', progressColor: 'rgb(183, 42, 30)', url: proxiedUrl, barWidth: 3, barRadius: 3, barGap: 2, height: 80 });
-                
-                const playPauseBtn = document.getElementById('play-pause-btn');
-                const icon = playPauseBtn?.querySelector('i');
-                if (playPauseBtn && icon) {
-                    playPauseBtn.addEventListener('click', () => window.wavesurferInstance.playPause());
-                    window.wavesurferInstance.on('play', () => { icon.className = 'fa-solid fa-pause'; });
-                    window.wavesurferInstance.on('pause', () => { icon.className = 'fa-solid fa-play'; });
-                }
-            }
+            openModal(contentHTML, 'article', { link: post.link, title: post.title }, audioSrc);
         }
     });
 
@@ -212,13 +236,6 @@ document.addEventListener('mainReady', () => {
 
     document.addEventListener('stories-ready', (e) => {
         openModal(e.detail.html, 'stories');
-    });
-
-    // *** CAMBIO CLAVE: El botón atrás ahora solo llama a nuestra función de cierre.
-    window.addEventListener('popstate', () => {
-        if (modalOverlay.classList.contains('is-visible')) {
-            closeModal();
-        }
     });
 
     loadPosts();
