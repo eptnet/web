@@ -167,9 +167,9 @@ body.dark-theme .desktop-nav { background-color: rgba(24, 25, 26, 0.8); } .deskt
     .bento-box.video-featured-module, .bento-box.bento-box--1x3 { grid-column: span 2; grid-row: span 2; aspect-ratio: auto !important; }
 
     /* *** CORRECCIÓN: El bento circular ocupa todo el ancho en móvil *** */
-    .bento-style--circle {
+    /* .bento-style--circle {
         grid-column: span 2 !important;
         aspect-ratio: unset !important; /* Desactiva la forma cuadrada */
         border-radius: var(--border-radius) !important; /* Vuelve a ser un rectángulo redondeado */
-    }
+   /* }*/
 }
