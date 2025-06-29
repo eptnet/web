@@ -5,144 +5,139 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Epistecnología</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <link rel="stylesheet" href="/inv/css/dashboard.css">
 </head>
 <body>
-    <div class="dashboard-container">
+    <div class="dashboard">
         <aside class="sidebar">
-            <div class="sidebar-header">
-                <a href="/" class="logo-link"><img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo" class="logo"></a>
-                <h2 class="desktop-only">Dashboard</h2>
+            <div class="sidebar__header">
+                <a href="/" class="sidebar__logo-link">
+                    <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo" class="sidebar__logo-img">
+                    <span class="sidebar__logo-text">Epistecnología</span>
+                </a>
             </div>
-            <nav class="sidebar-nav">
-                <a href="#home" class="nav-link active" data-section="home-section" title="Inicio"><i class="fa-solid fa-house"></i><span class="desktop-only">Inicio</span></a>
-                <a href="#creator-studio" class="nav-link" data-section="creator-studio-section" title="Crear Contenido"><i class="fa-solid fa-magic-sparkles"></i><span class="desktop-only">Crear Textos</span></a>
-                <a href="#studio" class="nav-link" data-section="studio-section" title="Estudio de Grabación"><i class="fa-solid fa-podcast"></i><span class="desktop-only">Estudio de Grabación</span></a>
-                <a href="#profile" class="nav-link" data-section="profile-section" title="Editar Perfil"><i class="fa-solid fa-user-edit"></i><span class="desktop-only">Editar Perfil</span></a>
-                <a href="#services" class="nav-link" data-section="services-section" title="Servicios"><i class="fa-solid fa-briefcase"></i><span class="desktop-only">Servicios</span></a>
+            <nav class="sidebar__nav">
+                <a href="#home" class="sidebar__link active" data-section="home-section" title="Inicio">
+                    <i class="fa-solid fa-house"></i>
+                    <span class="sidebar__link-text">Inicio</span>
+                </a>
+                <a href="#creator-studio" class="sidebar__link" data-section="creator-studio-section" title="Crear Textos">
+                    <i class="fa-solid fa-magic-sparkles"></i>
+                    <span class="sidebar__link-text">Crear Textos</span>
+                </a>
+                <a href="#studio" class="sidebar__link" data-section="studio-section" title="Estudio de Grabación">
+                    <i class="fa-solid fa-podcast"></i>
+                    <span class="sidebar__link-text">Estudio</span>
+                </a>
+                <a href="#profile" class="sidebar__link" data-section="profile-section" title="Editar Perfil">
+                    <i class="fa-solid fa-user-edit"></i>
+                    <span class="sidebar__link-text">Mi Perfil</span>
+                </a>
+                 <a href="#services" class="sidebar__link" data-section="services-section" title="Servicios">
+                    <i class="fa-solid fa-briefcase"></i>
+                    <span class="sidebar__link-text">Servicios</span>
+                </a>
             </nav>
-            <div class="sidebar-footer">
-                <a href="/" class="nav-link" title="Volver a la web"><i class="fa-solid fa-globe"></i><span class="desktop-only">Volver a la web</span></a>
-                <button id="logout-btn" class="nav-link" title="Cerrar Sesión"><i class="fa-solid fa-right-from-bracket"></i><span class="desktop-only">Cerrar Sesión</span></button>
+            <div class="sidebar__footer">
+                 <a href="#" id="logout-btn" class="sidebar__link" title="Cerrar Sesión">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span class="sidebar__link-text">Cerrar Sesión</span>
+                </a>
             </div>
         </aside>
 
-        <main class="main-content">
-            <header class="main-header">
-                <h1>Bienvenido, <span id="user-name-header">Investigador</span></h1>
-                <p>Empecemos a divulgar tu conocimiento.</p>
+        <div class="dashboard__body">
+            <header class="top-header">
+                <div class="top-header__welcome">
+                    <h1 id="user-name-header">Bienvenido</h1>
+                    <p>Empecemos a divulgar tu conocimiento.</p>
+                </div>
+                <div class="top-header__actions">
+                    <div class="search-bar">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="search" placeholder="Buscar...">
+                    </div>
+                    <button class="action-btn" title="Notificaciones"><i class="fa-solid fa-bell"></i></button>
+                    <div class="user-menu">
+                        <img id="user-avatar" src="https://i.ibb.co/61fJv24/default-avatar.png" alt="Avatar de usuario">
+                    </div>
+                </div>
             </header>
-            
-            <section id="home-section" class="content-section active">
-                <div class="workflow-step">
-                    <div class="step-header"><span class="step-number">1</span><h2>Selecciona tu Proyecto</h2></div>
-                    <p>Elige el trabajo de investigación que quieres divulgar hoy.</p>
-                    <div class="project-selector">
-                        <select id="project-dropdown" class="project-dropdown"><option value="">Cargando proyectos...</option></select>
-                        <button class="btn-secondary" id="add-project-btn"><i class="fa-solid fa-plus"></i> Registrar Nuevo Proyecto</button>
-                    </div>
-                </div>
-                <div class="workflow-step">
-                    <div class="step-header"><span class="step-number">2</span><h2>¿Cómo quieres divulgar hoy?</h2></div>
-                    <p>Elige una herramienta para transformar tu investigación.</p>
-                    <div class="creation-grid">
-                        <div class="creation-card" data-target-section="creator-studio-section"><i class="fa-solid fa-file-pen icon"></i><h3>Generar Textos Sociales</h3><p>Transforma un texto denso en un artículo de blog y posts para redes sociales.</p></div>
-                        <div class="creation-card" data-target-section="studio-section"><i class="fa-solid fa-video icon"></i><h3>Crear Video o Podcast</h3><p>Grábate solo o con invitados, en formato de video o solo audio.</p></div>
-                    </div>
-                </div>
-            </section>
-            
-            <section id="creator-studio-section" class="content-section">
-                <h2>Estudio de Creación de Textos</h2><p>Pega un extracto de tu investigación y nuestra IA te ayudará a generar borradores para tu blog y redes sociales.</p>
-                <div class="placeholder-content"><h3>Próximamente...</h3><p>Esta herramienta está en desarrollo.</p></div>
-            </section>
-            
-            <section id="studio-section" class="content-section">
-                <h2>Estudio de Grabación y Transmisión</h2>
-                <p>Tu centro de control para crear contenido audiovisual.</p>
-                <div class="studio-launcher">
-                    <div class="launcher-icon"><i class="fa-solid fa-podcast"></i></div>
-                    <h3>Crea tu Sala Personalizada</h3>
-                    <p>Genera una sala de grabación o transmisión en vivo. Invita colegas, comparte tu pantalla y mucho más.</p>
-                    <button class="btn-primary" id="open-studio-modal-btn"><i class="fa-solid fa-plus"></i> Crear Nueva Sala</button>
-                </div>
-            </section>
-            
-            <section id="profile-section" class="content-section">
-                <h2>Tu Perfil Público</h2>
-                <p>Esta información podrá ser mostrada en tus transmisiones y publicaciones. Es importante que esté completa.</p>
-                <form id="profile-form" class="profile-form">
-                    <div class="form-group"><label for="display-name">Nombre a Mostrar</label><input type="text" id="display-name" placeholder="Ej: Dra. Ada Lovelace"></div>
-                    <div class="form-group"><label for="bio">Biografía Corta</label><textarea id="bio" rows="4" placeholder="Ej: Pionera en computación..."></textarea></div>
-                    <div class="form-group"><label for="website-url">Sitio Web</label><input type="url" id="website-url" placeholder="https://ejemplo.com"></div>
-                    <div class="form-group"><label for="twitter-url">Perfil de X</label><input type="url" id="twitter-url" placeholder="https://x.com/usuario"></div>
-                    <div class="form-group"><label for="linkedin-url">Perfil de LinkedIn</label><input type="url" id="linkedin-url" placeholder="https://linkedin.com/in/usuario"></div>
-                    <div class="form-group"><label for="orcid-url">URL de tu ORCID</label><input type="url" id="orcid-url" placeholder="https://orcid.org/0000-0000-0000-0000" required></div>
-                    <button type="submit" class="btn-primary"><span class="btn-text">Guardar Cambios</span></button>
-                    <p id="profile-form-message" class="form-message"></p>
-                </form>
-            </section>
-            
-            <section id="services-section" class="content-section">
-                <h2>Nuestros Servicios</h2>
-                <p>Te ayudamos a crear y gestionar tu contenido.</p>
-                <div class="placeholder-content"><h3>Próximamente...</h3><p>Esta área está en desarrollo.</p></div>
-            </section>
-        </main>
-    </div>
 
-    <div id="project-modal-overlay" class="modal-overlay">
-        <div class="modal">
-            <header class="modal__header">
-                <h2>Registrar un Nuevo Proyecto</h2>
-                <button id="project-modal-close" class="modal__close-btn">&times;</button>
-            </header>
-            <main class="modal__content">
-                <p>Pega el DOI de tu publicación. Buscaremos los metadatos automáticamente.</p>
-                <div class="form-group doi-fetcher">
-                    <input type="text" id="doi-input" placeholder="Ej: 10.5281/zenodo.12345">
-                    <button id="fetch-doi-btn" class="btn-secondary">Buscar</button>
+            <main class="main-content">
+                <div id="dashboard-main-view">
+                    <section id="home-section" class="content-section active"></section>
+                    <section id="creator-studio-section" class="content-section"></section>
+                    <section id="studio-section" class="content-section"></section>
+                    <section id="profile-section" class="content-section"></section>
+                    <section id="services-section" class="content-section"></section>
                 </div>
-                <div id="doi-fetch-status"></div><hr>
-                <div class="form-group"><label for="project-title">Título del Proyecto</label><input type="text" id="project-title" disabled></div>
-                <div class="form-group"><label for="project-authors">Autores</label><input type="text" id="project-authors" disabled></div>
-            </main>
-            <footer class="modal__footer">
-                <button id="save-project-btn" class="btn-primary" disabled>Guardar Proyecto</button>
-            </footer>
-        </div>
-    </div>
 
-    <div id="studio-modal-overlay" class="modal-overlay">
-        <div class="modal">
-            <header class="modal__header">
-                <h2 id="studio-modal-title">Crear Nueva Sala</h2>
-                <button id="studio-modal-close" class="modal__close-btn">&times;</button>
-            </header>
-            
-            <main id="studio-modal-form-step" class="modal__content">
-                <form id="sala-creator-form">
-                    <div class="form-group"><label for="session-title">Título de la Sesión</label><input type="text" id="session-title" placeholder="Ej: Avances del Proyecto Apolo" required></div>
-                    <div class="form-grid">
-                        <div class="form-group"><label for="session-guests">Número de Invitados</label><input type="number" id="session-guests" value="0" min="0" max="10"></div>
-                        <div class="form-group"><label for="session-layout">Disposición</label><select id="session-layout" class="project-dropdown"><option value="1">Automático</option><option value="2">Cuadrícula</option><option value="4">Presentador</option></select></div>
+                <div id="mixer-embed-container" class="mixer-embed-container" style="display: none;">
+                    <div class="mixer-embed__header">
+                        <h3><i class="fa-solid fa-sliders"></i> Sala de Control</h3>
+                        <div class="mixer-embed__actions">
+                            <button id="mixer-popout-btn" class="btn-secondary" title="Abrir en nueva pestaña"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>
+                            <button id="mixer-close-btn" class="btn-secondary" title="Cerrar Sala de Control">&times;</button>
+                        </div>
                     </div>
-                    <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="session-live-checkbox"><span>¿Transmitir en vivo?</span></label></div>
-                    <footer class="modal__footer"><button type="submit" class="btn-primary" style="width: 100%;"><i class="fa-solid fa-magic-sparkles"></i> Generar Sala</button></footer>
-                </form>
-            </main>
-            
-            <main id="studio-modal-results-step" class="modal__content" style="display: none;">
-                <div class="results-header"><i class="fa-solid fa-check-circle"></i><h3>¡Tu sala está lista!</h3><p>La sala del director se abrirá en una nueva pestaña. Usa los siguientes enlaces.</p></div>
-                <div class="form-group"><label>Enlace del Director (Solo para ti)</label><div class="link-display"><input type="text" id="director-link-input" readonly><button type="button" class="btn-secondary copy-btn" data-target="director-link-input">Copiar</button></div></div>
-                <div class="form-group"><label>Enlace para Invitados</label><div class="link-display"><input type="text" id="guest-link-input" readonly><button type="button" class="btn-secondary copy-btn" data-target="guest-link-input">Copiar</button></div></div>
-                <div class="form-group" id="public-link-group" style="display: none;"><label>Enlace Público (para `live.html`)</label><div class="link-display"><input type="text"id="public-link-input" readonly><button type="button" class="btn-secondary copy-btn" data-target="public-link-input">Copiar</button></div></div>
-                <footer class="modal__footer"><button type="button" id="create-another-room-btn" class="btn-secondary">Crear otra sala</button></footer>
+                    <div class="mixer-embed__content">
+                        <iframe id="mixer-iframe" allow="autoplay; camera; microphone; fullscreen; picture-in-picture; display-capture"></iframe>
+                    </div>
+                </div>
             </main>
         </div>
     </div>
 
+    <div id="project-modal-overlay" class="modal-overlay"></div>
+    <div id="studio-modal-overlay" class="modal-overlay"></div>
+    
+    <template id="template-home">
+        <div class="workflow-step">
+            <div class="step-header"><h2><span class="step-number">1</span> Selecciona tu Proyecto</h2></div>
+            <p>Elige el trabajo de investigación que quieres divulgar hoy.</p>
+            <div class="project-selector">
+                <select id="project-dropdown" class="input-field"></select>
+                <button class="btn-primary" id="add-project-btn"><i class="fa-solid fa-plus"></i> Registrar Nuevo</button>
+            </div>
+        </div>
+        <div class="workflow-step">
+            <div class="step-header"><h2><span class="step-number">2</span> ¿Cómo quieres divulgar hoy?</h2></div>
+            <p>Elige una herramienta para transformar tu investigación.</p>
+            <div class="creation-grid">
+                <div class="creation-card" data-target-section="creator-studio-section"><i class="fa-solid fa-file-pen icon"></i><h3>Generar Textos Sociales</h3><p>Transforma un texto denso en un artículo de blog y posts para redes sociales.</p></div>
+                <div class="creation-card" data-target-section="studio-section"><i class="fa-solid fa-video icon"></i><h3>Crear Video o Podcast</h3><p>Grábate solo o con invitados, en formato de video o solo audio.</p></div>
+            </div>
+        </div>
+    </template>
+    
+    <template id="template-profile">
+        <h2>Tu Perfil Público</h2>
+        <p>Esta información podrá ser mostrada en tus transmisiones y publicaciones.</p>
+        <form id="profile-form" class="profile-form">
+            <div class="form-group"><label for="display-name">Nombre a Mostrar</label><input type="text" id="display-name" class="input-field" placeholder="Ej: Dra. Ada Lovelace"></div>
+            <div class="form-group"><label for="bio">Biografía Corta</label><textarea id="bio" rows="4" class="input-field" placeholder="Ej: Pionera en computación..."></textarea></div>
+            <div class="form-group"><label for="orcid-url">URL de tu ORCID</label><input type="url" id="orcid-url" class="input-field" placeholder="https://orcid.org/0000-0000-0000-0000" required></div>
+            <button type="submit" class="btn-primary"><span class="btn-text">Guardar Cambios</span></button>
+            <p id="profile-form-message" class="form-message"></p>
+        </form>
+    </template>
+
+    <template id="template-studio">
+         <h2>Estudio de Grabación y Transmisión</h2>
+         <p>Tu centro de control para crear contenido audiovisual.</p>
+         <div class="studio-launcher">
+             <div class="launcher-icon"><i class="fa-solid fa-podcast"></i></div>
+             <h3>Crea tu Sala Personalizada</h3>
+             <p>Genera una sala de grabación o transmisión en vivo. Invita colegas, comparte tu pantalla y mucho más.</p>
+             <button class="btn-primary" id="open-studio-modal-btn"><i class="fa-solid fa-plus"></i> Crear Nueva Sala</button>
+         </div>
+    </template>
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
