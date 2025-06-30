@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Perfil - Epistecnología</title>
+    <title>Mi Perfil y Proyectos - Epistecnología</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <style>
-        /* CSS COMPLETO Y VERIFICADO */
         :root {
             --color-background: #f0f2f5; --color-surface: #ffffff; --color-text-primary: #1c1e21;
             --color-text-secondary: #65676b; --color-accent: #b72a1e; --color-primary-cta: #1877f2;
@@ -23,167 +22,217 @@
         .profile-header p { color: var(--color-text-secondary); margin: 0; }
         .profile-layout { display: grid; grid-template-columns: 1fr; gap: 2rem; }
         @media (min-width: 900px) { .profile-layout { grid-template-columns: 320px 1fr; } }
-        .profile-card, .profile-form-container { background-color: var(--color-surface); padding: 2rem; border-radius: var(--border-radius); box-shadow: var(--shadow-light); }
+        .profile-card, .profile-form-container, .profile-projects-container { background-color: var(--color-surface); padding: 2rem; border-radius: var(--border-radius); box-shadow: var(--shadow-light); }
         .profile-card { text-align: center; }
         .profile-card__avatar-wrapper { margin: 0 auto 1rem auto; width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--color-accent); padding: 5px; }
         .profile-card__avatar-wrapper img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; background-color: #eee; }
-        .profile-card h2 { margin: 0 0 0.5rem 0; font-size: 1.5rem; color: var(--color-text-primary); }
+        .profile-card h2 { margin: 0 0 0.5rem 0; font-size: 1.5rem; }
         .profile-card__bio { color: var(--color-text-secondary); font-style: italic; min-height: 4.5em; }
+        .profile-main-content { display: flex; flex-direction: column; gap: 2rem; }
         .form-group { margin-bottom: 1.5rem; }
-        .form-group label { display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--color-text-primary); }
-        .form-group input, .form-group textarea { width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--color-border); border-radius: var(--border-radius); font-family: inherit; font-size: 1rem; box-sizing: border-box; }
+        .form-group label { display: block; font-weight: 600; margin-bottom: 0.5rem; }
+        input, textarea { width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--color-border); border-radius: var(--border-radius); font-family: inherit; font-size: 1rem; box-sizing: border-box; }
         .form-message { min-height: 1.2em; margin-top: 1rem; font-weight: 500; }
         .form-message.success { color: var(--color-success); } .form-message.error { color: var(--color-error); }
         .btn-primary { background-color: var(--color-primary-cta); color: white; padding: 0.8rem 1.5rem; border-radius: var(--border-radius); font-weight: 600; font-size: 1rem; cursor: pointer; border: none; text-decoration: none; display: inline-flex; justify-content: center; align-items: center; gap: 0.5rem; transition: background-color 0.2s ease; }
         .btn-primary:hover { background-color: #0b5ed7; }
         .btn-primary.is-disabled { background-color: #a5b4c8; color: #e9ecef; cursor: not-allowed; pointer-events: none; }
+        .btn-secondary { background-color: var(--color-background); color: var(--color-text-primary); border:1px solid var(--color-border); padding: 0.8rem 1.5rem; border-radius: var(--border-radius); font-weight: 600; cursor: pointer;}
         .dashboard-link-wrapper { margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--color-border); text-align: center; }
+        #projects-list .project-item { background-color: var(--color-background); padding: 1rem; border-radius: var(--border-radius); margin-bottom: 1rem; border-left: 4px solid var(--color-accent); }
+        #projects-list .project-item p { margin: 0; font-weight: 600; }
+        #projects-list .project-item span { font-size: 0.85rem; color: var(--color-text-secondary); }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-overlay.is-visible { display: flex; }
+        .modal { background: var(--color-surface); padding: 2rem; border-radius: var(--border-radius); width: 90%; max-width: 600px; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--color-border); padding-bottom: 1rem; margin-bottom: 1rem; }
+        .modal-close-btn { font-size: 1.5rem; background: none; border: none; cursor: pointer; }
+        .doi-fetcher { display: flex; gap: 0.5rem; }
+        #doi-fetch-status { font-size: 0.9rem; margin-top: 0.5rem; min-height: 1.2em; }
+        .modal-footer { border-top: 1px solid var(--color-border); padding-top: 1.5rem; margin-top: 1.5rem; text-align: right; }
     </style>
 </head>
 <body>
-
     <div class="page-container">
         <div class="profile-content">
             <header class="profile-header">
                 <a href="/"><img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo Epistecnología"></a>
-                <h1>Configura tu Perfil Público</h1>
-                <p>Esta información es esencial para acceder a las herramientas de creación.</p>
+                <h1>Tu Centro de Control</h1>
+                <p>Gestiona tu perfil público y tus proyectos de investigación desde un solo lugar.</p>
             </header>
-
             <div class="profile-layout">
                 <div class="profile-card">
                     <div class="profile-card__avatar-wrapper"><img id="profile-card-avatar" alt="Avatar de usuario"></div>
                     <h2 id="profile-card-name">Cargando...</h2>
                     <p id="profile-card-bio"></p>
-                </div>
-                <div class="profile-form-container">
-                    <h3>Completa tus datos</h3>
-                    <form id="profile-form">
-                        <div class="form-group"><label for="display-name">Nombre a Mostrar</label><input type="text" id="display-name" placeholder="Ej: Dra. Ada Lovelace" required></div>
-                        <div class="form-group"><label for="bio">Biografía Corta (máx. 150 caracteres)</label><textarea id="bio" rows="3" placeholder="Ej: Científica de datos y especialista en comunicación..." maxlength="150"></textarea></div>
-                        <div class="form-group"><label for="orcid-url">URL de tu Perfil ORCID</label><input type="url" id="orcid-url" placeholder="https://orcid.org/0000-0000-0000-0000" required></div>
-                        <hr>
-                        <h4>Perfiles Sociales (Opcional)</h4>
-                        <div class="form-group"><label for="website-url">Sitio Web o Blog</label><input type="url" id="website-url" placeholder="https://ejemplo.com"></div>
-                        <div class="form-group"><label for="linkedin-url">Perfil de LinkedIn</label><input type="url" id="linkedin-url" placeholder="https://linkedin.com/in/usuario"></div>
-                        <div class="form-group"><label for="twitter-url">Perfil de X (Twitter)</label><input type="url" id="twitter-url" placeholder="https://x.com/usuario"></div>
-                        <button type="submit" class="btn-primary"><span class="btn-text">Guardar Cambios</span></button>
-                        <p id="profile-form-message" class="form-message"></p>
-                    </form>
                     <div class="dashboard-link-wrapper">
                         <a href="/inv/dashboard.html" id="dashboard-link-btn" class="btn-primary is-disabled"><i class="fa-solid fa-arrow-right"></i> Acceder al Dashboard</a>
+                    </div>
+                </div>
+                <div class="profile-main-content">
+                    <div class="profile-form-container">
+                        <h3><i class="fa-solid fa-user-pen"></i> Editar Información Pública</h3>
+                        <form id="profile-form">
+                            <div class="form-group"><label for="display-name">Nombre a Mostrar</label><input type="text" id="display-name" required></div>
+                            <div class="form-group"><label for="bio">Biografía Corta</label><textarea id="bio" rows="3" maxlength="150"></textarea></div>
+                            <div class="form-group"><label for="orcid-url">URL de tu Perfil ORCID</label><input type="url" id="orcid-url" placeholder="https://orcid.org/..." required></div>
+                            <button type="submit" class="btn-primary"><span class="btn-text">Guardar Cambios</span></button>
+                            <p id="profile-form-message" class="form-message"></p>
+                        </form>
+                    </div>
+                    <div class="profile-projects-container">
+                        <h3><i class="fa-solid fa-book-bookmark"></i> Mis Proyectos</h3>
+                        <div id="projects-list"><p>Cargando proyectos...</p></div>
+                        <button class="btn-secondary" id="add-project-btn" style="width: 100%; margin-top: 1rem;"><i class="fa-solid fa-plus"></i> Registrar Nuevo Proyecto</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    <div id="project-modal-overlay" class="modal-overlay"></div>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <script>
+    <script type="module">
+        const { createClient } = window.supabase;
+        const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+
         document.addEventListener('DOMContentLoaded', async () => {
-            // --- 1. CONFIGURACIÓN ---
-            const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
-            const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
-            // Accedemos a la variable global 'supabase' creada por el script anterior
-            const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-            // --- 2. LÓGICA DE LA PÁGINA ---
             const { data: { session } } = await supabaseClient.auth.getSession();
-            if (!session || !session.user) {
-                alert("Sesión no encontrada. Por favor, inicia sesión de nuevo para continuar.");
-                // Opcional: Redirigir si no hay sesión
-                // window.location.href = '/login.html'; 
-                return;
-            }
-
+            if (!session) { return alert("Sesión no encontrada."); }
+            
             const userId = session.user.id;
             const userMetadata = session.user.user_metadata;
-            const form = document.getElementById('profile-form');
-            const dashboardLink = document.getElementById('dashboard-link-btn');
+            
+            Profile.init(userId, userMetadata);
+            Projects.init(userId);
+        });
 
-            const checkDashboardLink = (orcid) => {
-                if (orcid && orcid.includes('orcid.org')) {
+        const Profile = {
+            async init(userId, userMetadata) {
+                this.userId = userId; this.userMetadata = userMetadata; this.form = document.getElementById('profile-form');
+                this.loadData();
+                this.form.addEventListener('submit', (e) => this.handleSave(e));
+            },
+            checkDashboardLink(profileData) {
+                const dashboardLink = document.getElementById('dashboard-link-btn');
+                const hasOrcid = profileData?.orcid && profileData.orcid.includes('orcid.org');
+                const hasProjects = profileData?.projects && profileData.projects.length > 0;
+                if (hasOrcid && hasProjects) {
                     dashboardLink.classList.remove('is-disabled');
-                    dashboardLink.title = "¡Listo! Accede al dashboard para empezar a crear.";
+                    dashboardLink.title = "¡Listo! Accede al dashboard.";
                 } else {
                     dashboardLink.classList.add('is-disabled');
-                    dashboardLink.title = "Debes guardar una URL de ORCID válida para poder continuar.";
+                    dashboardLink.title = "Debes tener un ORCID y al menos un proyecto registrado para continuar.";
                 }
-            };
-            
-            const loadProfileData = async () => {
-                document.getElementById('profile-card-avatar').src = userMetadata?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
-                
-                // Usaremos Supabase para la base de datos, simplificando todo.
-                const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
-
-                if (error && error.code !== 'PGRST116') { // PGRST116: No rows found, lo cual no es un error fatal
-                    console.error("Error al cargar perfil de Supabase:", error);
-                    alert("Hubo un error al cargar tu perfil. Revisa la consola para más detalles.");
-                    return;
-                }
-
+            },
+            async loadData() {
+                document.getElementById('profile-card-avatar').src = this.userMetadata?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
+                const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', this.userId).single();
+                if (error && error.code !== 'PGRST116') return console.error(error);
                 if (data) {
-                    document.getElementById('profile-card-name').textContent = data.display_name || userMetadata?.full_name || 'Completa tu perfil';
+                    document.getElementById('profile-card-name').textContent = data.display_name || this.userMetadata?.full_name;
                     document.getElementById('profile-card-bio').textContent = data.bio || 'Añade tu biografía...';
-                    form.querySelector('#display-name').value = data.display_name || '';
-                    form.querySelector('#bio').value = data.bio || '';
-                    form.querySelector('#orcid-url').value = data.orcid || '';
-                    form.querySelector('#website-url').value = data.website || '';
-                    form.querySelector('#linkedin-url').value = data.linkedin || '';
-                    form.querySelector('#twitter-url').value = data.twitter || '';
-                } else {
-                    // Si no hay perfil en la DB, rellenar con datos de la sesión
-                    document.getElementById('profile-card-name').textContent = userMetadata?.full_name || 'Completa tu perfil';
-                    form.querySelector('#display-name').value = userMetadata?.full_name || '';
+                    this.form.querySelector('#display-name').value = data.display_name || '';
+                    this.form.querySelector('#bio').value = data.bio || '';
+                    this.form.querySelector('#orcid-url').value = data.orcid || '';
                 }
-                checkDashboardLink(form.querySelector('#orcid-url').value);
-            };
-
-            form.addEventListener('submit', async (e) => {
+                this.checkDashboardLink(data);
+            },
+            async handleSave(e) {
                 e.preventDefault();
-                const saveButton = form.querySelector('button[type="submit"]');
+                const saveButton = this.form.querySelector('button[type="submit"]');
                 const btnText = saveButton.querySelector('.btn-text');
                 const messageEl = document.getElementById('profile-form-message');
-
-                saveButton.disabled = true;
-                btnText.textContent = 'Guardando...';
-
-                const updates = {
-                    id: userId,
-                    updated_at: new Date(),
-                    display_name: form.querySelector('#display-name').value,
-                    bio: form.querySelector('#bio').value,
-                    orcid: form.querySelector('#orcid-url').value,
-                    website: form.querySelector('#website-url').value,
-                    linkedin: form.querySelector('#linkedin-url').value,
-                    twitter: form.querySelector('#twitter-url').value,
-                    avatar_url: userMetadata?.avatar_url
-                };
-
+                saveButton.disabled = true; btnText.textContent = 'Guardando...';
+                
+                const updates = { id: this.userId, updated_at: new Date(), display_name: this.form.querySelector('#display-name').value, bio: this.form.querySelector('#bio').value, orcid: this.form.querySelector('#orcid-url').value, avatar_url: this.userMetadata?.avatar_url };
                 const { error } = await supabaseClient.from('profiles').upsert(updates);
                 
-                if (error) {
-                    messageEl.textContent = `Error: ${error.message}`;
-                    messageEl.className = 'form-message error';
-                } else {
-                    messageEl.textContent = '¡Perfil actualizado!';
-                    messageEl.className = 'form-message success';
-                    await loadProfileData(); // Recargar para reflejar cambios
-                }
+                messageEl.textContent = error ? error.message : '¡Guardado!';
+                messageEl.className = `form-message ${error ? 'error' : 'success'}`;
+                if (!error) this.loadData();
 
                 setTimeout(() => {
-                    saveButton.disabled = false;
-                    btnText.textContent = 'Guardar Cambios';
-                    messageEl.textContent = '';
-                    messageEl.className = 'form-message';
+                    saveButton.disabled = false; btnText.textContent = 'Guardar Cambios';
+                    messageEl.textContent = ''; messageEl.className = 'form-message';
                 }, 2000);
-            });
+            }
+        };
 
-            // Carga inicial de los datos
-            await loadProfileData();
-        });
+        const Projects = {
+            fetchedProjectData: null,
+            init(userId) {
+                this.userId = userId;
+                document.getElementById('add-project-btn').addEventListener('click', () => this.openModal());
+                this.loadProjects();
+            },
+            async loadProjects() {
+                const { data } = await supabaseClient.from('profiles').select('projects').eq('id', this.userId).single();
+                const projects = data?.projects || [];
+                const listEl = document.getElementById('projects-list');
+                listEl.innerHTML = '';
+                if (projects.length > 0) {
+                    projects.forEach(p => {
+                        const item = document.createElement('div');
+                        item.className = 'project-item';
+                        item.innerHTML = `<p>${p.title}</p><span>DOI: ${p.doi}</span>`;
+                        listEl.appendChild(item);
+                    });
+                } else {
+                    listEl.innerHTML = '<p>Aún no has registrado ningún proyecto.</p>';
+                }
+                Profile.checkDashboardLink({ orcid: document.getElementById('orcid-url').value, projects });
+            },
+            openModal() {
+                const modalOverlay = document.getElementById('project-modal-overlay');
+                modalOverlay.innerHTML = `
+                    <div class="modal">
+                        <header class="modal-header"><h2>Registrar Proyecto por DOI</h2><button class="modal-close-btn">&times;</button></header>
+                        <main class="modal-content">
+                            <p>Pega el DOI de tu publicación para buscar los metadatos.</p>
+                            <div class="doi-fetcher"><input type="text" id="doi-input" placeholder="10.5281/zenodo.12345"><button id="fetch-doi-btn" class="btn-secondary">Buscar</button></div>
+                            <div id="doi-fetch-status" class="form-message"></div><hr>
+                            <div class="form-group"><label>Título</label><input type="text" id="project-title" disabled></div>
+                            <div class="form-group"><label>Autores</label><input type="text" id="project-authors" disabled></div>
+                        </main>
+                        <footer class="modal-footer"><button id="save-project-btn" class="btn-primary" disabled>Guardar Proyecto</button></footer>
+                    </div>`;
+                modalOverlay.classList.add('is-visible');
+                modalOverlay.querySelector('.modal-close-btn').addEventListener('click', () => this.closeModal());
+                modalOverlay.querySelector('#fetch-doi-btn').addEventListener('click', () => this.handleFetchDoi());
+                modalOverlay.querySelector('#save-project-btn').addEventListener('click', () => this.handleSaveProject());
+            },
+            closeModal() { document.getElementById('project-modal-overlay').classList.remove('is-visible'); },
+            async handleFetchDoi() {
+                const doiInput = document.getElementById('doi-input');
+                const statusDiv = document.getElementById('doi-fetch-status');
+                statusDiv.textContent = 'Buscando...'; statusDiv.className = 'form-message';
+                try {
+                    const response = await fetch(`https://api.datacite.org/dois/${doiInput.value.trim()}`);
+                    if (!response.ok) throw new Error('DOI no encontrado.');
+                    const data = await response.json();
+                    const metadata = data.data.attributes;
+                    document.getElementById('project-title').value = metadata.titles[0]?.title || 'N/A';
+                    document.getElementById('project-authors').value = metadata.creators.map(c => c.name).join(', ');
+                    this.fetchedProjectData = { doi: doiInput.value, title: metadata.titles[0]?.title, authors: metadata.creators.map(c => c.name) };
+                    document.getElementById('save-project-btn').disabled = false;
+                    statusDiv.textContent = '¡Metadatos encontrados!'; statusDiv.classList.add('success');
+                } catch(error) {
+                    statusDiv.textContent = error.message; statusDiv.classList.add('error');
+                }
+            },
+            async handleSaveProject() {
+                if (!this.fetchedProjectData) return;
+                const { data: profile } = await supabaseClient.from('profiles').select('projects').eq('id', this.userId).single();
+                const existingProjects = profile?.projects || [];
+                const newProjects = [...existingProjects, this.fetchedProjectData];
+                const { error } = await supabaseClient.from('profiles').update({ projects: newProjects }).eq('id', this.userId);
+                if (error) { alert("Error al guardar el proyecto."); console.error(error); }
+                else { this.loadProjects(); this.closeModal(); }
+            }
+        };
     </script>
 </body>
 </html>
