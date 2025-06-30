@@ -112,11 +112,24 @@ const Projects = {
     }
 };
 
+// ESTE ES EL CÓDIGO NUEVO QUE REEMPLAZA AL ANTERIOR
 const Studio = {
     generatedUrls: {},
+
+    // --- MÉTODO MODIFICADO: openModal ---
+    // Ahora construye un formulario mucho más completo.
     openModal(actionType) {
+        // Validación 1: El usuario debe tener un ORCID en su perfil.
         if (!App.userProfile?.orcid) {
             alert("Es necesario que completes tu ORCID en tu página de perfil para poder crear una sala.");
+            return;
+        }
+
+        // Validación 2: El usuario debe haber seleccionado un proyecto primero.
+        const projectDropdown = document.getElementById('project-selector-dropdown');
+        const selectedProject = projectDropdown ? projectDropdown.value : '';
+        if (!selectedProject) {
+            alert("Por favor, selecciona primero un proyecto en el Paso 1.");
             return;
         }
         
@@ -124,11 +137,42 @@ const Studio = {
         modalContainer.innerHTML = `
             <div id="studio-modal" class="modal-overlay is-visible">
                 <div class="modal">
-                    <header class="modal-header"><h2>Configurar: ${this.getTitleForAction(actionType)}</h2><button class="modal-close-btn">&times;</button></header>
+                    <header class="modal-header">
+                        <h2>Configurar: ${this.getTitleForAction(actionType)}</h2>
+                        <button class="modal-close-btn">&times;</button>
+                    </header>
                     <main class="modal-content">
                         <form id="studio-form">
-                            <div class="form-group"><label>Título de esta Sesión</label><input id="session-title" type="text" required></div>
-                            <button type="submit" class="btn-primary" style="width:100%;">Generar y Abrir Control</button>
+                            <p>Proyecto: <strong>${selectedProject}</strong></p>
+                            <div class="form-group">
+                                <label for="session-title">Título del Evento o Sesión</label>
+                                <input id="session-title" name="sessionTitle" type="text" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="session-mode">Modo de la Sala</label>
+                                <select id="session-mode" name="sessionMode" class="project-dropdown">
+                                    <option value="control">Solo entrar a la sala de control</option>
+                                    <option value="record">Grabar la sesión</option>
+                                    <option value="live">Grabar y Transmitir en Vivo</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="guest-count">Número Máximo de Invitados</label>
+                                <select id="guest-count" name="guestCount" class="project-dropdown">
+                                    ${Array.from({length: 9}, (_, i) => `<option value="${i + 1}">${i + 1} invitado(s)</option>`).join('')}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input id="hide-names" name="hideNames" type="checkbox" style="width: auto;">
+                                    Ocultar nombres de los participantes en la sala
+                                </label>
+                            </div>
+                            
+                            <button type="submit" class="btn-primary" style="width:100%; margin-top: 1rem;">Generar y Abrir Sala</button>
                         </form>
                     </main>
                 </div>
@@ -137,51 +181,100 @@ const Studio = {
         modalContainer.querySelector('.modal-close-btn').addEventListener('click', () => this.closeModal());
         modalContainer.querySelector('#studio-form').addEventListener('submit', (e) => this.handleGenerateRoom(e, actionType));
     },
-    closeModal() { document.getElementById('modal-overlay-container').innerHTML = ''; },
+
+    closeModal() { 
+        document.getElementById('modal-overlay-container').innerHTML = ''; 
+    },
+
+    // --- MÉTODO MODIFICADO: handleGenerateRoom ---
+    // Ahora lee los nuevos campos del formulario para construir la URL.
     handleGenerateRoom(e, actionType) {
         e.preventDefault();
-        
+        const form = e.target;
+        const formData = new FormData(form);
+
         const roomName = `ept-${App.userProfile.orcid.slice(-6)}-${Date.now().toString().slice(-5)}`;
         const directorKey = `dir-${App.userProfile.orcid.slice(-4)}`;
-        const projectDropdown = document.getElementById('project-selector-dropdown');
-        const projectTitle = projectDropdown ? projectDropdown.value : '';
+        const projectTitle = document.getElementById('project-selector-dropdown').value;
         const vdoDomain = 'https://vdo.epistecnologia.com';
         
         let params = new URLSearchParams();
         params.set('room', roomName);
         params.set('director', directorKey);
-        params.set('label', encodeURIComponent(App.userProfile.displayName || 'Investigador'));
+        
+        // Parámetros básicos de la sala
+        const sessionTitle = formData.get('sessionTitle');
+        if(sessionTitle) params.set('sl2', encodeURIComponent(sessionTitle));
         if (projectTitle) params.set('sl1', encodeURIComponent(`Proyecto: ${projectTitle}`));
+        params.set('label', encodeURIComponent(App.userProfile.displayName || 'Investigador'));
+        
+        // Parámetros del nuevo formulario
+        const sessionMode = formData.get('sessionMode');
+        const guestCount = formData.get('guestCount');
+        const hideNames = formData.get('hideNames');
 
-        switch(actionType) {
-            case 'podcast': params.set('proaudio', '1'); params.set('codec', 'opus'); break;
-            case 'presentation': params.set('screenshare', '1'); params.set('layout', '4'); break;
-            case 'interview': params.set('totalviews', '4'); params.set('layout', '2'); break;
-            case 'live': params.set('push', `live-${App.userProfile.orcid.slice(-6)}`); break;
+        if (sessionMode === 'record') {
+            params.set('record', 'auto'); // Inicia grabación automáticamente
+        } else if (sessionMode === 'live') {
+            params.set('record', 'auto');
+            // Creamos un stream ID único. A futuro, se podría pedir en el formulario.
+            const streamId = `live-${App.userProfile.orcid.slice(-6)}`;
+            params.set('push', streamId);
+            params.set('sl3', '🔴 EN VIVO');
         }
 
-        this.generatedUrls = { director: `${vdoDomain}/mixer.html?${params.toString()}`, guest: `${vdoDomain}/?room=${roomName}` };
+        if (guestCount) {
+            params.set('totalviews', guestCount);
+        }
+
+        if (hideNames === 'on') { // El valor de un checkbox es 'on'
+            params.set('hidenames', '1');
+        }
+        
+        // Parámetros específicos del tipo de creación (tarjeta)
+        switch(actionType) {
+            case 'podcast':
+                params.set('proaudio', '1');
+                params.set('codec', 'opus');
+                params.set('novideo', '1'); // Deshabilita el video para un podcast de solo audio
+                break;
+            case 'presentation':
+                params.set('screenshare', '1');
+                params.set('layout', '4'); // Layout que favorece la pantalla compartida
+                break;
+            case 'interview':
+                params.set('layout', '2'); // Layout de entrevista
+                break;
+        }
+
+        this.generatedUrls = { 
+            director: `${vdoDomain}/mixer.html?${params.toString()}`, 
+            guest: `${vdoDomain}/?room=${roomName}` 
+        };
         this.openMixer();
         this.closeModal();
     },
+
     openMixer() {
         const mixerContainer = document.getElementById('mixer-embed-container');
         mixerContainer.style.display = 'flex';
         mixerContainer.querySelector('#mixer-iframe').src = this.generatedUrls.director;
         this.updateMixerActions();
     },
+
     closeMixer() {
         const mixerContainer = document.getElementById('mixer-embed-container');
         mixerContainer.querySelector('#mixer-iframe').src = 'about:blank';
         mixerContainer.style.display = 'none';
     },
+
     updateMixerActions() {
         const container = document.getElementById('mixer-room-actions');
         const whatsappLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(`Te invito a mi sala de grabación: ${this.generatedUrls.guest}`)}`;
         container.innerHTML = `
-            <button class="btn-secondary" onclick="window.open('${this.generatedUrls.guest}', '_blank')"><i class="fa-solid fa-video"></i> Link Invitado</button>
-            <button class="btn-secondary" id="mixer-action-copy"><i class="fa-solid fa-copy"></i> Copiar Link</button>
-            <a href="${whatsappLink}" target="_blank" class="btn-secondary whatsapp-btn"><i class="fa-brands fa-whatsapp"></i></a>
+            <button class="btn-secondary" onclick="window.open('${this.generatedUrls.guest}', '_blank')" title="Abrir enlace de invitado"><i class="fa-solid fa-video"></i> Link Invitado</button>
+            <button class="btn-secondary" id="mixer-action-copy" title="Copiar enlace de invitado"><i class="fa-solid fa-copy"></i> Copiar Link</button>
+            <a href="${whatsappLink}" target="_blank" class="btn-secondary whatsapp-btn" title="Compartir por WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
         `;
         container.querySelector('#mixer-action-copy').addEventListener('click', () => {
             navigator.clipboard.writeText(this.generatedUrls.guest).then(() => alert('¡Enlace de invitado copiado!'));
@@ -189,12 +282,15 @@ const Studio = {
         document.getElementById('mixer-popout-btn').onclick = () => window.open(this.generatedUrls.director, '_blank');
         document.getElementById('mixer-close-btn').onclick = () => this.closeMixer();
     },
+
     getTitleForAction(action) {
         const titles = {
-            podcast: 'Grabar Podcast', presentation: 'Grabar Presentación',
-            interview: 'Grabar Entrevista', live: 'Transmitir en Vivo'
+            podcast: 'Podcast de Audio',
+            presentation: 'Presentación con Diapositivas',
+            interview: 'Entrevista en Video',
+            live: 'Transmisión en Vivo'
         };
-        return titles[action] || 'Creación';
+        return titles[action] || 'Creación Personalizada';
     }
 };
 
