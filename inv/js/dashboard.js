@@ -43,13 +43,20 @@ const Navigation = {
         document.body.addEventListener('click', e => {
             const navLink = e.target.closest('.nav-link');
             if (navLink) {
-                e.preventDefault();
-                if (navLink.id === 'logout-btn') {
-                    App.supabase.auth.signOut().then(() => window.location.href = '/');
-                } else if (navLink.dataset.section) {
+                // Si el enlace es para cambiar de sección (Inicio, Estudio)
+                if (navLink.dataset.section) {
+                    e.preventDefault(); // La prevención se hace aquí dentro
                     this.showSection(navLink.dataset.section);
                 }
+                // Si el enlace es el botón de Cerrar Sesión
+                else if (navLink.id === 'logout-btn') {
+                    e.preventDefault(); // Y también aquí
+                    App.supabase.auth.signOut().then(() => window.location.href = '/');
+                }
+                // ¡Importante! Si el enlace no cumple ninguna condición anterior (como "Mi Perfil"),
+                // no se ejecuta e.preventDefault() y el navegador seguirá el 'href' con normalidad.
             }
+
             const creationCard = e.target.closest('.creation-card');
             if (creationCard && creationCard.dataset.studioAction) {
                 Studio.openModal(creationCard.dataset.studioAction);
