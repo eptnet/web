@@ -114,11 +114,9 @@ const Projects = {
 
 // Reemplaza el objeto Studio completo por este
 const Studio = {
-    // --- NUEVO: Objeto para manejar los temporizadores ---
     timers: { dashboardCountdown: null },
 
     async fetchSessions() {
-        // (Sin cambios aquí)
         const container = document.getElementById('sessions-container');
         if (!container) return;
         container.innerHTML = `<p>Cargando tus salas...</p>`;
@@ -129,27 +127,21 @@ const Studio = {
             .eq('user_id', App.userId)
             .order('created_at', { ascending: false });
 
-        if (error) {
-            console.error('Error cargando las sesiones:', error);
-            container.innerHTML = `<p>Error al cargar tus salas. Inténtalo de nuevo.</p>`;
-            return;
-        }
-
+        if (error) { console.error('Error cargando las sesiones:', error); container.innerHTML = `<p>Error al cargar tus salas.</p>`; return; }
         this.renderSessions(sessions);
     },
 
     renderSessions(sessions) {
-        // (Sin cambios aquí)
         const container = document.getElementById('sessions-container');
         if (!container) return;
 
         if (!sessions || sessions.length === 0) {
-            container.innerHTML = `<div class="studio-launcher"><h3>Aún no has configurado ninguna sala</h3><p>Ve a la sección "Inicio" para crear tu primera sesión de grabación o transmisión.</p></div>`;
+            container.innerHTML = `<div class="studio-launcher"><h3>Aún no has configurado ninguna sala</h3><p>Ve a la sección "Inicio" para crear tu primera sesión.</p></div>`;
             return;
         }
 
         container.innerHTML = sessions.map(session => {
-            const whatsappMessage = encodeURIComponent(`Hola, te invito a unirte a mi sala de grabación para el proyecto "${session.project_title}".\n\nPor favor, usa una conexión estable y audífonos si es posible.\n\nEnlace: ${session.guest_url}`);
+            const whatsappMessage = encodeURIComponent(`Hola, te invito a mi sala de grabación para el proyecto "${session.project_title}".\n\nPor favor, usa una conexión estable y audífonos si es posible.\n\nEnlace: ${session.guest_url}`);
             const whatsappLink = `https://api.whatsapp.com/send?text=${whatsappMessage}`;
             const sessionData = encodeURIComponent(JSON.stringify(session));
 
@@ -171,23 +163,16 @@ const Studio = {
     },
     
     async deleteSession(sessionId) {
-        // (Sin cambios aquí)
         const confirmed = confirm("¿Estás seguro de que quieres borrar esta sala? Esta acción es irreversible y el enlace dejará de funcionar.");
         if (!confirmed) return;
 
         const { error } = await App.supabase.from('sessions').delete().eq('id', sessionId);
         
-        if (error) {
-            console.error('Error al borrar la sesión:', error);
-            alert("Hubo un error al borrar la sesión.");
-        } else {
-            alert("Sala borrada con éxito.");
-            this.fetchSessions();
-        }
+        if (error) { console.error('Error al borrar la sesión:', error); alert("Hubo un error al borrar la sesión."); } 
+        else { alert("Sala borrada con éxito."); this.fetchSessions(); }
     },
 
     openModal(actionType) {
-        // (Sin cambios aquí)
         if (!App.userProfile?.orcid) {
             alert("Es necesario que completes tu ORCID en tu página de perfil para poder crear una sala.");
             return;
@@ -222,10 +207,11 @@ const Studio = {
         modalContainer.querySelector('#studio-form').addEventListener('submit', (e) => this.handleGenerateRoom(e, actionType));
     },
 
-    closeModal() { document.getElementById('modal-overlay-container').innerHTML = ''; },
+    closeModal() {
+        document.getElementById('modal-overlay-container').innerHTML = '';
+    },
 
     async handleGenerateRoom(e, actionType) {
-        // (Sin cambios aquí)
         e.preventDefault();
         const form = e.target;
         const formData = new FormData(form);
@@ -240,8 +226,17 @@ const Studio = {
         let directorParams = new URLSearchParams();
         directorParams.set('room', roomName);
         directorParams.set('director', directorKey);
+        
         let guestParams = new URLSearchParams();
         guestParams.set('room', roomName);
+    
+        let viewerParams = new URLSearchParams();
+        viewerParams.set('scene', '0');
+        viewerParams.set('room', roomName);
+        viewerParams.set('showlabels', '');
+        viewerParams.set('cleanoutput', '');
+        viewerParams.set('layout', '');
+        viewerParams.set('remote', '');
 
         if (formData.get('askName') === 'on') {
             guestParams.set('label', '');
@@ -253,18 +248,25 @@ const Studio = {
         
         const sessionMode = formData.get('sessionMode');
         const guestCount = parseInt(formData.get('guestCount'), 10);
+
         if (sessionMode === 'record') directorParams.set('record', 'auto');
         if (sessionMode === 'live') {
             directorParams.set('record', 'auto');
             directorParams.set('meshcast', '1');
+            viewerParams.set('meshcast', '1');
             directorParams.set('sl3', '🔴 PRUEBA EN VIVO');
         }
+
         if (guestCount) directorParams.set('totalviews', guestCount);
         if (formData.get('hideNames') === 'on') directorParams.set('hidenames', '1');
-        if (guestCount > 4) directorParams.set('meshcast', '1');
+        if (guestCount > 4) {
+            directorParams.set('meshcast', '1');
+            viewerParams.set('meshcast', '1');
+        }
 
         const directorUrl = `${vdoDomain}/mixer.html?${directorParams.toString()}`;
         const guestUrl = `${vdoDomain}/?${guestParams.toString()}`;
+        const viewerUrl = `${vdoDomain}/?${viewerParams.toString()}`;
         
         const newSession = {
             user_id: App.userId,
@@ -273,6 +275,7 @@ const Studio = {
             session_type: actionType,
             director_url: directorUrl,
             guest_url: guestUrl,
+            viewer_url: viewerUrl,
             status: 'CREADO'
         };
 
@@ -288,27 +291,53 @@ const Studio = {
     },
 
     // --- FUNCIÓN MODIFICADA ---
-    openMixer(sessionData) {
-        const session = JSON.parse(decodeURIComponent(sessionData));
-        const { director_url: directorUrl, guest_url: guestUrl } = session;
+    async openMixer(sessionData) {
+        const initialSession = JSON.parse(decodeURIComponent(sessionData));
+        
+        // Obtenemos el estado más reciente de la sesión desde Supabase
+        const { data: currentSession, error } = await App.supabase
+            .from('sessions')
+            .select('*')
+            .eq('id', initialSession.id)
+            .single();
+
+        if (error || !currentSession) {
+            alert("No se pudo encontrar la sesión. Es posible que haya sido borrada.");
+            this.fetchSessions(); // Actualiza la lista por si acaso
+            return;
+        }
+
+        const { director_url: directorUrl, guest_url: guestUrl, status } = currentSession;
         
         const mixerContainer = document.getElementById('mixer-embed-container');
         mixerContainer.style.display = 'flex';
         mixerContainer.querySelector('#mixer-iframe').src = directorUrl;
         
         const actionsContainer = document.getElementById('mixer-room-actions');
-        actionsContainer.innerHTML = `
-            <button class="btn-secondary" onclick="window.open('${guestUrl}', '_blank')"><i class="fa-solid fa-video"></i> Ingresar como Invitado</button>
-            <button class="btn-secondary" onclick="navigator.clipboard.writeText('${guestUrl}').then(() => alert('¡Enlace de invitado copiado!'))"><i class="fa-solid fa-copy"></i> Copiar Link</button>
+        
+        let liveControlsHTML = '';
+        if (status === 'EN VIVO') {
+            liveControlsHTML = `<button class="btn-primary" style="background-color: #e02424;" onclick="Studio.endLiveStream('${currentSession.id}')"><i class="fa-solid fa-stop-circle"></i> Terminar Transmisión</button>`;
+        } else {
+            liveControlsHTML = `
             <div class="live-dropdown">
                 <button class="btn-secondary"><i class="fa-solid fa-tower-broadcast"></i> Transmitir</button>
                 <div class="live-dropdown-content">
-                    <a href="#" onclick="event.preventDefault(); Studio.scheduleLive('${session.id}', 3)">En 3 minutos</a>
-                    <a href="#" onclick="event.preventDefault(); Studio.scheduleLive('${session.id}', 5)">En 5 minutos</a>
-                    <a href="#" onclick="event.preventDefault(); Studio.scheduleLive('${session.id}', 15)">En 15 minutos</a>
-                    <a href="#" onclick="event.preventDefault(); Studio.scheduleLive('${session.id}', 30)">En 30 minutos</a>
+                    <a href="#" onclick="event.preventDefault(); Studio.scheduleLive('${currentSession.id}', 3)">En 3 minutos</a>
+                    <a href="#" onclick="event.preventDefault(); Studio.scheduleLive('${currentSession.id}', 5)">En 5 minutos</a>
+                    <a href="#" onclick="event.preventDefault(); Studio.scheduleLive('${currentSession.id}', 15)">En 15 minutos</a>
+                    <a href="#" onclick="event.preventDefault(); Studio.scheduleLive('${currentSession.id}', 30)">En 30 minutos</a>
                 </div>
-            </div>
+            </div>`;
+        }
+
+        const whatsappMessage = encodeURIComponent(`Te invito a mi sala de grabación: ${guestUrl}`);
+        
+        actionsContainer.innerHTML = `
+            <button class="btn-secondary" onclick="window.open('${guestUrl}', '_blank')"><i class="fa-solid fa-video"></i> Ingresar como Invitado</button>
+            <button class="btn-secondary" onclick="navigator.clipboard.writeText('${guestUrl}').then(() => alert('¡Enlace de invitado copiado!'))"><i class="fa-solid fa-copy"></i> Copiar Link</button>
+            <a href="https://api.whatsapp.com/send?text=${whatsappMessage}" target="_blank" class="btn-secondary"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
+            ${liveControlsHTML}
             <div id="mixer-countdown-display" class="mixer-countdown"></div>
         `;
         
@@ -316,7 +345,6 @@ const Studio = {
         document.getElementById('mixer-close-btn').onclick = () => this.closeMixer();
     },
 
-    // --- FUNCIÓN MODIFICADA ---
     async scheduleLive(sessionId, minutes) {
         if (!sessionId) return;
         
@@ -331,7 +359,6 @@ const Studio = {
         } else {
             alert(`¡Éxito! La transmisión ha sido programada para empezar en ${minutes} minutos.`);
             
-            // Iniciar el temporizador en el dashboard
             const countdownDisplay = document.getElementById('mixer-countdown-display');
             if(this.timers.dashboardCountdown) clearInterval(this.timers.dashboardCountdown);
 
@@ -350,9 +377,27 @@ const Studio = {
         }
     },
 
-    // --- FUNCIÓN MODIFICADA ---
+    async endLiveStream(sessionId) {
+        const confirmed = confirm("¿Estás seguro de que quieres terminar esta transmisión? El público verá el mensaje de finalización.");
+        if (!confirmed) return;
+
+        const { error } = await App.supabase.from('sessions').update({ status: 'FINALIZADO', scheduled_at: null }).eq('id', sessionId);
+        
+        if (error) {
+            console.error("Error al finalizar la transmisión:", error);
+            alert("Hubo un error al finalizar la transmisión.");
+        } else {
+            alert("Transmisión finalizada con éxito.");
+            this.closeMixer();
+            this.fetchSessions();
+        }
+    },
+
     closeMixer() {
-        if (this.timers.dashboardCountdown) clearInterval(this.timers.dashboardCountdown);
+        if (this.timers.dashboardCountdown) {
+            clearInterval(this.timers.dashboardCountdown);
+            this.timers.dashboardCountdown = null;
+        }
         const mixerContainer = document.getElementById('mixer-embed-container');
         mixerContainer.querySelector('#mixer-iframe').src = 'about:blank';
         mixerContainer.style.display = 'none';
