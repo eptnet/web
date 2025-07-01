@@ -569,3 +569,17 @@ body {
 .live-dropdown:hover .live-dropdown-content {
     display: block;
 }
+
+/* ==========================================================================
+   10. ESTILOS PARA TEMPORIZADOR EN MIXER
+   ========================================================================== */
+.mixer-countdown {
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.9rem;
+    background-color: rgba(0,0,0,0.2);
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+}

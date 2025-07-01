@@ -114,7 +114,11 @@ const Projects = {
 
 // Reemplaza el objeto Studio completo por este
 const Studio = {
+    // --- NUEVO: Objeto para manejar los temporizadores ---
+    timers: { dashboardCountdown: null },
+
     async fetchSessions() {
+        // (Sin cambios aquí)
         const container = document.getElementById('sessions-container');
         if (!container) return;
         container.innerHTML = `<p>Cargando tus salas...</p>`;
@@ -135,6 +139,7 @@ const Studio = {
     },
 
     renderSessions(sessions) {
+        // (Sin cambios aquí)
         const container = document.getElementById('sessions-container');
         if (!container) return;
 
@@ -146,8 +151,6 @@ const Studio = {
         container.innerHTML = sessions.map(session => {
             const whatsappMessage = encodeURIComponent(`Hola, te invito a unirte a mi sala de grabación para el proyecto "${session.project_title}".\n\nPor favor, usa una conexión estable y audífonos si es posible.\n\nEnlace: ${session.guest_url}`);
             const whatsappLink = `https://api.whatsapp.com/send?text=${whatsappMessage}`;
-
-            // Pasamos el objeto de sesión completo al hacer clic
             const sessionData = encodeURIComponent(JSON.stringify(session));
 
             return `
@@ -168,6 +171,7 @@ const Studio = {
     },
     
     async deleteSession(sessionId) {
+        // (Sin cambios aquí)
         const confirmed = confirm("¿Estás seguro de que quieres borrar esta sala? Esta acción es irreversible y el enlace dejará de funcionar.");
         if (!confirmed) return;
 
@@ -269,7 +273,7 @@ const Studio = {
             session_type: actionType,
             director_url: directorUrl,
             guest_url: guestUrl,
-            status: 'CREADO' // Estado inicial
+            status: 'CREADO'
         };
 
         const { error } = await App.supabase.from('sessions').insert(newSession);
@@ -284,62 +288,71 @@ const Studio = {
     },
 
     // --- FUNCIÓN MODIFICADA ---
-    // Ahora recibe el objeto de sesión y crea todos los botones
     openMixer(sessionData) {
         const session = JSON.parse(decodeURIComponent(sessionData));
-        const directorUrl = session.director_url;
-        const guestUrl = session.guest_url;
+        const { director_url: directorUrl, guest_url: guestUrl } = session;
         
         const mixerContainer = document.getElementById('mixer-embed-container');
         mixerContainer.style.display = 'flex';
         mixerContainer.querySelector('#mixer-iframe').src = directorUrl;
         
         const actionsContainer = document.getElementById('mixer-room-actions');
-        const whatsappMessage = encodeURIComponent(`Te invito a mi sala de grabación: ${guestUrl}`);
         actionsContainer.innerHTML = `
+            <button class="btn-secondary" onclick="window.open('${guestUrl}', '_blank')"><i class="fa-solid fa-video"></i> Ingresar como Invitado</button>
             <button class="btn-secondary" onclick="navigator.clipboard.writeText('${guestUrl}').then(() => alert('¡Enlace de invitado copiado!'))"><i class="fa-solid fa-copy"></i> Copiar Link</button>
-            <a href="https://api.whatsapp.com/send?text=${whatsappMessage}" target="_blank" class="btn-secondary"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
             <div class="live-dropdown">
                 <button class="btn-secondary"><i class="fa-solid fa-tower-broadcast"></i> Transmitir</button>
                 <div class="live-dropdown-content">
-                    <a href="#" onclick="Studio.scheduleLive('${session.id}', 3)">En 3 minutos</a>
-                    <a href="#" onclick="Studio.scheduleLive('${session.id}', 5)">En 5 minutos</a>
-                    <a href="#" onclick="Studio.scheduleLive('${session.id}', 15)">En 15 minutos</a>
-                    <a href="#" onclick="Studio.scheduleLive('${session.id}', 30)">En 30 minutos</a>
+                    <a href="#" onclick="event.preventDefault(); Studio.scheduleLive('${session.id}', 3)">En 3 minutos</a>
+                    <a href="#" onclick="event.preventDefault(); Studio.scheduleLive('${session.id}', 5)">En 5 minutos</a>
+                    <a href="#" onclick="event.preventDefault(); Studio.scheduleLive('${session.id}', 15)">En 15 minutos</a>
+                    <a href="#" onclick="event.preventDefault(); Studio.scheduleLive('${session.id}', 30)">En 30 minutos</a>
                 </div>
             </div>
+            <div id="mixer-countdown-display" class="mixer-countdown"></div>
         `;
         
         document.getElementById('mixer-popout-btn').onclick = () => window.open(directorUrl, '_blank');
         document.getElementById('mixer-close-btn').onclick = () => this.closeMixer();
     },
 
-    // --- NUEVA FUNCIÓN ---
-    // Actualiza la sesión en Supabase para programarla
+    // --- FUNCIÓN MODIFICADA ---
     async scheduleLive(sessionId, minutes) {
         if (!sessionId) return;
         
-        // Calcula la fecha y hora futuras
         const now = new Date();
         const scheduledTime = new Date(now.getTime() + minutes * 60000);
 
-        const { error } = await App.supabase
-            .from('sessions')
-            .update({ 
-                status: 'PROGRAMADO', 
-                scheduled_at: scheduledTime.toISOString() 
-            })
-            .eq('id', sessionId);
+        const { error } = await App.supabase.from('sessions').update({ status: 'PROGRAMADO', scheduled_at: scheduledTime.toISOString() }).eq('id', sessionId);
         
         if (error) {
             console.error('Error al programar la transmisión:', error);
             alert('Hubo un error al programar la transmisión.');
         } else {
             alert(`¡Éxito! La transmisión ha sido programada para empezar en ${minutes} minutos.`);
+            
+            // Iniciar el temporizador en el dashboard
+            const countdownDisplay = document.getElementById('mixer-countdown-display');
+            if(this.timers.dashboardCountdown) clearInterval(this.timers.dashboardCountdown);
+
+            this.timers.dashboardCountdown = setInterval(() => {
+                const now = new Date().getTime();
+                const distance = scheduledTime.getTime() - now;
+                if (distance < 0) {
+                    clearInterval(this.timers.dashboardCountdown);
+                    countdownDisplay.innerHTML = `🔴 EN VIVO`;
+                    return;
+                }
+                const mins = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const secs = Math.floor((distance % (1000 * 60)) / 1000);
+                countdownDisplay.innerHTML = `En vivo en: ${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            }, 1000);
         }
     },
 
+    // --- FUNCIÓN MODIFICADA ---
     closeMixer() {
+        if (this.timers.dashboardCountdown) clearInterval(this.timers.dashboardCountdown);
         const mixerContainer = document.getElementById('mixer-embed-container');
         mixerContainer.querySelector('#mixer-iframe').src = 'about:blank';
         mixerContainer.style.display = 'none';
