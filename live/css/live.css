@@ -90,13 +90,14 @@ body {
 
 .event-overlay {
     position: absolute;
-    inset: 0; /* Cubre todo el contenedor */
-    background-color: rgba(0, 0, 0, 0.8);
+    inset: 0;
     display: flex;
     justify-content: center;
     align-items: center;
     text-align: center;
     padding: 2rem;
+    background-color: rgba(0, 0, 0, 0.7); /* Solo dejamos el filtro oscuro */
+    z-index: 2; /* Nos aseguramos que esté por encima de la imagen */
 }
 
 #countdown-timer, #event-ended-message {
@@ -142,4 +143,67 @@ body {
 }
 .schedule-item small {
     color: var(--text-secondary);
+}
+
+/* --- 4. Botón Flotante de Inicio --- */
+.home-button {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1000;
+    width: 48px;
+    height: 48px;
+    background-color: var(--surface-color);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    transition: transform 0.2s ease-in-out;
+}
+
+.home-button img {
+    width: 32px;
+    height: 32px;
+}
+
+.home-button:hover {
+    transform: scale(1.1);
+}
+
+/* Ajuste para móvil para que no choque con el contenido */
+@media (max-width: 768px) {
+    .home-button {
+        top: 15px;
+        left: 15px;
+    }
+}
+
+/* --- 5. Fondo Animado para el Reproductor --- */
+.live-background-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg');
+    background-size: cover;
+    background-position: center;
+    animation: kenburns-effect 40s ease-in-out infinite; /* Aplicamos la animación */
+    z-index: 1;
+}
+
+@keyframes kenburns-effect {
+    0% {
+        transform: scale(1.0) translate(0, 0);
+        opacity: 0.8;
+    }
+    50% {
+        transform: scale(1.15) translate(-2%, 2%);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1.0) translate(0, 0);
+        opacity: 0.8;
+    }
 }

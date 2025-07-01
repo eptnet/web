@@ -19,13 +19,20 @@ const App = {
     supabase: null,
     elements: {},
     timers: { mainLoop: null, countdown: null },
-    currentSessionId: null, // Para saber qué sesión estamos mostrando
+    currentSessionId: null,
+
+    // --- Configuración de YouTube ---
+    youtube: {
+        API_KEY: 'AIzaSyCwh_RLVd7AQ-6FdMEugrA7phNwN0dN9pw', // <-- TU API KEY AQUÍ
+        CHANNEL_ID: 'UCg3ms3gecQ-2cjMhJwaPAig',      // <-- TU CHANNEL ID AQUÍ
+        uploadsPlaylistId: null 
+    },
     
     init() {
         this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         this.cacheDOMElements();
         this.run();
-        this.timers.mainLoop = setInterval(() => this.run(), 30000);
+        this.timers.mainLoop = setInterval(() => this.run(), 60000); 
     },
 
     cacheDOMElements() {
@@ -39,60 +46,34 @@ const App = {
             scheduleList: document.getElementById('schedule-list'),
             liveTitle: document.getElementById('live-title'),
             liveProject: document.getElementById('live-project'),
+            scheduleContainer: document.getElementById('schedule-container'),
         };
     },
 
     async run() {
-        const { activeSession, upcomingSessions } = await this.fetchSessions();
-
+        // Prioridad 1: Buscar sesión de VDO.Ninja
+        const { activeSession, upcomingSessions } = await this.fetchVDONinjaSessions();
         this.renderSchedule(upcomingSessions);
 
         if (activeSession) {
-            const now = new Date();
-            const scheduledAt = new Date(activeSession.scheduled_at);
-
-            this.elements.liveTitle.textContent = activeSession.session_title;
-            this.elements.liveProject.textContent = `Proyecto: ${activeSession.project_title}`;
-
-            // Si el estado es 'EN VIVO' o si está 'PROGRAMADO' y ya es la hora
-            if (activeSession.status === 'EN VIVO' || (activeSession.status === 'PROGRAMADO' && now >= scheduledAt)) {
-                this.showLivePlayer(activeSession);
-            } else if (activeSession.status === 'PROGRAMADO' && now < scheduledAt) {
-                // Si está programado para el futuro
-                this.showCountdown(activeSession);
-            }
+            this.handleVDONinjaSession(activeSession);
         } else {
-            this.showEndedMessage();
-            this.elements.liveTitle.textContent = 'No hay transmisión en vivo';
-            this.elements.liveProject.textContent = '';
+            // Prioridad 2: Si no hay VDO.Ninja, mostrar contenido de YouTube
+            this.handleYouTubeContent();
         }
     },
 
-    // --- FUNCIÓN MODIFICADA ---
-    // Ahora busca primero un evento EN VIVO, y si no, el próximo PROGRAMADO.
-    async fetchSessions() {
-        // 1. Busca una sesión que ya esté EN VIVO
-        // --- INICIO DE LA CORRECCIÓN ---
-        // Quitamos .single() y manejamos el resultado como un array
-        const { data: liveData, error: liveError } = await this.supabase
+    async fetchVDONinjaSessions() {
+        const { data: liveData } = await this.supabase
             .from('sessions')
             .select('*')
             .eq('status', 'EN VIVO')
-            .limit(1); // Le pedimos solo 1, pero sin la restricción de .single()
+            .limit(1);
 
-        if (liveError) {
-            console.error("Error buscando sesión EN VIVO:", liveError);
-            // No detenemos la ejecución, aún podemos buscar sesiones programadas
-        }
-
-        // Si encontramos una sesión en vivo, la procesamos
         if (liveData && liveData.length > 0) {
-            // Como liveData es un array, tomamos el primer elemento
             return { activeSession: liveData[0], upcomingSessions: [] };
         }
-        // --- FIN DE LA CORRECCIÓN ---
 
-        // 2. Si no hay nada EN VIVO, busca la próxima sesión PROGRAMADA (esta parte no cambia)
         const now = new Date().toISOString();
         const { data: upcomingData, error: upcomingError } = await this.supabase
             .from('sessions')
@@ -106,28 +87,110 @@ const App = {
             return { activeSession: null, upcomingSessions: [] };
         }
         
-        const nextSession = upcomingData[0] || null;
-        const futureSessions = upcomingData.slice(1);
+        return { 
+            activeSession: upcomingData ? upcomingData[0] : null, 
+            upcomingSessions: upcomingData ? upcomingData.slice(1) : [] 
+        };
+    },
+    
+    handleVDONinjaSession(session) {
+        this.elements.scheduleContainer.querySelector('h2').innerHTML = '<i class="fa-solid fa-calendar-days"></i> Próximos Eventos';
+        const now = new Date();
+        const scheduledAt = new Date(session.scheduled_at);
 
-        return { activeSession: nextSession, upcomingSessions: futureSessions };
+        this.elements.liveTitle.textContent = session.session_title;
+        this.elements.liveProject.textContent = `Proyecto: ${session.project_title}`;
+
+        if (session.status === 'EN VIVO' || (session.status === 'PROGRAMADO' && now >= scheduledAt)) {
+            this.showVDONinjaPlayer(session);
+        } else if (session.status === 'PROGRAMADO' && now < scheduledAt) {
+            this.showCountdown(session);
+        }
+    },
+    
+    async handleYouTubeContent() {
+        this.elements.scheduleList.innerHTML = '<p class="placeholder-text">Cargando videos...</p>';
+        this.elements.liveTitle.textContent = "Canal Epistecnología";
+        this.elements.liveProject.textContent = "Contenido On-Demand";
+        
+        const videos = await this.fetchYouTubeVideos();
+        if (videos && videos.length > 0) {
+            this.renderYouTubeList(videos);
+            this.showYouTubePlayer(videos[0]); 
+        } else {
+            this.showEndedMessage("No se pudieron cargar los videos de YouTube.");
+        }
     },
 
-    renderSchedule(sessions) {
-        if (!this.elements.scheduleList) return;
-        if (sessions.length === 0) {
-            this.elements.scheduleList.innerHTML = '<p class="placeholder-text">No hay más eventos programados.</p>';
+    async fetchYouTubeVideos() {
+        try {
+            if (!this.youtube.uploadsPlaylistId) {
+                const channelResponse = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${this.youtube.CHANNEL_ID}&key=${this.youtube.API_KEY}`);
+                const channelData = await channelResponse.json();
+                if (!channelData.items || channelData.items.length === 0) throw new Error("Canal de YouTube no encontrado o sin acceso.");
+                this.youtube.uploadsPlaylistId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
+            }
+
+            const playlistResponse = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${this.youtube.uploadsPlaylistId}&maxResults=15&key=${this.youtube.API_KEY}`);
+            const playlistData = await playlistResponse.json();
+            return playlistData.items;
+
+        } catch (error) {
+            console.error("Error al obtener videos de YouTube:", error);
+            return null;
+        }
+    },
+    
+    renderYouTubeList(videos) {
+        this.elements.scheduleContainer.querySelector('h2').innerHTML = '<i class="fa-brands fa-youtube"></i> Videos Recientes';
+        
+        this.elements.scheduleList.innerHTML = videos.map(item => {
+            const video = item.snippet;
+            const title = video.title.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+            const videoData = encodeURIComponent(JSON.stringify({ videoId: video.resourceId.videoId, snippet: { title: title } }));
+
+            return `
+                <div class="schedule-item youtube-item" onclick="App.showYouTubePlayer(JSON.parse(decodeURIComponent('${videoData}')))">
+                    <img src="${video.thumbnails.default.url}" alt="thumbnail" width="64" height="48" style="border-radius: 4px; object-fit: cover;"/>
+                    <p style="font-size: 0.9em; font-weight: 500;">${video.title}</p>
+                </div>
+            `;
+        }).join('');
+    },
+    
+    showVDONinjaPlayer(session) {
+        const streamUrl = session.viewer_url;
+        const existingIframe = this.elements.player.querySelector('iframe');
+        if (existingIframe && existingIframe.src === streamUrl) {
             return;
         }
-        this.elements.scheduleList.innerHTML = sessions.map(session => {
-            const date = new Date(session.scheduled_at);
-            const time = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-            const day = date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
-            return `<div class="schedule-item"><p>${session.session_title}</p><small>${day} a las ${time}</small></div>`;
-        }).join('');
+        if (this.timers.countdown) clearInterval(this.timers.countdown);
+        this.elements.overlay.style.display = 'none';
+        this.elements.player.innerHTML = `<iframe src="${streamUrl}" allow="autoplay; fullscreen" frameborder="0"></iframe>`;
+    },
+    
+    showYouTubePlayer(video) {
+        if (this.timers.countdown) clearInterval(this.timers.countdown);
+        this.elements.overlay.style.display = 'none';
+        
+        const videoId = video.videoId || video.snippet.resourceId.videoId;
+        // --- INICIO DE LA CORRECCIÓN ---
+        // Usamos la URL correcta para insertar videos de YouTube
+        const videoUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
+        // --- FIN DE LA CORRECCIÓN ---
+        
+        this.elements.liveTitle.textContent = video.snippet.title;
+        this.elements.liveProject.textContent = "Canal de YouTube";
+
+        const existingIframe = this.elements.player.querySelector('iframe');
+        if (existingIframe && existingIframe.src.includes(videoId)) {
+            return;
+        }
+        
+        this.elements.player.innerHTML = `<iframe src="${videoUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
     },
 
     showCountdown(session) {
-        this.currentSessionId = session.id;
         this.elements.overlay.style.display = 'flex';
         this.elements.countdownTimer.style.display = 'block';
         this.elements.endedMessage.style.display = 'none';
@@ -141,14 +204,13 @@ const App = {
             const now = new Date().getTime();
             const distance = endTime - now;
 
-            if (distance < 1000) { // Un segundo antes, actualizamos
+            if (distance < 1000) {
                 clearInterval(this.timers.countdown);
                 this.elements.countdownClock.textContent = "¡EMPEZANDO!";
-                this.setSessionLive(session.id); // ¡Cambiamos el estado a EN VIVO!
-                setTimeout(() => this.run(), 1500); // Esperamos 1.5s y recargamos el estado
+                this.setSessionLive(session.id);
+                setTimeout(() => this.run(), 1500);
                 return;
             }
-
             const days = Math.floor(distance / (1000 * 60 * 60 * 24));
             const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
@@ -157,43 +219,19 @@ const App = {
         }, 1000);
     },
     
-    // --- NUEVA FUNCIÓN ---
-    // Actualiza el estado de la sesión en la base de datos a 'EN VIVO'
     async setSessionLive(sessionId) {
-        const { error } = await this.supabase
-            .from('sessions')
-            .update({ status: 'EN VIVO' })
-            .eq('id', sessionId);
-        
+        const { error } = await this.supabase.from('sessions').update({ status: 'EN VIVO' }).eq('id', sessionId);
         if(error) console.error("Error al actualizar la sesión a EN VIVO:", error);
     },
 
-    showLivePlayer(session) {
-        // Hemos eliminado la línea que causaba el problema.
-        // Ahora solo verificamos si el iframe ya existe para no recargarlo.
-        const streamUrl = session.viewer_url;
-        const existingIframe = this.elements.player.querySelector('iframe');
-        if (existingIframe && existingIframe.src === streamUrl) {
-            return;
-        }
-
-        if (this.timers.countdown) clearInterval(this.timers.countdown);
-        this.elements.overlay.style.display = 'none';
-        
-        this.elements.player.innerHTML = `<iframe src="${streamUrl}" allow="autoplay; fullscreen" frameborder="0"></iframe>`;
-    },
-
-    showEndedMessage() {
-        this.currentSessionId = null;
+    showEndedMessage(message = "Gracias por acompañarnos. El video estará disponible pronto.") {
         if (this.timers.countdown) clearInterval(this.timers.countdown);
         this.elements.overlay.style.display = 'flex';
         this.elements.countdownTimer.style.display = 'none';
         this.elements.endedMessage.style.display = 'block';
+        this.elements.endedMessage.querySelector('p').textContent = message;
         this.elements.player.innerHTML = '';
     }
 };
 
-document.addEventListener('DOMContentLoaded', () => App.init());
-
-// Iniciar la aplicación cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => App.init());

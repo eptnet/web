@@ -7,17 +7,16 @@
     
     <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
     <link rel="stylesheet" href="/live/css/live.css">
 </head>
 <body>
 
-    <a href="/" class="home-button" aria-label="Volver a la página de inicio" title="Volver a la página de inicio">
-        <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo Epistecnología">
-    </a>
     <div class="live-container">
+
         <main id="player-container" class="bento-box">
-            <div class="live-background-image"></div>
-            <div id="video-player"></div>
+            <div id="video-player">
+                </div>
             <div id="event-overlay" class="event-overlay">
                 <div id="countdown-timer">
                     <h2>Próxima Transmisión</h2>
@@ -30,8 +29,9 @@
                 </div>
             </div>
         </main>
+
         <section id="info-container" class="bento-box">
-             <h2>Ahora en Vivo</h2>
+            <h2>Ahora en Vivo</h2>
             <div id="live-info-content">
                 <h3 id="live-title">--</h3>
                 <p id="live-project">Proyecto: --</p>
@@ -40,18 +40,21 @@
                 </div>
             </div>
         </section>
+
         <aside id="schedule-container" class="bento-box">
             <h2><i class="fa-solid fa-calendar-days"></i> Próximos Eventos</h2>
             <div id="schedule-list">
                 <p class="placeholder-text">Cargando agenda...</p>
             </div>
         </aside>
+
         <section id="channels-container" class="bento-box">
             <h2><i class="fa-solid fa-satellite-dish"></i> Canales</h2>
             <div id="channels-grid">
                  <p class="placeholder-text">Sección de canales en desarrollo.</p>
             </div>
         </section>
+
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
