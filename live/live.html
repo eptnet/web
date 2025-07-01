@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>En Vivo - Epistecnología</title>
+    
+    <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+    <link rel="stylesheet" href="/live/css/live.css">
+</head>
+<body>
+
+    <div class="live-container">
+
+        <main id="player-container" class="bento-box">
+            <div id="video-player">
+                </div>
+            <div id="event-overlay" class="event-overlay">
+                <div id="countdown-timer">
+                    <h2>Próxima Transmisión</h2>
+                    <p id="countdown-title"></p>
+                    <div id="countdown-clock">00:00:00:00</div>
+                </div>
+                <div id="event-ended-message">
+                    <h2>Transmisión Finalizada</h2>
+                    <p>Gracias por acompañarnos. El video estará disponible pronto.</p>
+                </div>
+            </div>
+        </main>
+
+        <section id="info-container" class="bento-box">
+            <h2>Ahora en Vivo</h2>
+            <div id="live-info-content">
+                <h3 id="live-title">--</h3>
+                <p id="live-project">Proyecto: --</p>
+                <div id="timeline-placeholder">
+                    <p class="placeholder-text">Línea de tiempo del evento aparecerá aquí.</p>
+                </div>
+            </div>
+        </section>
+
+        <aside id="schedule-container" class="bento-box">
+            <h2><i class="fa-solid fa-calendar-days"></i> Próximos Eventos</h2>
+            <div id="schedule-list">
+                <p class="placeholder-text">Cargando agenda...</p>
+            </div>
+        </aside>
+
+        <section id="channels-container" class="bento-box">
+            <h2><i class="fa-solid fa-satellite-dish"></i> Canales</h2>
+            <div id="channels-grid">
+                 <p class="placeholder-text">Sección de canales en desarrollo.</p>
+            </div>
+        </section>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/live/js/live.js"></script>
+</body>
+</html>
