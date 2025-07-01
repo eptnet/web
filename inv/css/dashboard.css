@@ -70,6 +70,7 @@ body {
    ========================================================================== */
 .dashboard-container {
     display: flex;
+    min-height: 100vh; /* AÑADIDO: asegura que el contenedor ocupe al menos toda la altura de la pantalla */
 }
 
 .main-content {
@@ -269,7 +270,7 @@ body {
 }
 
 .btn-primary {
-    background-color: var(--color-primary-cta);
+    background-color: var(--color-accent);
     color: white;
 }
 .btn-primary:hover { filter: brightness(1.1); }
@@ -482,4 +483,89 @@ body {
     body {
         font-size: 15px; /* Ligeramente más pequeño para caber más info */
     }
+}
+
+/* ==========================================================================
+   8. ESTILOS PARA TARJETAS DE SESIÓN EN ESTUDIO
+   ========================================================================== */
+.sessions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.session-card {
+    background-color: var(--color-surface);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-light);
+    border-left: 5px solid var(--color-accent);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.session-card h4 {
+    margin: 0;
+    font-size: 1.2rem;
+    word-break: break-word;
+}
+
+.session-card__meta {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    text-transform: capitalize;
+}
+
+.session-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: auto; /* Empuja los botones hacia abajo */
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.session-card__actions .btn-secondary {
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+}
+
+/* ==========================================================================
+   9. ESTILOS PARA DROPDOWN DE TRANSMISIÓN
+   ========================================================================== */
+.live-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.live-dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: var(--color-surface);
+    min-width: 160px;
+    box-shadow: var(--shadow-strong);
+    z-index: 1;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    top: 100%;
+    /* The margin-top line has been removed */
+}
+
+.live-dropdown-content a {
+    color: var(--color-text-primary);
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    font-size: 0.9rem;
+}
+
+.live-dropdown-content a:hover {
+    background-color: var(--color-background);
+}
+
+.live-dropdown:hover .live-dropdown-content {
+    display: block;
 }

@@ -66,17 +66,24 @@
                 <div class="creation-card" data-studio-action="presentation"><i class="fa-solid fa-desktop icon"></i><h3>Grabar Presentación</h3><p>Grábate a ti mismo junto a tu pantalla o diapositivas.</p></div>
                 <div class="creation-card" data-studio-action="interview"><i class="fa-solid fa-users icon"></i><h3>Grabar Entrevista</h3><p>Una sala de video para conversar con invitados.</p></div>
                 <div class="creation-card" data-studio-action="live"><i class="fa-solid fa-tower-broadcast icon"></i><h3>Transmitir en Vivo</h3><p>Genera una sala y un enlace público para tu audiencia.</p></div>
+
+                <div class="creation-card" data-studio-action="ai-social"><i class="fa-solid fa-hashtag icon"></i><h3>Post para Redes</h3><p>Genera un texto breve y atractivo para redes sociales.</p></div>
+                <div class="creation-card" data-studio-action="ai-article"><i class="fa-solid fa-pen-nib icon"></i><h3>Artículo de Opinión</h3><p>Desarrolla un borrador de artículo para tu blog o prensa.</p></div>
+                <div class="creation-card" data-studio-action="ai-script"><i class="fa-solid fa-file-powerpoint icon"></i><h3>Guion de Presentación</h3><p>Estructura los puntos clave para tu próxima exposición.</p></div>
+                <div class="creation-card" data-studio-action="ai-summary"><i class="fa-solid fa-file-lines icon"></i><h3>Resumen de Artículo</h3><p>Crea un abstract conciso a partir de un texto extenso.</p></div>
             </div>
         </div>
     </template>
     
     <template id="template-studio-section">
-         <h2>Estudio de Grabación y Transmisión</h2>
-         <p>Desde esta sección puedes lanzar tus creaciones.</p>
-         <div class="studio-launcher">
-             <h3><i class="fa-solid fa-podcast"></i> Crear Sala Personalizada</h3>
-             <p>Usa las tarjetas de la sección "Inicio" para generar una sala a tu medida.</p>
-         </div>
+        <h2><i class="fa-solid fa-podcast"></i> Estudio de Grabación y Transmisión</h2>
+        <p>Aquí encontrarás las salas que has configurado. Desde aquí puedes iniciarlas y gestionar los enlaces.</p>
+        <div id="sessions-container" class="sessions-grid">
+            <div class="studio-launcher">
+                <h3>Aún no has configurado ninguna sala</h3>
+                <p>Ve a la sección "Inicio" para crear tu primera sesión de grabación o transmisión.</p>
+            </div>
+        </div>
     </template>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
