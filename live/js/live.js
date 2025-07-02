@@ -14,14 +14,16 @@ const App = {
         const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
         this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         this.cacheDOMElements();
         this.addEventListeners();
         this.run();
-        this.timers.mainLoop = setInterval(() => this.run(), 30000); 
+        this.timers.mainLoop = setInterval(() => this.run(), 30000);
     },
 
     cacheDOMElements() {
         this.elements = {
+            playerContainer: document.getElementById('player-container'),
             player: document.getElementById('video-player'),
             overlay: document.getElementById('event-overlay'),
             countdownTimer: document.getElementById('countdown-timer'),
@@ -38,6 +40,7 @@ const App = {
             tabContents: document.querySelectorAll('.tab-content'),
             scheduleList: document.getElementById('schedule-list'),
             youtubeList: document.getElementById('youtube-list'),
+            chatContainer: document.getElementById('chat-placeholder'), // Contenedor para el chat
         };
     },
 
@@ -73,11 +76,19 @@ const App = {
         } else if (dbLiveSession) {
             // Prioridad MEDIA: un evento agendado en nuestra base de datos.
             const session = dbLiveSession;
-            if (session.platform === 'vdo_ninja') { this.handleVDONinjaSession(session); } 
-            else if (session.platform === 'youtube') { this.handleYouTubeSession(session); }
+            const now = new Date();
+            const scheduledAt = new Date(session.scheduled_at);
+            // Solo procesamos si el evento ya terminó hace menos de 4 horas
+            if (session.end_at && now > new Date(session.end_at)) {
+                this.handleOnDemandContent();
+            } else if (session.platform === 'vdo_ninja') {
+                this.handleVDONinjaSession(session);
+            } else if (session.platform === 'youtube') {
+                this.handleYouTubeSession(session);
+            }
         } else {
             // Prioridad BAJA: no hay nada en vivo ni agendado, mostramos contenido On-Demand.
-            if (!this.youtube.isLoaded) { this.handleYouTubeOnDemand(); }
+            this.handleOnDemandContent();
         }
     },
     
@@ -86,24 +97,28 @@ const App = {
             const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${this.youtube.CHANNEL_ID}&eventType=live&type=video&key=${this.youtube.API_KEY}`);
             const data = await response.json();
             return (data.items && data.items.length > 0) ? data.items[0] : null;
-        } catch (error) { console.error("Error al buscar directos de YouTube:", error); return null; }
+        } catch (error) {
+            console.error("Error al buscar directos de YouTube:", error);
+            return null;
+        }
     },
 
     async fetchScheduledSessions() {
         const now = new Date();
-        // Le damos un margen de 4 horas para que los eventos finalizados desaparezcan
         const fourHoursAgo = new Date(now.getTime() - 4 * 60 * 60 * 1000).toISOString();
 
         const { data, error } = await this.supabase
             .from('sessions')
             .select('*')
             .in('status', ['PROGRAMADO', 'EN VIVO'])
-            .gte('scheduled_at', fourHoursAgo) // Solo eventos de las últimas 4 horas o futuros
+            .gte('scheduled_at', fourHoursAgo)
             .order('scheduled_at', { ascending: true });
 
-        if (error) { console.error("Error buscando sesiones:", error); return { dbLiveSession: null, dbUpcomingSessions: [] }; }
+        if (error) {
+            console.error("Error buscando sesiones:", error);
+            return { dbLiveSession: null, dbUpcomingSessions: [] };
+        }
         
-        // Separa el evento actual/próximo de los que vienen después
         let liveSession = null;
         let upcoming = [];
         const now_time = now.getTime();
@@ -111,36 +126,49 @@ const App = {
         for (const session of data) {
             const scheduled_time = new Date(session.scheduled_at).getTime();
             if (scheduled_time <= now_time && !liveSession) {
+                // Si la hora de fin ya pasó, no lo consideramos en vivo
+                if (session.end_at && now_time > new Date(session.end_at).getTime()) {
+                    continue;
+                }
                 liveSession = session;
             } else if (scheduled_time > now_time) {
                 upcoming.push(session);
             }
         }
         
-        // Si no hay nada en vivo, el más próximo programado se convierte en el activo
         if (!liveSession && upcoming.length > 0) {
             liveSession = upcoming.shift();
         }
 
         return { dbLiveSession: liveSession, dbUpcomingSessions: upcoming };
     },
+
+    // ... el resto de las funciones en la Parte 2
     
     handleVDONinjaSession(session) {
         this.renderResearcherInfo(session.user_id);
         this.elements.liveTitle.textContent = session.session_title;
         this.elements.liveProject.textContent = `Proyecto: ${session.project_title}`;
+        
         const now = new Date();
         const scheduledAt = new Date(session.scheduled_at);
         const diffMinutes = (scheduledAt.getTime() - now.getTime()) / 60000;
 
-        // Entra en modo EN VIVO directamente si ya es la hora.
-        if (session.status === 'EN VIVO' || now >= scheduledAt) { this.showVDONinjaPlayer(session); } 
-        // Muestra cuenta regresiva solo si faltan 60 minutos o menos.
-        else if (diffMinutes < 60) { this.showCountdown(session); }
+        // Si ya es la hora o está en vivo, muestra el reproductor
+        if (session.status === 'EN VIVO' || now >= scheduledAt) { 
+            this.showVDONinjaPlayer(session);
+        } 
+        // Si falta menos de una hora para el evento, muestra la cuenta regresiva
+        else if (diffMinutes < 60) { 
+            this.showCountdown(session);
+        } else {
+            // Si falta mucho, simplemente muestra la info pero sin reproductor ni cuenta regresiva
+            this.showEndedMessage("Esta transmisión empezará más tarde.");
+        }
     },
     
     handleYouTubeSession(session) {
-        this.elements.researcherInfoContainer.style.display = 'none';
+        this.renderResearcherInfo(session.user_id);
         this.elements.liveTitle.textContent = session.session_title;
         this.elements.liveProject.textContent = `Proyecto: ${session.project_title}`;
         const now = new Date();
@@ -151,6 +179,8 @@ const App = {
             this.showYouTubePlayer({ id: { videoId: session.platform_id }, snippet: { title: session.session_title } });
         } else if (diffMinutes < 60) {
             this.showCountdown(session);
+        } else {
+            this.showEndedMessage("Esta transmisión de YouTube empezará más tarde.");
         }
     },
 
@@ -159,9 +189,11 @@ const App = {
         this.elements.liveTitle.textContent = video.snippet.title;
         this.elements.liveProject.textContent = "🔴 Transmitiendo en vivo desde YouTube";
         this.showYouTubePlayer(video);
+        this.showYouTubeChat(video.id.videoId);
     },
 
-    async handleYouTubeOnDemand() {
+    async handleOnDemandContent() {
+        if (this.youtube.isLoaded) return; // Evita recargar si ya está visible
         this.youtube.isLoaded = true;
         this.elements.researcherInfoContainer.style.display = 'none';
         this.elements.youtubeList.innerHTML = '<p class="placeholder-text">Cargando videos...</p>';
@@ -187,21 +219,39 @@ const App = {
             }
             const playlistResponse = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${this.youtube.uploadsPlaylistId}&maxResults=50&key=${this.youtube.API_KEY}`);
             const playlistData = await playlistResponse.json();
+            
             const videoIds = playlistData.items.map(item => item.snippet.resourceId.videoId).join(',');
+            
             const detailsResponse = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails,status&id=${videoIds}&key=${this.youtube.API_KEY}`);
             const detailsData = await detailsResponse.json();
+            
             const videoDetails = {};
             detailsData.items.forEach(item => {
                 const duration = item.contentDetails.duration.match(/(\d+)M|(\d+)S/g) || [];
                 const totalSeconds = duration.reduce((acc, time) => (time.includes('M') ? acc + parseInt(time) * 60 : acc + parseInt(time)), 0);
-                videoDetails[item.id] = { duration: totalSeconds, isPublic: item.status.privacyStatus === 'public' };
+                videoDetails[item.id] = {
+                    duration: totalSeconds,
+                    isPublic: item.status.privacyStatus === 'public'
+                };
             });
-            return playlistData.items.filter(item => { const details = videoDetails[item.snippet.resourceId.videoId]; return details && details.isPublic && details.duration > 70; });
-        } catch (error) { console.error("Error al obtener videos de YouTube:", error); return null; }
+            
+            return playlistData.items.filter(item => {
+                const details = videoDetails[item.snippet.resourceId.videoId];
+                return details && details.isPublic && details.duration > 70;
+            });
+        } catch (error) {
+            console.error("Error al obtener videos de YouTube:", error);
+            return null;
+        }
     },
 
+    // ... el resto de las funciones en la Parte 3 y 4
+
     async renderResearcherInfo(userId) {
-        if (!userId) { this.elements.researcherInfoContainer.style.display = 'none'; return; }
+        if (!userId) {
+            this.elements.researcherInfoContainer.style.display = 'none';
+            return;
+        }
         const { data: profile } = await this.supabase.from('profiles').select('full_name, avatar_url, orcid').eq('id', userId).single();
         if (profile) {
             this.elements.researcherInfoContainer.style.display = 'flex';
@@ -211,15 +261,18 @@ const App = {
         }
     },
     
-    // Función modificada para mostrar el evento actual
     renderSchedule(upcoming, current) {
         if (!this.elements.scheduleList) return;
         let html = '';
 
         if (current) {
+            const date = new Date(current.scheduled_at);
+            const time = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+            const platformIcon = current.platform === 'youtube' ? 'fa-youtube' : 'fa-podcast';
             html += `<div class="event-card is-live">
                         <div class="card-info">
                             <h5><i class="fa-solid fa-tower-broadcast"></i> AHORA: ${current.session_title}</h5>
+                             <p><i class="fa-brands ${platformIcon}"></i> ${current.platform === 'youtube' ? 'YouTube' : 'EPT Live'} a las ${time}</p>
                         </div>
                      </div>`;
         }
@@ -236,7 +289,7 @@ const App = {
                             <div class="card-info">
                                 <h5>${session.session_title}</h5>
                                 <p><i class="fa-brands ${platformIcon}"></i> ${session.platform === 'youtube' ? 'YouTube' : 'EPT Live'}</p>
-                                <p>${day} - ${time}</p>
+                                <p>Próximo: ${day} - ${time}</p>
                             </div>
                         </div>`;
             }).join('');
@@ -265,7 +318,6 @@ const App = {
     },
     
     showYouTubePlayer(video) {
-        // La propiedad correcta del ID de video varía si viene de 'search' o 'playlistItems'
         const videoId = video.id?.videoId || video.snippet?.resourceId?.videoId;
         if (!videoId) { console.error("No se pudo encontrar el ID del video", video); return; }
 
@@ -275,39 +327,59 @@ const App = {
         
         if (this.timers.countdown) clearInterval(this.timers.countdown);
         this.elements.overlay.style.display = 'none';
+        
         this.elements.liveTitle.textContent = video.snippet.title;
-        this.elements.liveProject.textContent = "Canal de YouTube";
+        // No sobreescribimos el proyecto si es un video on-demand
+        if(this.youtube.isLoaded) {
+           this.elements.liveProject.textContent = "Canal de YouTube";
+        }
+
         this.elements.player.innerHTML = `<iframe src="${videoUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
     },
+
+    // ... la parte final y el cierre del código en la Parte 4
 
     showCountdown(session) {
         this.elements.overlay.style.display = 'flex';
         this.elements.countdownTimer.style.display = 'block';
         this.elements.endedMessage.style.display = 'none';
-        this.elements.player.innerHTML = '';
+        this.elements.player.innerHTML = ''; // Limpiamos el reproductor
         this.elements.countdownTitle.textContent = session.session_title;
+        
         if (this.timers.countdown) clearInterval(this.timers.countdown);
+
         const endTime = new Date(session.scheduled_at).getTime();
         this.timers.countdown = setInterval(() => {
             const now = new Date().getTime();
             const distance = endTime - now;
+
             if (distance < 1000) {
                 clearInterval(this.timers.countdown);
                 this.elements.countdownClock.textContent = "¡EMPEZANDO!";
-                if (session.platform === 'vdo_ninja') this.setSessionLive(session.id);
-                setTimeout(() => this.run(), 1500);
+                // Solo VDO.Ninja necesita que le cambiemos el estado manualmente para que el director lo vea
+                if (session.platform === 'vdo_ninja') {
+                    this.setSessionLive(session.id);
+                }
+                setTimeout(() => this.run(), 1500); // Re-ejecutamos para que cargue el player
                 return;
             }
+
             const days = Math.floor(distance / (1000 * 60 * 60 * 24));
             const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-            this.elements.countdownClock.textContent = `${String(days).padStart(2, '0')}:${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+            this.elements.countdownClock.textContent = 
+                `${String(days).padStart(2, '0')}:${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         }, 1000);
     },
     
     async setSessionLive(sessionId) {
-        const { error } = await this.supabase.from('sessions').update({ status: 'EN VIVO' }).eq('id', sessionId);
+        const { error } = await this.supabase
+            .from('sessions')
+            .update({ status: 'EN VIVO' })
+            .eq('id', sessionId);
+        
         if(error) console.error("Error al actualizar la sesión a EN VIVO:", error);
     },
 
@@ -322,4 +394,8 @@ const App = {
     }
 };
 
+// Línea final que inicia toda la aplicación
 document.addEventListener('DOMContentLoaded', () => App.init());
+
+// ------ BORRAR
+
