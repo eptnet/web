@@ -22,7 +22,7 @@ const App = {
         this.cacheDOMElements();
         this.addEventListeners();
         this.run();
-        this.timers.mainLoop = setInterval(() => this.run(), 60000); 
+        this.timers.mainLoop = setInterval(() => this.run(), 30000); // Revisamos cada 30 segundos
     },
 
     cacheDOMElements() {
@@ -60,35 +60,47 @@ const App = {
     },
 
     async run() {
-        const { activeSession, upcomingSessions } = await this.fetchVDONinjaSessions();
+        const { activeSession, upcomingSessions } = await this.fetchScheduledSessions();
+        
         this.renderSchedule(upcomingSessions);
 
         if (activeSession) {
-            this.handleVDONinjaSession(activeSession);
-            return;
+            // Si hay una sesión activa (VDO o YT), la manejamos
+            if (activeSession.platform === 'vdo_ninja') {
+                this.handleVDONinjaSession(activeSession);
+            } else if (activeSession.platform === 'youtube') {
+                this.handleYouTubeSession(activeSession);
+            }
+        } else {
+            // Si no hay nada programado, mostramos el contenido On-Demand de YouTube
+            if (!this.youtube.isLoaded) {
+                this.handleYouTubeOnDemand();
+            }
+        }
+    },
+
+    // Esta función ahora busca CUALQUIER sesión programada o en vivo
+    async fetchScheduledSessions() {
+        const now = new Date().toISOString();
+        const { data, error } = await this.supabase
+            .from('sessions')
+            .select('*')
+            .in('status', ['PROGRAMADO', 'EN VIVO'])
+            .gte('scheduled_at', now)
+            .order('scheduled_at', { ascending: true });
+
+        if (error) {
+            console.error("Error buscando sesiones:", error);
+            return { activeSession: null, upcomingSessions: [] };
         }
         
-        const youtubeLiveVideo = await this.fetchYouTubeLive();
-        if (youtubeLiveVideo) {
-            this.handleYouTubeLive(youtubeLiveVideo);
-            return;
-        }
-
-        if (!this.youtube.isLoaded) {
-            this.handleYouTubeOnDemand();
-        }
-    },
-
-    async fetchVDONinjaSessions() {
-        const { data: liveData } = await this.supabase.from('sessions').select('*').eq('status', 'EN VIVO').limit(1);
-        if (liveData && liveData.length > 0) { return { activeSession: liveData[0], upcomingSessions: [] }; }
-        const now = new Date().toISOString();
-        const { data: upcomingData, error } = await this.supabase.from('sessions').select('*').eq('status', 'PROGRAMADO').gte('scheduled_at', now).order('scheduled_at', { ascending: true });
-        if (error) { console.error("Error buscando sesiones programadas:", error); return { activeSession: null, upcomingSessions: [] }; }
-        return { activeSession: upcomingData ? upcomingData[0] : null, upcomingSessions: upcomingData ? upcomingData.slice(1) : [] };
+        return { 
+            activeSession: data ? data[0] : null, 
+            upcomingSessions: data ? data.slice(1) : [] 
+        };
     },
     
-    async handleVDONinjaSession(session) {
+    handleVDONinjaSession(session) {
         this.renderResearcherInfo(session.user_id);
         this.elements.liveTitle.textContent = session.session_title;
         this.elements.liveProject.textContent = `Proyecto: ${session.project_title}`;
@@ -96,6 +108,20 @@ const App = {
         const scheduledAt = new Date(session.scheduled_at);
         if (session.status === 'EN VIVO' || (session.status === 'PROGRAMADO' && now >= scheduledAt)) { this.showVDONinjaPlayer(session); } 
         else if (session.status === 'PROGRAMADO' && now < scheduledAt) { this.showCountdown(session); }
+    },
+
+    // Nueva función para manejar sesiones de YouTube agendadas
+    handleYouTubeSession(session) {
+        this.elements.researcherInfo.style.display = 'none'; // Opcional: podríamos mostrar info del canal
+        this.elements.liveTitle.textContent = session.session_title;
+        this.elements.liveProject.textContent = `Proyecto: ${session.project_title}`;
+        const now = new Date();
+        const scheduledAt = new Date(session.scheduled_at);
+        if (now >= scheduledAt) {
+            this.showYouTubePlayer({ id: { videoId: session.platform_id }, snippet: { title: session.session_title } });
+        } else {
+            this.showCountdown(session);
+        }
     },
 
     async renderResearcherInfo(userId) {
@@ -111,32 +137,14 @@ const App = {
     
     renderSchedule(sessions) {
         if (!this.elements.scheduleList) return;
-        if (!sessions || sessions.length === 0) { this.elements.scheduleList.innerHTML = '<p class="placeholder-text">No hay eventos programados.</p>'; return; }
+        if (!sessions || sessions.length === 0) { this.elements.scheduleList.innerHTML = '<p class="placeholder-text">No hay más eventos programados.</p>'; return; }
         this.elements.scheduleList.innerHTML = sessions.map(session => {
             const date = new Date(session.scheduled_at);
             const time = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
             const day = date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
-            return `<div class="schedule-item"><p>${session.session_title}</p><small>${day} a las ${time}</small></div>`;
+            const platformIcon = session.platform === 'youtube' ? 'fa-youtube' : 'fa-podcast';
+            return `<div class="schedule-item"><i class="fa-brands ${platformIcon}" style="color: var(--accent-color);"></i> <div><p>${session.session_title}</p><small>${day} a las ${time}</small></div></div>`;
         }).join('');
-    },
-
-    async fetchYouTubeLive() {
-        try {
-            const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${this.youtube.CHANNEL_ID}&eventType=live&type=video&key=${this.youtube.API_KEY}`);
-            const data = await response.json();
-            return (data.items && data.items.length > 0) ? data.items[0] : null;
-        } catch (error) {
-            console.error("Error al buscar directos de YouTube:", error);
-            return null;
-        }
-    },
-
-    handleYouTubeLive(video) {
-        this.elements.researcherInfo.style.display = 'none';
-        this.elements.liveTitle.textContent = video.snippet.title;
-        this.elements.liveProject.textContent = "🔴 Transmisión en vivo desde YouTube";
-        this.elements.youtubeList.innerHTML = '<p class="placeholder-text">¡Estamos en vivo en YouTube!</p>';
-        this.showYouTubePlayer(video);
     },
 
     async handleYouTubeOnDemand() {
@@ -149,7 +157,7 @@ const App = {
         if (videos && videos.length > 0) {
             this.youtube.videos = videos;
             this.renderYouTubeList(this.youtube.videos);
-            this.showYouTubePlayer(this.youtube.videos[0]); 
+            this.showYouTubePlayer(videos[0]); 
         } else {
             this.elements.youtubeList.innerHTML = '<p class="placeholder-text">No se pudieron cargar los videos.</p>';
         }
@@ -160,7 +168,7 @@ const App = {
             if (!this.youtube.uploadsPlaylistId) {
                 const channelResponse = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${this.youtube.CHANNEL_ID}&key=${this.youtube.API_KEY}`);
                 const channelData = await channelResponse.json();
-                if (!channelData.items || channelData.items.length === 0) throw new Error("Canal de YouTube no encontrado o sin acceso.");
+                if (!channelData.items || channelData.items.length === 0) throw new Error("Canal de YouTube no encontrado.");
                 this.youtube.uploadsPlaylistId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
             }
             const playlistResponse = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${this.youtube.uploadsPlaylistId}&maxResults=25&key=${this.youtube.API_KEY}`);
@@ -171,11 +179,7 @@ const App = {
             const videoDurations = {};
             detailsData.items.forEach(item => {
                 const duration = item.contentDetails.duration.match(/(\d+)M|(\d+)S/g) || [];
-                const totalSeconds = duration.reduce((acc, time) => {
-                    if (time.includes('M')) return acc + parseInt(time) * 60;
-                    if (time.includes('S')) return acc + parseInt(time);
-                    return acc;
-                }, 0);
+                const totalSeconds = duration.reduce((acc, time) => (time.includes('M') ? acc + parseInt(time) * 60 : acc + parseInt(time)), 0);
                 videoDurations[item.id] = totalSeconds;
             });
             return playlistData.items.filter(item => videoDurations[item.snippet.resourceId.videoId] > 70);
@@ -232,7 +236,7 @@ const App = {
             if (distance < 1000) {
                 clearInterval(this.timers.countdown);
                 this.elements.countdownClock.textContent = "¡EMPEZANDO!";
-                this.setSessionLive(session.id);
+                if (session.platform === 'vdo_ninja') this.setSessionLive(session.id); // Solo VDO necesita cambiar estado
                 setTimeout(() => this.run(), 1500);
                 return;
             }
@@ -249,7 +253,7 @@ const App = {
         if(error) console.error("Error al actualizar la sesión a EN VIVO:", error);
     },
 
-    showEndedMessage(message = "Gracias por acompañarnos. El video estará disponible pronto.") {
+    showEndedMessage(message = "Gracias por acompañarnos.") {
         this.elements.researcherInfo.style.display = 'none';
         if (this.timers.countdown) clearInterval(this.timers.countdown);
         this.elements.overlay.style.display = 'flex';
