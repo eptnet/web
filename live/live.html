@@ -14,56 +14,57 @@
     </a>
 
     <div class="page-container">
-        <main class="main-column">
-            <div id="player-container" class="player-wrapper">
-                <div class="live-background-image"></div>
-                <div id="video-player"></div>
-                <div id="event-overlay" class="event-overlay">
-                    <div id="countdown-timer">
-                        <h2>Próxima Transmisión</h2>
-                        <p id="countdown-title"></p>
-                        <div id="countdown-clock">00:00:00:00</div>
-                    </div>
-                    <div id="event-ended-message">
-                        <h2>Transmisión Finalizada</h2>
-                        <p>Gracias por acompañarnos.</p>
+        <section class="live-section">
+            <div class="main-column">
+                <div id="player-container" class="player-wrapper">
+                    <div class="live-background-image"></div>
+                    <div id="video-player"></div>
+                    <div id="event-overlay" class="event-overlay">
+                        <div id="countdown-timer">
+                            <h2>Próxima Transmisión</h2>
+                            <p id="countdown-title"></p>
+                            <div id="countdown-clock">00:00:00:00</div>
+                        </div>
+                        <div id="event-ended-message">
+                            <h2>Transmisión Finalizada</h2>
+                            <p>Gracias por acompañarnos.</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <section id="info-container" class="bento-box info-box">
-                <div id="researcher-info" class="researcher-info">
+                <div id="researcher-info-container" class="bento-box researcher-info">
                     <img id="researcher-avatar" src="https://placehold.co/64x64/2c2c2c/aaaaaa?text=EPT" alt="Avatar del investigador">
                     <div class="researcher-details">
                         <h4 id="researcher-name">--</h4>
                         <p id="researcher-orcid">ORCID: --</p>
                     </div>
                 </div>
-                <div class="live-event-info">
-                    <h3 id="live-title">Cargando...</h3>
+            </div>
+            <aside class="sidebar-column bento-box">
+                <div id="live-info-container">
+                    <h3>Información del Evento</h3>
+                    <h4 id="live-title">Cargando...</h4>
                     <p id="live-project">--</p>
                 </div>
-            </section>
-        </main>
+                <div id="chat-placeholder">
+                    <p class="placeholder-text"><i class="fa-solid fa-comments"></i> El chat aparecerá aquí.</p>
+                </div>
+            </aside>
+        </section>
 
-        <aside class="sidebar-column bento-box">
+        <section class="ondemand-section bento-box">
             <div class="tabs">
-                <button class="tab-link active" data-tab="videos-tab"><i class="fa-brands fa-youtube"></i> Videos</button>
-                <button class="tab-link" data-tab="agenda-tab"><i class="fa-solid fa-calendar-days"></i> Agenda</button>
-                <button class="tab-link" data-tab="chat-tab"><i class="fa-solid fa-comments"></i> Chat</button>
+                <button class="tab-link active" data-tab="videos-tab"><i class="fa-brands fa-youtube"></i> Videos Recientes</button>
+                <button class="tab-link" data-tab="agenda-tab"><i class="fa-solid fa-calendar-days"></i> Agenda de Eventos</button>
             </div>
             <div class="tab-content-wrapper">
                 <div id="videos-tab" class="tab-content active">
-                    <div id="youtube-list" class="content-list"></div>
+                    <div id="youtube-list" class="content-grid"></div>
                 </div>
                 <div id="agenda-tab" class="tab-content">
-                    <div id="schedule-list" class="content-list"></div>
-                </div>
-                <div id="chat-tab" class="tab-content">
-                    <p class="placeholder-text">El chat se activará durante las transmisiones en vivo.</p>
+                    <div id="schedule-list" class="content-grid"></div>
                 </div>
             </div>
-        </aside>
+        </section>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
