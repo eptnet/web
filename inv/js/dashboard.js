@@ -217,6 +217,7 @@ const Studio = {
         else { alert("Sala borrada con éxito."); this.fetchSessions(); }
     },
 
+    // En /dashboard/js, dentro del objeto Studio
     openModal(sessionDataOrActionType) {
         const isEditing = typeof sessionDataOrActionType === 'string' && sessionDataOrActionType.startsWith('{');
         const session = isEditing ? JSON.parse(decodeURIComponent(sessionDataOrActionType)) : null;
@@ -252,6 +253,19 @@ const Studio = {
                             <div class="form-group"><label for="session-start">Fecha y Hora de Inicio</label><input id="session-start" name="scheduledAt" type="datetime-local" class="project-dropdown" value="${toLocalISOString(session?.scheduled_at)}" required></div>
                             <div class="form-group"><label for="session-end">Fecha y Hora de Fin</label><input id="session-end" name="endAt" type="datetime-local" class="project-dropdown" value="${toLocalISOString(session?.end_at)}"></div>
                             
+                            <div class="form-group">
+                                <label for="session-description">Descripción Corta (máx. 500 caracteres)</label>
+                                <textarea id="session-description" name="description" rows="4" maxlength="500">${session?.description || ''}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="session-thumbnail">URL de la Miniatura (16:9)</label>
+                                <input id="session-thumbnail" name="thumbnail_url" type="url" value="${session?.thumbnail_url || ''}" placeholder="https://ejemplo.com/imagen.jpg">
+                            </div>
+                            <div class="form-group">
+                                <label for="session-more-info">URL para "Saber Más" (opcional)</label>
+                                <input id="session-more-info" name="more_info_url" type="url" value="${session?.more_info_url || ''}" placeholder="https://ejemplo.com/articulo">
+                            </div>
+
                             <div id="vdo-ninja-fields" style="display:${session?.platform !== 'youtube' ? 'block' : 'none'};">
                                 <div class="form-group"><label for="guest-count">Nº de Invitados</label><select id="guest-count" name="guestCount" class="project-dropdown">${Array.from({length: 9}, (_, i) => `<option value="${i + 1}" ${session?.guest_count == i + 1 ? 'selected' : ''}>${i + 1}</option>`).join('')}</select></div>
                             </div>
@@ -280,7 +294,6 @@ const Studio = {
 
     // EN dashboard.js, dentro del objeto Studio
 
-    // EN dashboard.js, dentro del objeto Studio
     async handleSaveSession(e, sessionId = null) {
         e.preventDefault();
         const formData = new FormData(e.target);
@@ -294,7 +307,11 @@ const Studio = {
             platform: platform,
             status: 'PROGRAMADO',
             scheduled_at: new Date(scheduledAt).toISOString(),
-            end_at: endAt ? new Date(endAt).toISOString() : null
+            end_at: endAt ? new Date(endAt).toISOString() : null,
+            // AÑADIMOS LOS NUEVOS CAMPOS AL OBJETO A GUARDAR
+            description: formData.get('description'),
+            thumbnail_url: formData.get('thumbnail_url'),
+            more_info_url: formData.get('more_info_url')
         };
         
         if (!sessionId) {
@@ -305,20 +322,13 @@ const Studio = {
             sessionData.platform_id = null;
             if (!sessionId) {
                 const stableId = self.crypto.randomUUID().slice(0, 8);
-                const roomName = `ept-${App.userProfile.orcid.slice(-6)}-${stableId}`.replace(/[^a-zA-Z0-9-]/g, ''); // Nombre de sala limpio
+                const roomName = `ept-${App.userProfile.orcid.slice(-6)}-${stableId}`.replace(/[^a-zA-Z0-9-]/g, '');
                 const directorKey = `dir-${App.userProfile.orcid.slice(-4)}`;
                 const vdoDomain = 'https://vdo.epistecnologia.com';
-                
                 let directorParams = new URLSearchParams({ room: roomName, director: directorKey, record: 'auto' });
                 let guestParams = new URLSearchParams({ room: roomName });
                 let viewerParams = new URLSearchParams({ scene: '0', room: roomName, showlabels: '', cleanoutput: '', layout: '', remote: '' });
-                
-                // Lógica de meshcast correcta, solo en director y viewer
-                if (formData.get('guestCount') > 4) {
-                    directorParams.set('meshcast', '1');
-                    viewerParams.set('meshcast', '1');
-                }
-                
+                if (formData.get('guestCount') > 4) { directorParams.set('meshcast', '1'); viewerParams.set('meshcast', '1'); }
                 sessionData.director_url = `${vdoDomain}/mixer.html?${directorParams.toString()}`;
                 sessionData.guest_url = `${vdoDomain}/?${guestParams.toString()}`;
                 sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}`;

@@ -3,14 +3,14 @@ const App = {
     elements: {},
     timers: { mainLoop: null, countdown: null },
     currentSessionId: null,
-    
+    allSessions: {}, // Propiedad añadida para guardar datos de la agenda
+
     youtube: {
-        API_KEY: 'AIzaSyCwh_RLVd7AQ-6FdMEugrA7phNwN0dN9pw', // Reemplaza con tu API Key
-        CHANNEL_ID: 'UCg3ms3gecQ-2cjMhJwaPAig',      // Reemplaza con tu Channel ID
+        API_KEY: 'AIzaSyCwh_RLVd7AQ-6FdMEugrA7phNwN0dN9pw',
+        CHANNEL_ID: 'UCg3ms3gecQ-2cjMhJwaPAig',
         videos: [],
         isLoaded: false
     },
-    
 
     init() {
         const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
@@ -19,16 +19,11 @@ const App = {
 
         this.cacheDOMElements();
         this.addEventListeners();
-        
-        // Ejecutamos la lógica principal una vez al cargar
         this.run();
-        
-        // Activamos la escucha en tiempo real
         this.listenForRealtimeChanges();
 
-        // El bucle principal ahora es solo un respaldo, lo ponemos a un tiempo más largo.
         if (this.timers.mainLoop) clearInterval(this.timers.mainLoop);
-        this.timers.mainLoop = setInterval(() => this.run(), 120000); // Cada 2 minutos
+        this.timers.mainLoop = setInterval(() => this.run(), 120000);
     },
 
     cacheDOMElements() {
@@ -50,8 +45,20 @@ const App = {
             tabContents: document.querySelectorAll('.tab-content'),
             scheduleList: document.getElementById('schedule-list'),
             youtubeList: document.getElementById('youtube-list'),
-            // CÓDIGO CORREGIDO
-            chatContainer: document.getElementById('chat-container'), // Contenedor para el chat
+            chatContainer: document.getElementById('chat-container'),
+
+            // --- SECCIÓN DEL MODAL CORREGIDA ---
+            modalOverlay: document.getElementById('event-modal-overlay'),
+            modalTitle: document.getElementById('event-modal-title'),
+            modalThumbnail: document.getElementById('event-modal-thumbnail'),
+            modalOrganizer: document.getElementById('event-modal-organizer'),
+            modalOrganizerAvatar: document.getElementById('event-modal-organizer-avatar'),
+            modalOrganizerName: document.getElementById('event-modal-organizer-name'),
+            modalOrganizerOrcid: document.getElementById('event-modal-organizer-orcid'),
+            modalSchedule: document.getElementById('event-modal-schedule'),
+            modalDescription: document.getElementById('event-modal-description'),
+            modalMoreInfo: document.getElementById('event-modal-more-info'),
+            modalCloseBtn: document.getElementById('event-modal-close')
         };
     },
 
@@ -66,56 +73,44 @@ const App = {
                 });
             });
         });
+
+        this.elements.modalCloseBtn.addEventListener('click', () => this.closeEventModal());
+        this.elements.modalOverlay.addEventListener('click', (e) => {
+            if (e.target === this.elements.modalOverlay) this.closeEventModal();
+        });
+
+        this.elements.scheduleList.addEventListener('click', (e) => {
+            const card = e.target.closest('.event-card[data-session-id]');
+            if (card) this.openEventModal(card.dataset.sessionId);
+        });
     },
 
     async run() {
-        // 1. Buscamos si hay un live PÚBLICO en YouTube (máxima prioridad)
         const youtubeLiveVideo = await this.fetchYouTubeLive();
-        
-        // 2. Siempre obtenemos los datos de nuestra BD
         const { dbLiveSession, dbUpcomingSessions } = await this.fetchScheduledSessions();
 
-        // 3. Renderizamos la agenda
         this.renderSchedule(dbUpcomingSessions, dbLiveSession);
-        
-        // --- 4. NUEVA LÓGICA DE DECISIÓN ---
-        if (youtubeLiveVideo) {
-            // Prioridad MÁXIMA: un directo público en YouTube lo interrumpe todo.
-            console.log("Manejando directo PÚBLICO de YouTube.");
-            this.handleYouTubeLive(youtubeLiveVideo);
 
+        if (youtubeLiveVideo) {
+            this.handleYouTubeLive(youtubeLiveVideo);
         } else if (dbLiveSession) {
-            // Hay una sesión activa o programada en nuestra base de datos.
             if (dbLiveSession.platform === 'youtube') {
-                // Si es de YouTube, verificamos si REALMENTE sigue en vivo.
                 const isStillLive = await this.isYouTubeVideoLive(dbLiveSession.platform_id);
-                
                 if (isStillLive) {
-                    // Si sigue en vivo, lo mostramos, ignorando la hora de finalización.
-                    console.log("Manejando sesión de YouTube (verificada como EN VIVO).");
                     this.handleYouTubeSession(dbLiveSession);
                 } else {
-                    // Si la API dice que ya no está en vivo, vamos a on-demand.
-                    console.log("La sesión de YouTube ha finalizado. Cambiando a On-Demand.");
-                    this.updateSessionStatus(dbLiveSession.id, 'FINALIZADO'); // Opcional: limpiar la BD
+                    this.updateSessionStatus(dbLiveSession.id, 'FINALIZADO');
                     this.handleOnDemandContent();
                 }
-
             } else if (dbLiveSession.platform === 'vdo_ninja') {
-                // Para VDO.Ninja, no tenemos API externa, así que dependemos del horario.
                 const now = new Date();
                 if (dbLiveSession.end_at && now > new Date(dbLiveSession.end_at)) {
-                    console.log("La sesión de VDO.Ninja ha finalizado por horario. Cambiando a On-Demand.");
-                    this.handleOnDemandContent(); // Si ya terminó, vamos a on-demand
+                    this.handleOnDemandContent();
                 } else {
-                    console.log("Manejando sesión de VDO.Ninja.");
                     this.handleVDONinjaSession(dbLiveSession);
                 }
             }
-
         } else {
-            // Prioridad BAJA: no hay nada en vivo ni agendado, mostramos contenido On-Demand.
-            console.log("No hay eventos activos. Mostrando On-Demand.");
             this.handleOnDemandContent();
         }
     },
@@ -123,83 +118,61 @@ const App = {
     async fetchYouTubeLive() {
         try {
             const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${this.youtube.CHANNEL_ID}&eventType=live&type=video&key=${this.youtube.API_KEY}`);
+            if (!response.ok) return null;
             const data = await response.json();
             return (data.items && data.items.length > 0) ? data.items[0] : null;
         } catch (error) { console.error("Error al buscar directos de YouTube:", error); return null; }
     },
 
-    // En /live/js/live.js, dentro del objeto App
-
     async fetchScheduledSessions() {
         const now = new Date();
-        // Le damos un margen para que los eventos finalizados no aparezcan inmediatamente
         const fourHoursAgo = new Date(now.getTime() - 4 * 60 * 60 * 1000).toISOString();
-
         const { data, error } = await this.supabase
             .from('sessions')
-            .select('*')
-            // Buscamos sesiones que no estén ya finalizadas
+            .select('*, profiles(*)')
             .in('status', ['PROGRAMADO', 'EN VIVO'])
-            // Y que su hora de inicio sea relativamente reciente
             .gte('scheduled_at', fourHoursAgo)
             .order('scheduled_at', { ascending: true });
 
-        if (error) { 
-            console.error("Error buscando sesiones:", error); 
-            return { dbLiveSession: null, dbUpcomingSessions: [] }; 
-        }
-        
-        let liveSession = null;
-        let upcoming = [];
-        const now_time = now.getTime();
-
-        // --- LÓGICA DE SEPARACIÓN MEJORADA ---
-        
-        // Primero, buscamos si hay una sesión explícitamente marcada como 'EN VIVO'.
-        // Esta siempre tendrá la máxima prioridad.
-        liveSession = data.find(session => session.status === 'EN VIVO');
-
-        // Si no encontramos ninguna 'EN VIVO', buscamos una 'PROGRAMADO' cuya hora ya haya pasado.
-        if (!liveSession) {
-            liveSession = data.find(session => 
-                session.status === 'PROGRAMADO' && 
-                new Date(session.scheduled_at).getTime() <= now_time
-            );
+        if (error) {
+            console.error("Error buscando sesiones y perfiles:", error);
+            return { dbLiveSession: null, dbUpcomingSessions: [] };
         }
 
-        // Todas las demás sesiones cuya hora de inicio es futura, son 'próximas'.
-        upcoming = data.filter(session => new Date(session.scheduled_at).getTime() > now_time);
-        
-        // IMPORTANTE: Ya no promovemos una sesión 'próxima' a 'liveSession'.
-        // Esto evita que una sesión futura interrumpa la página si no hay nada activo.
-        // La página simplemente mostrará contenido On-Demand si 'liveSession' es null.
+        let liveSession = data.find(s => s.status === 'EN VIVO') || data.find(s => s.status === 'PROGRAMADO' && new Date(s.scheduled_at).getTime() <= now.getTime());
+        let upcoming = data.filter(s => new Date(s.scheduled_at).getTime() > now.getTime());
+
+        if (liveSession) {
+            upcoming = upcoming.filter(s => s.id !== liveSession.id);
+        }
 
         return { dbLiveSession: liveSession, dbUpcomingSessions: upcoming };
     },
 
     handleVDONinjaSession(session) {
         this.currentSessionId = session.id;
-        this.renderResearcherInfo(session.user_id, session.project_doi);
+        this.renderResearcherInfo(session.profiles);
         this.elements.liveTitle.textContent = session.session_title;
         this.elements.liveProject.textContent = `Proyecto: ${session.project_title}`;
         this.elements.chatContainer.innerHTML = '<p class="placeholder-text">El chat solo está disponible en transmisiones de YouTube.</p>';
         
         const now = new Date();
         const scheduledAt = new Date(session.scheduled_at);
-
-        if (session.status === 'EN VIVO' || now >= scheduledAt) { this.showVDONinjaPlayer(session); } 
-        else { this.showCountdown(session); }
+        if (session.status === 'EN VIVO' || now >= scheduledAt) {
+            this.showVDONinjaPlayer(session);
+        } else {
+            this.showCountdown(session);
+        }
     },
 
     handleYouTubeSession(session) {
         this.currentSessionId = session.id;
-        this.renderResearcherInfo(session.user_id, session.project_doi);
+        this.renderResearcherInfo(session.profiles);
         this.elements.liveTitle.textContent = session.session_title;
         this.elements.liveProject.textContent = `Proyecto: ${session.project_title}`;
         
         const now = new Date();
         const scheduledAt = new Date(session.scheduled_at);
-        
         if (now >= scheduledAt) {
             this.showYouTubePlayer({ id: { videoId: session.platform_id }, snippet: { title: session.session_title } });
             this.showYouTubeChat(session.platform_id);
@@ -209,7 +182,7 @@ const App = {
     },
 
     handleYouTubeLive(video) {
-        this.currentSessionId = session.id;
+        this.currentSessionId = video.id.videoId; // Usamos el ID del video como identificador
         this.elements.researcherInfoContainer.style.display = 'none';
         this.elements.liveTitle.textContent = video.snippet.title;
         this.elements.liveProject.textContent = "🔴 Transmitiendo en vivo desde YouTube";
@@ -218,38 +191,25 @@ const App = {
     },
 
     async handleOnDemandContent() {
-        // Evita recargar si el contenido on-demand ya está visible
-        if (this.youtube.isLoaded) return; 
-        
+        if (this.youtube.isLoaded) return;
         this.youtube.isLoaded = true;
         this.elements.researcherInfoContainer.style.display = 'none';
         this.elements.youtubeList.innerHTML = '<p class="placeholder-text">Cargando videos...</p>';
         this.elements.liveTitle.textContent = "Canal Epistecnología";
         this.elements.liveProject.textContent = "Contenido On-Demand";
         
-        // Llamamos a la nueva función que usa Supabase
         const videos = await this.fetchOnDemandVideosFromSupabase();
-        
         if (videos && videos.length > 0) {
             this.renderOnDemandList(videos);
-            // Muestra el primer video de la lista en el reproductor
-            this.showYouTubePlayer({ 
-                id: { videoId: videos[0].youtube_video_id }, 
-                snippet: { title: videos[0].title } 
-            }); 
+            this.showYouTubePlayer({ id: { videoId: videos[0].youtube_video_id }, snippet: { title: videos[0].title } });
         } else {
             this.showEndedMessage("No hay videos disponibles en este momento.");
         }
     },
     
     async fetchOnDemandVideosFromSupabase() {
-        console.log("Obteniendo videos On-Demand desde Supabase...");
         try {
-            const { data, error } = await this.supabase
-                .from('ondemand_videos')
-                .select('*')
-                .order('created_at', { ascending: false });
-            
+            const { data, error } = await this.supabase.from('ondemand_videos').select('*').order('created_at', { ascending: false });
             if (error) throw error;
             return data;
         } catch (error) {
@@ -258,143 +218,86 @@ const App = {
         }
     },
 
-    /**
-     * Verifica si un video específico de YouTube está actualmente en vivo.
-     * @param {string} videoId El ID del video de YouTube a verificar.
-     * @returns {Promise<boolean>} Devuelve true si el video está en vivo, de lo contrario false.
-     */
     async isYouTubeVideoLive(videoId) {
         if (!videoId) return false;
         try {
-            // Usamos el endpoint 'videos' que nos da detalles de un video específico por su ID.
             const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${this.youtube.API_KEY}`);
             const data = await response.json();
-            
-            // La propiedad 'liveBroadcastContent' nos dice el estado. Si es 'live', está transmitiendo.
-            if (data.items && data.items.length > 0) {
-                return data.items[0].snippet.liveBroadcastContent === 'live';
-            }
-            return false;
+            return data.items?.[0]?.snippet?.liveBroadcastContent === 'live';
         } catch (error) {
             console.error("Error al verificar el estado del video de YouTube:", error);
             return false;
         }
     },
 
-    /**
-     * Helper para actualizar el estado de una sesión en la base de datos.
-     * @param {string} sessionId El ID de la sesión a actualizar.
-     * @param {string} status El nuevo estado (ej. 'FINALIZADO').
-     */
     async updateSessionStatus(sessionId, status) {
-        const { error } = await this.supabase
-            .from('sessions')
-            .update({ status: status })
-            .eq('id', sessionId);
-        if (error) {
-            console.error(`Error al actualizar la sesión ${sessionId} a ${status}:`, error);
-        }
+        await this.supabase.from('sessions').update({ status }).eq('id', sessionId);
     },
-
-    // En /live/js/live.js
 
     listenForRealtimeChanges() {
-        console.log("Activando escucha en tiempo real para las sesiones...");
-        
-        const channel = this.supabase
-            .channel('sessions-channel')
-            .on(
-                'postgres_changes',
-                { event: 'UPDATE', schema: 'public', table: 'sessions' },
-                (payload) => {
-                    console.log('Cambio detectado:', payload.new);
-                    
-                    // Si el cambio es en la sesión que estamos viendo y su estado es FINALIZADO
-                    if (payload.new.id === this.currentSessionId && payload.new.status === 'FINALIZADO') {
-                        // Forzamos una recarga completa de la página.
-                        window.location.reload();
-                    }
-                }
-            )
-            .subscribe();
+        this.supabase.channel('sessions-channel').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessions' }, (payload) => {
+            if (payload.new.id === this.currentSessionId && payload.new.status === 'FINALIZADO') {
+                window.location.reload();
+            } else {
+                this.run();
+            }
+        }).subscribe();
     },
 
-    async renderResearcherInfo(userId) {
-        if (!userId) {
+    async renderResearcherInfo(profile) {
+        if (!profile) {
             this.elements.researcherInfoContainer.style.display = 'none';
             return;
         }
-        const { data: profile } = await this.supabase.from('profiles').select('full_name, avatar_url, orcid').eq('id', userId).single();
-        if (profile) {
-            this.elements.researcherInfoContainer.style.display = 'flex';
-            this.elements.researcherAvatar.src = profile.avatar_url || 'https://placehold.co/64x64/2c2c2c/aaaaaa?text=EPT';
-            this.elements.researcherName.textContent = profile.full_name || 'Investigador';
-            this.elements.researcherOrcid.textContent = profile.orcid ? `ORCID: ${profile.orcid}` : '';
-        }
+        this.elements.researcherInfoContainer.style.display = 'flex';
+        this.elements.researcherAvatar.src = profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
+        this.elements.researcherName.textContent = profile.display_name || 'Investigador';
+        this.elements.researcherOrcid.textContent = profile.orcid ? `ORCID: ${profile.orcid}` : '';
     },
     
     renderSchedule(upcoming, current) {
         if (!this.elements.scheduleList) return;
-        let html = '';
+        this.allSessions = {};
+        const allEvents = (current ? [current] : []).concat(upcoming || []);
 
-        if (current) {
-            const date = new Date(current.scheduled_at);
-            const time = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-            const platformIcon = current.platform === 'youtube' ? 'fa-youtube' : 'fa-podcast';
-            html += `<div class="event-card is-live">
-                        <div class="card-info">
-                            <h5><i class="fa-solid fa-tower-broadcast"></i> AHORA: ${current.session_title}</h5>
-                             <p><i class="fa-brands ${platformIcon}"></i> ${current.platform === 'youtube' ? 'YouTube' : 'EPT Live'} a las ${time}</p>
-                        </div>
-                     </div>`;
-        }
-
-        if (!upcoming || upcoming.length === 0) {
-            if (!current) html += '<p class="placeholder-text">No hay más eventos programados.</p>';
+        if (allEvents.length === 0) {
+            this.elements.scheduleList.innerHTML = '<p class="placeholder-text">No hay eventos programados.</p>';
         } else {
-            html += upcoming.map(session => {
-                const date = new Date(session.scheduled_at);
-                const day = date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
-                const time = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-                const platformIcon = session.platform === 'youtube' ? 'fa-youtube' : 'fa-podcast';
-                return `<div class="event-card">
-                            <div class="card-info">
-                                <h5>${session.session_title}</h5>
-                                <p><i class="fa-brands ${platformIcon}"></i> ${session.platform === 'youtube' ? 'YouTube' : 'EPT Live'}</p>
-                                <p>Próximo: ${day} - ${time}</p>
-                            </div>
-                        </div>`;
+            this.elements.scheduleList.innerHTML = allEvents.map(session => {
+                this.allSessions[session.id] = session;
+                const isLiveNow = session.id === current?.id;
+                const cardClass = isLiveNow ? 'event-card is-live' : 'event-card';
+                const time = new Date(session.scheduled_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                const platformIcon = session.platform === 'youtube' ? 'fa-youtube' : 'fa-headset';
+                const thumbnail = session.thumbnail_url ? `<img src="${session.thumbnail_url}" alt="${session.session_title}" class="event-card-thumbnail" loading="lazy">` : '<div class="event-card-thumbnail-placeholder"></div>';
+
+                return `
+                <div class="${cardClass}" data-session-id="${session.id}">
+                    ${thumbnail}
+                    <div class="card-info">
+                        <h5>${isLiveNow ? '<i class="fa-solid fa-tower-broadcast"></i> AHORA: ' : ''}${session.session_title}</h5>
+                        <p><i class="fa-brands ${platformIcon}"></i> ${session.platform === 'youtube' ? 'YouTube' : 'EPT Live'} a las ${time}</p>
+                    </div>
+                </div>`;
             }).join('');
         }
-        this.elements.scheduleList.innerHTML = html;
     },
     
     renderOnDemandList(videos) {
         this.elements.youtubeList.innerHTML = videos.map(video => {
-            // Usamos los datos de nuestra tabla de Supabase
             const videoId = video.youtube_video_id;
             const title = video.title;
-            // Si no provees una miniatura en la tabla, la construimos al estilo YouTube
             const thumbnailUrl = video.thumbnail_url || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
-            
-            // Creamos el objeto que showYouTubePlayer espera
-            const videoPlayerData = encodeURIComponent(JSON.stringify({ 
-                id: { videoId: videoId }, 
-                snippet: { title: title } 
-            }));
-
-            return `
-                <div class="video-card" onclick="App.showYouTubePlayer(JSON.parse(decodeURIComponent('${videoPlayerData}')))">
-                    <img src="${thumbnailUrl}" alt="${title}" loading="lazy">
-                    <div class="card-info"><h5>${title}</h5></div>
-                </div>`;
+            const videoPlayerData = encodeURIComponent(JSON.stringify({ id: { videoId }, snippet: { title } }));
+            return `<div class="video-card" onclick="App.showYouTubePlayer(JSON.parse(decodeURIComponent('${videoPlayerData}')))">
+                        <img src="${thumbnailUrl}" alt="${title}" loading="lazy">
+                        <div class="card-info"><h5>${title}</h5></div>
+                    </div>`;
         }).join('');
     },
     
     showVDONinjaPlayer(session) {
         const streamUrl = session.viewer_url;
-        const existingIframe = this.elements.player.querySelector('iframe');
-        if (existingIframe && existingIframe.src === streamUrl) return;
         if (this.timers.countdown) clearInterval(this.timers.countdown);
         this.elements.overlay.style.display = 'none';
         this.elements.player.innerHTML = `<iframe src="${streamUrl}" allow="autoplay; fullscreen" frameborder="0"></iframe>`;
@@ -402,109 +305,53 @@ const App = {
     
     showYouTubePlayer(video) {
         const videoId = video.id?.videoId || video.snippet?.resourceId?.videoId;
-        if (!videoId) { console.error("No se pudo encontrar el ID del video", video); return; }
-
+        if (!videoId) return;
         const videoUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
-        const existingIframe = this.elements.player.querySelector('iframe');
-        if (existingIframe && existingIframe.src.includes(videoId)) return;
-        
         if (this.timers.countdown) clearInterval(this.timers.countdown);
         this.elements.overlay.style.display = 'none';
-        
         this.elements.liveTitle.textContent = video.snippet.title;
-        // No sobreescribimos el proyecto si es un video on-demand
-        if(this.youtube.isLoaded) {
-           this.elements.liveProject.textContent = "Canal de YouTube";
-        }
-
+        if (this.youtube.isLoaded) this.elements.liveProject.textContent = "Canal de YouTube";
         this.elements.player.innerHTML = `<iframe src="${videoUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
     },
 
-    /**
-     * Muestra el iframe del chat de YouTube para un video en vivo.
-     * @param {string} videoId - El ID del video de YouTube.
-     */
     showYouTubeChat(videoId) {
-        const chatContainer = this.elements.chatContainer;
-        // Si no hay videoId, muestra un mensaje y termina la función.
         if (!videoId) {
-            chatContainer.innerHTML = '<p class="placeholder-text">El chat solo está disponible para transmisiones de YouTube.</p>';
+            this.elements.chatContainer.innerHTML = '<p class="placeholder-text">El chat solo está disponible para transmisiones de YouTube.</p>';
             return;
         }
-
-        // Construye la URL del chat embebido. Es crucial incluir tu dominio.
         const chatUrl = `https://www.youtube.com/live_chat?v=${videoId}&embed_domain=${window.location.hostname}`;
-        
-        // Busca si ya existe un iframe de chat para no recargarlo innecesariamente.
-        const existingIframe = chatContainer.querySelector('iframe');
-        if (existingIframe && existingIframe.src === chatUrl) {
-            return; // Si el chat correcto ya está cargado, no hacemos nada.
-        }
-
-        // Limpia el contenedor y crea el nuevo iframe para el chat.
-        chatContainer.innerHTML = `<iframe src="${chatUrl}" frameborder="0"></iframe>`;
+        this.elements.chatContainer.innerHTML = `<iframe src="${chatUrl}" frameborder="0"></iframe>`;
     },
 
     showCountdown(session) {
         this.elements.overlay.style.display = 'flex';
         this.elements.countdownTimer.style.display = 'block';
         this.elements.endedMessage.style.display = 'none';
-        this.elements.player.innerHTML = ''; // Limpiamos el reproductor
+        this.elements.player.innerHTML = '';
         this.elements.countdownTitle.textContent = session.session_title;
         
         if (this.timers.countdown) clearInterval(this.timers.countdown);
-
         const endTime = new Date(session.scheduled_at).getTime();
         this.timers.countdown = setInterval(() => {
             const now = new Date().getTime();
             const distance = endTime - now;
-
             if (distance < 1000) {
                 clearInterval(this.timers.countdown);
                 this.elements.countdownClock.textContent = "¡EMPEZANDO!";
-                // Solo VDO.Ninja necesita que le cambiemos el estado manualmente para que el director lo vea
-                if (session.platform === 'vdo_ninja') {
-                    this.setSessionLive(session.id);
-                }
-                setTimeout(() => this.run(), 1500); // Re-ejecutamos para que cargue el player
+                if (session.platform === 'vdo_ninja') this.setSessionLive(session.id);
+                setTimeout(() => this.run(), 1500);
                 return;
             }
-
             const days = Math.floor(distance / (1000 * 60 * 60 * 24));
             const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-            this.elements.countdownClock.textContent = 
-                `${String(days).padStart(2, '0')}:${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            this.elements.countdownClock.textContent = `${String(days).padStart(2, '0')}:${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         }, 1000);
     },
     
     async setSessionLive(sessionId) {
-        const { error } = await this.supabase
-            .from('sessions')
-            .update({ status: 'EN VIVO' })
-            .eq('id', sessionId);
-        
-        if(error) console.error("Error al actualizar la sesión a EN VIVO:", error);
-    },
-
-    // En /live/js/live.js, dentro del objeto App
-
-    killPlayer() {
-        console.log("KILL SWITCH: Forzando el cierre total del reproductor.");
-        const playerIframe = this.elements.player.querySelector('iframe');
-        if (playerIframe) {
-            // Esto es crucial: le quitamos la fuente al iframe para cortar la conexión.
-            playerIframe.src = 'about:blank';
-        }
-        // Vaciamos el contenedor para eliminar el elemento del DOM.
-        this.elements.player.innerHTML = '';
-        
-        // Mostramos inmediatamente el mensaje de que la transmisión ha finalizado.
-        this.showEndedMessage("La transmisión ha sido finalizada por el anfitrión.");
-        this.elements.chatContainer.innerHTML = '<p class="placeholder-text">Chat no disponible.</p>';
-        this.currentSessionId = null; // Limpiamos el ID de la sesión activa
+        await this.supabase.from('sessions').update({ status: 'EN VIVO' }).eq('id', sessionId);
     },
 
     showEndedMessage(message = "No hay transmisiones en este momento.") {
@@ -516,12 +363,44 @@ const App = {
         this.elements.endedMessage.querySelector('p').textContent = message;
         this.elements.player.innerHTML = '';
         this.elements.chatContainer.innerHTML = '<p class="placeholder-text">No hay chat activo.</p>';
+    },
+
+    openEventModal(sessionId) {
+        const session = this.allSessions[sessionId];
+        if (!session) return;
+
+        this.elements.modalTitle.textContent = session.session_title;
+        this.elements.modalDescription.textContent = session.description || 'No hay descripción disponible.';
+        
+        const startTime = new Date(session.scheduled_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        const endTime = session.end_at ? new Date(session.end_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '';
+        this.elements.modalSchedule.textContent = `Horario: ${startTime} ${endTime ? '- ' + endTime : ''}`;
+
+        this.elements.modalThumbnail.style.backgroundImage = session.thumbnail_url ? `url('${session.thumbnail_url}')` : '';
+        this.elements.modalThumbnail.style.display = session.thumbnail_url ? 'block' : 'none';
+
+        if (session.profiles) {
+            this.elements.modalOrganizerAvatar.src = session.profiles.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
+            this.elements.modalOrganizerName.textContent = session.profiles.display_name || 'Anfitrión';
+            this.elements.modalOrganizerOrcid.textContent = session.profiles.orcid ? `ORCID: ${session.profiles.orcid}` : '';
+            this.elements.modalOrganizer.style.display = 'flex';
+        } else {
+            this.elements.modalOrganizer.style.display = 'none';
+        }
+
+        if (session.more_info_url) {
+            this.elements.modalMoreInfo.href = session.more_info_url;
+            this.elements.modalMoreInfo.style.display = 'inline-block';
+        } else {
+            this.elements.modalMoreInfo.style.display = 'none';
+        }
+
+        this.elements.modalOverlay.classList.add('is-visible');
+    },
+
+    closeEventModal() {
+        this.elements.modalOverlay.classList.remove('is-visible');
     }
 };
 
-// =======================================================
-// PUNTO DE ENTRADA DE LA APLICACIÓN
-// =======================================================
 document.addEventListener('DOMContentLoaded', () => App.init());
-
-// ------ BORRAR

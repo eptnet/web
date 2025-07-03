@@ -373,3 +373,94 @@ body {
     border: none;
     border-radius: var(--border-radius);
 }
+
+/* /live/css/live.css */
+
+/* --- Estilos para el Reproductor Fijo en Móvil --- */
+@media (max-width: 768px) {
+    .live-section {
+        padding-top: 56.25vw; /* Crea un espacio igual a la altura del video 16:9 */
+    }
+    #player-container {
+        position: fixed; /* Lo fijamos */
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 1000; /* Nos aseguramos que esté por encima de todo */
+        height: 56.25vw; /* 16:9 aspect ratio */
+    }
+}
+
+/* --- Estilos para la Tarjeta de Evento en la Agenda --- */
+.event-card {
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex; /* Cambiamos a flexbox */
+    align-items: center;
+    gap: 1rem;
+}
+.event-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}
+.event-card-thumbnail, .event-card-thumbnail-placeholder {
+    width: 120px;
+    height: 67.5px; /* Proporción 16:9 */
+    object-fit: cover;
+    border-radius: 4px;
+    flex-shrink: 0; /* Evita que la imagen se encoja */
+}
+.event-card-thumbnail-placeholder {
+    background-color: #e0e0e0;
+}
+
+/* --- Estilos para el Modal de Eventos --- */
+.event-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: none; /* Oculto por defecto */
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    padding: 1rem;
+}
+.event-modal-overlay.is-visible {
+    display: flex;
+}
+.event-modal {
+    background: #fff;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+.event-modal-close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 2rem;
+    color: #fff;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+.event-modal-thumbnail {
+    width: 100%;
+    height: 337.5px; /* 16:9 en un modal de 600px */
+    background-size: cover;
+    background-position: center;
+}
+.event-modal-content { padding: 1.5rem; }
+.event-modal-organizer { display: flex; align-items: center; gap: 1rem; margin: 1rem 0; }
+.event-modal-organizer img { width: 50px; height: 50px; border-radius: 50%; }
+.event-modal-organizer p { margin: 0; color: #666; font-size: 0.9rem; }
+.event-modal-schedule { font-weight: 500; color: #333; }
+.event-modal-footer { padding: 1.5rem; border-top: 1px solid #eee; text-align: right; }
+.btn-primary { /* Asegúrate que tienes estilos para este botón */ }

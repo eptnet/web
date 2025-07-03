@@ -71,6 +71,28 @@
         <i class="fa-solid fa-chevron-down"></i>
     </a>
 
+    <div id="event-modal-overlay" class="event-modal-overlay">
+        <div class="event-modal">
+            <button id="event-modal-close" class="event-modal-close-btn">&times;</button>
+            <div id="event-modal-thumbnail" class="event-modal-thumbnail"></div>
+            <div class="event-modal-content">
+                <h3 id="event-modal-title"></h3>
+                <div id="event-modal-organizer" class="event-modal-organizer">
+                    <img id="event-modal-organizer-avatar" src="" alt="Avatar del organizador">
+                    <div>
+                        <strong id="event-modal-organizer-name"></strong>
+                        <p id="event-modal-organizer-orcid"></p>
+                    </div>
+                </div>
+                <div id="event-modal-schedule" class="event-modal-schedule"></div>
+                <p id="event-modal-description"></p>
+            </div>
+            <div class="event-modal-footer">
+                <a id="event-modal-more-info" href="#" target="_blank" rel="noopener noreferrer" class="btn-primary">Saber Más</a>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/live/js/live.js"></script>
 </body>
