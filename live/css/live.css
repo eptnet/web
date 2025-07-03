@@ -59,12 +59,18 @@ body {
     display: grid;
     grid-template-columns: 1fr; /* Apilado en móvil por defecto */
     gap: var(--gap);
+    min-height: calc(100vh - (var(--gap) * 2)); /* Ocupa la pantalla inicial */
+    align-content: stretch;
 }
 
 .main-column {
     display: flex;
     flex-direction: column;
     gap: var(--gap);
+}
+
+.sidebar-column {
+    padding: 1.5rem;
 }
 
 /* Layout para escritorio */
@@ -281,7 +287,7 @@ body {
 .home-button {
     position: fixed;
     top: 20px;
-    right: 20px;
+    right: 20px; /* CAMBIADO a la derecha */
     z-index: 1000;
     width: 48px;
     height: 48px;
@@ -293,8 +299,39 @@ body {
     box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     transition: transform 0.2s ease-in-out;
 }
+
 .home-button:hover { transform: scale(1.1); }
 .home-button img { width: 32px; height: 32px; }
+
+/* NUEVO: Botón para bajar */
+.scroll-down-button {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    width: 40px;
+    height: 40px;
+    color: white;
+    border: 2px solid white;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: bounce 2s infinite;
+}
+@media (max-width: 1024px) {
+    .scroll-down-button {
+        display: none; /* Lo ocultamos en pantallas pequeñas */
+    }
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {transform: translate(-50%, 0);}
+    40% {transform: translate(-50%, -10px);}
+    60% {transform: translate(-50%, -5px);}
+}
 
 @media (max-width: 768px) {
     .home-button {
@@ -319,4 +356,20 @@ body {
     width: 100%;
     height: 100%;
     border: none;
+}
+
+/* Estilos para el contenedor del chat */
+#chat-container {
+    flex-grow: 1;
+    min-height: 300px;
+    border-top: 1px solid var(--border-color);
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+}
+
+#chat-container iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: var(--border-radius);
 }

@@ -40,7 +40,8 @@ const App = {
             tabContents: document.querySelectorAll('.tab-content'),
             scheduleList: document.getElementById('schedule-list'),
             youtubeList: document.getElementById('youtube-list'),
-            chatContainer: document.getElementById('chat-placeholder'), // Contenedor para el chat
+            // CÓDIGO CORREGIDO
+            chatContainer: document.getElementById('chat-container'), // Contenedor para el chat
         };
     },
 
@@ -58,129 +59,140 @@ const App = {
     },
 
     async run() {
-        // --- LÓGICA DE PRIORIDADES REESTRUCTURADA ---
+        // 1. Buscamos si hay un live PÚBLICO en YouTube (máxima prioridad)
+        const youtubeLiveVideo = await this.fetchYouTubeLive();
         
-        // 1. Siempre obtenemos los datos de nuestra BD primero
+        // 2. Siempre obtenemos los datos de nuestra BD
         const { dbLiveSession, dbUpcomingSessions } = await this.fetchScheduledSessions();
 
-        // 2. Buscamos si hay un live PÚBLICO en YouTube
-        const youtubeLiveVideo = await this.fetchYouTubeLive();
-
-        // 3. Renderizamos la agenda mostrando el evento actual Y los próximos
+        // 3. Renderizamos la agenda
         this.renderSchedule(dbUpcomingSessions, dbLiveSession);
         
-        // 4. Decidimos qué mostrar en el reproductor
+        // --- 4. NUEVA LÓGICA DE DECISIÓN ---
         if (youtubeLiveVideo) {
             // Prioridad MÁXIMA: un directo público en YouTube lo interrumpe todo.
+            console.log("Manejando directo PÚBLICO de YouTube.");
             this.handleYouTubeLive(youtubeLiveVideo);
+
         } else if (dbLiveSession) {
-            // Prioridad MEDIA: un evento agendado en nuestra base de datos.
-            const session = dbLiveSession;
-            const now = new Date();
-            const scheduledAt = new Date(session.scheduled_at);
-            // Solo procesamos si el evento ya terminó hace menos de 4 horas
-            if (session.end_at && now > new Date(session.end_at)) {
-                this.handleOnDemandContent();
-            } else if (session.platform === 'vdo_ninja') {
-                this.handleVDONinjaSession(session);
-            } else if (session.platform === 'youtube') {
-                this.handleYouTubeSession(session);
+            // Hay una sesión activa o programada en nuestra base de datos.
+            if (dbLiveSession.platform === 'youtube') {
+                // Si es de YouTube, verificamos si REALMENTE sigue en vivo.
+                const isStillLive = await this.isYouTubeVideoLive(dbLiveSession.platform_id);
+                
+                if (isStillLive) {
+                    // Si sigue en vivo, lo mostramos, ignorando la hora de finalización.
+                    console.log("Manejando sesión de YouTube (verificada como EN VIVO).");
+                    this.handleYouTubeSession(dbLiveSession);
+                } else {
+                    // Si la API dice que ya no está en vivo, vamos a on-demand.
+                    console.log("La sesión de YouTube ha finalizado. Cambiando a On-Demand.");
+                    this.updateSessionStatus(dbLiveSession.id, 'FINALIZADO'); // Opcional: limpiar la BD
+                    this.handleOnDemandContent();
+                }
+
+            } else if (dbLiveSession.platform === 'vdo_ninja') {
+                // Para VDO.Ninja, no tenemos API externa, así que dependemos del horario.
+                const now = new Date();
+                if (dbLiveSession.end_at && now > new Date(dbLiveSession.end_at)) {
+                    console.log("La sesión de VDO.Ninja ha finalizado por horario. Cambiando a On-Demand.");
+                    this.handleOnDemandContent(); // Si ya terminó, vamos a on-demand
+                } else {
+                    console.log("Manejando sesión de VDO.Ninja.");
+                    this.handleVDONinjaSession(dbLiveSession);
+                }
             }
+
         } else {
             // Prioridad BAJA: no hay nada en vivo ni agendado, mostramos contenido On-Demand.
+            console.log("No hay eventos activos. Mostrando On-Demand.");
             this.handleOnDemandContent();
         }
     },
-    
+
     async fetchYouTubeLive() {
         try {
             const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${this.youtube.CHANNEL_ID}&eventType=live&type=video&key=${this.youtube.API_KEY}`);
             const data = await response.json();
             return (data.items && data.items.length > 0) ? data.items[0] : null;
-        } catch (error) {
-            console.error("Error al buscar directos de YouTube:", error);
-            return null;
-        }
+        } catch (error) { console.error("Error al buscar directos de YouTube:", error); return null; }
     },
+
+    // En /live/js/live.js, dentro del objeto App
 
     async fetchScheduledSessions() {
         const now = new Date();
+        // Le damos un margen para que los eventos finalizados no aparezcan inmediatamente
         const fourHoursAgo = new Date(now.getTime() - 4 * 60 * 60 * 1000).toISOString();
 
         const { data, error } = await this.supabase
             .from('sessions')
             .select('*')
+            // Buscamos sesiones que no estén ya finalizadas
             .in('status', ['PROGRAMADO', 'EN VIVO'])
+            // Y que su hora de inicio sea relativamente reciente
             .gte('scheduled_at', fourHoursAgo)
             .order('scheduled_at', { ascending: true });
 
-        if (error) {
-            console.error("Error buscando sesiones:", error);
-            return { dbLiveSession: null, dbUpcomingSessions: [] };
+        if (error) { 
+            console.error("Error buscando sesiones:", error); 
+            return { dbLiveSession: null, dbUpcomingSessions: [] }; 
         }
         
         let liveSession = null;
         let upcoming = [];
         const now_time = now.getTime();
 
-        for (const session of data) {
-            const scheduled_time = new Date(session.scheduled_at).getTime();
-            if (scheduled_time <= now_time && !liveSession) {
-                // Si la hora de fin ya pasó, no lo consideramos en vivo
-                if (session.end_at && now_time > new Date(session.end_at).getTime()) {
-                    continue;
-                }
-                liveSession = session;
-            } else if (scheduled_time > now_time) {
-                upcoming.push(session);
-            }
-        }
+        // --- LÓGICA DE SEPARACIÓN MEJORADA ---
         
-        if (!liveSession && upcoming.length > 0) {
-            liveSession = upcoming.shift();
+        // Primero, buscamos si hay una sesión explícitamente marcada como 'EN VIVO'.
+        // Esta siempre tendrá la máxima prioridad.
+        liveSession = data.find(session => session.status === 'EN VIVO');
+
+        // Si no encontramos ninguna 'EN VIVO', buscamos una 'PROGRAMADO' cuya hora ya haya pasado.
+        if (!liveSession) {
+            liveSession = data.find(session => 
+                session.status === 'PROGRAMADO' && 
+                new Date(session.scheduled_at).getTime() <= now_time
+            );
         }
+
+        // Todas las demás sesiones cuya hora de inicio es futura, son 'próximas'.
+        upcoming = data.filter(session => new Date(session.scheduled_at).getTime() > now_time);
+        
+        // IMPORTANTE: Ya no promovemos una sesión 'próxima' a 'liveSession'.
+        // Esto evita que una sesión futura interrumpa la página si no hay nada activo.
+        // La página simplemente mostrará contenido On-Demand si 'liveSession' es null.
 
         return { dbLiveSession: liveSession, dbUpcomingSessions: upcoming };
     },
 
-    // ... el resto de las funciones en la Parte 2
-    
     handleVDONinjaSession(session) {
-        this.renderResearcherInfo(session.user_id);
+        this.renderResearcherInfo(session.user_id, session.project_doi);
+        this.elements.liveTitle.textContent = session.session_title;
+        this.elements.liveProject.textContent = `Proyecto: ${session.project_title}`;
+        this.elements.chatContainer.innerHTML = '<p class="placeholder-text">El chat solo está disponible en transmisiones de YouTube.</p>';
+        
+        const now = new Date();
+        const scheduledAt = new Date(session.scheduled_at);
+
+        if (session.status === 'EN VIVO' || now >= scheduledAt) { this.showVDONinjaPlayer(session); } 
+        else { this.showCountdown(session); }
+    },
+
+    handleYouTubeSession(session) {
+        this.renderResearcherInfo(session.user_id, session.project_doi);
         this.elements.liveTitle.textContent = session.session_title;
         this.elements.liveProject.textContent = `Proyecto: ${session.project_title}`;
         
         const now = new Date();
         const scheduledAt = new Date(session.scheduled_at);
-        const diffMinutes = (scheduledAt.getTime() - now.getTime()) / 60000;
-
-        // Si ya es la hora o está en vivo, muestra el reproductor
-        if (session.status === 'EN VIVO' || now >= scheduledAt) { 
-            this.showVDONinjaPlayer(session);
-        } 
-        // Si falta menos de una hora para el evento, muestra la cuenta regresiva
-        else if (diffMinutes < 60) { 
-            this.showCountdown(session);
-        } else {
-            // Si falta mucho, simplemente muestra la info pero sin reproductor ni cuenta regresiva
-            this.showEndedMessage("Esta transmisión empezará más tarde.");
-        }
-    },
-    
-    handleYouTubeSession(session) {
-        this.renderResearcherInfo(session.user_id);
-        this.elements.liveTitle.textContent = session.session_title;
-        this.elements.liveProject.textContent = `Proyecto: ${session.project_title}`;
-        const now = new Date();
-        const scheduledAt = new Date(session.scheduled_at);
-        const diffMinutes = (scheduledAt.getTime() - now.getTime()) / 60000;
         
         if (now >= scheduledAt) {
             this.showYouTubePlayer({ id: { videoId: session.platform_id }, snippet: { title: session.session_title } });
-        } else if (diffMinutes < 60) {
-            this.showCountdown(session);
+            this.showYouTubeChat(session.platform_id);
         } else {
-            this.showEndedMessage("Esta transmisión de YouTube empezará más tarde.");
+            this.showCountdown(session);
         }
     },
 
@@ -242,6 +254,44 @@ const App = {
         } catch (error) {
             console.error("Error al obtener videos de YouTube:", error);
             return null;
+        }
+    },
+
+    /**
+     * Verifica si un video específico de YouTube está actualmente en vivo.
+     * @param {string} videoId El ID del video de YouTube a verificar.
+     * @returns {Promise<boolean>} Devuelve true si el video está en vivo, de lo contrario false.
+     */
+    async isYouTubeVideoLive(videoId) {
+        if (!videoId) return false;
+        try {
+            // Usamos el endpoint 'videos' que nos da detalles de un video específico por su ID.
+            const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${this.youtube.API_KEY}`);
+            const data = await response.json();
+            
+            // La propiedad 'liveBroadcastContent' nos dice el estado. Si es 'live', está transmitiendo.
+            if (data.items && data.items.length > 0) {
+                return data.items[0].snippet.liveBroadcastContent === 'live';
+            }
+            return false;
+        } catch (error) {
+            console.error("Error al verificar el estado del video de YouTube:", error);
+            return false;
+        }
+    },
+
+    /**
+     * Helper para actualizar el estado de una sesión en la base de datos.
+     * @param {string} sessionId El ID de la sesión a actualizar.
+     * @param {string} status El nuevo estado (ej. 'FINALIZADO').
+     */
+    async updateSessionStatus(sessionId, status) {
+        const { error } = await this.supabase
+            .from('sessions')
+            .update({ status: status })
+            .eq('id', sessionId);
+        if (error) {
+            console.error(`Error al actualizar la sesión ${sessionId} a ${status}:`, error);
         }
     },
 
@@ -337,7 +387,30 @@ const App = {
         this.elements.player.innerHTML = `<iframe src="${videoUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
     },
 
-    // ... la parte final y el cierre del código en la Parte 4
+    /**
+     * Muestra el iframe del chat de YouTube para un video en vivo.
+     * @param {string} videoId - El ID del video de YouTube.
+     */
+    showYouTubeChat(videoId) {
+        const chatContainer = this.elements.chatContainer;
+        // Si no hay videoId, muestra un mensaje y termina la función.
+        if (!videoId) {
+            chatContainer.innerHTML = '<p class="placeholder-text">El chat solo está disponible para transmisiones de YouTube.</p>';
+            return;
+        }
+
+        // Construye la URL del chat embebido. Es crucial incluir tu dominio.
+        const chatUrl = `https://www.youtube.com/live_chat?v=${videoId}&embed_domain=${window.location.hostname}`;
+        
+        // Busca si ya existe un iframe de chat para no recargarlo innecesariamente.
+        const existingIframe = chatContainer.querySelector('iframe');
+        if (existingIframe && existingIframe.src === chatUrl) {
+            return; // Si el chat correcto ya está cargado, no hacemos nada.
+        }
+
+        // Limpia el contenedor y crea el nuevo iframe para el chat.
+        chatContainer.innerHTML = `<iframe src="${chatUrl}" frameborder="0"></iframe>`;
+    },
 
     showCountdown(session) {
         this.elements.overlay.style.display = 'flex';
@@ -391,11 +464,13 @@ const App = {
         this.elements.endedMessage.style.display = 'block';
         this.elements.endedMessage.querySelector('p').textContent = message;
         this.elements.player.innerHTML = '';
+        this.elements.chatContainer.innerHTML = '<p class="placeholder-text">No hay chat activo.</p>';
     }
 };
 
-// Línea final que inicia toda la aplicación
+// =======================================================
+// PUNTO DE ENTRADA DE LA APLICACIÓN
+// =======================================================
 document.addEventListener('DOMContentLoaded', () => App.init());
 
 // ------ BORRAR
-

@@ -40,13 +40,13 @@
                 </div>
             </div>
             <aside class="sidebar-column bento-box">
+                <div id="chat-container">
+                    <p class="placeholder-text"><i class="fa-solid fa-comments"></i> El chat se activará durante los directos.</p>
+                </div>
                 <div id="live-info-container">
                     <h3>Información del Evento</h3>
                     <h4 id="live-title">Cargando...</h4>
                     <p id="live-project">--</p>
-                </div>
-                <div id="chat-placeholder">
-                    <p class="placeholder-text"><i class="fa-solid fa-comments"></i> El chat aparecerá aquí.</p>
                 </div>
             </aside>
         </section>
@@ -66,6 +66,10 @@
             </div>
         </section>
     </div>
+
+    <a href="#ondemand-section" class="scroll-down-button" aria-label="Ver más contenido">
+        <i class="fa-solid fa-chevron-down"></i>
+    </a>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/live/js/live.js"></script>

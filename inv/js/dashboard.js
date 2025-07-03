@@ -233,6 +233,9 @@ const Studio = {
 
     closeModal() { document.getElementById('modal-overlay-container').innerHTML = ''; },
 
+    // EN dashboard.js, dentro del objeto Studio
+
+    // EN dashboard.js, dentro del objeto Studio
     async handleSaveSession(e, sessionId = null) {
         e.preventDefault();
         const formData = new FormData(e.target);
@@ -249,23 +252,28 @@ const Studio = {
             end_at: endAt ? new Date(endAt).toISOString() : null
         };
         
-        // Asignamos el user_id solo al crear, no al editar
         if (!sessionId) {
             sessionData.user_id = App.userId;
         }
 
         if (platform === 'vdo_ninja') {
-            sessionData.platform_id = null; // Limpiamos ID de youtube si se cambia
-            // Si es un evento nuevo, generamos URLs. Si es edición, las mantenemos.
+            sessionData.platform_id = null;
             if (!sessionId) {
                 const stableId = self.crypto.randomUUID().slice(0, 8);
-                const roomName = `ept-${App.userProfile.orcid.slice(-6)}-${stableId}`;
+                const roomName = `ept-${App.userProfile.orcid.slice(-6)}-${stableId}`.replace(/[^a-zA-Z0-9-]/g, ''); // Nombre de sala limpio
                 const directorKey = `dir-${App.userProfile.orcid.slice(-4)}`;
                 const vdoDomain = 'https://vdo.epistecnologia.com';
+                
                 let directorParams = new URLSearchParams({ room: roomName, director: directorKey, record: 'auto' });
                 let guestParams = new URLSearchParams({ room: roomName });
                 let viewerParams = new URLSearchParams({ scene: '0', room: roomName, showlabels: '', cleanoutput: '', layout: '', remote: '' });
-                if (formData.get('guestCount') > 4) { directorParams.set('meshcast', '1'); viewerParams.set('meshcast', '1'); }
+                
+                // Lógica de meshcast correcta, solo en director y viewer
+                if (formData.get('guestCount') > 4) {
+                    directorParams.set('meshcast', '1');
+                    viewerParams.set('meshcast', '1');
+                }
+                
                 sessionData.director_url = `${vdoDomain}/mixer.html?${directorParams.toString()}`;
                 sessionData.guest_url = `${vdoDomain}/?${guestParams.toString()}`;
                 sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}`;
@@ -293,15 +301,21 @@ const Studio = {
         else { alert('¡Evento iniciado! Ya debería estar visible en la página pública.'); this.fetchSessions(); }
     },
 
+    // EN dashboard.js, dentro del objeto Studio
     async openSession(sessionData) {
         const session = JSON.parse(decodeURIComponent(sessionData));
         if (session.platform === 'youtube') {
-            this.openModal(sessionData); // Si es YouTube, abre el modal de edición
+            this.openModal(sessionData);
             return;
         }
 
         const { data: currentSession, error } = await App.supabase.from('sessions').select('*').eq('id', session.id).single();
         if (error || !currentSession) { alert("No se pudo encontrar la sesión."); this.fetchSessions(); return; }
+
+        if (currentSession.status === 'FINALIZADO') {
+            alert("Esta sesión ya ha finalizado.");
+            return;
+        }
 
         const { director_url: directorUrl, guest_url: guestUrl, status } = currentSession;
         const mixerContainer = document.getElementById('mixer-embed-container');
@@ -309,31 +323,63 @@ const Studio = {
         mixerContainer.querySelector('#mixer-iframe').src = directorUrl;
         
         const actionsContainer = document.getElementById('mixer-room-actions');
-        let liveControlsHTML = (status === 'EN VIVO')
-            ? `<button class="btn-primary" style="background-color: #e02424;" onclick="Studio.endLiveStream('${currentSession.id}')"><i class="fa-solid fa-stop-circle"></i> Terminar</button>`
-            : `<div class="live-dropdown"><button class="btn-secondary"><i class="fa-solid fa-tower-broadcast"></i> Transmitir Ahora</button><div class="live-dropdown-content"><a href="#" onclick="event.preventDefault(); Studio.scheduleLive('${currentSession.id}', 0)">Iniciar Ya</a><a href="#" onclick="event.preventDefault(); Studio.scheduleLive('${currentSession.id}', 3)">En 3 minutos</a></div></div>`;
-        
         const publicLiveUrl = 'https://epistecnologia.com/live/live.html';
+        let liveControlsHTML = '';
+
+        // --- LÓGICA DE CONTROL RESTAURADA Y MEJORADA ---
+        if (status === 'EN VIVO') {
+            liveControlsHTML = `
+                <span class="live-indicator">🔴 En Vivo</span>
+                <button class="btn-primary" style="background-color: #e02424;" onclick="Studio.endLiveStream('${currentSession.id}')"><i class="fa-solid fa-stop-circle"></i> Terminar</button>
+            `;
+        } else { // Si está 'PROGRAMADO'
+            liveControlsHTML = `
+                <div class="live-dropdown">
+                    <button class="btn-primary"><i class="fa-solid fa-tower-broadcast"></i> Iniciar Transmisión</button>
+                    <div class="live-dropdown-content">
+                        <a href="#" onclick="event.preventDefault(); Studio.goLive('${currentSession.id}', 0)">Iniciar Ahora</a>
+                        <a href="#" onclick="event.preventDefault(); Studio.goLive('${currentSession.id}', 1)">En 1 minuto</a>
+                        <a href="#" onclick="event.preventDefault(); Studio.goLive('${currentSession.id}', 3)">En 3 minutos</a>
+                        <a href="#" onclick="event.preventDefault(); Studio.goLive('${currentSession.id}', 5)">En 5 minutos</a>
+                    </div>
+                </div>`;
+        }
+
         actionsContainer.innerHTML = `
-            <button class="btn-secondary" onclick="window.open('${guestUrl}', '_blank')"><i class="fa-solid fa-video"></i> Link Invitado</button>
-            <button class="btn-secondary" onclick="navigator.clipboard.writeText('${guestUrl}').then(() => alert('¡Enlace de invitado copiado!'))"><i class="fa-solid fa-copy"></i> Copiar Invitado</button>
-            <button class="btn-secondary" onclick="navigator.clipboard.writeText('${publicLiveUrl}').then(() => alert('¡Enlace de página pública copiado!'))"><i class="fa-solid fa-share-nodes"></i> Compartir</button>
+            <button class="btn-secondary" onclick="window.open('${guestUrl}', '_blank')"><i class="fa-solid fa-video"></i> Acceder como Invitado</button>
+            <button class="btn-secondary" onclick="navigator.clipboard.writeText('${guestUrl}').then(() => alert('¡Enlace copiado!'))"><i class="fa-solid fa-copy"></i> Copiar Link Para Invitado</button>
+            <button class="btn-secondary" onclick="navigator.clipboard.writeText('${publicLiveUrl}').then(() => alert('¡Enlace copiado!'))"><i class="fa-solid fa-share-nodes"></i> Copiar y compartir</button>
             ${liveControlsHTML}
             <div id="mixer-countdown-display" class="mixer-countdown"></div>`;
         
         document.getElementById('mixer-popout-btn').onclick = () => window.open(directorUrl, '_blank');
         document.getElementById('mixer-close-btn').onclick = () => this.closeMixer();
+
+        this.startDashboardCountdown(currentSession);
     },
 
-    async scheduleLive(sessionId, minutes) {
+    // EN dashboard.js, dentro del objeto Studio
+    // ELIMINA la función 'scheduleLive' y reemplázala por esta
+    async goLive(sessionId, minutes) {
         if (!sessionId) return;
-        const now = new Date();
-        const scheduledTime = new Date(now.getTime() + minutes * 60000);
-        const { error } = await App.supabase.from('sessions').update({ status: 'PROGRAMADO', scheduled_at: scheduledTime.toISOString() }).eq('id', sessionId);
-        if (error) { alert('Hubo un error al programar la transmisión.'); } 
-        else {
-            alert(`¡Éxito! La transmisión ha sido programada.`);
-            // ... (lógica del temporizador en dashboard)
+
+        // Calculamos la hora de inicio y la ponemos en el formato correcto
+        const scheduledTime = new Date(new Date().getTime() + minutes * 60000);
+        const scheduled_at_iso = scheduledTime.toISOString();
+        
+        // Actualizamos la sesión para marcarla como 'EN VIVO' y con la nueva hora de inicio
+        const { error } = await App.supabase.from('sessions')
+            .update({ status: 'EN VIVO', scheduled_at: scheduled_at_iso })
+            .eq('id', sessionId);
+
+        if (error) {
+            alert('Hubo un error al iniciar la transmisión.');
+            console.error("Error en goLive:", error);
+        } else {
+            alert(`¡Transmisión iniciada! La cuenta regresiva comenzará en la página pública.`);
+            // Volvemos a abrir la sesión para refrescar los botones y mostrar "Terminar"
+            const { data: session } = await App.supabase.from('sessions').select('*').eq('id', sessionId).single();
+            this.openSession(encodeURIComponent(JSON.stringify(session)));
         }
     },
 
@@ -346,10 +392,69 @@ const Studio = {
     },
 
     closeMixer() {
-        if (this.timers.dashboardCountdown) { clearInterval(this.timers.dashboardCountdown); this.timers.dashboardCountdown = null; }
+        // Detenemos el contador del dashboard si está activo.
+        if (this.timers.dashboardCountdown) {
+            clearInterval(this.timers.dashboardCountdown);
+            this.timers.dashboardCountdown = null;
+        }
         const mixerContainer = document.getElementById('mixer-embed-container');
         mixerContainer.querySelector('#mixer-iframe').src = 'about:blank';
         mixerContainer.style.display = 'none';
+    },
+
+    startDashboardCountdown(session) {
+        const countdownDisplay = document.getElementById('mixer-countdown-display');
+        if (!countdownDisplay) return;
+
+        // Detenemos cualquier contador anterior para evitar duplicados.
+        if (this.timers.dashboardCountdown) {
+            clearInterval(this.timers.dashboardCountdown);
+        }
+
+        const startTime = new Date(session.scheduled_at);
+        const endTime = session.end_at ? new Date(session.end_at) : null;
+
+        this.timers.dashboardCountdown = setInterval(() => {
+            const now = new Date();
+            let message = '';
+            let distance;
+
+            countdownDisplay.className = 'mixer-countdown'; // Resetea las clases de estilo
+
+            if (session.status === 'EN VIVO') {
+                if (!endTime) {
+                    message = 'Sin hora de fin programada.';
+                } else {
+                    distance = endTime - now;
+                    if (distance < 0) {
+                        const overTime = now - endTime;
+                        const hours = Math.floor(overTime / (1000 * 60 * 60));
+                        const minutes = Math.floor((overTime % (1000 * 60 * 60)) / (1000 * 60));
+                        message = `Tiempo excedido por: ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+                        countdownDisplay.classList.add('is-danger');
+                    } else {
+                        const hours = Math.floor(distance / (1000 * 60 * 60));
+                        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                        message = `Tiempo restante: ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                        // Aplicar estilo de advertencia si queda poco tiempo
+                        if (distance < 5 * 60 * 1000) { // Menos de 5 minutos
+                            countdownDisplay.classList.add('is-warning');
+                        }
+                    }
+                }
+            } else if (session.status === 'PROGRAMADO' && startTime > now) {
+                distance = startTime - now;
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                message = `Inicia en: ${days > 0 ? days + 'd ' : ''}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                countdownDisplay.classList.add('is-info');
+            }
+
+            countdownDisplay.textContent = message;
+        }, 1000);
     },
 
     getTitleForAction(action) { return action; }
