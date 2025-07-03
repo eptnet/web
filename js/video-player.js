@@ -44,23 +44,32 @@ document.addEventListener('mainReady', () => {
         },
 
         async launch() {
-            console.log("video-player.js: 'launch-stories' recibido. Preparando contenido.");
+            console.log("video-player.js: 'launch-stories' recibido. Usando Supabase.");
             const cachedData = this.getCache();
             if (cachedData.videos && cachedData.videos.length > 0) {
                 this.videos = cachedData.videos;
                 this.buildAndDispatchPlayer();
             } else {
                 try {
-                    const searchQuery = encodeURIComponent('"#Shorts" | "#Short"');
-                    const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${this.CHANNEL_ID}&maxResults=15&q=${searchQuery}&type=video&order=date&videoDuration=short&key=${this.YOUTUBE_API_KEY}`;
-                    const response = await fetch(apiUrl);
-                    if (!response.ok) throw new Error(`Error de API de YouTube`);
-                    const data = await response.json();
-                    if (!data.items || data.items.length === 0) throw new Error('No se encontraron Shorts.');
+                    // Reemplazamos la llamada a la API de YouTube por una consulta a Supabase
+                    const { data, error } = await supabaseClient
+                        .from('shorts')
+                        .select('youtube_video_id, thumbnail_url')
+                        .order('created_at', { ascending: false })
+                        .limit(20); // Traemos los últimos 20 shorts
+
+                    if (error) throw error;
+                    if (!data || data.length === 0) throw new Error('No se encontraron Shorts en la base de datos.');
                     
-                    this.videos = data.items.map(item => ({ id: item.id.videoId, thumbUrl: item.snippet.thumbnails.high.url }));
-                    this.setCache(this.videos, data.nextPageToken);
+                    // Mapeamos los datos de Supabase al formato que el reproductor espera
+                    this.videos = data.map(item => ({ 
+                        id: item.youtube_video_id, 
+                        thumbUrl: item.thumbnail_url || `https://i.ytimg.com/vi/${item.youtube_video_id}/hqdefault.jpg`
+                    }));
+                    
+                    this.setCache(this.videos); // Guardamos la respuesta de Supabase en el caché
                     this.buildAndDispatchPlayer();
+
                 } catch (error) {
                     alert(`Error al cargar las historias: ${error.message}`);
                 }
