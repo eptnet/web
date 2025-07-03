@@ -603,3 +603,5 @@ body {
     background-color: #fee2e2;
     color: #b91c1c;
 }
+
+@keyframes blink { 50% { opacity: 0.5; } } .is-blinking { animation: blink 1s linear infinite; }

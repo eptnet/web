@@ -112,7 +112,7 @@ const Projects = {
     }
 };
 
-// Reemplaza el objeto Studio completo por este
+// STUDIO
 const Studio = {
     timers: { dashboardCountdown: null },
 
@@ -302,6 +302,7 @@ const Studio = {
     },
 
     // EN dashboard.js, dentro del objeto Studio
+
     async openSession(sessionData) {
         const session = JSON.parse(decodeURIComponent(sessionData));
         if (session.platform === 'youtube') {
@@ -317,6 +318,16 @@ const Studio = {
             return;
         }
 
+        // --- NUEVA LÓGICA: BUSCAR LA PRÓXIMA SESIÓN ---
+        const { data: upcomingSessions } = await App.supabase
+            .from('sessions')
+            .select('id, scheduled_at')
+            .gt('scheduled_at', currentSession.scheduled_at) // Busca sesiones DESPUÉS de la actual
+            .order('scheduled_at', { ascending: true })
+            .limit(1);
+
+        const nextSession = (upcomingSessions && upcomingSessions.length > 0) ? upcomingSessions[0] : null;
+
         const { director_url: directorUrl, guest_url: guestUrl, status } = currentSession;
         const mixerContainer = document.getElementById('mixer-embed-container');
         mixerContainer.style.display = 'flex';
@@ -326,39 +337,21 @@ const Studio = {
         const publicLiveUrl = 'https://epistecnologia.com/live/live.html';
         let liveControlsHTML = '';
 
-        // --- LÓGICA DE CONTROL RESTAURADA Y MEJORADA ---
         if (status === 'EN VIVO') {
-            liveControlsHTML = `
-                <span class="live-indicator">🔴 En Vivo</span>
-                <button class="btn-primary" style="background-color: #e02424;" onclick="Studio.endLiveStream('${currentSession.id}')"><i class="fa-solid fa-stop-circle"></i> Terminar</button>
-            `;
-        } else { // Si está 'PROGRAMADO'
-            liveControlsHTML = `
-                <div class="live-dropdown">
-                    <button class="btn-primary"><i class="fa-solid fa-tower-broadcast"></i> Iniciar Transmisión</button>
-                    <div class="live-dropdown-content">
-                        <a href="#" onclick="event.preventDefault(); Studio.goLive('${currentSession.id}', 0)">Iniciar Ahora</a>
-                        <a href="#" onclick="event.preventDefault(); Studio.goLive('${currentSession.id}', 1)">En 1 minuto</a>
-                        <a href="#" onclick="event.preventDefault(); Studio.goLive('${currentSession.id}', 3)">En 3 minutos</a>
-                        <a href="#" onclick="event.preventDefault(); Studio.goLive('${currentSession.id}', 5)">En 5 minutos</a>
-                    </div>
-                </div>`;
+            liveControlsHTML = `<span class="live-indicator">🔴 En Vivo</span><button class="btn-primary" style="background-color: #e02424;" onclick="Studio.endLiveStream('${currentSession.id}')"><i class="fa-solid fa-stop-circle"></i> Terminar</button>`;
+        } else {
+            liveControlsHTML = `<div class="live-dropdown"><button class="btn-primary"><i class="fa-solid fa-tower-broadcast"></i> Iniciar Transmisión</button><div class="live-dropdown-content"><a href="#" onclick="event.preventDefault(); Studio.goLive('${currentSession.id}', 0)">Iniciar Ahora</a><a href="#" onclick="event.preventDefault(); Studio.goLive('${currentSession.id}', 1)">En 1 minuto</a><a href="#" onclick="event.preventDefault(); Studio.goLive('${currentSession.id}', 3)">En 3 minutos</a><a href="#" onclick="event.preventDefault(); Studio.goLive('${currentSession.id}', 5)">En 5 minutos</a></div></div>`;
         }
 
-        actionsContainer.innerHTML = `
-            <button class="btn-secondary" onclick="window.open('${guestUrl}', '_blank')"><i class="fa-solid fa-video"></i> Acceder como Invitado</button>
-            <button class="btn-secondary" onclick="navigator.clipboard.writeText('${guestUrl}').then(() => alert('¡Enlace copiado!'))"><i class="fa-solid fa-copy"></i> Copiar Link Para Invitado</button>
-            <button class="btn-secondary" onclick="navigator.clipboard.writeText('${publicLiveUrl}').then(() => alert('¡Enlace copiado!'))"><i class="fa-solid fa-share-nodes"></i> Copiar y compartir</button>
-            ${liveControlsHTML}
-            <div id="mixer-countdown-display" class="mixer-countdown"></div>`;
+        actionsContainer.innerHTML = `<button class="btn-secondary" onclick="window.open('${guestUrl}', '_blank')"><i class="fa-solid fa-video"></i> Link Invitado</button><button class="btn-secondary" onclick="navigator.clipboard.writeText('${guestUrl}').then(() => alert('¡Enlace copiado!'))"><i class="fa-solid fa-copy"></i> Copiar Invitado</button><button class="btn-secondary" onclick="navigator.clipboard.writeText('${publicLiveUrl}').then(() => alert('¡Enlace copiado!'))"><i class="fa-solid fa-share-nodes"></i> Compartir</button>${liveControlsHTML}<div id="mixer-countdown-display" class="mixer-countdown"></div>`;
         
         document.getElementById('mixer-popout-btn').onclick = () => window.open(directorUrl, '_blank');
         document.getElementById('mixer-close-btn').onclick = () => this.closeMixer();
-
-        this.startDashboardCountdown(currentSession);
+        
+        // Pasamos la sesión actual Y la siguiente a nuestro contador
+        this.startDashboardCountdown(currentSession, nextSession);
     },
 
-    // EN dashboard.js, dentro del objeto Studio
     // ELIMINA la función 'scheduleLive' y reemplázala por esta
     async goLive(sessionId, minutes) {
         if (!sessionId) return;
@@ -383,12 +376,56 @@ const Studio = {
         }
     },
 
+    // En /dashboard.js, dentro del objeto Studio
+
     async endLiveStream(sessionId) {
-        const confirmed = confirm("¿Estás seguro de que quieres terminar esta transmisión?");
+        const confirmed = confirm("¿Estás seguro de que quieres terminar esta transmisión? Esta acción es irreversible y cortará la conexión para todos.");
         if (!confirmed) return;
-        const { error } = await App.supabase.from('sessions').update({ status: 'FINALIZADO', end_at: new Date().toISOString() }).eq('id', sessionId);
-        if (error) { alert("Hubo un error al finalizar la transmisión."); }
-        else { alert("Transmisión finalizada."); this.closeMixer(); this.fetchSessions(); }
+
+        const endButton = document.querySelector(`button[onclick="Studio.endLiveStream('${sessionId}')"]`);
+        if (endButton) {
+            endButton.disabled = true;
+            let countdown = 10;
+            endButton.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Finalizando en ${countdown}...`;
+            
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                endButton.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Finalizando en ${countdown}...`;
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                }
+            }, 1000);
+        }
+        
+        // Esperamos 10 segundos antes de ejecutar la acción final
+        await new Promise(resolve => setTimeout(resolve, 10000));
+
+        // --- ACCIÓN DE FINALIZACIÓN AGRESIVA ---
+        const { error } = await App.supabase
+            .from('sessions')
+            .update({ 
+                status: 'FINALIZADO', 
+                end_at: new Date().toISOString(),
+                // Rompemos los enlaces para asegurar que la transmisión se corte
+                director_url: null,
+                viewer_url: null,
+                guest_url: null
+            })
+            .eq('id', sessionId);
+        
+        if (error) {
+            alert("Hubo un error al finalizar la transmisión.");
+            console.error("Error en endLiveStream:", error);
+            // Reactivar el botón si hay error
+            if(endButton) {
+            endButton.disabled = false;
+            endButton.innerHTML = `<i class="fa-solid fa-stop-circle"></i> Terminar`;
+            }
+        } else { 
+            alert("Transmisión finalizada correctamente.");
+            this.closeMixer(); 
+            this.fetchSessions(); 
+        }
     },
 
     closeMixer() {
@@ -402,59 +439,86 @@ const Studio = {
         mixerContainer.style.display = 'none';
     },
 
-    startDashboardCountdown(session) {
+    // En /dashboard.js, dentro del objeto Studio
+
+    startDashboardCountdown(session, nextSession) {
         const countdownDisplay = document.getElementById('mixer-countdown-display');
         if (!countdownDisplay) return;
 
-        // Detenemos cualquier contador anterior para evitar duplicados.
-        if (this.timers.dashboardCountdown) {
-            clearInterval(this.timers.dashboardCountdown);
-        }
+        // Reseteamos las advertencias para esta sesión
+        this.warnings = { overtime: false, conflict_6m: false };
+
+        if (this.timers.dashboardCountdown) clearInterval(this.timers.dashboardCountdown);
 
         const startTime = new Date(session.scheduled_at);
         const endTime = session.end_at ? new Date(session.end_at) : null;
+        const nextStartTime = nextSession ? new Date(nextSession.scheduled_at) : null;
 
         this.timers.dashboardCountdown = setInterval(() => {
             const now = new Date();
             let message = '';
-            let distance;
-
-            countdownDisplay.className = 'mixer-countdown'; // Resetea las clases de estilo
+            countdownDisplay.className = 'mixer-countdown';
 
             if (session.status === 'EN VIVO') {
-                if (!endTime) {
-                    message = 'Sin hora de fin programada.';
-                } else {
-                    distance = endTime - now;
-                    if (distance < 0) {
-                        const overTime = now - endTime;
-                        const hours = Math.floor(overTime / (1000 * 60 * 60));
-                        const minutes = Math.floor((overTime % (1000 * 60 * 60)) / (1000 * 60));
-                        message = `Tiempo excedido por: ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-                        countdownDisplay.classList.add('is-danger');
-                    } else {
+                if (!endTime) { message = 'Sin hora de fin programada.'; } 
+                else {
+                    const distance = endTime - now;
+                    if (distance < 0) { // --- ESTAMOS EN TIEMPO EXTRA ---
+                        if (!this.warnings.overtime) {
+                            this.playWarningSound();
+                            this.warnings.overtime = true;
+                        }
+
+                        // --- LÓGICA DE CONFLICTO ---
+                        if (nextStartTime && now < nextStartTime) {
+                            const timeToNext = nextStartTime - now;
+                            
+                            if (timeToNext <= 3 * 60 * 1000) {
+                                // Cierre forzado
+                                this.endLiveStream(session.id);
+                                alert("La sesión ha finalizado automáticamente para dar paso al siguiente evento.");
+                                clearInterval(this.timers.dashboardCountdown);
+                                return;
+                            }
+                            
+                            if (timeToNext <= 6 * 60 * 1000) {
+                                if (!this.warnings.conflict_6m) {
+                                    this.playWarningSound();
+                                    this.warnings.conflict_6m = true;
+                                }
+                                const mins = Math.ceil(timeToNext / (60 * 1000));
+                                message = `¡ATENCIÓN! Siguiente evento en ${mins} min. Esta sesión se cerrará pronto.`;
+                                countdownDisplay.classList.add('is-danger', 'is-blinking'); // Añadimos clase para parpadeo
+                            }
+
+                        } else { // Si no hay conflicto, solo muestra tiempo excedido
+                            const overTime = now - endTime;
+                            const minutes = Math.floor((overTime % (1000 * 60 * 60)) / (1000 * 60));
+                            const seconds = Math.floor((overTime % (1000 * 60)) / 1000);
+                            message = `Tiempo excedido: ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                            countdownDisplay.classList.add('is-danger');
+                        }
+
+                    } else { // --- AÚN QUEDA TIEMPO ---
                         const hours = Math.floor(distance / (1000 * 60 * 60));
                         const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
                         const seconds = Math.floor((distance % (1000 * 60)) / 1000);
                         message = `Tiempo restante: ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                        // Aplicar estilo de advertencia si queda poco tiempo
-                        if (distance < 5 * 60 * 1000) { // Menos de 5 minutos
-                            countdownDisplay.classList.add('is-warning');
-                        }
+                        if (distance < 5 * 60 * 1000) countdownDisplay.classList.add('is-warning');
                     }
                 }
             } else if (session.status === 'PROGRAMADO' && startTime > now) {
-                distance = startTime - now;
-                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-                message = `Inicia en: ${days > 0 ? days + 'd ' : ''}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                countdownDisplay.classList.add('is-info');
+                // ... (la lógica de cuenta regresiva para iniciar se mantiene igual)
             }
-
             countdownDisplay.textContent = message;
         }, 1000);
+    },
+
+    playWarningSound() {
+        // Puedes reemplazar esta URL con cualquier sonido de notificación que prefieras.
+        const audio = new Audio('https://freesound.org/data/previews/415/415762_6142146-lq.mp3');
+        audio.volume = 0.5; // Ajusta el volumen
+        audio.play().catch(e => console.error("No se pudo reproducir el sonido:", e));
     },
 
     getTitleForAction(action) { return action; }

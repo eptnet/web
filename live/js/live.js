@@ -2,6 +2,7 @@ const App = {
     supabase: null,
     elements: {},
     timers: { mainLoop: null, countdown: null },
+    currentSessionId: null,
     
     youtube: {
         API_KEY: 'AIzaSyCwh_RLVd7AQ-6FdMEugrA7phNwN0dN9pw', // Reemplaza con tu API Key
@@ -10,6 +11,7 @@ const App = {
         isLoaded: false
     },
     
+
     init() {
         const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
@@ -17,8 +19,16 @@ const App = {
 
         this.cacheDOMElements();
         this.addEventListeners();
+        
+        // Ejecutamos la lógica principal una vez al cargar
         this.run();
-        this.timers.mainLoop = setInterval(() => this.run(), 30000);
+        
+        // Activamos la escucha en tiempo real
+        this.listenForRealtimeChanges();
+
+        // El bucle principal ahora es solo un respaldo, lo ponemos a un tiempo más largo.
+        if (this.timers.mainLoop) clearInterval(this.timers.mainLoop);
+        this.timers.mainLoop = setInterval(() => this.run(), 120000); // Cada 2 minutos
     },
 
     cacheDOMElements() {
@@ -168,6 +178,7 @@ const App = {
     },
 
     handleVDONinjaSession(session) {
+        this.currentSessionId = session.id;
         this.renderResearcherInfo(session.user_id, session.project_doi);
         this.elements.liveTitle.textContent = session.session_title;
         this.elements.liveProject.textContent = `Proyecto: ${session.project_title}`;
@@ -181,6 +192,7 @@ const App = {
     },
 
     handleYouTubeSession(session) {
+        this.currentSessionId = session.id;
         this.renderResearcherInfo(session.user_id, session.project_doi);
         this.elements.liveTitle.textContent = session.session_title;
         this.elements.liveProject.textContent = `Proyecto: ${session.project_title}`;
@@ -197,6 +209,7 @@ const App = {
     },
 
     handleYouTubeLive(video) {
+        this.currentSessionId = session.id;
         this.elements.researcherInfoContainer.style.display = 'none';
         this.elements.liveTitle.textContent = video.snippet.title;
         this.elements.liveProject.textContent = "🔴 Transmitiendo en vivo desde YouTube";
@@ -205,54 +218,42 @@ const App = {
     },
 
     async handleOnDemandContent() {
-        if (this.youtube.isLoaded) return; // Evita recargar si ya está visible
+        // Evita recargar si el contenido on-demand ya está visible
+        if (this.youtube.isLoaded) return; 
+        
         this.youtube.isLoaded = true;
         this.elements.researcherInfoContainer.style.display = 'none';
         this.elements.youtubeList.innerHTML = '<p class="placeholder-text">Cargando videos...</p>';
         this.elements.liveTitle.textContent = "Canal Epistecnología";
         this.elements.liveProject.textContent = "Contenido On-Demand";
-        const videos = await this.fetchYouTubeVideos();
+        
+        // Llamamos a la nueva función que usa Supabase
+        const videos = await this.fetchOnDemandVideosFromSupabase();
+        
         if (videos && videos.length > 0) {
-            this.youtube.videos = videos;
-            this.renderYouTubeList(this.youtube.videos);
-            this.showYouTubePlayer(videos[0]); 
+            this.renderOnDemandList(videos);
+            // Muestra el primer video de la lista en el reproductor
+            this.showYouTubePlayer({ 
+                id: { videoId: videos[0].youtube_video_id }, 
+                snippet: { title: videos[0].title } 
+            }); 
         } else {
-            this.showEndedMessage("No se pudieron cargar los videos de YouTube.");
+            this.showEndedMessage("No hay videos disponibles en este momento.");
         }
     },
     
-    async fetchYouTubeVideos() {
+    async fetchOnDemandVideosFromSupabase() {
+        console.log("Obteniendo videos On-Demand desde Supabase...");
         try {
-            if (!this.youtube.uploadsPlaylistId) {
-                const channelResponse = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${this.youtube.CHANNEL_ID}&key=${this.youtube.API_KEY}`);
-                const channelData = await channelResponse.json();
-                if (!channelData.items || channelData.items.length === 0) throw new Error("Canal de YouTube no encontrado.");
-                this.youtube.uploadsPlaylistId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
-            }
-            const playlistResponse = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${this.youtube.uploadsPlaylistId}&maxResults=50&key=${this.youtube.API_KEY}`);
-            const playlistData = await playlistResponse.json();
+            const { data, error } = await this.supabase
+                .from('ondemand_videos')
+                .select('*')
+                .order('created_at', { ascending: false });
             
-            const videoIds = playlistData.items.map(item => item.snippet.resourceId.videoId).join(',');
-            
-            const detailsResponse = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails,status&id=${videoIds}&key=${this.youtube.API_KEY}`);
-            const detailsData = await detailsResponse.json();
-            
-            const videoDetails = {};
-            detailsData.items.forEach(item => {
-                const duration = item.contentDetails.duration.match(/(\d+)M|(\d+)S/g) || [];
-                const totalSeconds = duration.reduce((acc, time) => (time.includes('M') ? acc + parseInt(time) * 60 : acc + parseInt(time)), 0);
-                videoDetails[item.id] = {
-                    duration: totalSeconds,
-                    isPublic: item.status.privacyStatus === 'public'
-                };
-            });
-            
-            return playlistData.items.filter(item => {
-                const details = videoDetails[item.snippet.resourceId.videoId];
-                return details && details.isPublic && details.duration > 70;
-            });
+            if (error) throw error;
+            return data;
         } catch (error) {
-            console.error("Error al obtener videos de YouTube:", error);
+            console.error("Error al obtener videos desde Supabase:", error);
             return null;
         }
     },
@@ -295,7 +296,35 @@ const App = {
         }
     },
 
-    // ... el resto de las funciones en la Parte 3 y 4
+    // En /live/js/live.js, dentro del objeto App
+
+    // En /live/js/live.js, reemplaza esta función
+
+    listenForRealtimeChanges() {
+        console.log("Activando escucha en tiempo real para las sesiones...");
+        
+        const channel = this.supabase
+            .channel('sessions-channel')
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'sessions' },
+                (payload) => {
+                    console.log('Cambio detectado:', payload.new);
+                    
+                    // Comprobamos si el cambio es en la sesión que estamos viendo AHORA
+                    // Y si el nuevo estado es FINALIZADO
+                    if (payload.new.id === this.currentSessionId && payload.new.status === 'FINALIZADO') {
+                        // Si ambas condiciones se cumplen, activamos el kill switch.
+                        this.killPlayer();
+                    } else {
+                        // Para cualquier otro cambio (ej. un nuevo evento programado), 
+                        // simplemente refrescamos la lógica normal.
+                        this.run();
+                    }
+                }
+            )
+            .subscribe();
+    },
 
     async renderResearcherInfo(userId) {
         if (!userId) {
@@ -347,14 +376,25 @@ const App = {
         this.elements.scheduleList.innerHTML = html;
     },
     
-    renderYouTubeList(videos) {
-        this.elements.youtubeList.innerHTML = videos.map(item => {
-            const video = item.snippet;
-            const videoData = encodeURIComponent(JSON.stringify({ id: { videoId: video.resourceId.videoId }, snippet: { title: video.title } }));
-            return `<div class="video-card" onclick="App.showYouTubePlayer(JSON.parse(decodeURIComponent('${videoData}')))">
-                        <img src="${video.thumbnails.medium.url}" alt="${video.title}" loading="lazy">
-                        <div class="card-info"><h5>${video.title}</h5></div>
-                    </div>`;
+    renderOnDemandList(videos) {
+        this.elements.youtubeList.innerHTML = videos.map(video => {
+            // Usamos los datos de nuestra tabla de Supabase
+            const videoId = video.youtube_video_id;
+            const title = video.title;
+            // Si no provees una miniatura en la tabla, la construimos al estilo YouTube
+            const thumbnailUrl = video.thumbnail_url || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+            
+            // Creamos el objeto que showYouTubePlayer espera
+            const videoPlayerData = encodeURIComponent(JSON.stringify({ 
+                id: { videoId: videoId }, 
+                snippet: { title: title } 
+            }));
+
+            return `
+                <div class="video-card" onclick="App.showYouTubePlayer(JSON.parse(decodeURIComponent('${videoPlayerData}')))">
+                    <img src="${thumbnailUrl}" alt="${title}" loading="lazy">
+                    <div class="card-info"><h5>${title}</h5></div>
+                </div>`;
         }).join('');
     },
     
@@ -454,6 +494,24 @@ const App = {
             .eq('id', sessionId);
         
         if(error) console.error("Error al actualizar la sesión a EN VIVO:", error);
+    },
+
+    // En /live/js/live.js, dentro del objeto App
+
+    killPlayer() {
+        console.log("KILL SWITCH: Forzando el cierre total del reproductor.");
+        const playerIframe = this.elements.player.querySelector('iframe');
+        if (playerIframe) {
+            // Esto es crucial: le quitamos la fuente al iframe para cortar la conexión.
+            playerIframe.src = 'about:blank';
+        }
+        // Vaciamos el contenedor para eliminar el elemento del DOM.
+        this.elements.player.innerHTML = '';
+        
+        // Mostramos inmediatamente el mensaje de que la transmisión ha finalizado.
+        this.showEndedMessage("La transmisión ha sido finalizada por el anfitrión.");
+        this.elements.chatContainer.innerHTML = '<p class="placeholder-text">Chat no disponible.</p>';
+        this.currentSessionId = null; // Limpiamos el ID de la sesión activa
     },
 
     showEndedMessage(message = "No hay transmisiones en este momento.") {
