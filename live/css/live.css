@@ -464,3 +464,50 @@ body {
 .event-modal-schedule { font-weight: 500; color: #333; }
 .event-modal-footer { padding: 1.5rem; border-top: 1px solid #eee; text-align: right; }
 .btn-primary { /* Asegúrate que tienes estilos para este botón */ }
+
+/* /live/css/live.css */
+
+/* --- MEJORAS AL MODAL DE EVENTOS --- */
+.event-modal-content h3 {
+    color: #1c1e21; /* Color de texto primario */
+    font-size: 1.75rem;
+    margin-bottom: 1rem;
+}
+
+.event-modal-schedule {
+    font-weight: 600; /* Hacemos el horario más prominente */
+    color: #333;
+    margin-bottom: 1rem;
+}
+
+.event-modal-organizer strong {
+    color: #1c1e21; /* Color de texto primario */
+}
+
+.event-modal-organizer p {
+    color: #65676b; /* Color de texto secundario */
+}
+
+.event-modal-content > p {
+    color: #333; /* Color para la descripción */
+    line-height: 1.6;
+}
+
+/* --- MEJORAS A LAS TARJETAS DE LA AGENDA --- */
+
+/* Estilo para el contenedor de la miniatura cuando NO hay imagen */
+.event-card-thumbnail-placeholder {
+    background-color: #f0f2f5; /* Un gris más suave */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #a0a0a0;
+}
+
+/* Icono de imagen para el placeholder */
+.event-card-thumbnail-placeholder::before {
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    content: "\f03e"; /* Código del icono de imagen de Font Awesome */
+    font-size: 2rem;
+}
