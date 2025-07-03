@@ -8,6 +8,12 @@
  */
 document.addEventListener('mainReady', () => {
 
+    // --- INICIALIZACIÓN DE SUPABASE ---
+    const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // ------------------------------------
+
     console.log("video-player.js: Listo y esperando la señal de 'launch-stories'.");
 
     const ShortsPlayerManager = {

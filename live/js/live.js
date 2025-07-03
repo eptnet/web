@@ -296,9 +296,7 @@ const App = {
         }
     },
 
-    // En /live/js/live.js, dentro del objeto App
-
-    // En /live/js/live.js, reemplaza esta función
+    // En /live/js/live.js
 
     listenForRealtimeChanges() {
         console.log("Activando escucha en tiempo real para las sesiones...");
@@ -311,15 +309,10 @@ const App = {
                 (payload) => {
                     console.log('Cambio detectado:', payload.new);
                     
-                    // Comprobamos si el cambio es en la sesión que estamos viendo AHORA
-                    // Y si el nuevo estado es FINALIZADO
+                    // Si el cambio es en la sesión que estamos viendo y su estado es FINALIZADO
                     if (payload.new.id === this.currentSessionId && payload.new.status === 'FINALIZADO') {
-                        // Si ambas condiciones se cumplen, activamos el kill switch.
-                        this.killPlayer();
-                    } else {
-                        // Para cualquier otro cambio (ej. un nuevo evento programado), 
-                        // simplemente refrescamos la lógica normal.
-                        this.run();
+                        // Forzamos una recarga completa de la página.
+                        window.location.reload();
                     }
                 }
             )

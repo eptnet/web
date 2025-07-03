@@ -11,23 +11,53 @@ const App = {
     userId: null,
     userProfile: null,
 
+    // En /dashboard.js, dentro del objeto App
+
     async init() {
         const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
         this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        const { data: { session } } = await this.supabase.auth.getSession();
-        if (!session) {
-            alert("Sesión de usuario no encontrada. Serás redirigido para iniciar sesión.");
+        const { data: { session }, error: sessionError } = await this.supabase.auth.getSession();
+        
+        if (sessionError || !session) {
+            alert("Sesión no encontrada. Serás redirigido para iniciar sesión.");
             // window.location.href = '/'; 
             return;
         }
         this.userId = session.user.id;
         
-        const { data } = await this.supabase.from('profiles').select('*').eq('id', this.userId).single();
-        this.userProfile = data;
+        // --- LÓGICA DE CARGA DE PERFIL MEJORADA ---
+        const { data: profileData, error: profileError } = await this.supabase
+            .from('profiles')
+            .select('*') // Traemos toda la información del perfil
+            .eq('id', this.userId)
+            .single();
         
-        Header.init(session.user);
+        if (profileError && profileError.code !== 'PGRST116') {
+            console.error("Error cargando el perfil:", profileError);
+            alert("Hubo un error al cargar tu perfil. Intenta recargar la página.");
+            return;
+        }
+        
+        // Guardamos tanto los datos del perfil de la tabla como los metadatos de autenticación
+        this.userProfile = {
+            ...session.user.user_metadata, // Contiene avatar_url, full_name
+            ...profileData // Contiene display_name, bio, orcid, projects, etc.
+        };
+        
+        // Verificamos que el perfil tenga lo mínimo para operar
+        const hasOrcid = this.userProfile.orcid && this.userProfile.orcid.includes('orcid.org');
+        const hasProjects = this.userProfile.projects && this.userProfile.projects.length > 0;
+
+        if (!hasOrcid || !hasProjects) {
+            alert("Perfil incompleto. Debes registrar tu ORCID y al menos un proyecto en tu página de perfil para poder usar el dashboard.");
+            window.location.href = '/inv/profile.html'; // Redirigimos al perfil para que lo complete
+            return;
+        }
+        
+        // Si todo está en orden, continuamos con la inicialización
+        Header.init(this.userProfile);
         Navigation.init();
     },
 };
@@ -125,6 +155,8 @@ const Studio = {
         this.renderSessions(sessions);
     },
 
+    // En /dashboard.js, dentro del objeto Studio
+
     renderSessions(sessions) {
         const container = document.getElementById('sessions-container');
         if (!container) return;
@@ -132,26 +164,39 @@ const Studio = {
             container.innerHTML = `<div class="studio-launcher"><h3>Aún no has configurado ninguna sala</h3><p>Ve a la sección "Inicio" para crear tu primera sesión.</p></div>`;
             return;
         }
+
+        // Opciones para formatear la fecha y hora de forma legible
+        const dateOptions = { year: 'numeric', month: 'short', day: 'numeric' };
+        const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
+
         container.innerHTML = sessions.map(session => {
-            const publicLiveUrl = 'https://epistecnologia.com/live/live.html';
+            const publicLiveUrl = 'https://epistecnologia.com/live/';
             const sessionData = encodeURIComponent(JSON.stringify(session));
 
-            // Botones condicionales
-            const guestLinkButton = session.platform === 'vdo_ninja'
-                ? `<button class="btn-secondary" onclick="navigator.clipboard.writeText('${session.guest_url}').then(() => alert('¡Enlace de invitado copiado!'))"><i class="fa-solid fa-user-plus"></i> Copiar Link Invitado</button>`
-                : '';
-            
-            const startNowButton = session.platform === 'youtube'
-                ? `<button class="btn-secondary" onclick="Studio.startNow('${session.id}')"><i class="fa-solid fa-play-circle"></i> Iniciar Ahora</button>`
-                : '';
+            const startTime = new Date(session.scheduled_at);
+            const endTime = session.end_at ? new Date(session.end_at) : null;
+
+            // Formateamos las fechas y horas
+            const formattedDate = startTime.toLocaleDateString('es-ES', dateOptions);
+            const formattedStartTime = startTime.toLocaleTimeString('es-ES', timeOptions);
+            const formattedEndTime = endTime ? endTime.toLocaleTimeString('es-ES', timeOptions) : 'N/A';
+
+            const guestLinkButton = session.platform === 'vdo_ninja' ? `<button class="btn-secondary" onclick="navigator.clipboard.writeText('${session.guest_url}').then(() => alert('¡Enlace de invitado copiado!'))"><i class="fa-solid fa-user-plus"></i> Copiar Link Invitado</button>` : '';
+            const startNowButton = session.platform === 'youtube' ? `<button class="btn-secondary" onclick="Studio.startNow('${session.id}')"><i class="fa-solid fa-play-circle"></i> Iniciar Ahora</button>` : '';
 
             return `
             <div class="session-card" id="${session.id}">
-                <div>
-                    <div class="session-card__meta">${session.platform === 'youtube' ? 'YouTube Live' : 'EPT Live'}</div>
+                <div class="session-card__header">
+                    <span class="session-card__meta">${session.platform === 'youtube' ? 'YouTube Live' : 'EPT Live'}</span>
                     <h4>${session.session_title}</h4>
-                    <small>Proyecto: ${session.project_title}</small>
+                    <p class="session-card__project">Proyecto: ${session.project_title}</p>
                 </div>
+                
+                <div class="session-card__schedule">
+                    <p><i class="fa-solid fa-calendar-day"></i> <strong>Fecha:</strong> ${formattedDate}</p>
+                    <p><i class="fa-solid fa-clock"></i> <strong>Horario:</strong> ${formattedStartTime} - ${formattedEndTime}</p>
+                </div>
+
                 <div class="session-card__actions">
                     <button class="btn-primary" onclick="Studio.openSession('${sessionData}')"><i class="fa-solid fa-arrow-right-to-bracket"></i> ${session.platform === 'youtube' ? 'Ver Detalles' : 'Ir a la Sala'}</button>
                     <button class="btn-secondary" onclick="Studio.openModal('${sessionData}')"><i class="fa-solid fa-pencil"></i> Editar</button>
@@ -454,7 +499,7 @@ const Studio = {
         const endTime = session.end_at ? new Date(session.end_at) : null;
         const nextStartTime = nextSession ? new Date(nextSession.scheduled_at) : null;
 
-        this.timers.dashboardCountdown = setInterval(() => {
+        this.timers.dashboardCountdown = setInterval(async () => {
             const now = new Date();
             let message = '';
             countdownDisplay.className = 'mixer-countdown';
@@ -463,53 +508,70 @@ const Studio = {
                 if (!endTime) { message = 'Sin hora de fin programada.'; } 
                 else {
                     const distance = endTime - now;
-                    if (distance < 0) { // --- ESTAMOS EN TIEMPO EXTRA ---
-                        if (!this.warnings.overtime) {
-                            this.playWarningSound();
-                            this.warnings.overtime = true;
+                    let conflictOccurred = false; // Bandera para evitar mostrar dos mensajes a la vez
+
+                    // --- LÓGICA DE CONFLICTO MEJORADA ---
+                    if (nextStartTime && now < nextStartTime) {
+                        const timeToNext = nextStartTime - now;
+                        const forceCloseThreshold = 3 * 60 * 1000; // 3 minutos para el cierre
+                        const warningThreshold = 6 * 60 * 1000;   // 6 minutos para la advertencia
+
+                        if (timeToNext <= forceCloseThreshold) {
+                            // Cierre forzado e inmediato
+                            await this.endLiveStream(session.id); // Usamos await para esperar la finalización
+                            alert("La sesión ha finalizado automáticamente para dar paso al siguiente evento.");
+                            clearInterval(this.timers.dashboardCountdown);
+                            return;
                         }
-
-                        // --- LÓGICA DE CONFLICTO ---
-                        if (nextStartTime && now < nextStartTime) {
-                            const timeToNext = nextStartTime - now;
-                            
-                            if (timeToNext <= 3 * 60 * 1000) {
-                                // Cierre forzado
-                                this.endLiveStream(session.id);
-                                alert("La sesión ha finalizado automáticamente para dar paso al siguiente evento.");
-                                clearInterval(this.timers.dashboardCountdown);
-                                return;
+                        
+                        if (timeToNext <= warningThreshold) {
+                            conflictOccurred = true; // Marcamos que hay un conflicto activo
+                            if (!this.warnings.conflict_6m) {
+                                this.playWarningSound();
+                                this.warnings.conflict_6m = true;
                             }
                             
-                            if (timeToNext <= 6 * 60 * 1000) {
-                                if (!this.warnings.conflict_6m) {
-                                    this.playWarningSound();
-                                    this.warnings.conflict_6m = true;
-                                }
-                                const mins = Math.ceil(timeToNext / (60 * 1000));
-                                message = `¡ATENCIÓN! Siguiente evento en ${mins} min. Esta sesión se cerrará pronto.`;
-                                countdownDisplay.classList.add('is-danger', 'is-blinking'); // Añadimos clase para parpadeo
-                            }
+                            // --- NUEVO CONTADOR DE CIERRE FORZOSO ---
+                            const timeUntilShutdown = timeToNext - forceCloseThreshold;
+                            const minutes = Math.floor(timeUntilShutdown / 60000);
+                            const seconds = Math.floor((timeUntilShutdown % 60000) / 1000);
+                            message = `¡LA SESIÓN SE CERRARA EN ${minutes}:${String(seconds).padStart(2, '0')}!`;
+                            countdownDisplay.classList.add('is-danger', 'is-blinking');
+                        }
+                    }
 
-                        } else { // Si no hay conflicto, solo muestra tiempo excedido
+                    // Si no hay un conflicto activo, mostramos el estado normal
+                    if (!conflictOccurred) {
+                        if (distance < 0) {
+                            if (!this.warnings.overtime) {
+                                this.playWarningSound();
+                                this.warnings.overtime = true;
+                            }
                             const overTime = now - endTime;
                             const minutes = Math.floor((overTime % (1000 * 60 * 60)) / (1000 * 60));
                             const seconds = Math.floor((overTime % (1000 * 60)) / 1000);
                             message = `Tiempo excedido: ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
                             countdownDisplay.classList.add('is-danger');
+                        } else {
+                            const hours = Math.floor(distance / (1000 * 60 * 60));
+                            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                            message = `Tiempo restante: ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                            if (distance < 5 * 60 * 1000) countdownDisplay.classList.add('is-warning');
                         }
-
-                    } else { // --- AÚN QUEDA TIEMPO ---
-                        const hours = Math.floor(distance / (1000 * 60 * 60));
-                        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-                        message = `Tiempo restante: ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                        if (distance < 5 * 60 * 1000) countdownDisplay.classList.add('is-warning');
                     }
                 }
             } else if (session.status === 'PROGRAMADO' && startTime > now) {
-                // ... (la lógica de cuenta regresiva para iniciar se mantiene igual)
+                // (La lógica de cuenta regresiva para iniciar se mantiene igual)
+                const distance = startTime - now;
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                message = `Inicia en: ${days > 0 ? days + 'd ' : ''}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                countdownDisplay.classList.add('is-info');
             }
+
             countdownDisplay.textContent = message;
         }, 1000);
     },
