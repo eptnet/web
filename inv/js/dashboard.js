@@ -160,16 +160,34 @@ const Projects = {
     }
 };
 
-// STUDIO
-const Studio = {
-    timers: { dashboardCountdown: null },
+    // STUDIO
+    const Studio = {
+        timers: { dashboardCountdown: null },
 
-    async fetchSessions() {
+        async fetchSessions() {
         const container = document.getElementById('sessions-container');
         if (!container) return;
         container.innerHTML = `<p>Cargando tus salas...</p>`;
-        const { data: sessions, error } = await App.supabase.from('sessions').select('*').eq('user_id', App.userId).order('created_at', { ascending: false });
-        if (error) { console.error('Error cargando las sesiones:', error); container.innerHTML = `<p>Error al cargar tus salas.</p>`; return; }
+
+        // --- LÍNEAS DE DEPURACIÓN ---
+        console.log("Buscando sesiones para el User ID:", App.userId);
+        // -----------------------------
+
+        const { data: sessions, error } = await App.supabase
+            .from('sessions')
+            .select('*')
+            .eq('user_id', App.userId) // Filtramos por el ID del usuario logueado
+            .order('created_at', { ascending: false });
+
+        // --- LÍNEAS DE DEPURACIÓN ---
+        console.log("Supabase devolvió estas sesiones:", sessions);
+        // -----------------------------
+
+        if (error) { 
+            console.error('Error cargando las sesiones:', error); 
+            container.innerHTML = `<p>Error al cargar tus salas.</p>`; 
+            return; 
+        }
         this.renderSessions(sessions);
     },
 
@@ -177,22 +195,38 @@ const Studio = {
 
     // En /dashboard/js, dentro del objeto Studio
     renderSessions(sessions) {
-        // ... (la lógica inicial de la función se mantiene) ...
+        // La línea que faltaba está aquí.
+        const container = document.getElementById('sessions-container');
+        if (!container) return;
+
+        if (!sessions || sessions.length === 0) {
+            container.innerHTML = `<div class="studio-launcher"><h3>Aún no has configurado ninguna sala</h3><p>Ve a la sección "Inicio" para crear tu primera sesión.</p></div>`;
+            return;
+        }
+
         const dateOptions = { year: 'numeric', month: 'short', day: 'numeric' };
         const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
 
         container.innerHTML = sessions.map(session => {
-            // ... (lógica de sessionData, etc. se mantiene) ...
+            const publicLiveUrl = 'https://epistecnologia.com/live/';
+            const sessionData = encodeURIComponent(JSON.stringify(session));
             const startTime = new Date(session.scheduled_at);
-            const endTime = session.end_at ? new Date(session.end_at) : null; // Obtenemos la hora de fin
-
+            const endTime = session.end_at ? new Date(session.end_at) : null;
             const formattedDate = startTime.toLocaleDateString('es-ES', dateOptions);
             const formattedStartTime = startTime.toLocaleTimeString('es-ES', timeOptions);
-            // Formateamos la hora de fin si existe
             const formattedEndTime = endTime ? endTime.toLocaleTimeString('es-ES', timeOptions) : 'N/A';
-
             let platformIdField = '';
-            // ... (lógica de platformIdField se mantiene) ...
+
+            if ((session.platform === 'youtube' || session.platform === 'substack') && !session.platform_id) {
+                platformIdField = `
+                    <div class="platform-id-adder">
+                        <label>Añade el ID de ${session.platform === 'youtube' ? 'YouTube' : 'Substack'}:</label>
+                        <div class="platform-id-input-group">
+                            <input type="text" id="id-input-${session.id}" placeholder="Pega el ID aquí...">
+                            <button class="btn-secondary" onclick="Studio.savePlatformId('${session.id}')">Guardar</button>
+                        </div>
+                    </div>`;
+            }
 
             return `
             <div class="session-card" id="${session.id}">
@@ -201,29 +235,32 @@ const Studio = {
                     <h4>${session.session_title}</h4>
                     <p class="session-card__project">Proyecto: ${session.project_title}</p>
                 </div>
-                
                 <div class="session-card__schedule">
                     <p><i class="fa-solid fa-calendar-day"></i> <strong>Fecha:</strong> ${formattedDate}</p>
                     <p><i class="fa-solid fa-clock"></i> <strong>Horario:</strong> ${formattedStartTime} - ${formattedEndTime}</p>
                 </div>
-
-                ${platformIdField} 
-
+                ${platformIdField}
                 <div class="session-card__actions">
-                    </div>
+                    <button class="btn-primary" onclick="Studio.openSession('${sessionData}')"><i class="fa-solid fa-arrow-right-to-bracket"></i> Ir a la Sala de Control</button>
+                    <button class="btn-secondary" onclick="Studio.openModal('${sessionData}')"><i class="fa-solid fa-pencil"></i> Editar</button>
+                    <button class="btn-secondary" onclick="navigator.clipboard.writeText('${publicLiveUrl}').then(() => alert('¡Enlace de página pública copiado!'))"><i class="fa-solid fa-share-nodes"></i> Compartir</button>
+                    <button class="btn-secondary" style="margin-left: auto; --color-accent: #e02424;" onclick="Studio.deleteSession('${session.id}')"><i class="fa-solid fa-trash"></i></button>
+                </div>
             </div>`;
         }).join('');
     },
 
     // Nueva función para obtener TODOS los eventos programados
+    // En /dashboard/js, dentro del objeto Studio
     async fetchAllPublicSessions() {
         const container = document.getElementById('global-schedule-container');
         if (!container) return;
         container.innerHTML = `<p>Cargando agenda global...</p>`;
 
+        // Corregimos la consulta para que sea explícita y evitar el error 400
         const { data: sessions, error } = await App.supabase
             .from('sessions')
-            .select('*, profiles(display_name)') // Traemos el nombre del organizador
+            .select('*, profiles(display_name)') // Consulta corregida
             .in('status', ['PROGRAMADO', 'EN VIVO'])
             .order('scheduled_at', { ascending: true });
             
