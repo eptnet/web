@@ -19,11 +19,18 @@ const App = {
 
         this.cacheDOMElements();
         this.addEventListeners();
+        
+        // Ejecutamos la lógica una vez al cargar la página
         this.run();
+        
+        // Activamos la escucha en tiempo real, que se encargará de todas las actualizaciones futuras
         this.listenForRealtimeChanges();
 
-        if (this.timers.mainLoop) clearInterval(this.timers.mainLoop);
-        this.timers.mainLoop = setInterval(() => this.run(), 120000);
+        // Eliminamos el setInterval por completo
+        if (this.timers.mainLoop) {
+            clearInterval(this.timers.mainLoop);
+            this.timers.mainLoop = null;
+        }
     },
 
     cacheDOMElements() {
@@ -187,15 +194,44 @@ const App = {
     },
 
     async handleScheduledSession(session) {
-        if (session.platform === 'youtube') {
-            const isStillLive = await this.isYouTubeVideoLive(session.platform_id);
-            if (isStillLive) this.handleYouTubeSession(session);
-            else this.handleOnDemandContent();
-        } else if (session.platform === 'vdo_ninja') {
-            const now = new Date();
-            if (session.end_at && now > new Date(session.end_at)) this.handleOnDemandContent();
-            else this.handleVDONinjaSession(session);
+        // NUEVA LÓGICA DE MANEJO
+        // Si la sesión está EN VIVO, la mostramos.
+        if (session.status === 'EN VIVO') {
+            if (session.platform === 'youtube') this.handleYouTubeSession(session);
+            else if (session.platform === 'vdo_ninja') this.handleVDONinjaSession(session);
+            else if (session.platform === 'substack') this.handleSubstackSession(session);
+        } 
+        // Si está PROGRAMADO y en horario, mostramos la sala de espera.
+        else if (session.status === 'PROGRAMADO') {
+            this.showWaitingForOrganizer(session);
         }
+    },
+
+    showWaitingForOrganizer(session) {
+        if (this.currentSessionId === session.id && this.timers.countdown) return; // Ya hay un contador
+        
+        this.currentSessionId = session.id;
+        this.elements.overlay.style.display = 'flex';
+        this.elements.endedMessage.style.display = 'none';
+        this.elements.countdownTimer.style.display = 'block';
+        this.elements.player.innerHTML = '';
+        
+        this.elements.countdownTitle.innerHTML = `Iniciamos en breve.<br>Esperando al organizador...`;
+
+        // Cuenta regresiva de 5 minutos
+        let duration = 5 * 60; 
+        if (this.timers.countdown) clearInterval(this.timers.countdown);
+
+        this.timers.countdown = setInterval(() => {
+            const minutes = Math.floor(duration / 60);
+            const seconds = duration % 60;
+            this.elements.countdownClock.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            
+            if (--duration < 0) {
+                clearInterval(this.timers.countdown);
+                this.handleOnDemandContent(); // Si se acaba el tiempo, muestra on-demand
+            }
+        }, 1000);
     },
 
     handleVDONinjaSession(session) {
@@ -228,6 +264,42 @@ const App = {
         }
     },
 
+    handleSubstackSession(session) {
+        this.currentSessionId = session.id;
+        this.renderResearcherInfo(session.profiles);
+        this.elements.liveTitle.textContent = session.session_title;
+        this.elements.liveProject.textContent = `Proyecto: ${session.project_title}`;
+
+        if (this.timers.countdown) clearInterval(this.timers.countdown);
+        this.elements.overlay.style.display = 'none';
+
+        // --- LÓGICA PARA MOSTRAR EL BOTÓN DE SUBSTACK ---
+        const substackUrl = `https://open.substack.com/live-stream/${session.platform_id}`;
+        this.elements.player.innerHTML = `
+            <div class="external-live-placeholder">
+                <h3>Esta transmisión es en Substack</h3>
+                <p>Para unirte a la conversación y ver el directo, haz clic en el botón.</p>
+                <a href="${substackUrl}" class="btn-primary" target="_blank" rel="noopener noreferrer">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Ir a la Transmisión
+                </a>
+                <small>Recuerda suscribirte para poder ingresar.</small>
+            </div>
+        `;
+
+        this.elements.chatContainer.innerHTML = '<p class="placeholder-text">El chat está en la página de Substack.</p>';
+    },
+
+    // En /live/js/live.js
+    showCountdown(session) {
+        // --- LÍNEAS DE DEPURACIÓN ---
+        console.log("ShowCountdown: Iniciando cuenta regresiva para la sesión:", session.session_title);
+        console.log("ShowCountdown: Hora de inicio programada:", new Date(session.scheduled_at));
+        // ---------------------------------
+
+        this.elements.overlay.style.display = 'flex';
+        // ... (resto de la función de countdown sin cambios) ...
+    },
+
     handleYouTubeLive(video) {
         this.currentSessionId = video.id.videoId;
         this.elements.researcherInfoContainer.style.display = 'none';
@@ -238,13 +310,30 @@ const App = {
     },
 
     async handleOnDemandContent() {
-        if (this.youtube.isLoaded) return;
-        this.youtube.isLoaded = true;
+        console.log("Cambiando a modo On-Demand. Limpiando interfaz...");
+        
+        // Ocultamos todos los elementos relacionados con un vivo
+        this.elements.overlay.style.display = 'none';
         this.elements.researcherInfoContainer.style.display = 'none';
+        this.elements.projectInfoContainer.style.display = 'none';
+        
+        // Limpiamos el chat (el contenedor de YouTube)
+        this.elements.youtubeChatContainer.innerHTML = '';
+        this.elements.youtubeChatContainer.style.display = 'none';
+
+        // Ocultamos el chat de VDO.Ninja
+        this.elements.vdoNinjaChatContainer.style.display = 'none';
+
+        // Si ya habíamos cargado los videos on-demand antes, no hacemos nada más
+        if (this.youtube.isLoaded) return; 
+
+        this.youtube.isLoaded = true;
         this.elements.youtubeList.innerHTML = '<p class="placeholder-text">Cargando...</p>';
         this.elements.liveTitle.textContent = "Canal Epistecnología";
         this.elements.liveProject.textContent = "Contenido On-Demand";
+        
         const videos = await this.fetchOnDemandVideosFromSupabase();
+        
         if (videos && videos.length > 0) {
             this.renderOnDemandList(videos);
             this.showYouTubePlayer({ id: { videoId: videos[0].youtube_video_id }, snippet: { title: videos[0].title } });
@@ -272,9 +361,17 @@ const App = {
 
     listenForRealtimeChanges() {
         this.supabase.channel('sessions-channel').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessions' }, payload => {
+            // --- LÍNEAS DE DEPURACIÓN ---
+            console.log("Realtime: Cambio detectado en sesión con ID:", payload.new.id);
+            console.log("Realtime: El ID de la sesión actual es:", this.currentSessionId);
+            console.log("Realtime: El nuevo estado es:", payload.new.status);
+            // ---------------------------------
+
             if (payload.new.id === this.currentSessionId && payload.new.status === 'FINALIZADO') {
+                console.log("Realtime: ¡Condiciones cumplidas! Refrescando la página...");
                 window.location.reload();
             } else {
+                // No refrescamos la página para otros cambios, solo re-ejecutamos la lógica.
                 this.run();
             }
         }).subscribe();
@@ -353,9 +450,6 @@ const App = {
         }
     },
 
-    showCountdown(session) {
-        // ... (Tu función de showCountdown se mantiene igual)
-    },
     
     async setSessionLive(sessionId) {
         await this.supabase.from('sessions').update({ status: 'EN VIVO' }).eq('id', sessionId);

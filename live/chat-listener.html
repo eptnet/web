@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VDO.Ninja Chat Listener</title>
+    <script>
+        // Esta variable guardará la referencia a la API de VDO.Ninja
+        let ninja; 
+
+        // Escuchamos los mensajes que vienen desde la página principal (live.js)
+        window.addEventListener("message", (event) => {
+            // Solo aceptamos mensajes de nuestro propio dominio por seguridad
+            if (event.origin !== window.location.origin) return;
+
+            // Buscamos un comando para unirnos a una sala
+            if (event.data.command === 'joinRoom') {
+                const roomName = event.data.roomName;
+                if (roomName) {
+                    console.log(`[Listener]: Recibido comando para unirse a la sala: ${roomName}`);
+                    // Construimos la URL de conexión de VDO.Ninja sin video ni audio
+                    const source = `https://vdo.epistecnologia.com/?room=${roomName}&vd=0&ad=0&broadcast`;
+                    
+                    // Si ya hay una conexión, la cerramos antes de crear una nueva
+                    if (ninja) ninja.hangup();
+
+                    // Creamos la conexión a VDO.Ninja
+                    ninja = new VDO.Ninja(source, (error) => {
+                        if(error) {
+                            console.error("[Listener]: Error al conectar ->", error);
+                        } else {
+                            console.log("[Listener]: Conectado a la sala correctamente.");
+                        }
+                    });
+
+                    // Este es el evento clave: escuchamos los mensajes de chat de la sala
+                    ninja.on('chat', (payload) => {
+                        console.log(`[Listener]: Mensaje de chat recibido ->`, payload);
+                        // Cuando llega un mensaje, lo enviamos a la página principal
+                        window.parent.postMessage({
+                            type: 'vdoNinjaChatMessage',
+                            name: payload.name || 'Anónimo',
+                            message: payload.message
+                        }, window.location.origin);
+                    });
+                }
+            } else if (event.data.command === 'sendMessage') {
+                // Si la página principal nos pide enviar un mensaje, lo hacemos
+                if (ninja) {
+                    ninja.sendChat(event.data.message);
+                }
+            }
+        });
+    </script>
+</head>
+<body>
+    <script src="https://vdo.ninja/api"></script>
+</body>
+</html>

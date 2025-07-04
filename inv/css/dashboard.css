@@ -605,3 +605,131 @@ body {
 }
 
 @keyframes blink { 50% { opacity: 0.5; } } .is-blinking { animation: blink 1s linear infinite; }
+
+/* --- Estilos para el Selector de Plataforma Visual --- */
+.platform-selector {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+.platform-option {
+    flex: 1;
+    padding: 1rem;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    text-align: center;
+    cursor: pointer; /* <-- La manito del cursor */
+    transition: all 0.2s ease;
+}
+.platform-option:hover {
+    border-color: #aaa;
+    background-color: #f7f7f7;
+}
+.platform-option.selected {
+    border-color: var(--color-accent);
+    background-color: #fff5f5;
+    box-shadow: 0 0 0 2px var(--color-accent);
+}
+.platform-option i {
+    font-size: 1.5rem;
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--color-accent);
+}
+.platform-option span {
+    font-weight: 600;
+}
+
+/* --- Estilos para el Campo de Descripción --- */
+textarea[name="description"] {
+    min-height: 80px; /* Le damos más altura */
+    resize: vertical; /* Permitimos que el usuario cambie la altura */
+}
+
+/* --- Estilos para Añadir ID en las Tarjetas de Sesión --- */
+.platform-id-adder {
+    border-top: 1px solid #eee;
+    padding-top: 1rem;
+    margin-top: 1rem;
+}
+.platform-id-adder label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+.platform-id-input-group {
+    display: flex;
+    gap: 0.5rem;
+}
+.platform-id-input-group input {
+    flex-grow: 1;
+    border-radius: 6px;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+}
+.platform-id-input-group button {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+/* --- Arreglo para el Scroll del Modal del Formulario --- */
+
+/* Hace que el fondo oscuro (overlay) sea scrollable si el modal es muy alto */
+#studio-modal.modal-overlay {
+    overflow-y: auto;
+    /* Añadimos padding para que el modal no se pegue a los bordes de la pantalla */
+    padding: 3rem 1rem;
+}
+
+/* Limita la altura del modal y lo prepara para el scroll interno */
+#studio-modal .modal {
+    max-height: 90vh; /* Altura máxima del 90% de la pantalla */
+    display: flex;
+    flex-direction: column;
+}
+
+/* ¡Esta es la parte clave! Añade el scroll al contenido principal del modal */
+#studio-modal .modal-content {
+    overflow-y: auto; 
+    padding-right: 1rem; /* Pequeño espacio para que el scroll no se pegue al texto */
+}
+
+/* Estilos para las Pestañas del Estudio */
+.studio-tabs {
+    display: flex;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 2rem;
+}
+.studio-tab-link {
+    padding: 0.75rem 1.5rem;
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #65676b;
+    border-bottom: 3px solid transparent;
+}
+.studio-tab-link.active {
+    color: var(--color-accent);
+    border-bottom-color: var(--color-accent);
+}
+
+/* Estilos para las Tarjetas de la Agenda Global */
+.sessions-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+.global-event-card {
+    background-color: #f0f2f5;
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 4px solid #1877f2; /* Azul para eventos programados */
+}
+.global-event-card.is-live {
+    border-left-color: #28a745; /* Verde para eventos en vivo */
+}
+.global-event-card h5 { margin: 0 0 1rem 0; }
+.global-event-card p { margin: 0.5rem 0; color: #65676b; }
+.global-event-card i { margin-right: 0.5rem; color: #888; }

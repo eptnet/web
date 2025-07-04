@@ -76,12 +76,24 @@
     </template>
     
     <template id="template-studio-section">
-        <h2><i class="fa-solid fa-podcast"></i> Estudio de Grabación y Transmisión</h2>
-        <p>Aquí encontrarás las salas que has configurado. Desde aquí puedes iniciarlas y gestionar los enlaces.</p>
-        <div id="sessions-container" class="sessions-grid">
-            <div class="studio-launcher">
-                <h3>Aún no has configurado ninguna sala</h3>
-                <p>Ve a la sección "Inicio" para crear tu primera sesión de grabación o transmisión.</p>
+        <div class="page-header">
+            <h2><i class="fas fa-satellite-dish"></i> Estudio de Grabación</h2>
+            <p>Desde aquí puedes gestionar tus salas de transmisión y ver la agenda completa de la plataforma.</p>
+        </div>
+
+        <div class="studio-tabs">
+            <button class="studio-tab-link active" data-tab="my-sessions-tab">Mis Sesiones</button>
+            <button class="studio-tab-link" data-tab="global-schedule-tab">Agenda Global</button>
+        </div>
+
+        <div class="studio-tab-content-wrapper">
+            <div id="my-sessions-tab" class="studio-tab-content active">
+                <div id="sessions-container" class="sessions-grid">
+                    </div>
+            </div>
+            <div id="global-schedule-tab" class="studio-tab-content">
+                <div id="global-schedule-container" class="sessions-grid">
+                    </div>
             </div>
         </div>
     </template>

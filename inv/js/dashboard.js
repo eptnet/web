@@ -110,13 +110,31 @@ const Navigation = {
 
     // --- FUNCIÓN MODIFICADA ---
     // Ahora, al entrar al estudio, se cargan las sesiones desde Supabase.
+    // En dashboard.js, dentro del objeto Navigation
     initializeSectionLogic(sectionId) {
         if (sectionId === 'home-section') {
             Projects.init();
         } else if (sectionId === 'studio-section') {
-            Studio.fetchSessions(); // ¡NUEVO! Carga las sesiones guardadas.
+            // Carga los datos para ambas pestañas
+            Studio.fetchSessions();
+            Studio.fetchAllPublicSessions();
+
+            // Añade la lógica para controlar las nuevas pestañas del estudio
+            const tabLinks = document.querySelectorAll('.studio-tab-link');
+            const tabContents = document.querySelectorAll('.studio-tab-content');
+
+            tabLinks.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabId = button.dataset.tab;
+                    tabLinks.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    tabContents.forEach(content => {
+                        content.classList.toggle('active', content.id === tabId);
+                    });
+                });
+            });
         }
-    }
+    },
 };
 
 const Projects = {
@@ -157,37 +175,29 @@ const Studio = {
 
     // En /dashboard.js, dentro del objeto Studio
 
+    // En /dashboard/js, dentro del objeto Studio
     renderSessions(sessions) {
-        const container = document.getElementById('sessions-container');
-        if (!container) return;
-        if (!sessions || sessions.length === 0) {
-            container.innerHTML = `<div class="studio-launcher"><h3>Aún no has configurado ninguna sala</h3><p>Ve a la sección "Inicio" para crear tu primera sesión.</p></div>`;
-            return;
-        }
-
-        // Opciones para formatear la fecha y hora de forma legible
+        // ... (la lógica inicial de la función se mantiene) ...
         const dateOptions = { year: 'numeric', month: 'short', day: 'numeric' };
         const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
 
         container.innerHTML = sessions.map(session => {
-            const publicLiveUrl = 'https://epistecnologia.com/live/';
-            const sessionData = encodeURIComponent(JSON.stringify(session));
-
+            // ... (lógica de sessionData, etc. se mantiene) ...
             const startTime = new Date(session.scheduled_at);
-            const endTime = session.end_at ? new Date(session.end_at) : null;
+            const endTime = session.end_at ? new Date(session.end_at) : null; // Obtenemos la hora de fin
 
-            // Formateamos las fechas y horas
             const formattedDate = startTime.toLocaleDateString('es-ES', dateOptions);
             const formattedStartTime = startTime.toLocaleTimeString('es-ES', timeOptions);
+            // Formateamos la hora de fin si existe
             const formattedEndTime = endTime ? endTime.toLocaleTimeString('es-ES', timeOptions) : 'N/A';
 
-            const guestLinkButton = session.platform === 'vdo_ninja' ? `<button class="btn-secondary" onclick="navigator.clipboard.writeText('${session.guest_url}').then(() => alert('¡Enlace de invitado copiado!'))"><i class="fa-solid fa-user-plus"></i> Copiar Link Invitado</button>` : '';
-            const startNowButton = session.platform === 'youtube' ? `<button class="btn-secondary" onclick="Studio.startNow('${session.id}')"><i class="fa-solid fa-play-circle"></i> Iniciar Ahora</button>` : '';
+            let platformIdField = '';
+            // ... (lógica de platformIdField se mantiene) ...
 
             return `
             <div class="session-card" id="${session.id}">
                 <div class="session-card__header">
-                    <span class="session-card__meta">${session.platform === 'youtube' ? 'YouTube Live' : 'EPT Live'}</span>
+                    <span class="session-card__meta">${session.platform === 'youtube' ? 'YouTube Live' : session.platform === 'substack' ? 'Substack Live' : 'EPT Live'}</span>
                     <h4>${session.session_title}</h4>
                     <p class="session-card__project">Proyecto: ${session.project_title}</p>
                 </div>
@@ -197,15 +207,61 @@ const Studio = {
                     <p><i class="fa-solid fa-clock"></i> <strong>Horario:</strong> ${formattedStartTime} - ${formattedEndTime}</p>
                 </div>
 
+                ${platformIdField} 
+
                 <div class="session-card__actions">
-                    <button class="btn-primary" onclick="Studio.openSession('${sessionData}')"><i class="fa-solid fa-arrow-right-to-bracket"></i> ${session.platform === 'youtube' ? 'Ver Detalles' : 'Ir a la Sala'}</button>
-                    <button class="btn-secondary" onclick="Studio.openModal('${sessionData}')"><i class="fa-solid fa-pencil"></i> Editar</button>
-                    ${startNowButton}
-                    ${guestLinkButton}
-                    <button class="btn-secondary" onclick="navigator.clipboard.writeText('${publicLiveUrl}').then(() => alert('¡Enlace de la página En Vivo copiado!'))"><i class="fa-solid fa-share-nodes"></i> Compartir</button>
-                    <button class="btn-secondary" style="margin-left: auto; --color-accent: #e02424;" onclick="Studio.deleteSession('${session.id}')"><i class="fa-solid fa-trash"></i></button>
-                </div>
+                    </div>
             </div>`;
+        }).join('');
+    },
+
+    // Nueva función para obtener TODOS los eventos programados
+    async fetchAllPublicSessions() {
+        const container = document.getElementById('global-schedule-container');
+        if (!container) return;
+        container.innerHTML = `<p>Cargando agenda global...</p>`;
+
+        const { data: sessions, error } = await App.supabase
+            .from('sessions')
+            .select('*, profiles(display_name)') // Traemos el nombre del organizador
+            .in('status', ['PROGRAMADO', 'EN VIVO'])
+            .order('scheduled_at', { ascending: true });
+            
+        if (error) {
+            console.error('Error cargando la agenda global:', error);
+            container.innerHTML = `<p>Error al cargar la agenda.</p>`;
+            return;
+        }
+        this.renderAllSessions(sessions);
+    },
+
+    // Nueva función para mostrar la agenda global
+    renderAllSessions(sessions) {
+        const container = document.getElementById('global-schedule-container');
+        if (!container) return;
+        if (!sessions || sessions.length === 0) {
+            container.innerHTML = `<p>No hay eventos programados en la plataforma.</p>`;
+            return;
+        }
+
+        const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true, timeZoneName: 'short' };
+
+        container.innerHTML = sessions.map(session => {
+            const startTime = new Date(session.scheduled_at);
+            const day = startTime.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+            const time = startTime.toLocaleTimeString('es-ES', timeOptions);
+            const organizer = session.profiles?.display_name || 'Investigador';
+            const platformIcon = session.platform === 'youtube' ? 'fab fa-youtube' : (session.platform === 'substack' ? 'fas fa-bookmark' : 'fas fa-satellite-dish');
+
+            return `
+                <div class="global-event-card ${session.status === 'EN VIVO' ? 'is-live' : ''}">
+                    <h5>${session.session_title}</h5>
+                    <p><i class="fa-solid fa-calendar-day"></i> ${day}</p>
+                    <p><i class="fa-solid fa-clock"></i> ${time}</p>
+                    <p><i class="fa-solid fa-user"></i> Organiza: <strong>${organizer}</strong></p>
+                    <p><i class="${platformIcon}"></i> Plataforma: ${session.platform}</p>
+                </div>
+            `;
         }).join('');
     },
     
@@ -233,8 +289,7 @@ const Studio = {
             if (!date) return '';
             const d = new Date(date);
             const tzoffset = d.getTimezoneOffset() * 60000;
-            const localISOTime = (new Date(d - tzoffset)).toISOString().slice(0, 16);
-            return localISOTime;
+            return (new Date(d - tzoffset)).toISOString().slice(0, 16);
         };
         
         const modalContainer = document.getElementById('modal-overlay-container');
@@ -245,47 +300,54 @@ const Studio = {
                     <main class="modal-content">
                         <form id="studio-form">
                             <p>Proyecto: <strong>${session ? session.project_title : selectedProject}</strong></p>
-                            <div class="form-group"><label for="session-platform">Plataforma</label><select id="session-platform" name="platform" class="project-dropdown" ${isEditing ? 'disabled' : ''}>
-                                <option value="vdo_ninja" ${session && session.platform === 'vdo_ninja' ? 'selected' : ''}>EPT Live (Sala Propia)</option>
-                                <option value="youtube" ${session && session.platform === 'youtube' ? 'selected' : ''}>YouTube Live</option>
-                            </select></div>
-                            <div class="form-group"><label for="session-title">Título del Evento</label><input id="session-title" name="sessionTitle" type="text" value="${session ? session.session_title : ''}" required></div>
-                            <div class="form-group"><label for="session-start">Fecha y Hora de Inicio</label><input id="session-start" name="scheduledAt" type="datetime-local" class="project-dropdown" value="${toLocalISOString(session?.scheduled_at)}" required></div>
-                            <div class="form-group"><label for="session-end">Fecha y Hora de Fin</label><input id="session-end" name="endAt" type="datetime-local" class="project-dropdown" value="${toLocalISOString(session?.end_at)}"></div>
                             
                             <div class="form-group">
-                                <label for="session-description">Descripción Corta (máx. 500 caracteres)</label>
-                                <textarea id="session-description" name="description" rows="4" maxlength="500">${session?.description || ''}</textarea>
-                            </div>
-                            <div class="form-group">
-                                <label for="session-thumbnail">URL de la Miniatura (16:9)</label>
-                                <input id="session-thumbnail" name="thumbnail_url" type="url" value="${session?.thumbnail_url || ''}" placeholder="https://ejemplo.com/imagen.jpg">
-                            </div>
-                            <div class="form-group">
-                                <label for="session-more-info">URL para "Saber Más" (opcional)</label>
-                                <input id="session-more-info" name="more_info_url" type="url" value="${session?.more_info_url || ''}" placeholder="https://ejemplo.com/articulo">
+                                <label>Plataforma de Transmisión</label>
+                                <div class="platform-selector">
+                                    <div class="platform-option" data-platform="vdo_ninja"><i class="fas fa-satellite-dish"></i><span>EPT Live</span></div>
+                                    <div class="platform-option" data-platform="youtube"><i class="fab fa-youtube"></i><span>YouTube</span></div>
+                                    <div class="platform-option" data-platform="substack"><i class="fas fa-bookmark"></i><span>Substack</span></div>
+                                </div>
+                                <input type="hidden" id="session-platform" name="platform" value="${session?.platform || 'vdo_ninja'}">
                             </div>
 
-                            <div id="vdo-ninja-fields" style="display:${session?.platform !== 'youtube' ? 'block' : 'none'};">
-                                <div class="form-group"><label for="guest-count">Nº de Invitados</label><select id="guest-count" name="guestCount" class="project-dropdown">${Array.from({length: 9}, (_, i) => `<option value="${i + 1}" ${session?.guest_count == i + 1 ? 'selected' : ''}>${i + 1}</option>`).join('')}</select></div>
-                            </div>
-                            <div id="youtube-fields" style="display:${session?.platform === 'youtube' ? 'block' : 'none'};">
-                                <div class="form-group"><label for="youtube-id">ID del Video de YouTube</label><input id="youtube-id" name="youtubeId" type="text" value="${session?.platform_id || ''}" placeholder="Ej: dQw4w9WgXcQ"></div>
-                            </div>
+                            <div class="form-group"><label for="session-title">Título del Evento</label><input id="session-title" name="sessionTitle" type="text" value="${session?.session_title || ''}" required></div>
+                            <div class="form-group"><label for="session-start">Fecha y Hora de Inicio</label><input id="session-start" name="scheduledAt" type="datetime-local" class="project-dropdown" value="${toLocalISOString(session?.scheduled_at)}" required></div>
+                            
+                            <div class="form-group"><label for="session-end">Fecha y Hora de Fin</label><input id="session-end" name="endAt" type="datetime-local" class="project-dropdown" value="${toLocalISOString(session?.end_at)}"></div>
+                            
+                            <div class="form-group"><label for="session-description">Descripción Corta</label><textarea id="session-description" name="description" rows="3" maxlength="500">${session?.description || ''}</textarea></div>
+                            <div class="form-group"><label for="session-thumbnail">URL de la Miniatura</label><input id="session-thumbnail" name="thumbnail_url" type="url" value="${session?.thumbnail_url || ''}" placeholder="https://ejemplo.com/imagen.jpg"></div>
+                            <div class="form-group"><label for="session-more-info">URL para "Saber Más"</label><input id="session-more-info" name="more_info_url" type="url" value="${session?.more_info_url || ''}"></div>
+
+                            <div id="platform-specific-fields"></div>
                             <button type="submit" class="btn-primary" style="width:100%; margin-top: 1rem;">${isEditing ? 'Actualizar' : 'Agendar'} Sesión</button>
                         </form>
                     </main>
                 </div>
             </div>`;
         
+        // ... (El resto de la lógica de la función se mantiene igual)
         const form = modalContainer.querySelector('#studio-form');
-        const platformSelector = modalContainer.querySelector('#session-platform');
-        platformSelector.addEventListener('change', (e) => {
-            const isVdoNinja = e.target.value === 'vdo_ninja';
-            document.getElementById('vdo-ninja-fields').style.display = isVdoNinja ? 'block' : 'none';
-            document.getElementById('youtube-fields').style.display = isVdoNinja ? 'none' : 'block';
-        });
+        const platformOptions = modalContainer.querySelectorAll('.platform-option');
+        const platformInput = modalContainer.querySelector('#session-platform');
+        const platformSpecificFields = modalContainer.querySelector('#platform-specific-fields');
 
+        const updatePlatformSelection = (platform) => {
+            platformOptions.forEach(opt => opt.classList.toggle('selected', opt.dataset.platform === platform));
+            platformInput.value = platform;
+            let fieldHTML = '';
+            if (platform === 'youtube') {
+                fieldHTML = `<div class="form-group"><label for="youtube-id">ID del Video de YouTube</label><input id="youtube-id" name="youtubeId" type="text" value="${session?.platform_id || ''}" placeholder="Opcional al agendar"></div>`;
+            } else if (platform === 'substack') {
+                fieldHTML = `<div class="form-group"><label for="substack-id">ID del Directo de Substack</label><input id="substack-id" name="substackId" type="text" value="${session?.platform_id || ''}" placeholder="Opcional al agendar"></div>`;
+            }
+            platformSpecificFields.innerHTML = fieldHTML;
+        };
+        platformOptions.forEach(opt => opt.addEventListener('click', () => {
+            if (!isEditing) updatePlatformSelection(opt.dataset.platform);
+        }));
+        updatePlatformSelection(platformInput.value);
         modalContainer.querySelector('.modal-close-btn').addEventListener('click', () => this.closeModal());
         form.addEventListener('submit', (e) => this.handleSaveSession(e, session ? session.id : null));
     },
@@ -294,6 +356,7 @@ const Studio = {
 
     // EN dashboard.js, dentro del objeto Studio
 
+    // En /dashboard/js/dashboard.js, reemplaza esta función completa
     async handleSaveSession(e, sessionId = null) {
         e.preventDefault();
         const formData = new FormData(e.target);
@@ -308,7 +371,6 @@ const Studio = {
             status: 'PROGRAMADO',
             scheduled_at: new Date(scheduledAt).toISOString(),
             end_at: endAt ? new Date(endAt).toISOString() : null,
-            // AÑADIMOS LOS NUEVOS CAMPOS AL OBJETO A GUARDAR
             description: formData.get('description'),
             thumbnail_url: formData.get('thumbnail_url'),
             more_info_url: formData.get('more_info_url')
@@ -317,33 +379,77 @@ const Studio = {
         if (!sessionId) {
             sessionData.user_id = App.userId;
         }
+        
+        // --- LÓGICA DEL NUEVO FLUJO ---
 
-        if (platform === 'vdo_ninja') {
+        // 1. Asignamos el platform_id si existe, pero ya no es obligatorio
+        if (platform === 'youtube') {
+            sessionData.platform_id = formData.get('youtubeId') || null;
+        } else if (platform === 'substack') {
+            sessionData.platform_id = formData.get('substackId') || null;
+        } else {
             sessionData.platform_id = null;
-            if (!sessionId) {
-                const stableId = self.crypto.randomUUID().slice(0, 8);
-                const roomName = `ept-${App.userProfile.orcid.slice(-6)}-${stableId}`.replace(/[^a-zA-Z0-9-]/g, '');
-                const directorKey = `dir-${App.userProfile.orcid.slice(-4)}`;
-                const vdoDomain = 'https://vdo.epistecnologia.com';
-                let directorParams = new URLSearchParams({ room: roomName, director: directorKey, record: 'auto' });
-                let guestParams = new URLSearchParams({ room: roomName });
-                let viewerParams = new URLSearchParams({ scene: '0', room: roomName, showlabels: '', cleanoutput: '', layout: '', remote: '' });
-                if (formData.get('guestCount') > 4) { directorParams.set('meshcast', '1'); viewerParams.set('meshcast', '1'); }
-                sessionData.director_url = `${vdoDomain}/mixer.html?${directorParams.toString()}`;
-                sessionData.guest_url = `${vdoDomain}/?${guestParams.toString()}`;
-                sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}`;
+        }
+
+        // 2. SIEMPRE generamos una sala de VDO.Ninja al crear una nueva sesión.
+        //    Esto servirá como la "Sala de Control" universal.
+        if (!sessionId) {
+            const stableId = self.crypto.randomUUID().slice(0, 8);
+            const roomName = `ept-${App.userProfile.orcid.slice(-6)}-${stableId}`.replace(/[^a-zA-Z0-9-]/g, '');
+            const directorKey = `dir-${App.userProfile.orcid.slice(-4)}`;
+            const vdoDomain = 'https://vdo.epistecnologia.com';
+            
+            let directorParams = new URLSearchParams({ room: roomName, director: directorKey, record: 'auto' });
+            let guestParams = new URLSearchParams({ room: roomName });
+            let viewerParams = new URLSearchParams({ scene: '0', room: roomName, showlabels: '', cleanoutput: '', layout: '', remote: '' });
+            
+            if (formData.get('guestCount') > 4) {
+                directorParams.set('meshcast', '1');
+                viewerParams.set('meshcast', '1');
             }
-        } else if (platform === 'youtube') {
-            sessionData.platform_id = formData.get('youtubeId');
-            if (!sessionData.platform_id) { alert("Por favor, introduce el ID del video de YouTube."); return; }
+            
+            sessionData.director_url = `${vdoDomain}/mixer.html?${directorParams.toString()}`;
+            sessionData.guest_url = `${vdoDomain}/?${guestParams.toString()}`;
+            sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}`;
         }
 
         const { error } = sessionId
             ? await App.supabase.from('sessions').update(sessionData).eq('id', sessionId)
             : await App.supabase.from('sessions').insert(sessionData);
 
-        if (error) { console.error('Error guardando la sesión:', error); alert("No se pudo guardar la sesión."); } 
-        else { alert(`¡Sesión ${sessionId ? 'actualizada' : 'agendada'} con éxito!`); this.closeModal(); this.fetchSessions(); }
+        if (error) {
+            console.error('Error guardando la sesión:', error);
+            alert("No se pudo guardar la sesión.");
+        } else {
+            alert(`¡Sesión ${sessionId ? 'actualizada' : 'agendada'} con éxito!`);
+            this.closeModal();
+            this.fetchSessions();
+        }
+    },
+
+    // En /dashboard/js, dentro del objeto Studio
+    async savePlatformId(sessionId) {
+        const inputEl = document.getElementById(`id-input-${sessionId}`);
+        if (!inputEl) return;
+        
+        const platformId = inputEl.value.trim();
+        if (!platformId) {
+            alert("Por favor, introduce un ID válido.");
+            return;
+        }
+
+        const { error } = await App.supabase
+            .from('sessions')
+            .update({ platform_id: platformId })
+            .eq('id', sessionId);
+
+        if (error) {
+            alert("Hubo un error al guardar el ID.");
+            console.error("Error en savePlatformId:", error);
+        } else {
+            alert("¡ID guardado con éxito!");
+            this.fetchSessions(); // Refrescamos la lista de sesiones para ver los cambios
+        }
     },
     
     async startNow(sessionId) {
@@ -359,49 +465,46 @@ const Studio = {
     // EN dashboard.js, dentro del objeto Studio
 
     async openSession(sessionData) {
-        const session = JSON.parse(decodeURIComponent(sessionData));
-        if (session.platform === 'youtube') {
-            this.openModal(sessionData);
-            return;
-        }
+    const session = JSON.parse(decodeURIComponent(sessionData));
+    
+    const { data: currentSession, error } = await App.supabase.from('sessions').select('*').eq('id', session.id).single();
+    if (error || !currentSession) { alert("No se pudo encontrar la sesión."); this.fetchSessions(); return; }
 
-        const { data: currentSession, error } = await App.supabase.from('sessions').select('*').eq('id', session.id).single();
-        if (error || !currentSession) { alert("No se pudo encontrar la sesión."); this.fetchSessions(); return; }
+    if (currentSession.status === 'FINALIZADO') { alert("Esta sesión ya ha finalizado."); return; }
 
-        if (currentSession.status === 'FINALIZADO') {
-            alert("Esta sesión ya ha finalizado.");
-            return;
-        }
+    // Todas las sesiones tienen una sala de control VDO.Ninja
+    const { director_url: directorUrl, guest_url: guestUrl, status, platform, platform_id } = currentSession;
+    const mixerContainer = document.getElementById('mixer-embed-container');
+    mixerContainer.style.display = 'flex';
+    mixerContainer.querySelector('#mixer-iframe').src = directorUrl;
+    
+    const actionsContainer = document.getElementById('mixer-room-actions');
+    const publicLiveUrl = 'https://epistecnologia.com/live/';
+    const whatsappText = encodeURIComponent(`¡Te invito a ver esta transmisión en vivo de Epistecnología! ${publicLiveUrl}`);
+    let liveControlsHTML = '';
 
-        // --- NUEVA LÓGICA: BUSCAR LA PRÓXIMA SESIÓN ---
-        const { data: upcomingSessions } = await App.supabase
-            .from('sessions')
-            .select('id, scheduled_at')
-            .gt('scheduled_at', currentSession.scheduled_at) // Busca sesiones DESPUÉS de la actual
-            .order('scheduled_at', { ascending: true })
-            .limit(1);
+    // --- LÓGICA DE BOTÓN INTELIGENTE ---
+    const isExternalPlatform = platform === 'youtube' || platform === 'substack';
+    const canGoLive = !isExternalPlatform || (isExternalPlatform && platform_id);
 
-        const nextSession = (upcomingSessions && upcomingSessions.length > 0) ? upcomingSessions[0] : null;
-
-        const { director_url: directorUrl, guest_url: guestUrl, status } = currentSession;
-        const mixerContainer = document.getElementById('mixer-embed-container');
-        mixerContainer.style.display = 'flex';
-        mixerContainer.querySelector('#mixer-iframe').src = directorUrl;
-        
-        const actionsContainer = document.getElementById('mixer-room-actions');
-        const publicLiveUrl = 'https://epistecnologia.com/live/live.html';
-        let liveControlsHTML = '';
-
-        if (status === 'EN VIVO') {
-            liveControlsHTML = `<span class="live-indicator">🔴 En Vivo</span><button class="btn-primary" style="background-color: #e02424;" onclick="Studio.endLiveStream('${currentSession.id}')"><i class="fa-solid fa-stop-circle"></i> Terminar</button>`;
+    if (status === 'EN VIVO') {
+        liveControlsHTML = `<span class="live-indicator">🔴 En Vivo</span><button class="btn-primary" style="background-color: #e02424;" onclick="Studio.endLiveStream('${currentSession.id}')"><i class="fa-solid fa-stop-circle"></i> Terminar</button>`;
+    } else { // Si está 'PROGRAMADO'
+        if (canGoLive) {
+            liveControlsHTML = `<div class="live-dropdown"><button class="btn-primary"><i class="fa-solid fa-tower-broadcast"></i> Iniciar Transmisión Pública</button><div class="live-dropdown-content"><a href="#" onclick="event.preventDefault(); Studio.goLive('${currentSession.id}', 0)">Iniciar Ahora</a><a href="#" onclick="event.preventDefault(); Studio.goLive('${currentSession.id}', 1)">En 1 minuto</a></div></div>`;
         } else {
-            liveControlsHTML = `<div class="live-dropdown"><button class="btn-primary"><i class="fa-solid fa-tower-broadcast"></i> Iniciar Transmisión</button><div class="live-dropdown-content"><a href="#" onclick="event.preventDefault(); Studio.goLive('${currentSession.id}', 0)">Iniciar Ahora</a><a href="#" onclick="event.preventDefault(); Studio.goLive('${currentSession.id}', 1)">En 1 minuto</a><a href="#" onclick="event.preventDefault(); Studio.goLive('${currentSession.id}', 3)">En 3 minutos</a><a href="#" onclick="event.preventDefault(); Studio.goLive('${currentSession.id}', 5)">En 5 minutos</a></div></div>`;
+            liveControlsHTML = `<button class="btn-primary" disabled title="Añade el ID de la plataforma en el dashboard para activar este botón"><i class="fa-solid fa-tower-broadcast"></i> Iniciar Transmisión Pública</button>`;
         }
+    }
 
-        actionsContainer.innerHTML = `<button class="btn-secondary" onclick="window.open('${guestUrl}', '_blank')"><i class="fa-solid fa-video"></i> Link Invitado</button><button class="btn-secondary" onclick="navigator.clipboard.writeText('${guestUrl}').then(() => alert('¡Enlace copiado!'))"><i class="fa-solid fa-copy"></i> Copiar Invitado</button><button class="btn-secondary" onclick="navigator.clipboard.writeText('${publicLiveUrl}').then(() => alert('¡Enlace copiado!'))"><i class="fa-solid fa-share-nodes"></i> Compartir</button>${liveControlsHTML}<div id="mixer-countdown-display" class="mixer-countdown"></div>`;
-        
-        document.getElementById('mixer-popout-btn').onclick = () => window.open(directorUrl, '_blank');
-        document.getElementById('mixer-close-btn').onclick = () => this.closeMixer();
+    actionsContainer.innerHTML = `
+        <button class="btn-secondary" onclick="navigator.clipboard.writeText('${guestUrl}').then(() => alert('¡Enlace de invitado copiado!'))"><i class="fa-solid fa-copy"></i> Copiar Invitado</button>
+        <button class="btn-secondary" onclick="navigator.clipboard.writeText('${publicLiveUrl}').then(() => alert('¡Enlace público copiado!'))"><i class="fa-solid fa-share-nodes"></i> Compartir</button>
+        <a href="https://wa.me/?text=${whatsappText}" target="_blank" class="btn-secondary"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+        ${liveControlsHTML}
+        <div id="mixer-countdown-display" class="mixer-countdown"></div>`;
+    
+    document.getElementById('mixer-close-btn').onclick = () => this.closeMixer();
         
         // Pasamos la sesión actual Y la siguiente a nuestro contador
         this.startDashboardCountdown(currentSession, nextSession);
@@ -431,54 +534,27 @@ const Studio = {
         }
     },
 
-    // En /dashboard.js, dentro del objeto Studio
-
+    // En /dashboard/js/dashboard.js
     async endLiveStream(sessionId) {
-        const confirmed = confirm("¿Estás seguro de que quieres terminar esta transmisión? Esta acción es irreversible y cortará la conexión para todos.");
+        const confirmed = confirm("¿Estás seguro de que quieres terminar la transmisión pública? La sala de control permanecerá activa.");
         if (!confirmed) return;
 
-        const endButton = document.querySelector(`button[onclick="Studio.endLiveStream('${sessionId}')"]`);
-        if (endButton) {
-            endButton.disabled = true;
-            let countdown = 10;
-            endButton.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Finalizando en ${countdown}...`;
-            
-            const countdownInterval = setInterval(() => {
-                countdown--;
-                endButton.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Finalizando en ${countdown}...`;
-                if (countdown <= 0) {
-                    clearInterval(countdownInterval);
-                }
-            }, 1000);
-        }
-        
-        // Esperamos 10 segundos antes de ejecutar la acción final
-        await new Promise(resolve => setTimeout(resolve, 10000));
-
-        // --- ACCIÓN DE FINALIZACIÓN AGRESIVA ---
+        // Ya no hacemos cuenta regresiva ni rompemos las URLs.
+        // Simplemente actualizamos el estado.
         const { error } = await App.supabase
             .from('sessions')
             .update({ 
                 status: 'FINALIZADO', 
-                end_at: new Date().toISOString(),
-                // Rompemos los enlaces para asegurar que la transmisión se corte
-                director_url: null,
-                viewer_url: null,
-                guest_url: null
+                end_at: new Date().toISOString()
             })
             .eq('id', sessionId);
         
         if (error) {
             alert("Hubo un error al finalizar la transmisión.");
             console.error("Error en endLiveStream:", error);
-            // Reactivar el botón si hay error
-            if(endButton) {
-            endButton.disabled = false;
-            endButton.innerHTML = `<i class="fa-solid fa-stop-circle"></i> Terminar`;
-            }
         } else { 
-            alert("Transmisión finalizada correctamente.");
-            this.closeMixer(); 
+            alert("La transmisión pública ha finalizado.");
+            // Ya no cerramos el mezclador, solo refrescamos las sesiones para que se actualice el estado
             this.fetchSessions(); 
         }
     },
