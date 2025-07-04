@@ -250,26 +250,57 @@ const Projects = {
         }).join('');
     },
 
-    // Nueva función para obtener TODOS los eventos programados
-    // En /dashboard/js, dentro del objeto Studio
+    // En /dashboard/js/dashboard.js, reemplaza esta función completa
+
     async fetchAllPublicSessions() {
         const container = document.getElementById('global-schedule-container');
         if (!container) return;
         container.innerHTML = `<p>Cargando agenda global...</p>`;
 
-        // Corregimos la consulta para que sea explícita y evitar el error 400
-        const { data: sessions, error } = await App.supabase
+        // --- PASO 1: OBTENER TODAS LAS SESIONES PÚBLICAS ---
+        const { data: sessions, error: sessionsError } = await App.supabase
             .from('sessions')
-            .select('*, profiles(display_name)') // Consulta corregida
+            .select('*')
             .in('status', ['PROGRAMADO', 'EN VIVO'])
             .order('scheduled_at', { ascending: true });
             
-        if (error) {
-            console.error('Error cargando la agenda global:', error);
+        if (sessionsError) {
+            console.error('Error cargando la agenda global (sesiones):', sessionsError);
             container.innerHTML = `<p>Error al cargar la agenda.</p>`;
             return;
         }
-        this.renderAllSessions(sessions);
+
+        if (!sessions || sessions.length === 0) {
+            this.renderAllSessions([]); // Llama a render con un array vacío
+            return;
+        }
+
+        // --- PASO 2: OBTENER LOS PERFILES PARA ESAS SESIONES ---
+        const userIds = [...new Set(sessions.map(s => s.user_id).filter(id => id))];
+        let profilesMap = new Map();
+
+        if (userIds.length > 0) {
+            const { data: profiles, error: profilesError } = await App.supabase
+                .from('profiles')
+                .select('id, display_name')
+                .in('id', userIds);
+
+            if (profilesError) {
+                console.error("Error buscando perfiles para la agenda global:", profilesError);
+            } else {
+                profiles.forEach(p => profilesMap.set(p.id, p));
+            }
+        }
+
+        // --- PASO 3: UNIR LOS DATOS MANUALMENTE ---
+        const fullSessionData = sessions.map(session => ({
+            ...session,
+            // Usamos nuestro mapa para adjuntar el perfil
+            profiles: profilesMap.get(session.user_id) 
+        }));
+
+        // --- PASO 4: RENDERIZAR ---
+        this.renderAllSessions(fullSessionData);
     },
 
     // Nueva función para mostrar la agenda global

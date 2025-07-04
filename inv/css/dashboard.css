@@ -733,3 +733,15 @@ textarea[name="description"] {
 .global-event-card h5 { margin: 0 0 1rem 0; }
 .global-event-card p { margin: 0.5rem 0; color: #65676b; }
 .global-event-card i { margin-right: 0.5rem; color: #888; }
+
+/* --- Lógica Visual para las Pestañas del Estudio --- */
+
+/* Por defecto, todos los contenidos de las pestañas están ocultos */
+.studio-tab-content {
+    display: none;
+}
+
+/* Solo el contenido que tenga la clase 'active' se mostrará */
+.studio-tab-content.active {
+    display: block; /* O 'display: grid;' si quieres mantener el layout de rejilla */
+}
