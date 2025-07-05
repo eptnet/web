@@ -5,6 +5,11 @@ const App = {
     currentSessionId: null,
     allSessions: {},
 
+    // --- AÑADE LAS NUEVAS PROPIEDADES AQUÍ ---
+    onDemandPlaylist: [],
+    livePagePlayer: null,
+    // -----------------------------------------
+
     youtube: {
         API_KEY: 'AIzaSyCwh_RLVd7AQ-6FdMEugrA7phNwN0dN9pw',
         CHANNEL_ID: 'UCg3ms3gecQ-2cjMhJwaPAig',
@@ -310,37 +315,61 @@ const App = {
         this.showYouTubeChat(video.id.videoId);
     },
 
+    // En /live/js/live.js, reemplaza esta función
     async handleOnDemandContent() {
-        console.log("Cambiando a modo On-Demand. Limpiando interfaz...");
+        if (this.youtube.isLoaded) return;
+        this.youtube.isLoaded = true;
         
-        // Ocultamos todos los elementos relacionados con un vivo
-        this.elements.overlay.style.display = 'none';
+        // Ocultamos los elementos de un vivo
         this.elements.researcherInfoContainer.style.display = 'none';
         this.elements.projectInfoContainer.style.display = 'none';
-        
-        // Limpiamos el chat (el contenedor de YouTube)
-        this.elements.youtubeChatContainer.innerHTML = '';
-        this.elements.youtubeChatContainer.style.display = 'none';
+        this.elements.overlay.style.display = 'none';
 
-        // Ocultamos el chat de VDO.Ninja
-        this.elements.vdoNinjaChatContainer.style.display = 'none';
-
-        // Si ya habíamos cargado los videos on-demand antes, no hacemos nada más
-        if (this.youtube.isLoaded) return; 
-
-        this.youtube.isLoaded = true;
-        this.elements.youtubeList.innerHTML = '<p class="placeholder-text">Cargando...</p>';
         this.elements.liveTitle.textContent = "Canal Epistecnología";
         this.elements.liveProject.textContent = "Contenido On-Demand";
         
         const videos = await this.fetchOnDemandVideosFromSupabase();
         
         if (videos && videos.length > 0) {
+            // En lugar de llamar a showYouTubePlayer, llamamos a nuestro nuevo inicializador
+            this.initOnDemandPlayer(videos);
+            // La lista de videos de la pestaña se sigue mostrando igual
             this.renderOnDemandList(videos);
-            this.showYouTubePlayer({ id: { videoId: videos[0].youtube_video_id }, snippet: { title: videos[0].title } });
         } else {
             this.showEndedMessage("No hay videos disponibles.");
         }
+    },
+
+    // En /live/js/live.js, dentro del objeto App
+    initOnDemandPlayer(videos) {
+        if (!videos || videos.length === 0) return;
+
+        this.onDemandPlaylist = videos; // Guardamos la lista de videos
+        let currentVideoIndex = 0;
+
+        // Si ya existe un reproductor, lo destruimos para crear el nuevo
+        if (this.livePagePlayer && typeof this.livePagePlayer.destroy === 'function') {
+            this.livePagePlayer.destroy();
+        }
+
+        this.livePagePlayer = new YT.Player('video-player', { // Usamos el ID de tu div de reproductor
+            height: '100%',
+            width: '100%',
+            videoId: this.onDemandPlaylist[currentVideoIndex].youtube_video_id,
+            playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0 },
+            events: {
+                'onStateChange': (event) => {
+                    // Si el video actual termina (estado 0)
+                    if (event.data === YT.PlayerState.ENDED) {
+                        console.log("Video terminado, cargando el siguiente...");
+                        // Calculamos el índice del siguiente video, volviendo al inicio si es el último
+                        currentVideoIndex = (currentVideoIndex + 1) % this.onDemandPlaylist.length;
+                        const nextVideoId = this.onDemandPlaylist[currentVideoIndex].youtube_video_id;
+                        this.livePagePlayer.loadVideoById(nextVideoId);
+                    }
+                }
+            }
+        });
     },
     
     async fetchOnDemandVideosFromSupabase() {
@@ -489,6 +518,7 @@ const App = {
     closeEventModal() {
         this.elements.modalOverlay.classList.remove('is-visible');
     }
+    
 };
 
 document.addEventListener('DOMContentLoaded', () => App.init());

@@ -179,10 +179,11 @@ const Projects = {
 
     // En /dashboard/js, dentro del objeto Studio
 
+    // En /dashboard/js, dentro del objeto Studio
+
     renderSessions(sessions) {
         const container = document.getElementById('sessions-container');
         if (!container) return;
-
         if (!sessions || sessions.length === 0) {
             container.innerHTML = `<div class="studio-launcher"><h3>No has configurado ninguna sala</h3><p>Ve a la sección "Inicio" para crear tu primera sesión.</p></div>`;
             return;
@@ -191,16 +192,32 @@ const Projects = {
         const dateOptions = { year: 'numeric', month: 'short', day: 'numeric' };
         const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
 
-        const cardsHTML = sessions.map(session => {
-            const publicLiveUrl = 'https://epistecnologia.com/live/';
+        container.innerHTML = sessions.map(session => {
             const sessionData = encodeURIComponent(JSON.stringify(session));
+            
+            // Formateo de fechas y horas
             const startTime = new Date(session.scheduled_at);
             const endTime = session.end_at ? new Date(session.end_at) : null;
             const formattedDate = startTime.toLocaleDateString('es-ES', dateOptions);
             const formattedStartTime = startTime.toLocaleTimeString('es-ES', timeOptions);
-            const formattedEndTime = endTime ? endTime.toLocaleTimeString('es-ES', timeOptions) : 'N/A';
-            let platformIdField = '';
+            const formattedEndTime = endTime ? endTime.toLocaleTimeString('es-ES', timeOptions) : '';
 
+            // Lógica para el botón de acción principal (Iniciar/Terminar)
+            let actionButtonHTML = '';
+            if (session.status === 'EN VIVO') {
+                actionButtonHTML = `<button class="btn-primary is-live" onclick="Studio.endLiveStream('${session.id}')"><i class="fa-solid fa-stop-circle"></i> Terminar Directo</button>`;
+            } else if (session.status === 'PROGRAMADO') {
+                const isExternal = session.platform === 'youtube' || session.platform === 'substack';
+                const canGoLive = !isExternal || (isExternal && session.platform_id);
+                if (canGoLive) {
+                    actionButtonHTML = `<button class="btn-primary" onclick="Studio.goLive('${session.id}', 0)"><i class="fa-solid fa-tower-broadcast"></i> Iniciar Directo</button>`;
+                } else {
+                    actionButtonHTML = `<button class="btn-primary" disabled title="Añade el ID de la plataforma para activar">Iniciar Directo</button>`;
+                }
+            }
+
+            // Lógica para el campo de añadir ID
+            let platformIdField = '';
             if ((session.platform === 'youtube' || session.platform === 'substack') && !session.platform_id) {
                 platformIdField = `
                     <div class="platform-id-adder">
@@ -212,6 +229,7 @@ const Projects = {
                     </div>`;
             }
 
+            // Construcción del HTML completo de la tarjeta
             return `
             <div class="session-card" id="${session.id}">
                 <div class="session-card__header">
@@ -219,25 +237,22 @@ const Projects = {
                     <h4>${session.session_title}</h4>
                     <p class="session-card__project">Proyecto: ${session.project_title}</p>
                 </div>
+                
                 <div class="session-card__schedule">
                     <p><i class="fa-solid fa-calendar-day"></i> <strong>Fecha:</strong> ${formattedDate}</p>
-                    <p><i class="fa-solid fa-clock"></i> <strong>Horario:</strong> ${formattedStartTime} - ${formattedEndTime}</p>
+                    <p><i class="fa-solid fa-clock"></i> <strong>Horario:</strong> ${formattedStartTime} ${endTime ? '- ' + formattedEndTime : ''}</p>
                 </div>
+
                 ${platformIdField}
+
                 <div class="session-card__actions">
-                    <button class="btn-primary" onclick="Studio.openSession('${sessionData}')"><i class="fa-solid fa-arrow-right-to-bracket"></i> Ir a la Sala de Control</button>
+                    ${actionButtonHTML}
+                    <button class="btn-secondary" onclick="Studio.openSession('${sessionData}')"><i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Sala</button>
                     <button class="btn-secondary" onclick="Studio.openModal('${sessionData}')"><i class="fa-solid fa-pencil"></i> Editar</button>
-                    <button class="btn-secondary" onclick="navigator.clipboard.writeText('${publicLiveUrl}').then(() => alert('¡Enlace de página pública copiado!'))"><i class="fa-solid fa-share-nodes"></i> Compartir</button>
-                    <button class="btn-secondary" style="margin-left: auto; --color-accent: #e02424;" onclick="Studio.deleteSession('${session.id}')"><i class="fa-solid fa-trash"></i></button>
+                    <button class="btn-secondary" style="margin-left: auto;" onclick="Studio.deleteSession('${session.id}')"><i class="fa-solid fa-trash"></i></button>
                 </div>
             </div>`;
         }).join('');
-
-        // --- LÍNEA DE DEPURACIÓN ---
-        console.log("HTML generado para las tarjetas:", cardsHTML);
-        // -----------------------------
-
-        container.innerHTML = cardsHTML;
     },
 
     // En /dashboard/js/dashboard.js, reemplaza esta función completa
@@ -528,50 +543,12 @@ const Projects = {
 
     // EN dashboard.js, dentro del objeto Studio
 
-    async openSession(sessionData) {
-    const session = JSON.parse(decodeURIComponent(sessionData));
-    
-    const { data: currentSession, error } = await App.supabase.from('sessions').select('*').eq('id', session.id).single();
-    if (error || !currentSession) { alert("No se pudo encontrar la sesión."); this.fetchSessions(); return; }
-
-    if (currentSession.status === 'FINALIZADO') { alert("Esta sesión ya ha finalizado."); return; }
-
-    // Todas las sesiones tienen una sala de control VDO.Ninja
-    const { director_url: directorUrl, guest_url: guestUrl, status, platform, platform_id } = currentSession;
-    const mixerContainer = document.getElementById('mixer-embed-container');
-    mixerContainer.style.display = 'flex';
-    mixerContainer.querySelector('#mixer-iframe').src = directorUrl;
-    
-    const actionsContainer = document.getElementById('mixer-room-actions');
-    const publicLiveUrl = 'https://epistecnologia.com/live/';
-    const whatsappText = encodeURIComponent(`¡Te invito a ver esta transmisión en vivo de Epistecnología! ${publicLiveUrl}`);
-    let liveControlsHTML = '';
-
-    // --- LÓGICA DE BOTÓN INTELIGENTE ---
-    const isExternalPlatform = platform === 'youtube' || platform === 'substack';
-    const canGoLive = !isExternalPlatform || (isExternalPlatform && platform_id);
-
-    if (status === 'EN VIVO') {
-        liveControlsHTML = `<span class="live-indicator">🔴 En Vivo</span><button class="btn-primary" style="background-color: #e02424;" onclick="Studio.endLiveStream('${currentSession.id}')"><i class="fa-solid fa-stop-circle"></i> Terminar</button>`;
-    } else { // Si está 'PROGRAMADO'
-        if (canGoLive) {
-            liveControlsHTML = `<div class="live-dropdown"><button class="btn-primary"><i class="fa-solid fa-tower-broadcast"></i> Iniciar Transmisión Pública</button><div class="live-dropdown-content"><a href="#" onclick="event.preventDefault(); Studio.goLive('${currentSession.id}', 0)">Iniciar Ahora</a><a href="#" onclick="event.preventDefault(); Studio.goLive('${currentSession.id}', 1)">En 1 minuto</a></div></div>`;
-        } else {
-            liveControlsHTML = `<button class="btn-primary" disabled title="Añade el ID de la plataforma en el dashboard para activar este botón"><i class="fa-solid fa-tower-broadcast"></i> Iniciar Transmisión Pública</button>`;
-        }
-    }
-
-    actionsContainer.innerHTML = `
-        <button class="btn-secondary" onclick="navigator.clipboard.writeText('${guestUrl}').then(() => alert('¡Enlace de invitado copiado!'))"><i class="fa-solid fa-copy"></i> Copiar Invitado</button>
-        <button class="btn-secondary" onclick="navigator.clipboard.writeText('${publicLiveUrl}').then(() => alert('¡Enlace público copiado!'))"><i class="fa-solid fa-share-nodes"></i> Compartir</button>
-        <a href="https://wa.me/?text=${whatsappText}" target="_blank" class="btn-secondary"><i class="fab fa-whatsapp"></i> WhatsApp</a>
-        ${liveControlsHTML}
-        <div id="mixer-countdown-display" class="mixer-countdown"></div>`;
-    
-    document.getElementById('mixer-close-btn').onclick = () => this.closeMixer();
+    // En /dashboard/js, dentro del objeto Studio
+    openSession(sessionData) {
+        const session = JSON.parse(decodeURIComponent(sessionData));
         
-        // Pasamos la sesión actual Y la siguiente a nuestro contador
-        this.startDashboardCountdown(currentSession, nextSession);
+        // Abre la nueva página de sala de control en una nueva pestaña, pasando el ID en la URL.
+        window.open(`/inv/sala-de-control.html?id=${session.id}`, '_blank');
     },
 
     // ELIMINA la función 'scheduleLive' y reemplázala por esta
