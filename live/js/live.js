@@ -100,13 +100,12 @@ const App = {
     },
 
     async run() {
-        const youtubeLiveVideo = await this.fetchYouTubeLive();
+        // const youtubeLiveVideo = await this.fetchYouTubeLive(); // <-- Comentamos o eliminamos esta línea
         const { dbLiveSession, dbUpcomingSessions } = await this.fetchScheduledSessions();
         this.renderSchedule(dbUpcomingSessions, dbLiveSession);
 
-        if (youtubeLiveVideo) {
-            this.handleYouTubeLive(youtubeLiveVideo);
-        } else if (dbLiveSession) {
+        // Y modificamos el 'if' para que ya no dependa de youtubeLiveVideo
+        if (dbLiveSession) {
             this.handleScheduledSession(dbLiveSession);
         } else {
             this.handleOnDemandContent();
