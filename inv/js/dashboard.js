@@ -11,60 +11,41 @@ const App = {
     userId: null,
     userProfile: null,
 
-    // En /dashboard.js, dentro del objeto App
-
     async init() {
         const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
         this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        const { data: { session }, error: sessionError } = await this.supabase.auth.getSession();
-        
-        if (sessionError || !session) {
-            alert("Sesión no encontrada. Serás redirigido para iniciar sesión.");
-            // window.location.href = '/'; 
-            return;
-        }
+        const { data: { session } } = await this.supabase.auth.getSession();
+        if (!session) { window.location.href = '/'; return; }
         this.userId = session.user.id;
         
-        // --- LÓGICA DE CARGA DE PERFIL MEJORADA ---
-        const { data: profileData, error: profileError } = await this.supabase
-            .from('profiles')
-            .select('*') // Traemos toda la información del perfil
-            .eq('id', this.userId)
-            .single();
+        const { data: profileData, error } = await this.supabase.from('profiles').select('*').eq('id', this.userId).single();
+        if (error && error.code !== 'PGRST116') { alert("Hubo un error al cargar tu perfil."); return; }
         
-        if (profileError && profileError.code !== 'PGRST116') {
-            console.error("Error cargando el perfil:", profileError);
-            alert("Hubo un error al cargar tu perfil. Intenta recargar la página.");
-            return;
-        }
+        this.userProfile = { ...session.user.user_metadata, ...profileData };
         
-        // Guardamos tanto los datos del perfil de la tabla como los metadatos de autenticación
-        this.userProfile = {
-            ...session.user.user_metadata, // Contiene avatar_url, full_name
-            ...profileData // Contiene display_name, bio, orcid, projects, etc.
-        };
-        
-        // Verificamos que el perfil tenga lo mínimo para operar
-        const hasOrcid = this.userProfile.orcid && this.userProfile.orcid.includes('orcid.org');
+        const hasOrcid = this.userProfile.orcid;
         const hasProjects = this.userProfile.projects && this.userProfile.projects.length > 0;
-
         if (!hasOrcid || !hasProjects) {
-            alert("Perfil incompleto. Debes registrar tu ORCID y al menos un proyecto en tu página de perfil para poder usar el dashboard.");
-            window.location.href = '/inv/profile.html'; // Redirigimos al perfil para que lo complete
+            alert("Perfil incompleto. Debes registrar tu ORCID y al menos un proyecto para continuar.");
+            window.location.href = '/inv/profile.html';
             return;
         }
         
-        // Si todo está en orden, continuamos con la inicialización
         Header.init(this.userProfile);
         Navigation.init();
+
+        const contentNavLink = document.querySelector('.nav-link[data-section="content-section"]');
+        if (contentNavLink && this.userProfile.role === 'admin') {
+            contentNavLink.style.display = 'flex';
+        }
     },
 };
 
 const Header = {
     init(user) {
-        document.getElementById('user-name-header').textContent = `Dashboard de ${user.user_metadata?.full_name || user.email}`;
+        document.getElementById('user-name-header').textContent = `Dashboard de ${user.full_name || user.email}`;
     }
 };
 
@@ -76,8 +57,7 @@ const Navigation = {
                 if (navLink.dataset.section) {
                     e.preventDefault();
                     this.showSection(navLink.dataset.section);
-                }
-                else if (navLink.id === 'logout-btn') {
+                } else if (navLink.id === 'logout-btn') {
                     e.preventDefault();
                     App.supabase.auth.signOut().then(() => window.location.href = '/');
                 }
@@ -91,9 +71,7 @@ const Navigation = {
     },
 
     showSection(sectionId) {
-        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
-        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-        
+        document.querySelectorAll('.content-section, .nav-link').forEach(el => el.classList.remove('active'));
         const container = document.getElementById(sectionId);
         const link = document.querySelector(`.nav-link[data-section="${sectionId}"]`);
         
@@ -104,37 +82,34 @@ const Navigation = {
             }
             container.classList.add('active');
             if (link) link.classList.add('active');
-            this.initializeSectionLogic(sectionId); // Lógica de inicialización
+            this.initializeSectionLogic(sectionId);
         }
     },
 
-    // --- FUNCIÓN MODIFICADA ---
-    // Ahora, al entrar al estudio, se cargan las sesiones desde Supabase.
-    // En dashboard.js, dentro del objeto Navigation
     initializeSectionLogic(sectionId) {
         if (sectionId === 'home-section') {
             Projects.init();
         } else if (sectionId === 'studio-section') {
-            // Carga los datos para ambas pestañas
             Studio.fetchSessions();
             Studio.fetchAllPublicSessions();
-
-            // Añade la lógica para controlar las nuevas pestañas del estudio
             const tabLinks = document.querySelectorAll('.studio-tab-link');
             const tabContents = document.querySelectorAll('.studio-tab-content');
-
             tabLinks.forEach(button => {
                 button.addEventListener('click', () => {
                     const tabId = button.dataset.tab;
                     tabLinks.forEach(btn => btn.classList.remove('active'));
                     button.classList.add('active');
-                    tabContents.forEach(content => {
-                        content.classList.toggle('active', content.id === tabId);
-                    });
+                    tabContents.forEach(content => content.classList.toggle('active', content.id === tabId));
                 });
             });
+        } else if (sectionId === 'content-section') {
+            if (App.userProfile.role === 'admin') {
+                ContentManager.init();
+            } else {
+                document.getElementById('content-section').innerHTML = '<h2>Acceso Denegado</h2><p>Esta sección solo está disponible para administradores.</p>';
+            }
         }
-    },
+    }
 };
 
 const Projects = {
@@ -191,23 +166,23 @@ const Projects = {
         this.renderSessions(sessions);
     },
 
-    // En /dashboard.js, dentro del objeto Studio
+    
 
     // En /dashboard/js, dentro del objeto Studio
+
     renderSessions(sessions) {
-        // La línea que faltaba está aquí.
         const container = document.getElementById('sessions-container');
         if (!container) return;
 
         if (!sessions || sessions.length === 0) {
-            container.innerHTML = `<div class="studio-launcher"><h3>Aún no has configurado ninguna sala</h3><p>Ve a la sección "Inicio" para crear tu primera sesión.</p></div>`;
+            container.innerHTML = `<div class="studio-launcher"><h3>No has configurado ninguna sala</h3><p>Ve a la sección "Inicio" para crear tu primera sesión.</p></div>`;
             return;
         }
 
         const dateOptions = { year: 'numeric', month: 'short', day: 'numeric' };
         const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
 
-        container.innerHTML = sessions.map(session => {
+        const cardsHTML = sessions.map(session => {
             const publicLiveUrl = 'https://epistecnologia.com/live/';
             const sessionData = encodeURIComponent(JSON.stringify(session));
             const startTime = new Date(session.scheduled_at);
@@ -248,6 +223,12 @@ const Projects = {
                 </div>
             </div>`;
         }).join('');
+
+        // --- LÍNEA DE DEPURACIÓN ---
+        console.log("HTML generado para las tarjetas:", cardsHTML);
+        // -----------------------------
+
+        container.innerHTML = cardsHTML;
     },
 
     // En /dashboard/js/dashboard.js, reemplaza esta función completa
@@ -738,6 +719,75 @@ const Projects = {
     },
 
     getTitleForAction(action) { return action; }
+};
+
+// --- OBJETO COMPLETO PARA GESTIONAR CONTENIDO ---
+const ContentManager = {
+    init() {
+        this.addEventListeners();
+        this.fetchOnDemandVideos();
+        this.fetchShorts();
+    },
+
+    addEventListeners() {
+        document.getElementById('add-ondemand-form').addEventListener('submit', e => this.handleAddContent(e, 'ondemand'));
+        document.getElementById('add-short-form').addEventListener('submit', e => this.handleAddContent(e, 'short'));
+        document.getElementById('ondemand-list-container').addEventListener('click', e => this.handleDeleteClick(e, 'ondemand'));
+        document.getElementById('shorts-list-container').addEventListener('click', e => this.handleDeleteClick(e, 'short'));
+    },
+
+    async handleAddContent(e, type) {
+        e.preventDefault();
+        const form = e.target;
+        const dataToInsert = { youtube_video_id: form.youtube_video_id.value };
+        if (type === 'ondemand') dataToInsert.title = form.title.value;
+        const tableName = type === 'ondemand' ? 'ondemand_videos' : 'shorts';
+
+        const { error } = await App.supabase.from(tableName).insert(dataToInsert);
+        if (error) {
+            alert(`Error al añadir el ${type}.`);
+        } else {
+            form.reset();
+            type === 'ondemand' ? this.fetchOnDemandVideos() : this.fetchShorts();
+        }
+    },
+
+    async handleDeleteClick(e, type) {
+        if (!e.target.matches('.delete-btn')) return;
+        const id = e.target.dataset.id;
+        const tableName = type === 'ondemand' ? 'ondemand_videos' : 'shorts';
+        
+        if (confirm(`¿Estás seguro de que quieres borrar este ${type}?`)) {
+            const { error } = await App.supabase.from(tableName).delete().eq('id', id);
+            if (error) alert(`Error al borrar el ${type}.`);
+            else type === 'ondemand' ? this.fetchOnDemandVideos() : this.fetchShorts();
+        }
+    },
+
+    async fetchOnDemandVideos() {
+        const { data } = await App.supabase.from('ondemand_videos').select('*').order('created_at', { ascending: false });
+        this.renderVideoList(data, 'ondemand-list-container');
+    },
+
+    async fetchShorts() {
+        const { data } = await App.supabase.from('shorts').select('*').order('created_at', { ascending: false });
+        this.renderVideoList(data, 'shorts-list-container');
+    },
+
+    renderVideoList(videos, containerId) {
+        const container = document.getElementById(containerId);
+        if (!videos || videos.length === 0) {
+            container.innerHTML = '<p>No hay videos añadidos.</p>';
+            return;
+        }
+        container.innerHTML = videos.map(video => `
+            <div class="video-list-item">
+                <img src="https://i.ytimg.com/vi/${video.youtube_video_id}/mqdefault.jpg" alt="miniatura">
+                <span>${video.title || video.youtube_video_id}</span>
+                <button class="delete-btn" data-id="${video.id}">&times;</button>
+            </div>
+        `).join('');
+    }
 };
 
 document.addEventListener('DOMContentLoaded', () => App.init());

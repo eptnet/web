@@ -722,7 +722,7 @@ textarea[name="description"] {
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
 }
 .global-event-card {
-    background-color: #f0f2f5;
+    background-color: #ffffff;
     padding: 1rem;
     border-radius: 8px;
     border-left: 4px solid #1877f2; /* Azul para eventos programados */
@@ -744,4 +744,83 @@ textarea[name="description"] {
 /* Solo el contenido que tenga la clase 'active' se mostrará */
 .studio-tab-content.active {
     display: block; /* O 'display: grid;' si quieres mantener el layout de rejilla */
+}
+
+/* Ocultar el enlace de gestión de contenido por defecto */
+.nav-link[data-section="content-section"] {
+    display: none;
+}
+
+/* --- Estilos para la Sección de Gestión de Contenido --- */
+
+.content-management-layout {
+    display: grid;
+    grid-template-columns: 1fr; /* Una columna en móviles */
+    gap: 2rem;
+}
+
+/* En pantallas más grandes, usamos dos columnas */
+@media (min-width: 900px) {
+    .content-management-layout {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.content-column h3 {
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 0.5rem;
+    margin-top: 0;
+}
+
+.add-content-form {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.add-content-form input {
+    flex-grow: 1;
+    padding: 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+.video-list-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: #f0f2f5;
+    padding: 0.5rem;
+    border-radius: 6px;
+    margin-bottom: 0.75rem;
+}
+
+.video-list-item img {
+    width: 80px;
+    height: 45px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.video-list-item span {
+    flex-grow: 1;
+    font-size: 0.9rem;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.delete-btn {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    font-size: 1rem;
 }

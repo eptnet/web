@@ -18,8 +18,8 @@
             <nav class="sidebar-nav">
                 <a href="#" class="nav-link active" data-section="home-section" title="Inicio"><i class="fa-solid fa-house"></i><span class="link-text">Inicio</span></a>
                 <a href="#" class="nav-link" data-section="studio-section" title="Estudio de Grabación"><i class="fa-solid fa-podcast"></i><span class="link-text">Estudio</span></a>
+                <a href="#" class="nav-link" data-section="content-section" title="Gestionar Contenido"><i class="fas fa-photo-film"></i><span class="link-text">Gestionar Contenido</span></a>
                 <a href="/inv/profile.html" class="nav-link" title="Mi Perfil"><i class="fa-solid fa-user-edit"></i><span class="link-text">Mi Perfil</span></a>
-                
             </nav>
             <div class="sidebar-footer">
                 <button id="logout-btn" class="nav-link" title="Cerrar Sesión"><i class="fa-solid fa-right-from-bracket"></i><span class="link-text">Cerrar Sesión</span></button>
@@ -93,6 +93,36 @@
             </div>
             <div id="global-schedule-tab" class="studio-tab-content">
                 <div id="global-schedule-container" class="sessions-grid">
+                    </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="template-content-section">
+        <div class="page-header">
+            <h2><i class="fas fa-photo-film"></i> Gestión de Contenido</h2>
+            <p>Añade, edita o elimina los videos On-Demand y Shorts que se muestran en tu página pública.</p>
+        </div>
+
+        <div class="content-management-layout">
+            <div class="content-column">
+                <h3>Videos On-Demand</h3>
+                <form id="add-ondemand-form" class="add-content-form">
+                    <input type="text" name="title" placeholder="Título del video" required>
+                    <input type="text" name="youtube_video_id" placeholder="ID del video de YouTube" required>
+                    <button type="submit" class="btn-secondary">Añadir Video</button>
+                </form>
+                <div id="ondemand-list-container" class="video-list">
+                    </div>
+            </div>
+
+            <div class="content-column">
+                <h3>Shorts</h3>
+                <form id="add-short-form" class="add-content-form">
+                    <input type="text" name="youtube_video_id" placeholder="ID del Short de YouTube" required>
+                    <button type="submit" class="btn-secondary">Añadir Short</button>
+                </form>
+                <div id="shorts-list-container" class="video-list">
                     </div>
             </div>
         </div>
