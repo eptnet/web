@@ -30,30 +30,35 @@ const ControlRoom = {
             document.body.innerHTML = '<h1>Error: No se pudo cargar la sesión.</h1>';
             return;
         }
-
         this.sessionData = data;
         document.getElementById('session-title-header').textContent = this.sessionData.session_title;
         document.getElementById('mixer-iframe').src = this.sessionData.director_url;
-        
         this.renderControls();
     },
 
     renderControls() {
         const container = document.getElementById('session-controls');
-        const { status, platform, platform_id } = this.sessionData;
+        const { status, platform, platform_id, guest_url } = this.sessionData;
+        const publicLiveUrl = 'https://epistecnologia.com/live/';
         let controlsHTML = '';
 
         if (status === 'EN VIVO') {
-            controlsHTML = `<button class="btn-primary is-live" onclick="ControlRoom.endLiveStream()"><i class="fa-solid fa-stop-circle"></i> Terminar Directo</button>`;
+            controlsHTML += `<button class="btn-primary is-live" onclick="ControlRoom.endLiveStream()"><i class="fa-solid fa-stop-circle"></i> Terminar Directo</button>`;
         } else { // PROGRAMADO
-            const isExternal = platform === 'youtube' || platform === 'substack';
-            const canGoLive = !isExternal || (isExternal && platform_id);
+            const canGoLive = platform === 'vdo_ninja' || platform_id;
             if (canGoLive) {
-                controlsHTML = `<button class="btn-primary" onclick="ControlRoom.goLive()"><i class="fa-solid fa-tower-broadcast"></i> Iniciar Directo</button>`;
+                controlsHTML += `<button class="btn-primary" onclick="ControlRoom.goLive()"><i class="fa-solid fa-tower-broadcast"></i> Iniciar Directo</button>`;
             } else {
-                controlsHTML = `<button class="btn-primary" disabled title="Añade el ID de la plataforma en el dashboard para activar">Iniciar Directo</button>`;
+                controlsHTML += `<button class="btn-primary" disabled title="Añade el ID en el dashboard para activar">Iniciar Directo</button>`;
             }
         }
+        
+        // Añadimos los botones de utilidad
+        if(guest_url) {
+            controlsHTML += `<button class="btn-secondary" onclick="navigator.clipboard.writeText('${guest_url}')"><i class="fa-solid fa-copy"></i> Copiar Invitado</button>`;
+        }
+        controlsHTML += `<button class="btn-secondary" onclick="navigator.clipboard.writeText('${publicLiveUrl}')"><i class="fa-solid fa-share-nodes"></i> Compartir</button>`;
+
         container.innerHTML = controlsHTML;
     },
 
@@ -74,17 +79,22 @@ const ControlRoom = {
     async endLiveStream() {
         if (!confirm("¿Estás seguro de que quieres finalizar la transmisión pública?")) return;
 
+        // --- NUEVA LÓGICA DE ARCHIVADO ---
         const { error } = await this.supabase
             .from('sessions')
-            .update({ status: 'FINALIZADO', end_at: new Date().toISOString() })
+            .update({ 
+                status: 'FINALIZADO', 
+                end_at: new Date().toISOString(),
+                is_archived: true // Marcamos la sesión como archivada
+            })
             .eq('id', this.sessionId);
 
         if (error) {
             alert('Hubo un error al finalizar la transmisión.');
-            console.error(error); // Mostramos el error real en consola
+            console.error(error);
         } else {
             alert('La transmisión pública ha finalizado.');
-            this.fetchAndRenderSession(); // Refresca los controles
+            this.fetchAndRenderSession(); 
         }
     }
 };

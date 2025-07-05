@@ -139,7 +139,8 @@ const App = {
 
         const { data: sessions, error: sessionsError } = await this.supabase
             .from('sessions')
-            .select('*') // Primero pedimos solo las sesiones
+            .select('*')
+            .eq('is_archived', false) // <-- AÑADE ESTA LÍNEA
             .in('status', ['PROGRAMADO', 'EN VIVO'])
             .gte('scheduled_at', fourHoursAgo)
             .order('scheduled_at', { ascending: true });
