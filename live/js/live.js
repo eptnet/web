@@ -100,11 +100,13 @@ const App = {
     },
 
     async run() {
-        // const youtubeLiveVideo = await this.fetchYouTubeLive(); // <-- Comentamos o eliminamos esta línea
+        // DESACTIVAMOS la búsqueda automática de vivos en YouTube
+        // const youtubeLiveVideo = await this.fetchYouTubeLive(); 
+        
         const { dbLiveSession, dbUpcomingSessions } = await this.fetchScheduledSessions();
         this.renderSchedule(dbUpcomingSessions, dbLiveSession);
 
-        // Y modificamos el 'if' para que ya no dependa de youtubeLiveVideo
+        // Simplificamos la lógica para que solo dependa de las sesiones de nuestra base de datos
         if (dbLiveSession) {
             this.handleScheduledSession(dbLiveSession);
         } else {
@@ -359,18 +361,16 @@ const App = {
     },
 
     listenForRealtimeChanges() {
-        this.supabase.channel('sessions-channel').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessions' }, payload => {
-            // --- LÍNEAS DE DEPURACIÓN ---
-            console.log("Realtime: Cambio detectado en sesión con ID:", payload.new.id);
-            console.log("Realtime: El ID de la sesión actual es:", this.currentSessionId);
-            console.log("Realtime: El nuevo estado es:", payload.new.status);
-            // ---------------------------------
-
-            if (payload.new.id === this.currentSessionId && payload.new.status === 'FINALIZADO') {
-                console.log("Realtime: ¡Condiciones cumplidas! Refrescando la página...");
+        this.supabase.channel('sessions-channel')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessions' }, payload => {
+            
+            // Si la sesión actual CAMBIA A 'EN VIVO' o a 'FINALIZADO', recargamos la página.
+            if (payload.new.id === this.currentSessionId && 
+            (payload.new.status === 'FINALIZADO' || payload.old.status === 'PROGRAMADO' && payload.new.status === 'EN VIVO')) 
+            {
                 window.location.reload();
             } else {
-                // No refrescamos la página para otros cambios, solo re-ejecutamos la lógica.
+                // Para otros cambios menores, solo re-ejecutamos la lógica.
                 this.run();
             }
         }).subscribe();

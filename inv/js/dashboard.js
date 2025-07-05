@@ -86,22 +86,12 @@ const Navigation = {
         }
     },
 
+    // En el objeto Navigation, reemplaza esta función completa
     initializeSectionLogic(sectionId) {
         if (sectionId === 'home-section') {
             Projects.init();
         } else if (sectionId === 'studio-section') {
-            Studio.fetchSessions();
-            Studio.fetchAllPublicSessions();
-            const tabLinks = document.querySelectorAll('.studio-tab-link');
-            const tabContents = document.querySelectorAll('.studio-tab-content');
-            tabLinks.forEach(button => {
-                button.addEventListener('click', () => {
-                    const tabId = button.dataset.tab;
-                    tabLinks.forEach(btn => btn.classList.remove('active'));
-                    button.classList.add('active');
-                    tabContents.forEach(content => content.classList.toggle('active', content.id === tabId));
-                });
-            });
+            Studio.init(); // Usamos Studio.init() para empezar
         } else if (sectionId === 'content-section') {
             if (App.userProfile.role === 'admin') {
                 ContentManager.init();
@@ -137,6 +127,25 @@ const Projects = {
 
     // STUDIO
     const Studio = {
+        init() {
+        // init se encarga de llamar a las funciones para cargar las sesiones
+        this.fetchSessions();
+        this.fetchAllPublicSessions();
+
+        // Y también configura las pestañas internas de esta sección
+        const tabLinks = document.querySelectorAll('.studio-tab-link');
+        const tabContents = document.querySelectorAll('.studio-tab-content');
+        tabLinks.forEach(button => {
+            button.addEventListener('click', () => {
+                const tabId = button.dataset.tab;
+                tabLinks.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                tabContents.forEach(content => content.classList.toggle('active', content.id === tabId));
+            });
+        });
+    },
+
+
         timers: { dashboardCountdown: null },
 
         async fetchSessions() {
@@ -293,12 +302,17 @@ const Projects = {
             return;
         }
 
-        const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true, timeZoneName: 'short' };
+        const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
 
         container.innerHTML = sessions.map(session => {
             const startTime = new Date(session.scheduled_at);
+            const endTime = session.end_at ? new Date(session.end_at) : null;
             const day = startTime.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
-            const time = startTime.toLocaleTimeString('es-ES', timeOptions);
+            
+            const formattedStartTime = startTime.toLocaleTimeString('es-ES', timeOptions);
+            // Formateamos la hora de fin si existe
+            const formattedEndTime = endTime ? endTime.toLocaleTimeString('es-ES', timeOptions) : 'N/A';
+
             const organizer = session.profiles?.display_name || 'Investigador';
             const platformIcon = session.platform === 'youtube' ? 'fab fa-youtube' : (session.platform === 'substack' ? 'fas fa-bookmark' : 'fas fa-satellite-dish');
 
@@ -306,7 +320,7 @@ const Projects = {
                 <div class="global-event-card ${session.status === 'EN VIVO' ? 'is-live' : ''}">
                     <h5>${session.session_title}</h5>
                     <p><i class="fa-solid fa-calendar-day"></i> ${day}</p>
-                    <p><i class="fa-solid fa-clock"></i> ${time}</p>
+                    <p><i class="fa-solid fa-clock"></i> ${formattedStartTime} - ${formattedEndTime}</p>
                     <p><i class="fa-solid fa-user"></i> Organiza: <strong>${organizer}</strong></p>
                     <p><i class="${platformIcon}"></i> Plataforma: ${session.platform}</p>
                 </div>
@@ -454,12 +468,13 @@ const Projects = {
             
             if (formData.get('guestCount') > 4) {
                 directorParams.set('meshcast', '1');
+                guestParams.set('meshcast', '1');
                 viewerParams.set('meshcast', '1');
             }
             
             sessionData.director_url = `${vdoDomain}/mixer.html?${directorParams.toString()}`;
             sessionData.guest_url = `${vdoDomain}/?${guestParams.toString()}`;
-            sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}`;
+            sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}&whepshare=https://cae1.meshcast.io/whep/EPTLive`;
         }
 
         const { error } = sessionId
