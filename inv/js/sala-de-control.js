@@ -36,10 +36,12 @@ const ControlRoom = {
         this.renderControls();
     },
 
+    // En /inv/js/sala-de-control.js
     renderControls() {
         const container = document.getElementById('session-controls');
         const { status, platform, platform_id, guest_url } = this.sessionData;
-        const publicLiveUrl = 'https://epistecnologia.com/live/';
+        // URL corregida para apuntar al archivo .html
+        const publicLiveUrl = 'https://epistecnologia.com/live/live.html'; 
         let controlsHTML = '';
 
         if (status === 'EN VIVO') {
@@ -53,7 +55,6 @@ const ControlRoom = {
             }
         }
         
-        // Añadimos los botones de utilidad
         if(guest_url) {
             controlsHTML += `<button class="btn-secondary" onclick="navigator.clipboard.writeText('${guest_url}')"><i class="fa-solid fa-copy"></i> Copiar Invitado</button>`;
         }
@@ -63,18 +64,24 @@ const ControlRoom = {
     },
 
     async goLive() {
-        const { error } = await this.supabase
+        // Actualizamos el estado en la base de datos
+        const { data: updatedSession, error } = await this.supabase
             .from('sessions')
             .update({ status: 'EN VIVO', scheduled_at: new Date().toISOString() })
-            .eq('id', this.sessionId);
-        
+            .eq('id', this.sessionId)
+            .select() // Usamos .select() para obtener la fila actualizada
+            .single();
+
         if (error) {
             alert('Hubo un error al iniciar la transmisión.');
         } else {
             alert('¡Transmisión iniciada!');
-            this.fetchAndRenderSession(); // Refresca los controles
+            // Actualizamos nuestros datos locales con la nueva información
+            this.sessionData = updatedSession;
+            // Volvemos a dibujar solo los controles, sin recargar todo
+            this.renderControls(); 
         }
-    },
+    },  
 
     async endLiveStream() {
         if (!confirm("¿Estás seguro de que quieres finalizar la transmisión pública?")) return;
