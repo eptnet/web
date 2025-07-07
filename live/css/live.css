@@ -7,6 +7,45 @@
     --color-accent: #b72a1e;
     --border-radius: 12px;
 }
+/* --- Lógica de Temas Claro/Oscuro --- */
+
+/* Estos son tus colores por defecto (Tema Oscuro) */
+:root {
+    --color-background: #121212;
+    --color-surface: #1e1e1e;
+    --color-surface-light: #2c2c2c;
+    --color-primary: #ffffff;
+    --color-secondary: #b3b3b3;
+    --color-accent: #b72a1e;
+    --border-color: #444;
+    --border-radius: 12px;
+}
+
+/* Cuando el body tenga la clase .light-theme, se usarán estos colores */
+body.light-theme {
+    --color-background: #f0f2f5;
+    --color-surface: #ffffff;
+    --color-surface-light: #f0f2f5;
+    --color-primary: #1c1e21;
+    --color-secondary: #65676b;
+    --border-color: #e0e0e0;
+}
+
+/* Estilo para el botón de cambio de tema */
+.theme-toggle-btn {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 2000;
+    height: 40px;
+    width: 40px;
+    border-radius: 50%;
+    border: none;
+    background-color: var(--color-surface);
+    color: var(--color-primary);
+    cursor: pointer;
+    font-size: 1.2rem;
+}
 body {
     background-color: var(--color-background);
     color: var(--color-primary);
@@ -106,30 +145,131 @@ body {
 .tab-link.active { color: var(--color-primary); border-bottom-color: var(--color-accent); }
 .tab-content { display: none; }
 .tab-content.active { display: block; }
+
 .card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 1.5rem;
     padding-top: 1.5rem;
 }
-.event-card, .video-card {
+.video-card {
     background-color: var(--color-surface);
     border-radius: var(--border-radius);
     overflow: hidden;
     cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.event-card:hover, .video-card:hover {
+.video-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 8px 24px rgba(0,0,0,0.5);
 }
-.event-card-thumbnail, .event-card-thumbnail-placeholder, .video-card img {
+.video-card img {
     width: 100%;
     height: 160px;
     object-fit: cover;
     background-color: var(--color-surface-light);
     border-bottom: 1px solid #444;
 }
+
+.event-card {
+    background-color: var(--color-surface-light);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative; /* Clave para superponer elementos */
+    aspect-ratio: 1 / 1; /* Para que sea un cuadrado perfecto */
+    display: flex; /* Usamos flex para alinear el contenido */
+    flex-direction: column;
+    justify-content: flex-end; /* Alinea el texto en la parte inferior */
+}
+
+.event-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+
+/* El contenedor de la imagen de fondo */
+.event-card-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover; /* La imagen cubre todo el espacio */
+    background-position: center; /* La imagen se centra */
+    z-index: 1;
+}
+
+/* Un gradiente oscuro para que el texto sea legible sobre la imagen */
+.event-card-background::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 70%;
+    background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+}
+
+/* La fecha en la esquina superior izquierda */
+.event-card-date {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    z-index: 2;
+}
+
+.agenda-filters {
+    display: flex;
+    gap: 0.5rem;
+    padding: 1rem 0;
+}
+.filter-btn {
+    background-color: var(--color-surface-light);
+    color: var(--color-secondary);
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.filter-btn:hover {
+    background-color: #444;
+    color: var(--color-primary);
+}
+.filter-btn.active {
+    background-color: var(--color-accent);
+    color: white;
+}
+
+/* La información principal en la parte inferior */
+.card-info {
+    position: relative;
+    z-index: 2;
+    padding: 1rem;
+    color: white;
+}
+
+.card-info h5 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+}
+
+.card-info p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--color-secondary);
+    font-weight: normal;
+}
+
 .card-info, .video-card p {
     padding: 1rem;
     font-weight: 600;
@@ -137,3 +277,64 @@ body {
 .card-info h5, .card-info p { margin: 0; }
 .card-info h5 { margin-bottom: 0.5rem; }
 .card-info p { font-size: 0.9rem; color: var(--color-secondary); }
+
+/* --- Estilos para el Modal de Eventos --- */
+.event-modal-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 3000;
+    backdrop-filter: blur(5px);
+}
+.event-modal-overlay.is-visible {
+    display: flex;
+}
+.event-modal {
+    background: var(--color-surface);
+    border-radius: var(--border-radius);
+    width: 90%;
+    max-width: 550px;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+.event-modal-close-btn {
+    position: absolute;
+    top: 10px; right: 15px;
+    font-size: 2rem; color: #fff;
+    background: rgba(0,0,0,0.5);
+    border: none; cursor: pointer;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    line-height: 40px;
+    text-align: center;
+}
+.event-modal-thumbnail {
+    width: 100%;
+    height: 250px;
+    background-size: cover;
+    background-position: center;
+}
+.event-modal-content { padding: 1.5rem; overflow-y: auto; }
+.event-modal h3 { margin: 0 0 1rem 0; font-size: 1.7rem; color: var(--color-primary); }
+.event-modal-organizer { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+.event-modal-organizer img { width: 40px; height: 40px; border-radius: 50%; }
+.event-modal-organizer strong { display: block; }
+.event-modal-organizer p { margin: 0; font-size: 0.8rem; color: var(--color-secondary); }
+.event-modal-schedule { font-weight: 500; margin-bottom: 1rem; }
+.event-modal-description { line-height: 1.6; color: var(--color-secondary); }
+.event-modal-footer { padding: 1.5rem; border-top: 1px solid #444; text-align: right; }
+.btn-primary { 
+    background-color: var(--color-accent); 
+    color: white; 
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+}

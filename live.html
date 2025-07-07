@@ -12,6 +12,9 @@
     <a href="/" class="home-button" aria-label="Volver a la página de inicio" title="Volver a la página de inicio">
         <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo Epistecnología">
     </a>
+    <button id="theme-toggle-btn" class="theme-toggle-btn" title="Cambiar tema">
+        <i class="fas fa-sun"></i>
+    </button>
 
     <div class="page-grid">
         <main class="player-column">
@@ -53,6 +56,11 @@
             </div>
             <div class="tab-content-wrapper">
                 <div id="agenda-tab" class="tab-content active">
+                        <div class="agenda-filters">
+                            <button class="filter-btn" data-filter="week">Esta Semana</button>
+                            <button class="filter-btn" data-filter="month">Este Mes</button>
+                            <button class="filter-btn active" data-filter="all">Todos</button>
+                        </div>
                     <div id="schedule-list" class="card-grid"></div>
                 </div>
                 <div id="videos-tab" class="tab-content">
@@ -60,6 +68,22 @@
                 </div>
             </div>
         </footer>
+    </div>
+
+    <div id="event-modal-overlay" class="event-modal-overlay">
+        <div class="event-modal">
+            <button id="event-modal-close" class="event-modal-close-btn" aria-label="Cerrar">&times;</button>
+            <div id="event-modal-thumbnail" class="event-modal-thumbnail"></div>
+            <div class="event-modal-content">
+                <h3 id="event-modal-title"></h3>
+                <div id="event-modal-organizer" class="event-modal-organizer"></div>
+                <div id="event-modal-schedule" class="event-modal-schedule"></div>
+                <p id="event-modal-description"></p>
+            </div>
+            <div class="event-modal-footer">
+                <a id="event-modal-more-info" href="#" target="_blank" rel="noopener noreferrer" class="btn-primary">Saber Más</a>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
