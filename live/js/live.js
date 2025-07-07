@@ -56,20 +56,52 @@ const LiveApp = {
     },
 
     async run() {
-        // --- LÓGICA DE CONSULTA CORREGIDA (A PRUEBA DE ERRORES) ---
-        const { data: liveSession, error } = await this.supabase
-            .from('sessions').select('*').eq('status', 'EN VIVO').eq('is_archived', false).limit(1).single();
+        console.log("Buscando estado actual...");
 
-        if (error || !liveSession) {
+        // --- LÓGICA DE CARGA A PRUEBA DE ERRORES ---
+
+        // 1. Buscamos todas las sesiones relevantes (EN VIVO y PROGRAMADO)
+        const { data: sessions, error: sessionsError } = await this.supabase
+            .from('sessions')
+            .select('*')
+            .in('status', ['PROGRAMADO', 'EN VIVO'])
+            .eq('is_archived', false)
+            .order('scheduled_at', { asc: true });
+
+        if (sessionsError || !sessions || sessions.length === 0) {
+            // Si no hay sesiones o hay un error, vamos directo a On-Demand
             this.handleOnDemandContent();
-        } else {
-            const { data: profile } = await this.supabase.from('profiles').select('*').eq('id', liveSession.user_id).single();
-            liveSession.profiles = profile;
-            this.handleLiveSession(liveSession);
+            this.renderSchedule([]); // Dibuja la agenda vacía
+            return;
         }
 
-        const { data: schedule } = await this.supabase.from('sessions').select('*').in('status', ['PROGRAMADO', 'EN VIVO']).eq('is_archived', false).order('scheduled_at', { asc: true });
-        this.renderSchedule(schedule);
+        // 2. Buscamos los perfiles de los organizadores
+        const userIds = [...new Set(sessions.map(s => s.user_id).filter(id => id))];
+        let profilesMap = new Map();
+        if (userIds.length > 0) {
+            const { data: profiles } = await this.supabase.from('profiles').select('*').in('id', userIds);
+            if (profiles) {
+                profiles.forEach(p => profilesMap.set(p.id, p));
+            }
+        }
+
+        // 3. Unimos los datos
+        const fullSessionData = sessions.map(session => ({
+            ...session,
+            profiles: profilesMap.get(session.user_id)
+        }));
+
+        // 4. Determinamos el estado y renderizamos
+        const liveSession = fullSessionData.find(s => s.status === 'EN VIVO');
+
+        if (liveSession) {
+            this.handleLiveSession(liveSession);
+        } else {
+            this.handleOnDemandContent();
+        }
+        
+        // Renderizamos la agenda con los datos completos
+        this.renderSchedule(fullSessionData);
     },
 
     handleLiveSession(session) {
