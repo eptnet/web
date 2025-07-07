@@ -189,12 +189,19 @@ export const Studio = {
     },
 
     openModal(actionOrSessionData) {
+        // Si estamos editando, actionOrSessionData es el objeto de la sesión.
+        // Si estamos creando, es un string como 'live'.
         const isEditing = typeof actionOrSessionData === 'object' && actionOrSessionData !== null;
         const session = isEditing ? actionOrSessionData : null;
-        const actionPlatform = !isEditing ? actionOrSessionData : null;
-
+        
         const projectDropdown = document.getElementById('project-selector-dropdown');
         const selectedProject = projectDropdown ? projectDropdown.value : '';
+
+        // Si es un evento nuevo pero no se ha seleccionado un proyecto, detenemos.
+        if (!isEditing && !selectedProject) {
+            alert("Por favor, selecciona primero un proyecto en el Paso 1.");
+            return;
+        }
 
         const toLocalISOString = (date) => {
             if (!date) return '';
@@ -203,7 +210,10 @@ export const Studio = {
             return (new Date(d - tzoffset)).toISOString().slice(0, 16);
         };
         
-        const initialPlatform = session?.platform || actionPlatform || 'vdo_ninja';
+        // Determina la plataforma inicial. Si estamos editando, usa la de la sesión.
+        // Si estamos creando, usa la del botón en que se hizo clic (ej. 'live').
+        // Por defecto, es 'vdo_ninja'.
+        const initialPlatform = session?.platform || actionOrSessionData || 'vdo_ninja';
         const modalContainer = document.getElementById('modal-overlay-container');
         
         modalContainer.innerHTML = `
@@ -260,7 +270,7 @@ export const Studio = {
         
         updatePlatformSelection(initialPlatform);
         modalContainer.querySelector('.modal-close-btn').addEventListener('click', () => this.closeModal());
-        form.addEventListener('submit', (e) => this.handleSaveSession(e, session ? session.id : null));
+        form.addEventListener('submit', (e) => this.handleSaveSession(e, session));
     },
 
     closeModal() {
@@ -268,24 +278,32 @@ export const Studio = {
         if(modalContainer) modalContainer.innerHTML = '';
     },
 
-    async handleSaveSession(e, sessionId = null) {
+    async handleSaveSession(e, session = null) {
         e.preventDefault();
         const formData = new FormData(e.target);
         const platform = formData.get('platform');
+        const scheduledAt = formData.get('scheduledAt');
+        const endAt = formData.get('endAt');
         
+        const projectTitle = document.getElementById('project-selector-dropdown')?.value || session?.project_title || '';
+        if (!projectTitle) {
+            alert("Error: No se pudo determinar el proyecto asociado.");
+            return;
+        }
+
         let sessionData = {
-            project_title: document.getElementById('project-selector-dropdown')?.value || (isEditing ? sessionId.project_title : ''),
+            project_title: projectTitle,
             session_title: formData.get('sessionTitle'),
             platform: platform,
             status: 'PROGRAMADO',
-            scheduled_at: new Date(formData.get('scheduledAt')).toISOString(),
-            end_at: formData.get('endAt') ? new Date(formData.get('endAt')).toISOString() : null,
+            scheduled_at: new Date(scheduledAt).toISOString(),
+            end_at: endAt ? new Date(endAt).toISOString() : null,
             description: formData.get('description'),
             thumbnail_url: formData.get('thumbnail_url'),
             more_info_url: formData.get('more_info_url')
         };
         
-        if (!sessionId) {
+        if (!session) { // Si es una sesión nueva
             sessionData.user_id = App.userId;
             sessionData.is_archived = false;
         }
@@ -294,11 +312,12 @@ export const Studio = {
             sessionData.platform_id = formData.get('youtubeId') || null;
         } else if (platform === 'substack') {
             sessionData.platform_id = formData.get('substackId') || null;
-        } else {
+        } else { // VDO.Ninja u otros
             sessionData.platform_id = null;
         }
 
-        if (!sessionId) {
+        // Generamos las URLs de VDO.Ninja solo si es una sesión nueva
+        if (!session) {
             const stableId = self.crypto.randomUUID().slice(0, 8);
             const roomName = `ept-${App.userProfile.orcid.slice(-6)}-${stableId}`;
             const directorKey = `dir-${App.userProfile.orcid.slice(-4)}`;
@@ -306,21 +325,22 @@ export const Studio = {
             
             let directorParams = new URLSearchParams({ room: roomName, director: directorKey, record: 'auto' });
             let guestParams = new URLSearchParams({ room: roomName });
-            let viewerParams = new URLSearchParams({ scene: '0', room: roomName });
+            let viewerParams = new URLSearchParams({ view: roomName });
             
-            sessionData.director_url = `${vdoDomain}/mixer.html?${directorParams.toString()}`;
+            sessionData.director_url = `${vdoDomain}/?${directorParams.toString()}`;
             sessionData.guest_url = `${vdoDomain}/?${guestParams.toString()}`;
-            sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}&whepshare=https://cae1.meshcast.io/whep/EPTLive`;
+            sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}`;
         }
 
-        const { error } = sessionId
-            ? await App.supabase.from('sessions').update(sessionData).eq('id', sessionId)
+        const { error } = session
+            ? await App.supabase.from('sessions').update(sessionData).eq('id', session.id)
             : await App.supabase.from('sessions').insert(sessionData);
 
         if (error) {
             alert("No se pudo guardar la sesión.");
+            console.error('Error guardando la sesión:', error);
         } else {
-            alert(`¡Sesión ${sessionId ? 'actualizada' : 'agendada'} con éxito!`);
+            alert(`¡Sesión ${session ? 'actualizada' : 'agendada'} con éxito!`);
             this.closeModal();
             this.fetchSessions();
         }
