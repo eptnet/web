@@ -1,30 +1,29 @@
 const LiveApp = {
     supabase: null,
     elements: {},
-    onDemandPlaylist: [],
     livePlayer: null,
+    onDemandPlaylist: [],
     isApiReady: false,
+    currentSessionId: null,
 
     init() {
-        // Inicialización de Supabase
         const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
         this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         this.cacheDOMElements();
+        this.addEventListeners();
         
-        // La API de YouTube se carga de forma asíncrona. Esperamos a que esté lista.
-        if (window.YT && window.YT.Player) {
+        // La API de YT se carga de forma asíncrona. Esperamos a que esté lista.
+        if (window.YT && typeof window.YT.Player === 'function') {
             this.isApiReady = true;
             this.run();
         } else {
             window.onYouTubeIframeAPIReady = () => {
-                console.log("YouTube IFrame API está lista.");
                 this.isApiReady = true;
                 this.run();
             };
         }
-        
         this.listenForChanges();
     },
 
@@ -36,31 +35,47 @@ const LiveApp = {
             projectInfoContainer: document.getElementById('project-info-container'),
             liveTitle: document.getElementById('live-title'),
             liveProject: document.getElementById('live-project'),
-            youtubeChatContainer: document.getElementById('youtube-chat-container'),
-            ondemandListContainer: document.getElementById('ondemand-list-container')
+            youtubeChatContainer: document.getElementById('chat-container'),
+            ondemandListContainer: document.getElementById('ondemand-list-container'),
+            tabs: document.querySelectorAll('.tab-link'),
+            tabContents: document.querySelectorAll('.tab-content'),
         };
     },
 
-    async run() {
-        console.log("Buscando estado actual...");
-        const { data, error } = await this.supabase
-            .from('sessions')
-            .select('*, profiles(*)')
-            .eq('status', 'EN VIVO')
-            .eq('is_archived', false)
-            .limit(1)
-            .single();
+    addEventListeners() {
+        this.elements.tabs.forEach(button => {
+            button.addEventListener('click', () => {
+                this.elements.tabs.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                const tabId = button.dataset.tab;
+                this.elements.tabContents.forEach(content => {
+                    content.classList.toggle('active', content.id === tabId);
+                });
+            });
+        });
+    },
 
-        if (error || !data) {
+    async run() {
+        // --- LÓGICA DE CONSULTA CORREGIDA (A PRUEBA DE ERRORES) ---
+        const { data: liveSession, error } = await this.supabase
+            .from('sessions').select('*').eq('status', 'EN VIVO').eq('is_archived', false).limit(1).single();
+
+        if (error || !liveSession) {
             this.handleOnDemandContent();
         } else {
-            this.handleLiveSession(data);
+            const { data: profile } = await this.supabase.from('profiles').select('*').eq('id', liveSession.user_id).single();
+            liveSession.profiles = profile;
+            this.handleLiveSession(liveSession);
         }
+
+        const { data: schedule } = await this.supabase.from('sessions').select('*').in('status', ['PROGRAMADO', 'EN VIVO']).eq('is_archived', false).order('scheduled_at', { asc: true });
+        this.renderSchedule(schedule);
     },
 
     handleLiveSession(session) {
-        this.destroyOnDemandPlayer(); // Destruye el reproductor de loop si existe
-        this.elements.infoContainer.style.display = 'block';
+        this.currentSessionId = session.id;
+        this.destroyOnDemandPlayer();
+        this.elements.infoContainer.style.display = 'flex';
         this.renderInfo(session);
         
         if (session.platform === 'youtube') {
@@ -68,37 +83,44 @@ const LiveApp = {
             this.showYouTubeChat(session.platform_id);
         } else if (session.platform === 'vdo_ninja') {
             this.showVDONinjaPlayer(session);
-            this.elements.youtubeChatContainer.innerHTML = '';
+            this.showYouTubeChat(null);
         }
     },
 
     async handleOnDemandContent() {
+        this.currentSessionId = null;
         this.elements.infoContainer.style.display = 'none';
         this.elements.liveTitle.textContent = "Contenido On-Demand";
         this.elements.liveProject.textContent = "Nuestro archivo de divulgación.";
-        this.elements.youtubeChatContainer.innerHTML = '';
+        this.showYouTubeChat(null);
         
         const { data: videos } = await this.supabase.from('ondemand_videos').select('*').order('created_at', { ascending: false });
         if (videos && videos.length > 0) {
             this.onDemandPlaylist = videos;
             this.renderOnDemandList(videos);
-            if(this.isApiReady) this.initOnDemandPlayer();
+            if(this.isApiReady && !this.livePlayer) this.initOnDemandPlayer();
         }
     },
-    
-    // ... (El resto de tus funciones como renderInfo, renderOnDemandList, etc., se mantienen igual)
-    // He incluido aquí las versiones completas para evitar confusiones.
 
     renderInfo(session) {
         this.elements.liveTitle.textContent = session.session_title;
         this.elements.liveProject.textContent = `Proyecto: ${session.project_title}`;
         if (session.profiles) {
-            this.elements.researcherInfoContainer.innerHTML = `<img src="${session.profiles.avatar_url || ''}" alt="${session.profiles.display_name || ''}"><div><h4>${session.profiles.display_name || ''}</h4><p>ORCID: ${session.profiles.orcid || ''}</p></div>`;
+            this.elements.researcherInfoContainer.innerHTML = `<img src="${session.profiles.avatar_url || ''}" alt=""><div><h4>${session.profiles.display_name || ''}</h4><p>ORCID: ${session.profiles.orcid || ''}</p></div>`;
         }
         const project = session.profiles?.projects?.find(p => p.title === session.project_title);
-        if (project) {
-            this.elements.projectInfoContainer.innerHTML = `<h4>Sobre el Proyecto</h4><p><strong>Autores:</strong> ${project.authors.slice(0, 2).join(', ')}...</p><a href="https://doi.org/${project.doi}" target="_blank">Ver en DOI</a>`;
-        }
+        this.elements.projectInfoContainer.innerHTML = project ? `<h4>Sobre el Proyecto</h4><p>${project.authors.slice(0, 2).join(', ')}</p><a href="https://doi.org/${project.doi}" target="_blank">Ver DOI</a>` : '';
+    },
+
+    renderSchedule(schedule) {
+        if (!this.elements.scheduleList || !schedule) return;
+        this.elements.scheduleList.innerHTML = schedule.map(item => `
+            <div class="event-card">
+                <div class="card-info">
+                    <h5>${item.session_title}</h5>
+                    <p>${new Date(item.scheduled_at).toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                </div>
+            </div>`).join('');
     },
 
     renderOnDemandList(videos) {
@@ -106,7 +128,7 @@ const LiveApp = {
     },
     
     showYouTubePlayer(session) {
-        this.elements.playerContainer.innerHTML = `<iframe src="https://www.youtube.com/embed/${session.platform_id}?autoplay=1&rel=0&enablejsapi=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+        this.elements.playerContainer.innerHTML = `<iframe src="https://www.youtube.com/embed/${session.platform_id}?autoplay=1&enablejsapi=1&rel=0" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
     },
 
     showVDONinjaPlayer(session) {
@@ -114,20 +136,24 @@ const LiveApp = {
     },
 
     showYouTubeChat(videoId) {
-        this.elements.youtubeChatContainer.innerHTML = `<iframe src="https://www.youtube.com/live_chat?v=${videoId}&embed_domain=${window.location.hostname}" frameborder="0"></iframe>`;
+        if(videoId) {
+            this.elements.youtubeChatContainer.innerHTML = `<iframe src="https://www.youtube.com/live_chat?v=${videoId}&embed_domain=${window.location.hostname}" frameborder="0"></iframe>`;
+        } else {
+            this.elements.youtubeChatContainer.innerHTML = '<p class="placeholder-text">El chat se activa durante los directos.</p>';
+        }
     },
 
     initOnDemandPlayer() {
-        if (this.livePlayer || this.onDemandPlaylist.length === 0) return;
+        if (this.livePlayer || this.onDemandPlaylist.length === 0 || !this.isApiReady) return;
+        this.elements.playerContainer.innerHTML = '<div id="yt-player-on-demand"></div>';
         let currentIndex = 0;
-        this.elements.playerContainer.innerHTML = '<div id="yt-player-on-demand"></div>'; // Contenedor para el reproductor de la API
         this.livePlayer = new YT.Player('yt-player-on-demand', {
             height: '100%', width: '100%',
             videoId: this.onDemandPlaylist[currentIndex].youtube_video_id,
-            playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0, 'loop': 0 },
+            playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0 },
             events: {
-                'onStateChange': (event) => {
-                    if (event.data === YT.PlayerState.ENDED) {
+                'onStateChange': (e) => {
+                    if (e.data === YT.PlayerState.ENDED) {
                         currentIndex = (currentIndex + 1) % this.onDemandPlaylist.length;
                         this.livePlayer.loadVideoById(this.onDemandPlaylist[currentIndex].youtube_video_id);
                     }
@@ -144,8 +170,12 @@ const LiveApp = {
     },
 
     playOnDemandById(videoId) {
+        if (!this.livePlayer) this.initOnDemandPlayer();
         if (this.livePlayer && typeof this.livePlayer.loadVideoById === 'function') {
-            this.livePlayer.loadVideoById(videoId);
+            const index = this.onDemandPlaylist.findIndex(v => v.youtube_video_id === videoId);
+            if (index !== -1) {
+                this.livePlayer.loadVideoById(videoId);
+            }
         }
     },
 
@@ -159,13 +189,8 @@ const LiveApp = {
     }
 };
 
-// Se llama a init() a través de la API de YouTube para asegurar que esté lista.
-// Si la API de YouTube no se carga, la aplicación no se iniciará.
-// Esto es un punto a considerar si la API de Google falla.
-document.addEventListener('DOMContentLoaded', () => {
-    // Si la API de YT ya está lista por casualidad, iniciamos.
-    if (window.YT && window.YT.Player) {
-        LiveApp.init();
-    } 
-    // Si no, onYouTubeIframeAPIReady (que es una función global de la API) llamará a LiveApp.init()
-});
+// Se asegura de que la API de YouTube esté lista antes de inicializar la aplicación
+// para que el reproductor en loop funcione correctamente.
+window.onYouTubeIframeAPIReady = () => {
+    LiveApp.init();
+};

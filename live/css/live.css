@@ -1,521 +1,139 @@
-/* ==========================================================================
-   LIVE.CSS - v3.0 - DISEÑO BENTO JERÁRQUICO
-   ========================================================================== */
-
-/* --- 1. Variables y Estilos Globales --- */
 :root {
-    --bg-color: #101010;
-    --surface-color: #181818;
-    --border-color: #2c2c2c;
-    --accent-color: #b72a1e; 
-    --text-primary: #f1f1f1;
-    --text-secondary: #aaaaaa;
-    --border-radius: 1rem;
-    --gap: 1.5rem;
+    --color-background: #121212;
+    --color-surface: #1e1e1e;
+    --color-surface-light: #2c2c2c;
+    --color-primary: #ffffff;
+    --color-secondary: #b3b3b3;
+    --color-accent: #b72a1e;
+    --border-radius: 12px;
 }
-
-*, *::before, *::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
 body {
-    background-color: var(--bg-color);
-    color: var(--text-primary);
-    font-family: 'Inter', sans-serif;
-    line-height: 1.6;
+    background-color: var(--color-background);
+    color: var(--color-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
 }
-
-.placeholder-text {
-    color: var(--text-secondary);
-    padding: 1rem;
-    text-align: center;
+.home-button {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 2000;
+    height: 40px;
+    width: 40px;
+}
+.home-button img {
     height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 1rem;
-    font-style: italic;
+    width: 100%;
+    border-radius: 50%;
 }
-
-/* --- 2. Layout General de la Página --- */
-.page-container {
-    padding: var(--gap);
-}
-
-.bento-box {
-    background-color: var(--surface-color);
-    border-radius: var(--border-radius);
-    border: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-/* --- 3. Sección Superior (Reproductor e Info) --- */
-.live-section {
+.page-grid {
     display: grid;
-    grid-template-columns: 1fr; /* Apilado en móvil por defecto */
-    gap: var(--gap);
-    min-height: calc(100vh - (var(--gap) * 2)); /* Ocupa la pantalla inicial */
-    align-content: stretch;
-}
-
-.main-column {
-    display: flex;
-    flex-direction: column;
-    gap: var(--gap);
-}
-
-.sidebar-column {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 1.5rem;
     padding: 1.5rem;
+    max-width: 1600px;
+    margin: auto;
 }
-
-/* Layout para escritorio */
 @media (min-width: 1024px) {
-    .live-section {
-        grid-template-columns: 2.5fr 1fr; /* Columna principal más ancha */
+    .page-grid {
+        grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
+        grid-template-rows: auto 1fr;
+        padding-top: 5rem; /* Espacio para el botón de home */
     }
+    .player-column { grid-column: 1 / 2; grid-row: 1 / 2; }
+    .sidebar-column { grid-column: 2 / 3; grid-row: 1 / 2; }
+    .agenda-column { grid-column: 1 / 3; grid-row: 2 / 3; }
 }
-
-/* --- 3.1 Contenedor del Reproductor --- */
 .player-wrapper {
     position: relative;
     width: 100%;
-    aspect-ratio: 16 / 9; /* FORZAMOS PROPORCIÓN 16:9 */
+    padding-top: 56.25%;
     background-color: #000;
     border-radius: var(--border-radius);
     overflow: hidden;
 }
-
-#video-player {
+.player-wrapper iframe, .player-wrapper #yt-player-on-demand {
     position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    z-index: 3;
-}
-#video-player iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
-}
-
-.event-overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 2rem;
-    background-color: rgba(0, 0, 0, 0.7);
-}
-
-.live-background-image {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    background-size: cover;
-    background-position: center;
-    animation: kenburns-effect 40s ease-in-out infinite;
-    background-image: url('https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg');
-}
-
-#countdown-clock {
-    font-size: clamp(2rem, 10vw, 4rem);
-    font-weight: 700;
-    color: var(--accent-color);
-    margin: 1rem 0;
-    text-shadow: 0 0 10px rgba(0,0,0,0.5);
-}
-
-/* --- 3.2 Info del Investigador (debajo del player) --- */
-.researcher-info {
-    flex-direction: row;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-}
-
-#researcher-avatar {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid var(--border-color);
-}
-
-#researcher-name {
-    margin: 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-}
-
-#researcher-orcid {
-    margin: 0;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-}
-
-/* --- 3.3 Barra Lateral (Info del evento y Chat) --- */
-.sidebar-column {
-    padding: 1.5rem;
-}
-
-#live-info-container h3 {
-    font-size: 1rem;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 0.75rem;
-    margin-top: 10px;
-    margin-bottom: 1rem;
-}
-
-#live-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin: 0;
-}
-#live-project {
-    color: var(--text-secondary);
-    margin-top: 0.25rem;
-}
-
-#chat-placeholder {
-    flex-grow: 1;
-    border-top: 1px solid var(--border-color);
-    margin-top: 1.5rem;
-    padding-top: 1rem;
-}
-
-/* --- 4. Sección Inferior (On-Demand) --- */
-.ondemand-section {
-    margin-top: var(--gap);
-    padding: 0;
-}
-
-.tabs {
-    display: flex;
-    border-bottom: 1px solid var(--border-color);
-    flex-shrink: 0;
-}
-
-.tab-link {
-    flex-basis: 50%;
-    padding: 1rem;
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    border-bottom: 3px solid transparent;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-}
-.tab-link:hover {
-    color: var(--text-primary);
-}
-.tab-link.active {
-    color: var(--accent-color);
-    border-bottom-color: var(--accent-color);
-}
-
-.tab-content-wrapper {
-    min-height: 300px;
-    max-height: 70vh;
-    overflow-y: auto;
-}
-
-.tab-content { display: none; }
-.tab-content.active { display: block; }
-
-.content-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1rem;
-    padding: 1rem;
-}
-
-/* TARJETAS DE VIDEO/EVENTO */
-.video-card, .event-card {
-    background-color: #2a2a2a;
-    border-radius: 8px;
-    overflow: hidden;
-    cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    border: 1px solid transparent;
-}
-.video-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 15px rgba(0,0,0,0.3);
-    border-color: var(--accent-color);
-}
-.video-card img {
-    width: 100%;
-    aspect-ratio: 16/9;
-    object-fit: cover;
-    display: block;
-    border-bottom: 1px solid var(--border-color);
-}
-.card-info {
-    padding: 1rem;
-}
-.card-info h5 {
-    margin: 0;
-    font-size: 0.95rem;
-    line-height: 1.4;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;  
-    overflow: hidden;
-    min-height: 2.8em; /* Aprox 2 líneas */
-}
-.card-info p {
-    margin: 0.25rem 0 0;
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-}
-
-/* --- 5. Botón de Inicio y Animación --- */
-.home-button {
-    position: fixed;
-    top: 20px;
-    right: 20px; /* CAMBIADO a la derecha */
-    z-index: 1000;
-    width: 48px;
-    height: 48px;
-    background-color: var(--surface-color);
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    transition: transform 0.2s ease-in-out;
-}
-
-.home-button:hover { transform: scale(1.1); }
-.home-button img { width: 32px; height: 32px; }
-
-/* NUEVO: Botón para bajar */
-.scroll-down-button {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 100;
-    width: 40px;
-    height: 40px;
-    color: white;
-    border: 2px solid white;
-    border-radius: 50%;
-    font-size: 1.2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    animation: bounce 2s infinite;
-}
-@media (max-width: 1024px) {
-    .scroll-down-button {
-        display: none; /* Lo ocultamos en pantallas pequeñas */
-    }
-}
-
-@keyframes bounce {
-    0%, 20%, 50%, 80%, 100% {transform: translate(-50%, 0);}
-    40% {transform: translate(-50%, -10px);}
-    60% {transform: translate(-50%, -5px);}
-}
-
-@media (max-width: 768px) {
-    .home-button {
-        top: auto;
-        bottom: 20px;
-        right: 20px;
-    }
-}
-
-@keyframes kenburns-effect {
-    0% { transform: scale(1.0) translate(0, 0); opacity: 0.8; }
-    50% { transform: scale(1.15) translate(-2%, 2%); opacity: 1; }
-    100% { transform: scale(1.0) translate(0, 0); opacity: 0.8; }
-}
-
-/* Estilos para el contenedor del chat */
-
-
-/* Estilos para el contenedor del chat */
-#chat-container {
-    flex-grow: 1;
-    min-height: 300px;
-    border-top: 0px solid var(--border-color);
-    margin-top: 0rem;
-    padding-top: 0rem;
-}
-
-#chat-container iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
-    border-radius: var(--border-radius);
-}
-
-/* /live/css/live.css */
-
-/* --- Estilos para el Reproductor Fijo en Móvil --- */
-@media (max-width: 768px) {
-    .live-section {
-        padding-top: 56.25vw; /* Crea un espacio igual a la altura del video 16:9 */
-    }
-    #player-container {
-        position: fixed; /* Lo fijamos */
-        top: 0;
-        left: 0;
-        width: 100%;
-        z-index: 1000; /* Nos aseguramos que esté por encima de todo */
-        height: 56.25vw; /* 16:9 aspect ratio */
-    }
-}
-
-/* --- Estilos para la Tarjeta de Evento en la Agenda --- */
-.event-card {
-    cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    display: flex; /* Cambiamos a flexbox */
-    align-items: center;
-    gap: 1rem;
-}
-.event-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-}
-.event-card-thumbnail, .event-card-thumbnail-placeholder {
-    width: 120px;
-    height: 67.5px; /* Proporción 16:9 */
-    object-fit: cover;
-    border-radius: 4px;
-    flex-shrink: 0; /* Evita que la imagen se encoja */
-}
-.event-card-thumbnail-placeholder {
-    background-color: #e0e0e0;
-}
-
-/* --- Estilos para el Modal de Eventos --- */
-.event-modal-overlay {
-    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    display: none; /* Oculto por defecto */
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
-    padding: 1rem;
 }
-.event-modal-overlay.is-visible {
-    display: flex;
-}
-.event-modal {
-    background: #fff;
-    border-radius: 8px;
-    width: 100%;
-    max-width: 600px;
-    max-height: 90vh;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-}
-.event-modal-close-btn {
+.player-placeholder {
     position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 2rem;
-    color: #fff;
-    background: none;
-    border: none;
-    cursor: pointer;
-}
-.event-modal-thumbnail {
+    top: 0;
+    left: 0;
     width: 100%;
-    height: 337.5px; /* 16:9 en un modal de 600px */
-    background-size: cover;
-    background-position: center;
-}
-.event-modal-content { padding: 1.5rem; }
-.event-modal-organizer { display: flex; align-items: center; gap: 1rem; margin: 1rem 0; }
-.event-modal-organizer img { width: 50px; height: 50px; border-radius: 50%; }
-.event-modal-organizer p { margin: 0; color: #666; font-size: 0.9rem; }
-.event-modal-schedule { font-weight: 500; color: #333; }
-.event-modal-footer { padding: 1.5rem; border-top: 1px solid #eee; text-align: right; }
-.btn-primary { /* Asegúrate que tienes estilos para este botón */ }
-
-/* /live/css/live.css */
-
-/* --- MEJORAS AL MODAL DE EVENTOS --- */
-.event-modal-content h3 {
-    color: #1c1e21; /* Color de texto primario */
-    font-size: 1.75rem;
-    margin-bottom: 1rem;
-}
-
-.event-modal-schedule {
-    font-weight: 600; /* Hacemos el horario más prominente */
-    color: #333;
-    margin-bottom: 1rem;
-}
-
-.event-modal-organizer strong {
-    color: #1c1e21; /* Color de texto primario */
-}
-
-.event-modal-organizer p {
-    color: #65676b; /* Color de texto secundario */
-}
-
-.event-modal-content > p {
-    color: #333; /* Color para la descripción */
-    line-height: 1.6;
-}
-
-/* --- MEJORAS A LAS TARJETAS DE LA AGENDA --- */
-
-/* Estilo para el contenedor de la miniatura cuando NO hay imagen */
-.event-card-thumbnail-placeholder {
-    background-color: #f0f2f5; /* Un gris más suave */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #a0a0a0;
-}
-
-/* Icono de imagen para el placeholder */
-.event-card-thumbnail-placeholder::before {
-    font-family: "Font Awesome 6 Free";
-    font-weight: 900;
-    content: "\f03e"; /* Código del icono de imagen de Font Awesome */
-    font-size: 2rem;
-}
-
-.external-live-placeholder {
+    height: 100%;
     display: flex;
     flex-direction: column;
-    align-items: center;
     justify-content: center;
+    align-items: center;
     text-align: center;
-    height: 100%;
-    padding: 2rem;
-    background-color: #f0f2f5;
-    border-radius: 8px;
 }
-.external-live-placeholder h3 { margin-bottom: 0.5rem; }
-.external-live-placeholder p { margin-bottom: 1.5rem; }
-.external-live-placeholder small { margin-top: 1rem; color: #65676b; }
+.info-container {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+.sidebar-column { display: flex; flex-direction: column; gap: 1.5rem; }
+.bento-box {
+    background-color: var(--color-surface);
+    border-radius: var(--border-radius);
+    padding: 1rem 1.5rem;
+}
+.bento-box h4 {
+    margin: 0 0 1rem 0;
+    border-bottom: 1px solid #444;
+    padding-bottom: 1rem;
+    font-size: 1.1rem;
+}
+.bento-box h4 i { margin-right: 0.75rem; color: var(--color-secondary); }
+#chat-container { height: 100%; }
+#chat-container iframe { width: 100%; height: 300px; border-radius: 4px; }
+@media (min-width: 1024px) {
+    #chat-container iframe { height: 100%; }
+}
+.researcher-info { display: flex; align-items: center; gap: 1rem; }
+.researcher-info img { width: 50px; height: 50px; border-radius: 50%; }
+.researcher-info h4 { border: none; padding: 0; margin: 0 0 0.25rem 0; }
+.researcher-info p { margin: 0; font-size: 0.8rem; color: var(--color-secondary); }
+.agenda-column { margin-top: 2rem; }
+.tabs { display: flex; border-bottom: 1px solid #444; }
+.tab-link { padding: 0.75rem 1rem; cursor: pointer; background: none; border: none; color: var(--color-secondary); font-size: 1rem; font-weight: 600; border-bottom: 3px solid transparent; }
+.tab-link.active { color: var(--color-primary); border-bottom-color: var(--color-accent); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    padding-top: 1.5rem;
+}
+.event-card, .video-card {
+    background-color: var(--color-surface);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.event-card:hover, .video-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+.event-card-thumbnail, .event-card-thumbnail-placeholder, .video-card img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    background-color: var(--color-surface-light);
+    border-bottom: 1px solid #444;
+}
+.card-info, .video-card p {
+    padding: 1rem;
+    font-weight: 600;
+}
+.card-info h5, .card-info p { margin: 0; }
+.card-info h5 { margin-bottom: 0.5rem; }
+.card-info p { font-size: 0.9rem; color: var(--color-secondary); }

@@ -9,32 +9,59 @@
     <link rel="stylesheet" href="/live/css/live.css">
 </head>
 <body>
-    <div class="page-container">
-        <section class="live-section">
-            <div class="main-column">
-                <div id="player-container" class="player-wrapper">
-                    </div>
-                <div id="info-container" style="display: none;">
-                    <div id="researcher-info-container" class="bento-box researcher-info"></div>
-                    <div id="project-info-container" class="bento-box project-info"></div>
+    <a href="/" class="home-button" aria-label="Volver a la página de inicio" title="Volver a la página de inicio">
+        <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo Epistecnología">
+    </a>
+
+    <div class="page-grid">
+        <main class="player-column">
+            <div id="player-container" class="player-wrapper">
+                <div class="player-placeholder">
+                    <h2>Contenido On-Demand</h2>
+                    <p>Mientras no haya un evento en vivo, disfruta de nuestro archivo.</p>
                 </div>
             </div>
-            <aside class="sidebar-column">
+            <div id="info-container" class="info-container" style="display: none;">
                 <div id="live-info-container" class="bento-box">
-                    <h3>Información del Evento</h3>
-                    <h4 id="live-title">Cargando...</h4>
+                    <h4 id="live-title"></h4>
                     <p id="live-project"></p>
                 </div>
-                <div id="chat-wrapper">
-                    <div id="youtube-chat-container"></div>
+                <div id="researcher-info-container" class="bento-box researcher-info"></div>
+                <div id="project-info-container" class="bento-box project-info"></div>
+            </div>
+        </main>
+        
+        <aside class="sidebar-column">
+            <div id="investigators-box" class="bento-box">
+                <h4><i class="fas fa-users"></i> Investigadores</h4>
+                <div class="avatar-grid">
+                    <p class="placeholder-text">Próximamente...</p>
                 </div>
-            </aside>
-        </section>
-        <section class="ondemand-section">
-            <h3>Contenido On-Demand</h3>
-            <div id="ondemand-list-container" class="video-list"></div>
-        </section>
+            </div>
+            <div id="chat-box" class="bento-box">
+                <h4><i class="fas fa-comments"></i> Chat / Comentarios</h4>
+                <div id="chat-container">
+                     <p class="placeholder-text">El chat se activa durante los directos.</p>
+                </div>
+            </div>
+        </aside>
+
+        <footer class="agenda-column bento-box">
+            <div class="tabs">
+                <button class="tab-link active" data-tab="agenda-tab">Eventos</button>
+                <button class="tab-link" data-tab="videos-tab">Videos</button>
+            </div>
+            <div class="tab-content-wrapper">
+                <div id="agenda-tab" class="tab-content active">
+                    <div id="schedule-list" class="card-grid"></div>
+                </div>
+                <div id="videos-tab" class="tab-content">
+                    <div id="ondemand-list-container" class="card-grid"></div>
+                </div>
+            </div>
+        </footer>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
     <script src="/live/js/live.js"></script>
