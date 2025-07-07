@@ -10,21 +10,17 @@
     <link rel="stylesheet" href="/inv/css/sala-de-control.css">
 </head>
 <body>
-
     <header class="control-room-header">
         <a href="/inv/dashboard.html" class="back-link" title="Volver al Dashboard">
             <i class="fas fa-arrow-left"></i>
             <span>Dashboard</span>
         </a>
-        <h2 id="session-title-header">Cargando sesión...</h2>
-        <div id="session-controls" class="session-controls">
-            </div>
+        <h2 id="session-title-header">Cargando...</h2>
+        <div id="end-stream-button-container"></div>
     </header>
-
     <main class="control-room-main">
         <iframe id="mixer-iframe" allow="autoplay; camera; microphone; fullscreen; picture-in-picture; display-capture"></iframe>
     </main>
-    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/inv/js/sala-de-control.js"></script>
 </body>

@@ -1,11 +1,8 @@
-/**
- * sala-de-control.js
- * Lógica para la página dedicada a la sala de control de una sesión.
- */
 const ControlRoom = {
     supabase: null,
     sessionId: null,
     sessionData: null,
+    iframe: null,
 
     init() {
         const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
@@ -14,117 +11,95 @@ const ControlRoom = {
         
         const params = new URLSearchParams(window.location.search);
         this.sessionId = params.get('id');
+        this.iframe = document.getElementById('mixer-iframe');
 
         if (!this.sessionId) {
-            document.body.innerHTML = '<h1>Error: No se encontró el ID de la sesión.</h1>';
+            document.body.innerHTML = '<h1>Error: No se ha proporcionado un ID de sesión.</h1>';
             return;
         }
 
-        this.fetchAndRenderSession();
-        this.listenForChanges();
+        this.listenToVDONinja();
+        this.fetchAndLoadSession();
     },
 
-    async fetchAndRenderSession() {
-        const { data, error } = await this.supabase
-            .from('sessions')
-            .select('*')
-            .eq('id', this.sessionId)
-            .single();
-
+    async fetchAndLoadSession() {
+        const { data, error } = await this.supabase.from('sessions').select('*').eq('id', this.sessionId).single();
         if (error || !data) {
-            document.body.innerHTML = `<h1>Error: No se pudo cargar la sesión con ID ${this.sessionId}.</h1>`;
+            document.body.innerHTML = `<h1>Error: No se pudo cargar la sesión.</h1>`;
             return;
         }
-
         this.sessionData = data;
-        
         document.title = `${this.sessionData.session_title} - Sala de Control`;
         document.getElementById('session-title-header').textContent = this.sessionData.session_title;
         
-        const iframe = document.getElementById('mixer-iframe');
-        if (iframe && iframe.src !== this.sessionData.director_url) {
-            iframe.src = this.sessionData.director_url;
-        }
-        
-        this.renderControls();
+        // Añadimos un parámetro a la URL del director para que la API se active
+        const directorUrl = new URL(this.sessionData.director_url);
+        directorUrl.searchParams.set('api', '1');
+        this.iframe.src = directorUrl.toString();
     },
 
-    renderControls() {
-        const container = document.getElementById('session-controls');
-        if (!container) return;
-        
-        const { status, platform, platform_id, guest_url } = this.sessionData;
-        let controlsHTML = '';
+    // Escuchamos los mensajes que nos envía el iframe de VDO.Ninja
+    listenToVDONinja() {
+        window.addEventListener('message', (e) => {
+            // Asegurarnos que el mensaje viene del iframe
+            if (e.source !== this.iframe.contentWindow) return;
+            
+            // Cuando el director empieza a grabar o transmitir, VDO.Ninja nos avisa
+            if (e.data.action === 'recording-state') {
+                const isRecording = e.data.value;
+                const currentStatus = this.sessionData.status;
 
-        switch (status) {
-            case 'PROGRAMADO':
-                controlsHTML = `<button class="btn-secondary" onclick="ControlRoom.updateStatus('SALA ABIERTA')"><i class="fa-solid fa-door-open"></i> Abrir Sala</button>`;
-                break;
-            case 'SALA ABIERTA':
-                const canGoLive = platform === 'vdo_ninja' || platform_id;
-                if (canGoLive) {
-                    controlsHTML = `<button class="btn-primary" onclick="ControlRoom.updateStatus('EN VIVO')"><i class="fa-solid fa-tower-broadcast"></i> Iniciar Directo</button>`;
-                } else {
-                    controlsHTML = `<button class="btn-primary" disabled title="Añade el ID en el dashboard para activar">Iniciar Directo</button>`;
+                if (isRecording && currentStatus !== 'EN VIVO') {
+                    // Si empieza a grabar y no estábamos EN VIVO, actualizamos el estado
+                    console.log("VDO.Ninja ha empezado a grabar/transmitir. Actualizando estado a EN VIVO.");
+                    this.updateStatus('EN VIVO');
                 }
-                break;
-            case 'EN VIVO':
-                controlsHTML = `<button class="btn-primary is-live" onclick="ControlRoom.updateStatus('FINALIZADO')"><i class="fa-solid fa-stop-circle"></i> Terminar Directo</button>`;
-                break;
-            case 'FINALIZADO':
-                controlsHTML = `<span class="session-ended-text">Sesión Finalizada</span>`;
-                break;
-        }
-
-        if(guest_url) {
-            controlsHTML += `<button class="btn-secondary" onclick="navigator.clipboard.writeText('${guest_url}')" title="Copiar enlace de invitado"><i class="fa-solid fa-copy"></i></button>`;
-        }
-        
-        container.innerHTML = controlsHTML;
+            }
+        });
     },
-
+    
+    // Función para actualizar nuestro estado en Supabase
     async updateStatus(newStatus) {
-        const buttonContainer = document.getElementById('session-controls');
-        buttonContainer.innerHTML = `<span class="session-ended-text">Actualizando...</span>`;
+        if (this.sessionData.status === newStatus) return; // Evita actualizaciones innecesarias
 
         const updateData = { status: newStatus };
-
-        if (newStatus === 'EN VIVO') {
-            updateData.scheduled_at = new Date().toISOString();
-        } else if (newStatus === 'FINALIZADO') {
-            if (!confirm("¿Estás seguro de que quieres finalizar la transmisión pública? La sala de control permanecerá activa.")) {
-                this.renderControls(); // Restaura los botones si el usuario cancela
-                return;
-            }
+        if (newStatus === 'FINALIZADO') {
             updateData.end_at = new Date().toISOString();
             updateData.is_archived = true;
         }
-
-        const { error } = await this.supabase
-            .from('sessions')
-            .update(updateData)
-            .eq('id', this.sessionId);
-
+        
+        const { error } = await this.supabase.from('sessions').update(updateData).eq('id', this.sessionId);
         if (error) {
-            alert(`Hubo un error al cambiar el estado a ${newStatus}. Revisa la consola.`);
-            console.error(error);
-            this.renderControls(); // Restaura los botones si hay un error
+            console.error("Error al actualizar el estado:", error);
+        } else {
+            console.log(`Estado actualizado a ${newStatus}`);
+            this.sessionData.status = newStatus; // Actualizamos estado local
+            this.renderEndButton();
         }
-        // No es necesario hacer nada más aquí, el listener en tiempo real se encargará de refrescar
     },
 
-    listenForChanges() {
-        this.supabase.channel(`session-room-${this.sessionId}`)
-          .on('postgres_changes', {
-                event: 'UPDATE',
-                schema: 'public',
-                table: 'sessions',
-                filter: `id=eq.${this.sessionId}`
-            }, payload => {
-                this.sessionData = payload.new;
-                this.renderControls();
-            })
-          .subscribe();
+    // Dibuja el botón de terminar solo si estamos EN VIVO
+    renderEndButton() {
+        const container = document.getElementById('end-stream-button-container');
+        if (!container) return;
+
+        if (this.sessionData.status === 'EN VIVO') {
+            container.innerHTML = `<button class="btn-primary is-live" onclick="ControlRoom.endLiveStream()"><i class="fa-solid fa-stop-circle"></i> Terminar Transmisión Pública</button>`;
+        } else {
+            container.innerHTML = '';
+        }
+    },
+
+    // El botón de terminar ahora envía una orden al iframe y LUEGO actualiza el estado
+    endLiveStream() {
+        if (!confirm("Esto finalizará la transmisión pública. ¿Estás seguro?")) return;
+        
+        console.log("Enviando comando para detener la transmisión al iframe...");
+        this.iframe.contentWindow.postMessage({ 'record': false }, "*"); // Detiene la grabación
+        this.iframe.contentWindow.postMessage({ 'close': true }, "*"); // Cuelga las conexiones
+        
+        // Después de enviar los comandos, actualizamos nuestro estado
+        this.updateStatus('FINALIZADO');
     }
 };
 

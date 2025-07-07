@@ -310,7 +310,7 @@ export const Studio = {
             
             sessionData.director_url = `${vdoDomain}/mixer.html?${directorParams.toString()}`;
             sessionData.guest_url = `${vdoDomain}/?${guestParams.toString()}`;
-            sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}`;
+            sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}&whepshare=https://cae1.meshcast.io/whep/EPTLive`;
         }
 
         const { error } = sessionId
