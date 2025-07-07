@@ -145,21 +145,43 @@
                 const saveButton = this.form.querySelector('button[type="submit"]');
                 const btnText = saveButton.querySelector('.btn-text');
                 const messageEl = document.getElementById('profile-form-message');
-                saveButton.disabled = true; btnText.textContent = 'Guardando...';
                 
-                const updates = { id: this.userId, updated_at: new Date(), display_name: this.form.querySelector('#display-name').value, bio: this.form.querySelector('#bio').value, orcid: this.form.querySelector('#orcid-url').value, avatar_url: this.userMetadata?.avatar_url };
+                // --- NUEVA VALIDACIÓN DE ORCID ---
+                const orcidUrl = this.form.querySelector('#orcid-url').value.trim();
+                // Expresión regular para validar el formato de una URL de ORCID
+                const orcidRegex = /^https:\/\/(www\.)?orcid\.org\/(\d{4}-\d{4}-\d{4}-\d{3}[\dX])$/;
+
+                if (!orcidRegex.test(orcidUrl)) {
+                    messageEl.textContent = 'El formato del ORCID no es válido.';
+                    messageEl.className = 'form-message error';
+                    return; // Detiene el proceso si no es válido
+                }
+                // --- FIN DE LA VALIDACIÓN ---
+
+                saveButton.disabled = true; 
+                btnText.textContent = 'Guardando...';
+                
+                const updates = { 
+                    id: this.userId, 
+                    updated_at: new Date(), 
+                    display_name: this.form.querySelector('#display-name').value, 
+                    bio: this.form.querySelector('#bio').value, 
+                    orcid: orcidUrl // Usamos la URL ya validada y sin espacios
+                };
+                
                 const { error } = await supabaseClient.from('profiles').upsert(updates);
                 
                 messageEl.textContent = error ? error.message : '¡Guardado!';
-                messageEl.className = `form-message ${error ? 'error' : 'success'}`;
+                messageEl.className = `form-message ${error ? 'success' : 'success'}`; // Siempre success si no hay error
                 if (!error) this.loadData();
 
                 setTimeout(() => {
-                    saveButton.disabled = false; btnText.textContent = 'Guardar Cambios';
-                    messageEl.textContent = ''; messageEl.className = 'form-message';
+                    saveButton.disabled = false; 
+                    btnText.textContent = 'Guardar Cambios';
+                    messageEl.textContent = ''; 
+                    messageEl.className = 'form-message';
                 }, 2000);
-            }
-        };
+        }
 
         const Projects = {
             fetchedProjectData: null,

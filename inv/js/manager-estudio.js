@@ -1,4 +1,5 @@
 export const Studio = {
+    participants: [], // <-- AÑADE ESTA LÍNEA para guardar los participantes
     init() {
         // Esta función se llama al entrar a la sección "Estudio"
         this.fetchSessions();
@@ -189,30 +190,24 @@ export const Studio = {
     },
 
     openModal(actionOrSessionData) {
-        // Si estamos editando, actionOrSessionData es el objeto de la sesión.
-        // Si estamos creando, es un string como 'live'.
         const isEditing = typeof actionOrSessionData === 'object' && actionOrSessionData !== null;
         const session = isEditing ? actionOrSessionData : null;
-        
+        this.participants = [];
+
         const projectDropdown = document.getElementById('project-selector-dropdown');
         const selectedProject = projectDropdown ? projectDropdown.value : '';
 
-        // Si es un evento nuevo pero no se ha seleccionado un proyecto, detenemos.
         if (!isEditing && !selectedProject) {
-            alert("Por favor, selecciona primero un proyecto en el Paso 1.");
+            alert("Por favor, selecciona primero un proyecto.");
             return;
         }
 
         const toLocalISOString = (date) => {
             if (!date) return '';
-            const d = new Date(date);
-            const tzoffset = d.getTimezoneOffset() * 60000;
-            return (new Date(d - tzoffset)).toISOString().slice(0, 16);
+            const d = new Date(date), tzoffset = d.getTimezoneOffset() * 60000;
+            return new Date(d - tzoffset).toISOString().slice(0, 16);
         };
         
-        // Determina la plataforma inicial. Si estamos editando, usa la de la sesión.
-        // Si estamos creando, usa la del botón en que se hizo clic (ej. 'live').
-        // Por defecto, es 'vdo_ninja'.
         const initialPlatform = session?.platform || actionOrSessionData || 'vdo_ninja';
         const modalContainer = document.getElementById('modal-overlay-container');
         
@@ -223,6 +218,8 @@ export const Studio = {
                     <main class="modal-content">
                         <form id="studio-form">
                             <p>Proyecto: <strong>${session ? session.project_title : selectedProject}</strong></p>
+                            <hr>
+
                             <div class="form-group">
                                 <label>Plataforma</label>
                                 <div class="platform-selector">
@@ -232,13 +229,29 @@ export const Studio = {
                                 </div>
                                 <input type="hidden" id="session-platform" name="platform" value="${initialPlatform}">
                             </div>
+
+                            <div id="platform-specific-fields"></div>
+
                             <div class="form-group"><label for="session-title">Título del Evento</label><input id="session-title" name="sessionTitle" type="text" value="${session?.session_title || ''}" required></div>
                             <div class="form-group"><label for="session-start">Fecha y Hora de Inicio</label><input id="session-start" name="scheduledAt" type="datetime-local" value="${toLocalISOString(session?.scheduled_at)}" required></div>
                             <div class="form-group"><label for="session-end">Fecha y Hora de Fin</label><input id="session-end" name="endAt" type="datetime-local" value="${toLocalISOString(session?.end_at)}"></div>
                             <div class="form-group"><label for="session-description">Descripción Corta</label><textarea id="session-description" name="description" rows="3" maxlength="500">${session?.description || ''}</textarea></div>
                             <div class="form-group"><label for="session-thumbnail">URL de Miniatura</label><input id="session-thumbnail" name="thumbnail_url" type="url" value="${session?.thumbnail_url || ''}" placeholder="https://ejemplo.com/imagen.jpg"></div>
                             <div class="form-group"><label for="session-more-info">URL para "Saber Más"</label><input id="session-more-info" name="more_info_url" type="url" value="${session?.more_info_url || ''}"></div>
-                            <div id="platform-specific-fields"></div>
+                            
+                            <div class="form-group">
+                                <label for="participant-search">Añadir Investigadores Participantes</label>
+                                <div class="participant-search-group">
+                                    <input type="text" id="participant-search" placeholder="Buscar por nombre o correo...">
+                                    <button type="button" id="search-participant-btn" class="btn-secondary">Buscar</button>
+                                </div>
+                                <div id="participant-search-results"></div>
+                                <div id="participant-list">
+                                    <strong>Participantes añadidos:</strong>
+                                    <ul id="added-participants-ul"></ul>
+                                </div>
+                            </div>
+
                             <button type="submit" class="btn-primary" style="width:100%; margin-top: 1rem;">${isEditing ? 'Actualizar' : 'Agendar'} Sesión</button>
                         </form>
                     </main>
@@ -271,6 +284,10 @@ export const Studio = {
         updatePlatformSelection(initialPlatform);
         modalContainer.querySelector('.modal-close-btn').addEventListener('click', () => this.closeModal());
         form.addEventListener('submit', (e) => this.handleSaveSession(e, session));
+        document.getElementById('search-participant-btn').addEventListener('click', () => {
+            const searchTerm = document.getElementById('participant-search').value;
+            this.searchParticipants(searchTerm);
+        });
     },
 
     closeModal() {
@@ -344,6 +361,91 @@ export const Studio = {
             this.closeModal();
             this.fetchSessions();
         }
+    },
+
+    // Pega estas nuevas funciones dentro del objeto Studio en manager-estudio.js
+
+    async searchParticipants(searchTerm) {
+        if (searchTerm.length < 3) {
+            alert("Por favor, introduce al menos 3 caracteres para buscar.");
+            return;
+        }
+        const resultsContainer = document.getElementById('participant-search-results');
+        resultsContainer.innerHTML = '<p>Buscando...</p>';
+
+        // --- CONSULTA CORREGIDA: BUSCA POR NOMBRE O POR EMAIL ---
+        const { data: profiles, error } = await App.supabase
+            .from('profiles')
+            .select('id, display_name, avatar_url')
+            .or(`display_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`)
+            .neq('id', App.userId)
+            .limit(5);
+
+        if (error || !profiles || profiles.length === 0) {
+            resultsContainer.innerHTML = '<p>No se encontraron resultados.</p>';
+            return;
+        }
+
+        resultsContainer.innerHTML = profiles.map(profile => `
+            <div class="search-result-item" data-user-id="${profile.id}" data-user-name="${profile.display_name}" data-avatar-url="${profile.avatar_url}">
+                <img src="${profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="">
+                <span>${profile.display_name}</span>
+                <button type="button" class="btn-add-participant">+</button>
+            </div>
+        `).join('');
+
+        resultsContainer.querySelectorAll('.search-result-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                if (e.target.classList.contains('btn-add-participant')) {
+                    const user = {
+                        id: item.dataset.userId,
+                        name: item.dataset.userName,
+                        avatar: item.dataset.avatarUrl
+                    };
+                    this.addParticipant(user);
+                    resultsContainer.innerHTML = '';
+                }
+            });
+        });
+    },
+
+    addParticipant(user) {
+        // Evitamos añadir duplicados
+        if (this.participants.some(p => p.id === user.id)) return;
+        if (user.id === App.userId) return; // Evitamos añadir al propio organizador
+
+        this.participants.push(user);
+        this.renderAddedParticipants();
+    },
+
+    renderAddedParticipants() {
+        const list = document.getElementById('added-participants-ul');
+        if (!list) return;
+
+        if (this.participants.length === 0) {
+            list.innerHTML = '';
+            return;
+        }
+        
+        list.innerHTML = this.participants.map(p => `
+            <li data-user-id="${p.id}">
+                <img src="${p.avatar || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="">
+                <span>${p.name}</span>
+                <button type="button" class="btn-remove-participant">&times;</button>
+            </li>
+        `).join('');
+
+        list.querySelectorAll('.btn-remove-participant').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const userId = e.target.parentElement.dataset.userId;
+                this.removeParticipant(userId);
+            });
+        });
+    },
+
+    removeParticipant(userId) {
+        this.participants = this.participants.filter(p => p.id !== userId);
+        this.renderAddedParticipants();
     },
 
     openSession(sessionData) {
