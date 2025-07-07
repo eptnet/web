@@ -160,7 +160,8 @@ const Projects = {
         const { data: sessions, error } = await App.supabase
             .from('sessions')
             .select('*')
-            .eq('user_id', App.userId) // Filtramos por el ID del usuario logueado
+            .eq('is_archived', false) // <-- AÑADE ESTA LÍNEA
+            .eq('user_id', App.userId)
             .order('created_at', { ascending: false });
 
         // --- LÍNEAS DE DEPURACIÓN ---
@@ -263,9 +264,10 @@ const Projects = {
         container.innerHTML = `<p>Cargando agenda global...</p>`;
 
         // --- PASO 1: OBTENER TODAS LAS SESIONES PÚBLICAS ---
-        const { data: sessions, error: sessionsError } = await App.supabase
+        const { data: sessions, error } = await App.supabase
             .from('sessions')
-            .select('*')
+            .select('*, profiles(display_name)')
+            .eq('is_archived', false) // <-- AÑADE ESTA LÍNEA
             .in('status', ['PROGRAMADO', 'EN VIVO'])
             .order('scheduled_at', { ascending: true });
             

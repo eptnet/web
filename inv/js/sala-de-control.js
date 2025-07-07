@@ -1,3 +1,7 @@
+/**
+ * sala-de-control.js
+ * Lógica para la página dedicada a la sala de control de una sesión.
+ */
 const ControlRoom = {
     supabase: null,
     sessionId: null,
@@ -17,6 +21,7 @@ const ControlRoom = {
         }
 
         this.fetchAndRenderSession();
+        this.listenForChanges();
     },
 
     async fetchAndRenderSession() {
@@ -27,82 +32,99 @@ const ControlRoom = {
             .single();
 
         if (error || !data) {
-            document.body.innerHTML = '<h1>Error: No se pudo cargar la sesión.</h1>';
+            document.body.innerHTML = `<h1>Error: No se pudo cargar la sesión con ID ${this.sessionId}.</h1>`;
             return;
         }
+
         this.sessionData = data;
+        
+        document.title = `${this.sessionData.session_title} - Sala de Control`;
         document.getElementById('session-title-header').textContent = this.sessionData.session_title;
-        document.getElementById('mixer-iframe').src = this.sessionData.director_url;
+        
+        const iframe = document.getElementById('mixer-iframe');
+        if (iframe && iframe.src !== this.sessionData.director_url) {
+            iframe.src = this.sessionData.director_url;
+        }
+        
         this.renderControls();
     },
 
-    // En /inv/js/sala-de-control.js
     renderControls() {
         const container = document.getElementById('session-controls');
+        if (!container) return;
+        
         const { status, platform, platform_id, guest_url } = this.sessionData;
-        // URL corregida para apuntar al archivo .html
-        const publicLiveUrl = 'https://epistecnologia.com/live/live.html'; 
         let controlsHTML = '';
 
-        if (status === 'EN VIVO') {
-            controlsHTML += `<button class="btn-primary is-live" onclick="ControlRoom.endLiveStream()"><i class="fa-solid fa-stop-circle"></i> Terminar Directo</button>`;
-        } else { // PROGRAMADO
-            const canGoLive = platform === 'vdo_ninja' || platform_id;
-            if (canGoLive) {
-                controlsHTML += `<button class="btn-primary" onclick="ControlRoom.goLive()"><i class="fa-solid fa-tower-broadcast"></i> Iniciar Directo</button>`;
-            } else {
-                controlsHTML += `<button class="btn-primary" disabled title="Añade el ID en el dashboard para activar">Iniciar Directo</button>`;
-            }
+        switch (status) {
+            case 'PROGRAMADO':
+                controlsHTML = `<button class="btn-secondary" onclick="ControlRoom.updateStatus('SALA ABIERTA')"><i class="fa-solid fa-door-open"></i> Abrir Sala</button>`;
+                break;
+            case 'SALA ABIERTA':
+                const canGoLive = platform === 'vdo_ninja' || platform_id;
+                if (canGoLive) {
+                    controlsHTML = `<button class="btn-primary" onclick="ControlRoom.updateStatus('EN VIVO')"><i class="fa-solid fa-tower-broadcast"></i> Iniciar Directo</button>`;
+                } else {
+                    controlsHTML = `<button class="btn-primary" disabled title="Añade el ID en el dashboard para activar">Iniciar Directo</button>`;
+                }
+                break;
+            case 'EN VIVO':
+                controlsHTML = `<button class="btn-primary is-live" onclick="ControlRoom.updateStatus('FINALIZADO')"><i class="fa-solid fa-stop-circle"></i> Terminar Directo</button>`;
+                break;
+            case 'FINALIZADO':
+                controlsHTML = `<span class="session-ended-text">Sesión Finalizada</span>`;
+                break;
+        }
+
+        if(guest_url) {
+            controlsHTML += `<button class="btn-secondary" onclick="navigator.clipboard.writeText('${guest_url}')" title="Copiar enlace de invitado"><i class="fa-solid fa-copy"></i></button>`;
         }
         
-        if(guest_url) {
-            controlsHTML += `<button class="btn-secondary" onclick="navigator.clipboard.writeText('${guest_url}')"><i class="fa-solid fa-copy"></i> Copiar Invitado</button>`;
-        }
-        controlsHTML += `<button class="btn-secondary" onclick="navigator.clipboard.writeText('${publicLiveUrl}')"><i class="fa-solid fa-share-nodes"></i> Compartir</button>`;
-
         container.innerHTML = controlsHTML;
     },
 
-    async goLive() {
-        // Actualizamos el estado en la base de datos
-        const { data: updatedSession, error } = await this.supabase
-            .from('sessions')
-            .update({ status: 'EN VIVO', scheduled_at: new Date().toISOString() })
-            .eq('id', this.sessionId)
-            .select() // Usamos .select() para obtener la fila actualizada
-            .single();
+    async updateStatus(newStatus) {
+        const buttonContainer = document.getElementById('session-controls');
+        buttonContainer.innerHTML = `<span class="session-ended-text">Actualizando...</span>`;
 
-        if (error) {
-            alert('Hubo un error al iniciar la transmisión.');
-        } else {
-            alert('¡Transmisión iniciada!');
-            // Actualizamos nuestros datos locales con la nueva información
-            this.sessionData = updatedSession;
-            // Volvemos a dibujar solo los controles, sin recargar todo
-            this.renderControls(); 
+        const updateData = { status: newStatus };
+
+        if (newStatus === 'EN VIVO') {
+            updateData.scheduled_at = new Date().toISOString();
+        } else if (newStatus === 'FINALIZADO') {
+            if (!confirm("¿Estás seguro de que quieres finalizar la transmisión pública? La sala de control permanecerá activa.")) {
+                this.renderControls(); // Restaura los botones si el usuario cancela
+                return;
+            }
+            updateData.end_at = new Date().toISOString();
+            updateData.is_archived = true;
         }
-    },  
 
-    async endLiveStream() {
-        if (!confirm("¿Estás seguro de que quieres finalizar la transmisión pública?")) return;
-
-        // --- NUEVA LÓGICA DE ARCHIVADO ---
         const { error } = await this.supabase
             .from('sessions')
-            .update({ 
-                status: 'FINALIZADO', 
-                end_at: new Date().toISOString(),
-                is_archived: true // Marcamos la sesión como archivada
-            })
+            .update(updateData)
             .eq('id', this.sessionId);
 
         if (error) {
-            alert('Hubo un error al finalizar la transmisión.');
+            alert(`Hubo un error al cambiar el estado a ${newStatus}. Revisa la consola.`);
             console.error(error);
-        } else {
-            alert('La transmisión pública ha finalizado.');
-            this.fetchAndRenderSession(); 
+            this.renderControls(); // Restaura los botones si hay un error
         }
+        // No es necesario hacer nada más aquí, el listener en tiempo real se encargará de refrescar
+    },
+
+    listenForChanges() {
+        this.supabase.channel(`session-room-${this.sessionId}`)
+          .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'sessions',
+                filter: `id=eq.${this.sessionId}`
+            }, payload => {
+                this.sessionData = payload.new;
+                this.renderControls();
+            })
+          .subscribe();
     }
 };
 
