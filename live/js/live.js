@@ -3,7 +3,7 @@ const LiveApp = {
     elements: {},
     livePlayer: null,
     onDemandPlaylist: [],
-    allEvents: [], // Única fuente de verdad para todos los eventos
+    allEvents: [],
     allSessionsMap: {},
     isApiReady: false,
     currentSessionId: null,
@@ -54,6 +54,8 @@ const LiveApp = {
             modalMoreInfo: document.getElementById('event-modal-more-info'),
             modalCloseBtn: document.getElementById('event-modal-close'),
             themeToggleBtn: document.getElementById('theme-toggle-btn'),
+            // <-- CAMBIO: Añadido el contenedor de los avatares de participantes.
+            participantsContainer: document.querySelector('#investigators-box .avatar-grid'),
         };
     },
 
@@ -99,47 +101,35 @@ const LiveApp = {
     },
 
     async run() {
-        console.log("Buscando estado actual con la consulta final...");
+        console.log("Buscando estado actual con la consulta final optimizada...");
 
-        // --- PASO 1: OBTENER TODAS LAS SESIONES RELEVANTES ---
-        const { data: sessions, error: sessionsError } = await this.supabase
+        // <-- CAMBIO: Consulta única y optimizada para traer sesiones, organizador y participantes.
+        const { data: sessions, error } = await this.supabase
             .from('sessions')
-            .select('*') // Primero solo las sesiones
-            .in('status', ['PROGRAMADO', 'EN VIVO', 'FINALIZADO']) // Incluimos finalizados para el historial
+            .select(`
+                *,
+                organizer: profiles (*),
+                participants: event_participants (
+                    profiles (*)
+                )
+            `)
+            .in('status', ['PROGRAMADO', 'EN VIVO', 'FINALIZADO'])
             .eq('is_archived', false)
             .order('scheduled_at', { ascending: false });
 
-        if (sessionsError) {
-            console.error("Error al buscar sesiones:", sessionsError);
-            this.renderSchedule([]); // Dibuja la agenda vacía si hay error
+        if (error) {
+            console.error("Error al buscar sesiones:", error);
+            this.renderSchedule([]);
             return;
         }
 
-        // Si no hay sesiones, vamos a On-Demand
         if (!sessions || sessions.length === 0) {
             this.handleOnDemandContent();
             this.renderSchedule([]);
             return;
         }
-        
-        // --- PASO 2: OBTENER LOS PERFILES PARA ESAS SESIONES ---
-        const userIds = [...new Set(sessions.map(s => s.user_id).filter(id => id))];
-        let profilesMap = new Map();
-        if (userIds.length > 0) {
-            const { data: profiles } = await this.supabase.from('profiles').select('*').in('id', userIds);
-            if (profiles) {
-                profiles.forEach(p => profilesMap.set(p.id, p));
-            }
-        }
 
-        // --- PASO 3: UNIR LOS DATOS Y GUARDARLOS ---
-        const fullSessionData = sessions.map(session => ({
-            ...session,
-            profiles: profilesMap.get(session.user_id)
-        }));
-        this.allEvents = fullSessionData;
-
-        // --- PASO 4: DETERMINAR QUÉ MOSTRAR ---
+        this.allEvents = sessions;
         const liveSession = this.allEvents.find(s => s.status === 'EN VIVO');
 
         if (liveSession) {
@@ -148,14 +138,12 @@ const LiveApp = {
             this.handleOnDemandContent();
         }
         
-        // Mostramos la agenda con el filtro por defecto
         this.renderFilteredSchedule('all');
     },
 
     renderFilteredSchedule(filter) {
         let eventsToRender = [];
         const now = new Date();
-        // Obtenemos el inicio del día para comparaciones precisas
         const startOfDay = new Date(new Date().setHours(0, 0, 0, 0));
 
         if (filter === 'week') {
@@ -163,22 +151,17 @@ const LiveApp = {
             eventsToRender = this.allEvents
                 .filter(event => {
                     const eventDate = new Date(event.scheduled_at);
-                    // Muestra solo eventos futuros dentro de la próxima semana
                     return eventDate >= startOfDay && eventDate < oneWeekFromNow;
                 })
-                // Ordena los resultados de más próximo a más lejano
                 .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
         } else if (filter === 'month') {
             eventsToRender = this.allEvents
                 .filter(event => {
                     const eventDate = new Date(event.scheduled_at);
-                    // Muestra solo eventos futuros dentro del mes actual
                     return eventDate.getMonth() === now.getMonth() && eventDate.getFullYear() === now.getFullYear() && eventDate >= startOfDay;
                 })
-                // Ordena los resultados de más próximo a más lejano
                 .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
-        } else { // 'all'
-            // Para "Todos", mostramos la lista completa tal como viene de la base de datos (pasados y futuros)
+        } else {
             eventsToRender = this.allEvents;
         }
         
@@ -190,6 +173,8 @@ const LiveApp = {
         this.destroyOnDemandPlayer();
         this.elements.infoContainer.style.display = 'flex';
         this.renderInfo(session);
+        this.renderParticipants(session); // <-- CAMBIO: Llama a la nueva función para mostrar avatares.
+
         if (session.platform === 'youtube') {
             this.showYouTubePlayer(session);
             this.showYouTubeChat(session.platform_id);
@@ -202,6 +187,8 @@ const LiveApp = {
     async handleOnDemandContent() {
         this.currentSessionId = null;
         this.elements.infoContainer.style.display = 'none';
+        this.clearParticipants(); // <-- CAMBIO: Limpia los avatares cuando no hay directo.
+
         const { data: videos } = await this.supabase.from('ondemand_videos').select('*').order('created_at', { ascending: false });
         if (videos && videos.length > 0) {
             this.onDemandPlaylist = videos;
@@ -215,9 +202,50 @@ const LiveApp = {
     renderInfo(session) {
         this.elements.liveTitle.textContent = session.session_title;
         this.elements.liveProject.textContent = `Proyecto: ${session.project_title}`;
-        this.elements.researcherInfoContainer.innerHTML = session.profiles ? `<img src="${session.profiles.avatar_url || ''}" alt=""><div><h4>${session.profiles.display_name || ''}</h4><p>ORCID: ${session.profiles.orcid || ''}</p></div>` : '';
-        const project = session.profiles?.projects?.find(p => p.title === session.project_title);
+        // <-- CAMBIO: Se usa `session.organizer` en lugar de `session.profiles`.
+        this.elements.researcherInfoContainer.innerHTML = session.organizer ? `<img src="${session.organizer.avatar_url || ''}" alt=""><div><h4>${session.organizer.display_name || ''}</h4><p>ORCID: ${session.organizer.orcid || ''}</p></div>` : '';
+        const project = session.organizer?.projects?.find(p => p.title === session.project_title);
         this.elements.projectInfoContainer.innerHTML = project ? `<h4>Sobre el Proyecto</h4><p>${project.authors.slice(0, 2).join(', ')}...</p><a href="https://doi.org/${project.doi}" target="_blank">Ver DOI</a>` : '';
+    },
+
+    // <-- CAMBIO: Nueva función para renderizar los avatares de los participantes.
+    renderParticipants(session) {
+        if (!this.elements.participantsContainer) return;
+
+        const organizer = session.organizer;
+        const participants = session.participants.map(p => p.profiles);
+        const allUsers = [];
+
+        if (organizer) {
+            allUsers.push(organizer);
+        }
+
+        participants.forEach(p => {
+            if (p && !allUsers.some(u => u.id === p.id)) {
+                allUsers.push(p);
+            }
+        });
+
+        if (allUsers.length === 0) {
+            this.clearParticipants();
+            return;
+        }
+
+        this.elements.participantsContainer.innerHTML = allUsers.map(user => `
+            <img 
+                src="${user.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" 
+                alt="${user.display_name}" 
+                title="${user.display_name}" 
+                class="avatar"
+            >
+        `).join('');
+    },
+    
+    // <-- CAMBIO: Nueva función para limpiar la sección de participantes.
+    clearParticipants() {
+        if (this.elements.participantsContainer) {
+            this.elements.participantsContainer.innerHTML = '<p class="placeholder-text">Los participantes se mostrarán aquí.</p>';
+        }
     },
 
     renderSchedule(schedule) {
@@ -234,7 +262,8 @@ const LiveApp = {
             const eventDate = new Date(item.scheduled_at);
             const day = eventDate.toLocaleDateString('es-ES', { day: '2-digit' });
             const month = eventDate.toLocaleDateString('es-ES', { month: 'short' });
-            return `<div class="event-card" data-session-id="${item.id}"><div class="event-card-background" style="background-image: url('${thumbnailUrl}')"></div><div class="event-card-date">${day} ${month}</div><div class="card-info"><h5>${item.session_title}</h5><p>${item.profiles?.display_name || 'Epistecnología'}</p></div></div>`;
+            // <-- CAMBIO: Se usa `item.organizer` en lugar de `item.profiles`.
+            return `<div class="event-card" data-session-id="${item.id}"><div class="event-card-background" style="background-image: url('${thumbnailUrl}')"></div><div class="event-card-date">${day} ${month}</div><div class="card-info"><h5>${item.session_title}</h5><p>${item.organizer?.display_name || 'Epistecnología'}</p></div></div>`;
         }).join('');
     },
 
@@ -251,7 +280,8 @@ const LiveApp = {
         this.elements.modalDescription.textContent = session.description || 'No hay descripción disponible.';
         this.elements.modalSchedule.innerHTML = `<i class="fas fa-clock"></i> ${new Date(session.scheduled_at).toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'short' })}`;
         this.elements.modalThumbnail.style.backgroundImage = `url('${session.thumbnail_url || 'https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png'}')`;
-        if (session.profiles) this.elements.modalOrganizer.innerHTML = `<img src="${session.profiles.avatar_url || ''}" alt=""><div><strong>${session.profiles.display_name}</strong><p>${session.profiles.orcid}</p></div>`;
+        // <-- CAMBIO: Se usa `session.organizer` en lugar de `session.profiles`.
+        if (session.organizer) this.elements.modalOrganizer.innerHTML = `<img src="${session.organizer.avatar_url || ''}" alt=""><div><strong>${session.organizer.display_name}</strong><p>${session.organizer.orcid}</p></div>`;
         this.elements.modalMoreInfo.style.display = session.more_info_url ? 'inline-block' : 'none';
         if(session.more_info_url) this.elements.modalMoreInfo.href = session.more_info_url;
         this.elements.modalOverlay.classList.add('is-visible');
@@ -307,12 +337,22 @@ const LiveApp = {
     listenForChanges() {
         this.supabase.channel('sessions')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, () => {
+                console.log('Cambio detectado en la base de datos, recargando...');
+                this.run();
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'event_participants' }, () => {
+                console.log('Cambio detectado en los participantes, recargando...');
                 this.run();
             })
             .subscribe();
     }
 };
 
-window.onYouTubeIframeAPIReady = () => {
+// Se asegura de que la App inicie correctamente, incluso si la API de YT ya está cargada.
+if (window.YT && window.YT.Player) {
     LiveApp.init();
-};
+} else {
+    window.onYouTubeIframeAPIReady = () => {
+        LiveApp.init();
+    };
+}

@@ -355,14 +355,24 @@ export const Studio = {
         }
 
         // Lógica para guardar participantes
-        await App.supabase.from('event_participants').delete().eq('session_id', savedSession.id);
+        await App.supabase
+            .from('event_participants')
+            .delete()
+            .eq('session_id', savedSession.id);
+
         if (this.participants && this.participants.length > 0) {
             const participantsData = this.participants.map(p => ({
                 session_id: savedSession.id,
                 user_id: p.id
             }));
+
+            // <-- AÑADE ESTA LÍNEA PARA DEPURAR
+            console.log('Intentando guardar estos participantes:', participantsData);
+
             const { error: participantsError } = await App.supabase.from('event_participants').insert(participantsData);
             if (participantsError) {
+                // <-- AÑADE ESTO PARA VER EL ERROR EXACTO DE SUPABASE
+                console.error('Error de Supabase al guardar participantes:', participantsError); 
                 alert("La sesión se guardó, pero hubo un error al guardar los participantes.");
             }
         }
