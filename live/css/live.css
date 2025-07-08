@@ -399,3 +399,25 @@ body {
         background-color: var(--background-primary);
     }
 }
+
+/* Hacemos que la columna lateral sea un contenedor flexible */
+.sidebar-column {
+    display: flex;
+    flex-direction: column; /* Apila los elementos verticalmente */
+    gap: 1rem; /* Mantiene el espacio entre los bento-box */
+}
+
+/* Le decimos a la caja del chat que ocupe todo el espacio vertical disponible */
+#chat-box {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1; /* ¡Esta es la propiedad clave! Hace que el elemento crezca. */
+    min-height: 300px; /* Opcional: define una altura mínima para que no desaparezca si no hay espacio */
+}
+
+/* Nos aseguramos de que el contenedor del iframe y el propio iframe llenen la caja del chat */
+#chat-container, #chat-container iframe {
+    height: 100%;
+    width: 100%;
+    flex-grow: 1; /* Asegura que el contenedor del iframe también se expanda */
+}

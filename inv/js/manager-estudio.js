@@ -266,6 +266,14 @@ export const Studio = {
                             <div class="form-group"><label for="session-thumbnail">URL de Miniatura</label><input id="session-thumbnail" name="thumbnail_url" type="url" value="${session?.thumbnail_url || ''}" placeholder="https://ejemplo.com/imagen.jpg"></div>
                             <div class="form-group"><label for="session-more-info">URL para "Saber Más"</label><input id="session-more-info" name="more_info_url" type="url" value="${session?.more_info_url || ''}"></div>
                             
+                            <div class="form-group rtmps-fields" style="display: ${initialPlatform === 'youtube' || initialPlatform === 'twitch' ? 'block' : 'none'};">
+                                <hr>
+                                <label>Configuración de Transmisión Manual</label>
+                                <p class="form-hint">Opcional. Pega aquí los datos de YouTube o Twitch para transmitir directamente desde la sala de control.</p>
+                                <input id="session-rtmp-url" name="rtmp_url" type="text" value="${session?.rtmp_url || ''}" placeholder="URL del servidor RTMPS">
+                                <input id="session-rtmp-key" name="rtmp_key" type="text" value="${session?.rtmp_key || ''}" placeholder="Clave de transmisión">
+                            </div>
+
                             <div class="form-group">
                                 <label for="participant-search">Añadir Investigadores Participantes</label>
                                 <div class="participant-search-group">
@@ -289,6 +297,15 @@ export const Studio = {
         const platformOptions = modalContainer.querySelectorAll('.platform-option');
         const platformInput = modalContainer.querySelector('#session-platform');
         const platformSpecificFields = modalContainer.querySelector('#platform-specific-fields');
+        // CAMBIO: Hacemos que los campos RTMPS aparezcan o desaparezcan según la plataforma
+        const platformOptions = modalContainer.querySelectorAll('.platform-option');
+        platformOptions.forEach(opt => {
+            opt.addEventListener('click', () => {
+                const platform = opt.dataset.platform;
+                const rtmpsFields = modalContainer.querySelector('.rtmps-fields');
+                rtmpsFields.style.display = (platform === 'youtube' || platform === 'twitch') ? 'block' : 'none';
+            });
+        });
 
         const updatePlatformSelection = (platform) => {
             platformOptions.forEach(opt => opt.classList.toggle('selected', opt.dataset.platform === platform));
@@ -360,7 +377,16 @@ export const Studio = {
             let directorParams = new URLSearchParams({ room: roomName, director: directorKey, record: 'auto' });
             let guestParams = new URLSearchParams({ room: roomName });
             
-            // --- AQUÍ ESTÁ LA CORRECCIÓN CLAVE ---
+            // --- CAMBIO CLAVE: AÑADIMOS EL DESTINO DE LA TRANSMISIÓN ---
+            const rtmpUrl = formData.get('rtmp_url');
+            const rtmpKey = formData.get('rtmp_key');
+            if (rtmpUrl && rtmpKey) {
+                // El formato es &broadcast=CLAVE@URL (sin el rtmps://)
+                const broadcastUrl = rtmpUrl.replace(/^rtmps?:\/\//, '');
+                directorParams.set('broadcast', `${rtmpKey}@${broadcastUrl}`);
+            }
+            // --- FIN DEL CAMBIO ---
+
             // La URL del espectador debe usar 'room' y 'scene=0' para ver la salida del director.
             let viewerParams = new URLSearchParams({
                 room: roomName,
