@@ -103,10 +103,12 @@ const LiveApp = {
         });
 
         if (this.elements.participantsContainer) {
+            this.elements.participantModalCloseBtn.addEventListener('click', () => this.closeParticipantModal());
             this.elements.participantsContainer.addEventListener('click', (e) => {
                 const avatar = e.target.closest('.avatar');
                 if (avatar && avatar.dataset.userId) {
                     this.openParticipantModal(avatar.dataset.userId);
+                if (e.target === this.elements.participantModalOverlay) this.closeParticipantModal();
                 }
             });
         }
@@ -217,7 +219,7 @@ const LiveApp = {
         // <-- CAMBIO: Se usa `session.organizer` en lugar de `session.profiles`.
         this.elements.researcherInfoContainer.innerHTML = session.organizer ? `<img src="${session.organizer.avatar_url || ''}" alt=""><div><h4>${session.organizer.display_name || ''}</h4><p>ORCID: ${session.organizer.orcid || ''}</p></div>` : '';
         const project = session.organizer?.projects?.find(p => p.title === session.project_title);
-        this.elements.projectInfoContainer.innerHTML = project ? `<h4>Más infomación</h4><p>${project.authors.slice(0, 2).join(', ')}...</p><a href="https://doi.org/${project.doi}" target="_blank">Ver DOI</a>` : '';
+        this.elements.projectInfoContainer.innerHTML = project ? `<h4>Más infomación</h4><p>${project.authors.join(', ')}</p><a href="https://doi.org/${project.doi}" target="_blank">Ver DOI</a>` : '';
     },
 
     // <-- CAMBIO: Nueva función para renderizar los avatares de los participantes.

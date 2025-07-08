@@ -388,15 +388,14 @@ body {
     color: var(--accent-color);
 }
 
-/* En /live/css/live.css */
-
-/* Hacemos que la columna del reproductor se quede fija en la parte superior en móviles */
-@media (max-width: 900px) { /* Ajusta este valor si tu layout cambia en otro punto */
-    .player-column {
+@media (max-width: 900px) {
+    /* Hacemos que solo el contenedor del video sea el que se quede fijo */
+    #player-container {
         position: -webkit-sticky; /* Para compatibilidad con Safari */
         position: sticky;
         top: 0;
-        z-index: 1000; /* Asegura que se mantenga por encima del resto del contenido al hacer scroll */
-        background-color: var(--background-primary); /* Evita que el contenido de abajo se vea a través */
+        z-index: 1000;
+        /* El fondo es importante si el contenedor del reproductor no tiene un color propio */
+        background-color: var(--background-primary);
     }
 }
