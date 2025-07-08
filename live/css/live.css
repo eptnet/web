@@ -338,3 +338,65 @@ body {
     text-decoration: none;
     font-weight: 600;
 }
+
+/* En /live/css/live.css */
+
+/* Avatares circulares y clicables */
+#investigators-box .avatar-grid .avatar {
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#investigators-box .avatar-grid .avatar:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 15px rgba(0, 195, 255, 0.6);
+}
+
+/* Estilos para el modal de participante */
+.participant-modal-content-wrapper {
+    text-align: center;
+}
+
+.participant-modal-content-wrapper img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--accent-color);
+    margin-bottom: 1rem;
+}
+
+.participant-modal-content-wrapper h4 {
+    margin: 0.5rem 0;
+    font-size: 1.5rem;
+}
+
+.participant-modal-content-wrapper p {
+    margin: 0.2rem 0;
+    color: var(--text-secondary);
+}
+
+.participant-social-links a {
+    font-size: 1.5rem;
+    margin: 0 0.5rem;
+    color: var(--text-primary);
+    transition: color 0.2s ease;
+}
+
+.participant-social-links a:hover {
+    color: var(--accent-color);
+}
+
+/* En /live/css/live.css */
+
+/* Hacemos que la columna del reproductor se quede fija en la parte superior en móviles */
+@media (max-width: 900px) { /* Ajusta este valor si tu layout cambia en otro punto */
+    .player-column {
+        position: -webkit-sticky; /* Para compatibilidad con Safari */
+        position: sticky;
+        top: 0;
+        z-index: 1000; /* Asegura que se mantenga por encima del resto del contenido al hacer scroll */
+        background-color: var(--background-primary); /* Evita que el contenido de abajo se vea a través */
+    }
+}

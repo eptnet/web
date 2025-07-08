@@ -205,7 +205,21 @@ export const Studio = {
     openModal(actionOrSessionData) {
         const isEditing = typeof actionOrSessionData === 'object' && actionOrSessionData !== null;
         const session = isEditing ? actionOrSessionData : null;
-        this.participants = [];
+
+        // --- CAMBIO CLAVE: CARGAMOS LOS PARTICIPANTES EXISTENTES ---
+        // Si estamos editando y la sesión tiene participantes, los cargamos en nuestro estado local.
+        if (isEditing && session.participants) {
+            // Mapeamos los datos para que coincidan con la estructura que usamos ({id, name, avatar})
+            this.participants = session.participants.map(p => ({
+                id: p.profiles.id,
+                name: p.profiles.display_name,
+                avatar: p.profiles.avatar_url
+            }));
+        } else {
+            // Si es una sesión nueva, la lista empieza vacía.
+            this.participants = [];
+        }
+        // --- FIN DEL CAMBIO ---
 
         const projectDropdown = document.getElementById('project-selector-dropdown');
         const selectedProject = projectDropdown ? projectDropdown.value : '';
@@ -286,6 +300,7 @@ export const Studio = {
                 fieldHTML = `<div class="form-group"><label for="substack-id">ID del Directo de Substack</label><input id="substack-id" name="substackId" type="text" value="${session?.platform_id || ''}" placeholder="Opcional al agendar"></div>`;
             }
             platformSpecificFields.innerHTML = fieldHTML;
+            this.renderAddedParticipants();
         };
 
         if (!isEditing) {
@@ -363,7 +378,7 @@ export const Studio = {
             sessionData.director_url = `${vdoDomain}/mixer?${directorParams.toString()}`;
             sessionData.guest_url = `${vdoDomain}/?${guestParams.toString()}`;
             // Construimos la URL del espectador corregida
-            sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}&whepshare=https://use1.meshcast.io/whep/EPTLive`;
+            sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}&layout&whepshare=https://use1.meshcast.io/whep/EPTLive&cleanoutput`;
         }
 
         const { data: savedSession, error } = session

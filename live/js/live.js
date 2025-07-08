@@ -56,6 +56,9 @@ const LiveApp = {
             themeToggleBtn: document.getElementById('theme-toggle-btn'),
             // <-- CAMBIO: Añadido el contenedor de los avatares de participantes.
             participantsContainer: document.querySelector('#investigators-box .avatar-grid'),
+            participantModalOverlay: document.getElementById('participant-modal-overlay'),
+            participantModalContent: document.getElementById('participant-modal-content'),
+            participantModalCloseBtn: document.getElementById('participant-modal-close'),
         };
     },
 
@@ -98,6 +101,15 @@ const LiveApp = {
             document.body.classList.toggle('light-theme');
             localStorage.setItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
         });
+
+        if (this.elements.participantsContainer) {
+            this.elements.participantsContainer.addEventListener('click', (e) => {
+                const avatar = e.target.closest('.avatar');
+                if (avatar && avatar.dataset.userId) {
+                    this.openParticipantModal(avatar.dataset.userId);
+                }
+            });
+        }
     },
 
     async run() {
@@ -205,7 +217,7 @@ const LiveApp = {
         // <-- CAMBIO: Se usa `session.organizer` en lugar de `session.profiles`.
         this.elements.researcherInfoContainer.innerHTML = session.organizer ? `<img src="${session.organizer.avatar_url || ''}" alt=""><div><h4>${session.organizer.display_name || ''}</h4><p>ORCID: ${session.organizer.orcid || ''}</p></div>` : '';
         const project = session.organizer?.projects?.find(p => p.title === session.project_title);
-        this.elements.projectInfoContainer.innerHTML = project ? `<h4>Sobre el Proyecto</h4><p>${project.authors.slice(0, 2).join(', ')}...</p><a href="https://doi.org/${project.doi}" target="_blank">Ver DOI</a>` : '';
+        this.elements.projectInfoContainer.innerHTML = project ? `<h4>Más infomación</h4><p>${project.authors.slice(0, 2).join(', ')}...</p><a href="https://doi.org/${project.doi}" target="_blank">Ver DOI</a>` : '';
     },
 
     // <-- CAMBIO: Nueva función para renderizar los avatares de los participantes.
@@ -216,14 +228,9 @@ const LiveApp = {
         const participants = session.participants.map(p => p.profiles);
         const allUsers = [];
 
-        if (organizer) {
-            allUsers.push(organizer);
-        }
-
+        if (organizer) allUsers.push(organizer);
         participants.forEach(p => {
-            if (p && !allUsers.some(u => u.id === p.id)) {
-                allUsers.push(p);
-            }
+            if (p && !allUsers.some(u => u.id === p.id)) allUsers.push(p);
         });
 
         if (allUsers.length === 0) {
@@ -231,15 +238,17 @@ const LiveApp = {
             return;
         }
 
+        // Envolvemos la imagen en un botón para que sea claramente clicable y tenga el data-attribute
         this.elements.participantsContainer.innerHTML = allUsers.map(user => `
             <img 
                 src="${user.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" 
                 alt="${user.display_name}" 
                 title="${user.display_name}" 
                 class="avatar"
+                data-user-id="${user.id}"
             >
         `).join('');
-    },
+    },  
     
     // <-- CAMBIO: Nueva función para limpiar la sección de participantes.
     clearParticipants() {
@@ -247,6 +256,45 @@ const LiveApp = {
             this.elements.participantsContainer.innerHTML = '<p class="placeholder-text">Los participantes se mostrarán aquí.</p>';
         }
     },
+
+    openParticipantModal(userId) {
+        // Buscamos los datos completos del evento en vivo actual
+        const liveSession = this.allEvents.find(s => s.status === 'EN VIVO');
+        if (!liveSession) return;
+
+        // Buscamos al usuario clickeado entre el organizador y los participantes
+        let user = null;
+        if (liveSession.organizer && liveSession.organizer.id === userId) {
+            user = liveSession.organizer;
+        } else {
+            const participantData = liveSession.participants.find(p => p.profiles.id === userId);
+            if(participantData) user = participantData.profiles;
+        }
+
+        if (!user) {
+            console.error("No se encontraron los datos del participante con ID:", userId);
+            return;
+        }
+
+        // Creamos el HTML para el contenido del modal
+        this.elements.participantModalContent.innerHTML = `
+            <div class="participant-modal-content-wrapper">
+                <img src="${user.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="${user.display_name}">
+                <h4>${user.display_name}</h4>
+                <p><strong>ORCID:</strong> ${user.orcid || 'No disponible'}</p>
+                <p>${user.bio || ''}</p>
+                <div class="participant-social-links">
+                    ${user.website_url ? `<a href="${user.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}
+                    ${user.x_url ? `<a href="${user.x_url}" target="_blank" title="Perfil de X"><i class="fab fa-twitter"></i></a>` : ''}
+                </div>
+            </div>
+        `;
+        this.elements.participantModalOverlay.classList.add('is-visible');
+    },
+
+    closeParticipantModal() {
+        this.elements.participantModalOverlay.classList.remove('is-visible');
+    },    
 
     renderSchedule(schedule) {
         const scheduleContainer = this.elements.scheduleList;
@@ -358,6 +406,8 @@ const LiveApp = {
             })
             .subscribe();
     }
+
+
 };
 
 // Se asegura de que la App inicie correctamente, incluso si la API de YT ya está cargada.
