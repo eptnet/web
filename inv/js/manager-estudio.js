@@ -299,9 +299,6 @@ export const Studio = {
         e.preventDefault();
         const formData = new FormData(e.target);
         const platform = formData.get('platform');
-        const scheduledAt = formData.get('scheduledAt');
-        const endAt = formData.get('endAt');
-        
         const projectTitle = document.getElementById('project-selector-dropdown')?.value || session?.project_title || '';
         if (!projectTitle) {
             alert("Error: No se pudo determinar el proyecto asociado.");
@@ -313,28 +310,19 @@ export const Studio = {
             session_title: formData.get('sessionTitle'),
             platform: platform,
             status: 'PROGRAMADO',
-            scheduled_at: new Date(scheduledAt).toISOString(),
-            end_at: endAt ? new Date(endAt).toISOString() : null,
+            scheduled_at: new Date(formData.get('scheduledAt')).toISOString(),
+            end_at: formData.get('endAt') ? new Date(formData.get('endAt')).toISOString() : null,
             description: formData.get('description'),
             thumbnail_url: formData.get('thumbnail_url'),
-            more_info_url: formData.get('more_info_url')
+            more_info_url: formData.get('more_info_url'),
+            platform_id: formData.get('youtubeId') || formData.get('substackId') || null
         };
         
-        if (!session) { // Si es una sesión nueva
+        if (!session) {
             sessionData.user_id = App.userId;
             sessionData.is_archived = false;
-        }
-
-        if (platform === 'youtube') {
-            sessionData.platform_id = formData.get('youtubeId') || null;
-        } else if (platform === 'substack') {
-            sessionData.platform_id = formData.get('substackId') || null;
-        } else { // VDO.Ninja u otros
-            sessionData.platform_id = null;
-        }
-
-        // Generamos las URLs de VDO.Ninja solo si es una sesión nueva
-        if (!session) {
+            
+            // TU LÓGICA DE URLS PERSONALIZADAS (CORRECTA)
             const stableId = self.crypto.randomUUID().slice(0, 8);
             const roomName = `ept-${App.userProfile.orcid.slice(-6)}-${stableId}`;
             const directorKey = `dir-${App.userProfile.orcid.slice(-4)}`;
@@ -343,24 +331,45 @@ export const Studio = {
             let directorParams = new URLSearchParams({ room: roomName, director: directorKey, record: 'auto' });
             let guestParams = new URLSearchParams({ room: roomName });
             let viewerParams = new URLSearchParams({ view: roomName });
+
+            // Añadimos meshcast si es necesario
+            if (formData.get('guestCount') > 4) {
+                directorParams.set('meshcast', '1');
+                guestParams.set('meshcast', '1');
+                viewerParams.set('meshcast', '1');
+            }
             
-            sessionData.director_url = `${vdoDomain}/?${directorParams.toString()}`;
+            sessionData.director_url = `${vdoDomain}/mixer?${directorParams.toString()}`;
             sessionData.guest_url = `${vdoDomain}/?${guestParams.toString()}`;
-            sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}`;
+            sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}&whepshare=https://use1.meshcast.io/whep/EPTLive`;
         }
 
-        const { error } = session
-            ? await App.supabase.from('sessions').update(sessionData).eq('id', session.id)
-            : await App.supabase.from('sessions').insert(sessionData);
+        const { data: savedSession, error } = session
+            ? await App.supabase.from('sessions').update(sessionData).eq('id', session.id).select().single()
+            : await App.supabase.from('sessions').insert(sessionData).select().single();
 
         if (error) {
             alert("No se pudo guardar la sesión.");
             console.error('Error guardando la sesión:', error);
-        } else {
-            alert(`¡Sesión ${session ? 'actualizada' : 'agendada'} con éxito!`);
-            this.closeModal();
-            this.fetchSessions();
+            return;
         }
+
+        // Lógica para guardar participantes
+        await App.supabase.from('event_participants').delete().eq('session_id', savedSession.id);
+        if (this.participants && this.participants.length > 0) {
+            const participantsData = this.participants.map(p => ({
+                session_id: savedSession.id,
+                user_id: p.id
+            }));
+            const { error: participantsError } = await App.supabase.from('event_participants').insert(participantsData);
+            if (participantsError) {
+                alert("La sesión se guardó, pero hubo un error al guardar los participantes.");
+            }
+        }
+        
+        alert(`¡Sesión ${session ? 'actualizada' : 'agendada'} con éxito!`);
+        this.closeModal();
+        this.fetchSessions();
     },
 
     // Pega estas nuevas funciones dentro del objeto Studio en manager-estudio.js
