@@ -18,7 +18,9 @@ const ControlRoom = {
             return;
         }
 
-        this.listenToVDONinja();
+        // CAMBIO: Ya no escuchamos pasivamente. Ahora actuamos.
+        // this.listenToVDONinja(); 
+        
         this.fetchAndLoadSession();
     },
 
@@ -32,40 +34,54 @@ const ControlRoom = {
         document.title = `${this.sessionData.session_title} - Sala de Control`;
         document.getElementById('session-title-header').textContent = this.sessionData.session_title;
         
-        // Añadimos un parámetro a la URL del director para que la API se active
         const directorUrl = new URL(this.sessionData.director_url);
-        directorUrl.searchParams.set('api', '1');
+        directorUrl.searchParams.set('api', '1'); // Activa la API
         this.iframe.src = directorUrl.toString();
+
+        // CAMBIO: Dibujamos el botón correcto tan pronto cargamos los datos.
+        this.renderActionButtons();
     },
 
-    // Escuchamos los mensajes que nos envía el iframe de VDO.Ninja
-    listenToVDONinja() {
-        window.addEventListener('message', (e) => {
-            // Asegurarnos que el mensaje viene del iframe
-            if (e.source !== this.iframe.contentWindow) return;
-            
-            // Cuando el director empieza a grabar o transmitir, VDO.Ninja nos avisa
-            if (e.data.action === 'recording-state') {
-                const isRecording = e.data.value;
-                const currentStatus = this.sessionData.status;
+    // CAMBIO: Nueva función para iniciar la transmisión. Es el equivalente a 'endLiveStream'.
+    async goLive() {
+        if (this.sessionData.status !== 'PROGRAMADO') return;
 
-                if (isRecording && currentStatus !== 'EN VIVO') {
-                    // Si empieza a grabar y no estábamos EN VIVO, actualizamos el estado
-                    console.log("VDO.Ninja ha empezado a grabar/transmitir. Actualizando estado a EN VIVO.");
-                    this.updateStatus('EN VIVO');
-                }
-            }
-        });
+        console.log('Enviando comando para INICIAR transmisión al iframe...');
+        
+        // 1. Ordena a VDO.Ninja que empiece a grabar.
+        this.iframe.contentWindow.postMessage({ 'record': true }, "*");
+
+        // 2. Actualiza nuestro estado en la base de datos.
+        await this.updateStatus('EN VIVO');
+        
+        alert('¡La transmisión ahora está EN VIVO!');
+    },
+
+    // CAMBIO: 'endLiveStream' ahora se llama 'endSession' para más claridad.
+    async endSession() {
+        if (this.sessionData.status !== 'EN VIVO') return;
+        if (!confirm("Esto finalizará la transmisión pública y la archivará. ¿Estás seguro?")) return;
+        
+        console.log("Enviando comando para DETENER la transmisión al iframe...");
+
+        // 1. Ordena a VDO.Ninja que pare de grabar y cuelgue.
+        this.iframe.contentWindow.postMessage({ 'record': false }, "*");
+        this.iframe.contentWindow.postMessage({ 'close': true }, "*");
+        
+        // 2. Actualiza nuestro estado.
+        await this.updateStatus('FINALIZADO');
+
+        alert('¡La transmisión ha FINALIZADO!');
     },
     
-    // Función para actualizar nuestro estado en Supabase
     async updateStatus(newStatus) {
-        if (this.sessionData.status === newStatus) return; // Evita actualizaciones innecesarias
+        if (this.sessionData.status === newStatus) return;
 
         const updateData = { status: newStatus };
+        
+        // CAMBIO: Movimos la lógica de archivar aquí para más consistencia.
         if (newStatus === 'FINALIZADO') {
-            updateData.end_at = new Date().toISOString();
-            updateData.is_archived = true;
+            updateData.is_archived = true; 
         }
         
         const { error } = await this.supabase.from('sessions').update(updateData).eq('id', this.sessionId);
@@ -74,32 +90,28 @@ const ControlRoom = {
         } else {
             console.log(`Estado actualizado a ${newStatus}`);
             this.sessionData.status = newStatus; // Actualizamos estado local
-            this.renderEndButton();
+            this.renderActionButtons(); // CAMBIO: Volvemos a dibujar el botón correcto.
         }
     },
 
-    // Dibuja el botón de terminar solo si estamos EN VIVO
-    renderEndButton() {
-        const container = document.getElementById('end-stream-button-container');
+    // CAMBIO: Esta función ahora maneja todos los estados, no solo el de terminar.
+    renderActionButtons() {
+        const container = document.getElementById('action-buttons-container');
         if (!container) return;
 
-        if (this.sessionData.status === 'EN VIVO') {
-            container.innerHTML = `<button class="btn-primary is-live" onclick="ControlRoom.endLiveStream()"><i class="fa-solid fa-stop-circle"></i> Terminar Transmisión Pública</button>`;
-        } else {
-            container.innerHTML = '';
+        let buttonHTML = '';
+        switch (this.sessionData.status) {
+            case 'PROGRAMADO':
+                buttonHTML = `<button class="btn-primary go-live" onclick="ControlRoom.goLive()"><i class="fa-solid fa-play-circle"></i> Iniciar Transmisión Pública</button>`;
+                break;
+            case 'EN VIVO':
+                buttonHTML = `<button class="btn-primary is-live" onclick="ControlRoom.endSession()"><i class="fa-solid fa-stop-circle"></i> Terminar Transmisión Pública</button>`;
+                break;
+            case 'FINALIZADO':
+                buttonHTML = `<p class="session-ended-message"><i class="fa-solid fa-check-circle"></i> Esta transmisión ha finalizado.</p>`;
+                break;
         }
-    },
-
-    // El botón de terminar ahora envía una orden al iframe y LUEGO actualiza el estado
-    endLiveStream() {
-        if (!confirm("Esto finalizará la transmisión pública. ¿Estás seguro?")) return;
-        
-        console.log("Enviando comando para detener la transmisión al iframe...");
-        this.iframe.contentWindow.postMessage({ 'record': false }, "*"); // Detiene la grabación
-        this.iframe.contentWindow.postMessage({ 'close': true }, "*"); // Cuelga las conexiones
-        
-        // Después de enviar los comandos, actualizamos nuestro estado
-        this.updateStatus('FINALIZADO');
+        container.innerHTML = buttonHTML;
     }
 };
 
