@@ -335,17 +335,25 @@ export const Studio = {
             sessionData.user_id = App.userId;
             sessionData.is_archived = false;
             
-            // TU LÓGICA DE URLS PERSONALIZADAS (CORRECTA)
             const stableId = self.crypto.randomUUID().slice(0, 8);
-            const roomName = `ept-${App.userProfile.orcid.slice(-6)}-${stableId}`;
+            // CAMBIO SUTIL PERO IMPORTANTE: Usamos un guion bajo para el nombre de la sala,
+            // ya que la URL del mixer lo usa así.
+            const roomName = `ept_2_${App.userProfile.orcid.slice(-4)}_${stableId}`; 
             const directorKey = `dir-${App.userProfile.orcid.slice(-4)}`;
             const vdoDomain = 'https://vdo.epistecnologia.com';
             
             let directorParams = new URLSearchParams({ room: roomName, director: directorKey, record: 'auto' });
             let guestParams = new URLSearchParams({ room: roomName });
-            let viewerParams = new URLSearchParams({ view: roomName });
+            
+            // --- AQUÍ ESTÁ LA CORRECCIÓN CLAVE ---
+            // La URL del espectador debe usar 'room' y 'scene=0' para ver la salida del director.
+            let viewerParams = new URLSearchParams({
+                room: roomName,
+                scene: '0',
+                showlabels: '0' // Opcional: oculta las etiquetas de los nombres
+            });
 
-            // Añadimos meshcast si es necesario
+            // Añadimos meshcast si es necesario (esto no cambia)
             if (formData.get('guestCount') > 4) {
                 directorParams.set('meshcast', '1');
                 guestParams.set('meshcast', '1');
@@ -354,6 +362,7 @@ export const Studio = {
             
             sessionData.director_url = `${vdoDomain}/mixer?${directorParams.toString()}`;
             sessionData.guest_url = `${vdoDomain}/?${guestParams.toString()}`;
+            // Construimos la URL del espectador corregida
             sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}&whepshare=https://use1.meshcast.io/whep/EPTLive`;
         }
 

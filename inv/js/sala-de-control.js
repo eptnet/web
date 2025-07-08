@@ -17,9 +17,6 @@ const ControlRoom = {
             document.body.innerHTML = '<h1>Error: No se ha proporcionado un ID de sesión.</h1>';
             return;
         }
-
-        // CAMBIO: Ya no escuchamos pasivamente. Ahora actuamos.
-        // this.listenToVDONinja(); 
         
         this.fetchAndLoadSession();
     },
@@ -35,67 +32,84 @@ const ControlRoom = {
         document.getElementById('session-title-header').textContent = this.sessionData.session_title;
         
         const directorUrl = new URL(this.sessionData.director_url);
-        directorUrl.searchParams.set('api', '1'); // Activa la API
+        directorUrl.searchParams.set('api', '1');
         this.iframe.src = directorUrl.toString();
 
-        // CAMBIO: Dibujamos el botón correcto tan pronto cargamos los datos.
         this.renderActionButtons();
     },
 
-    // CAMBIO: Nueva función para iniciar la transmisión. Es el equivalente a 'endLiveStream'.
     async goLive() {
         if (this.sessionData.status !== 'PROGRAMADO') return;
-
-        console.log('Enviando comando para INICIAR transmisión al iframe...');
+        console.log('Iniciando transmisión...');
         
-        // 1. Ordena a VDO.Ninja que empiece a grabar.
-        this.iframe.contentWindow.postMessage({ 'record': true }, "*");
-
-        // 2. Actualiza nuestro estado en la base de datos.
+        if (this.iframe && this.iframe.contentWindow) {
+            console.log("Enviando comando {record: true} a VDO.Ninja...");
+            this.iframe.contentWindow.postMessage({ 'record': true }, "*");
+        } else {
+            console.error("No se pudo encontrar el iframe de VDO.Ninja para enviar el comando.");
+            alert("Error de comunicación con la ventana de VDO.Ninja.");
+            return;
+        }
+        
         await this.updateStatus('EN VIVO');
-        
-        alert('¡La transmisión ahora está EN VIVO!');
     },
 
-    // CAMBIO: 'endLiveStream' ahora se llama 'endSession' para más claridad.
     async endSession() {
         if (this.sessionData.status !== 'EN VIVO') return;
         if (!confirm("Esto finalizará la transmisión pública y la archivará. ¿Estás seguro?")) return;
         
-        console.log("Enviando comando para DETENER la transmisión al iframe...");
-
-        // 1. Ordena a VDO.Ninja que pare de grabar y cuelgue.
-        this.iframe.contentWindow.postMessage({ 'record': false }, "*");
-        this.iframe.contentWindow.postMessage({ 'close': true }, "*");
+        console.log("Iniciando secuencia para finalizar la transmisión...");
         
-        // 2. Actualiza nuestro estado.
-        await this.updateStatus('FINALIZADO');
-
-        alert('¡La transmisión ha FINALIZADO!');
+        if (this.iframe && this.iframe.contentWindow) {
+            console.log("Enviando comando {'close': 'estop'} a VDO.Ninja...");
+            this.iframe.contentWindow.postMessage({ 'close': 'estop' }, "*");
+        } else {
+            console.error("No se pudo encontrar el iframe de VDO.Ninja para enviar el comando.");
+            alert("Error de comunicación con la ventana de VDO.Ninja.");
+            return;
+        }
+        
+        // Damos un pequeño margen para que el comando se procese
+        setTimeout(async () => {
+            console.log("Procediendo a actualizar el estado en la base de datos a FINALIZADO.");
+            await this.updateStatus('FINALIZADO');
+        }, 500);
     },
     
     async updateStatus(newStatus) {
-        if (this.sessionData.status === newStatus) return;
+        console.log(`Intentando actualizar estado a: ${newStatus} para la sesión ID: ${this.sessionId}`);
+        if (this.sessionData.status === newStatus) {
+            console.warn(`El estado ya es ${newStatus}. No se necesita actualización.`);
+            return;
+        }
 
         const updateData = { status: newStatus };
-        
-        // CAMBIO: Movimos la lógica de archivar aquí para más consistencia.
         if (newStatus === 'FINALIZADO') {
             updateData.is_archived = true; 
         }
         
-        const { error } = await this.supabase.from('sessions').update(updateData).eq('id', this.sessionId);
+        const { data, error } = await this.supabase
+            .from('sessions')
+            .update(updateData)
+            .eq('id', this.sessionId)
+            .select(); // Añadimos .select() para obtener una respuesta más detallada
+            
         if (error) {
-            console.error("Error al actualizar el estado:", error);
+            console.error("--- FALLO AL ACTUALIZAR EL ESTADO EN SUPABASE ---");
+            console.error("Mensaje de error:", error.message);
+            console.error("Detalles completos del error:", error);
+            alert(`Error: No se pudo actualizar el estado a ${newStatus}. Revisa la consola para más detalles.`);
         } else {
-            console.log(`Estado actualizado a ${newStatus}`);
-            this.sessionData.status = newStatus; // Actualizamos estado local
-            this.renderActionButtons(); // CAMBIO: Volvemos a dibujar el botón correcto.
+            console.log("--- ÉXITO AL ACTUALIZAR EL ESTADO ---");
+            console.log("Respuesta de Supabase:", data);
+            this.sessionData.status = newStatus; 
+            this.renderActionButtons();
+            alert(`¡La sesión ahora está ${newStatus}!`);
         }
     },
 
-    // CAMBIO: Esta función ahora maneja todos los estados, no solo el de terminar.
     renderActionButtons() {
+        // ... (esta función no necesita cambios)
         const container = document.getElementById('action-buttons-container');
         if (!container) return;
 
