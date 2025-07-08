@@ -296,7 +296,19 @@ const LiveApp = {
     },
 
     showVDONinjaPlayer(session) {
-        this.elements.playerContainer.innerHTML = `<iframe src="${session.viewer_url}" allow="autoplay; fullscreen" frameborder="0"></iframe>`;
+        const iframeHTML = `<iframe id="vdo-ninja-player" src="${session.viewer_url}" allow="autoplay; fullscreen" frameborder="0"></iframe>`;
+        this.elements.playerContainer.innerHTML = iframeHTML;
+
+        // CAMBIO: Añadimos un reintento para solucionar problemas de carga.
+        // A veces, el espectador se conecta antes de que el director esté listo.
+        // Volver a cargar el 'src' después de un breve retraso puede forzar la conexión.
+        setTimeout(() => {
+            const iframe = document.getElementById('vdo-ninja-player');
+            if (iframe && iframe.src) {
+                console.log("Reintentando conexión con el reproductor de VDO.Ninja...");
+                iframe.src = session.viewer_url;
+            }
+        }, 3000); // 3 segundos de espera
     },
 
     showYouTubeChat(videoId) {

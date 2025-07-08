@@ -49,19 +49,25 @@ export const Studio = {
     },
 
     async fetchSessions() {
-        // Busca y muestra solo las sesiones del usuario que ha iniciado sesión
         const container = document.getElementById('sessions-container');
         if (!container) return;
         container.innerHTML = `<p>Cargando tus sesiones...</p>`;
 
+        // CAMBIO: Hacemos la consulta más potente para que traiga también a los participantes.
         const { data: sessions, error } = await App.supabase
             .from('sessions')
-            .select('*')
+            .select(`
+                *,
+                participants: event_participants (
+                    profiles (id, avatar_url, display_name)
+                )
+            `)
             .eq('is_archived', false)
             .eq('user_id', App.userId)
             .order('created_at', { ascending: false });
 
         if (error) {
+            console.error("Error fetching sessions with participants:", error);
             container.innerHTML = `<p>Error al cargar las sesiones.</p>`;
         } else {
             this.renderSessions(sessions);
@@ -85,18 +91,21 @@ export const Studio = {
             const formattedEndTime = endTime ? endTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '';
             
             let platformIdField = '';
+            if ((session.platform === 'youtube' || session.platform === 'substack') && !session.platform_id) {
+                platformIdField = `
+                    <div class="platform-id-adder">
+                        <label>Añade el ID de ${session.platform === 'youtube' ? 'YouTube' : 'Substack'}:</label>
+                        <div class="platform-id-input-group">
+                            <input type="text" id="id-input-${session.id}" placeholder="Pega el ID aquí...">
+                            <button class="btn-secondary" onclick="Studio.savePlatformId('${session.id}')">Guardar</button>
+                        </div>
+                    </div>`;
+            }
 
-             // Lógica para mostrar el campo de añadir ID
-        if ((session.platform === 'youtube' || session.platform === 'substack') && !session.platform_id) {
-            platformIdField = `
-                <div class="platform-id-adder">
-                    <label>Añade el ID de ${session.platform === 'youtube' ? 'YouTube' : 'Substack'}:</label>
-                    <div class="platform-id-input-group">
-                        <input type="text" id="id-input-${session.id}" placeholder="Pega el ID aquí...">
-                        <button class="btn-secondary" onclick="Studio.savePlatformId('${session.id}')">Guardar</button>
-                    </div>
-                </div>`;
-        }
+            // CAMBIO: Creamos el HTML para los avatares de los participantes.
+            const participantsHTML = session.participants.map(p => 
+                `<img src="${p.profiles.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="${p.profiles.display_name}" title="${p.profiles.display_name}" class="participant-avatar">`
+            ).join('');
 
             return `
             <div class="session-card" id="${session.id}">
@@ -104,6 +113,10 @@ export const Studio = {
                     <span class="session-card__meta">${session.platform === 'youtube' ? 'YouTube' : session.platform === 'substack' ? 'Substack' : 'EPT Live'}</span>
                     <h4>${session.session_title}</h4>
                     <p>${session.project_title}</p>
+                </div>
+
+                <div class="session-card__participants">
+                    ${participantsHTML}
                 </div>
 
                 <div class="session-card__schedule">
