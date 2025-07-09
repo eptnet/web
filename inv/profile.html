@@ -7,6 +7,7 @@
     <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <style>
+        /* --- ESTILOS GENERALES (SIN CAMBIOS) --- */
         :root {
             --color-background: #f0f2f5; --color-surface: #ffffff; --color-text-primary: #1c1e21;
             --color-text-secondary: #65676b; --color-accent: #b72a1e; --color-primary-cta: #1877f2;
@@ -14,42 +15,138 @@
             --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.08); --border-radius: 8px;
         }
         body { font-family: 'Inter', sans-serif; margin: 0; background-color: var(--color-background); }
-        .page-container { display: flex; justify-content: center; align-items: flex-start; padding: 3rem 1.5rem; min-height: 100vh; box-sizing: border-box;}
-        .profile-content { width: 100%; max-width: 900px; }
+        .page-container { display: flex; justify-content: center; padding: 3rem 1.5rem; box-sizing: border-box;}
+        .profile-content { width: 100%; max-width: 1200px; }
         .profile-header { text-align: center; margin-bottom: 2rem; }
         .profile-header img { height: 40px; margin-bottom: 1rem; }
-        .profile-header h1 { margin: 0 0 0.5rem 0; color: var(--color-text-primary); }
-        .profile-header p { color: var(--color-text-secondary); margin: 0; }
-        .profile-layout { display: grid; grid-template-columns: 1fr; gap: 2rem; }
-        @media (min-width: 900px) { .profile-layout { grid-template-columns: 320px 1fr; } }
-        .profile-card, .profile-form-container, .profile-projects-container { background-color: var(--color-surface); padding: 2rem; border-radius: var(--border-radius); box-shadow: var(--shadow-light); }
-        .profile-card { text-align: center; }
+        h1, h2, h3 { margin: 0 0 1rem 0; color: var(--color-text-primary); }
+        .btn-primary {
+            background-color: var(--color-primary-cta); color: white; padding: 0.8rem 1.5rem; 
+            border-radius: var(--border-radius); font-weight: 600; font-size: 1rem; 
+            cursor: pointer; border: none; text-decoration: none; display: inline-flex;
+            justify-content: center; align-items: center; gap: 0.5rem; transition: background-color 0.2s ease;
+        }
+        .btn-primary:hover { background-color: #0b5ed7; }
+        .btn-primary.is-disabled, .btn-primary:disabled { 
+            background-color: #a5b4c8; color: #e9ecef; cursor: not-allowed; pointer-events: none; 
+        }
+        .btn-secondary {
+            background-color: var(--color-background); color: var(--color-text-primary); 
+            border:1px solid var(--color-border); padding: 0.8rem 1.5rem; 
+            border-radius: var(--border-radius); font-weight: 600; cursor: pointer;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+        .btn-secondary:hover { background-color: #e2e6ea; border-color: #adb5bd;}
+        .btn-secondary:disabled {
+            background-color: #e9ecef; cursor: not-allowed;
+        }
+
+        /* --- MEJORA 1: DISEÑO BENTO BOX --- */
+        .bento-grid {
+            display: grid;
+            gap: 1.5rem;
+            grid-template-columns: repeat(1, 1fr);
+            grid-template-rows: auto;
+        }
+
+        @media (min-width: 900px) {
+            .bento-grid {
+                grid-template-columns: repeat(3, 1fr);
+                grid-template-areas:
+                    "card form form"
+                    "card projects projects";
+            }
+        }
+
+        .bento-box {
+            background-color: var(--color-surface);
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+        }
+        .profile-card { grid-area: card; text-align: center; }
+        .profile-form-container { grid-area: form; }
+        .profile-projects-container { grid-area: projects; }
+        
+        /* --- ESTILOS DE ELEMENTOS (CON AJUSTES) --- */
         .profile-card__avatar-wrapper { margin: 0 auto 1rem auto; width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--color-accent); padding: 5px; }
         .profile-card__avatar-wrapper img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; background-color: #eee; }
-        .profile-card h2 { margin: 0 0 0.5rem 0; font-size: 1.5rem; }
-        .profile-card__bio { color: var(--color-text-secondary); font-style: italic; min-height: 4.5em; }
-        .profile-main-content { display: flex; flex-direction: column; gap: 2rem; }
+        .profile-card__bio { color: var(--color-text-secondary); font-style: italic; min-height: 4.5em; margin-bottom: 1rem; }
+        .social-links { display: flex; justify-content: center; gap: 1rem; margin-bottom: 1.5rem; font-size: 1.5rem; }
+        .social-links a { color: var(--color-text-secondary); transition: color 0.2s; }
+        .social-links a:hover { color: var(--color-accent); }
+        
         .form-group { margin-bottom: 1.5rem; }
         .form-group label { display: block; font-weight: 600; margin-bottom: 0.5rem; }
         input, textarea { width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--color-border); border-radius: var(--border-radius); font-family: inherit; font-size: 1rem; box-sizing: border-box; }
+        .input-group { display: flex; gap: 0.5rem; }
+        .input-group input { flex-grow: 1; }
         .form-message { min-height: 1.2em; margin-top: 1rem; font-weight: 500; }
         .form-message.success { color: var(--color-success); } .form-message.error { color: var(--color-error); }
-        .btn-primary { background-color: var(--color-primary-cta); color: white; padding: 0.8rem 1.5rem; border-radius: var(--border-radius); font-weight: 600; font-size: 1rem; cursor: pointer; border: none; text-decoration: none; display: inline-flex; justify-content: center; align-items: center; gap: 0.5rem; transition: background-color 0.2s ease; }
-        .btn-primary:hover { background-color: #0b5ed7; }
-        .btn-primary.is-disabled { background-color: #a5b4c8; color: #e9ecef; cursor: not-allowed; pointer-events: none; }
-        .btn-secondary { background-color: var(--color-background); color: var(--color-text-primary); border:1px solid var(--color-border); padding: 0.8rem 1.5rem; border-radius: var(--border-radius); font-weight: 600; cursor: pointer;}
-        .dashboard-link-wrapper { margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--color-border); text-align: center; }
+        .dashboard-link-wrapper { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-border); }
+        
         #projects-list .project-item { background-color: var(--color-background); padding: 1rem; border-radius: var(--border-radius); margin-bottom: 1rem; border-left: 4px solid var(--color-accent); }
-        #projects-list .project-item p { margin: 0; font-weight: 600; }
-        #projects-list .project-item span { font-size: 0.85rem; color: var(--color-text-secondary); }
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center; }
-        .modal-overlay.is-visible { display: flex; }
-        .modal { background: var(--color-surface); padding: 2rem; border-radius: var(--border-radius); width: 90%; max-width: 600px; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--color-border); padding-bottom: 1rem; margin-bottom: 1rem; }
-        .modal-close-btn { font-size: 1.5rem; background: none; border: none; cursor: pointer; }
-        .doi-fetcher { display: flex; gap: 0.5rem; }
-        #doi-fetch-status { font-size: 0.9rem; margin-top: 0.5rem; min-height: 1.2em; }
-        .modal-footer { border-top: 1px solid var(--color-border); padding-top: 1.5rem; margin-top: 1.5rem; text-align: right; }
+        
+        /* --- Estilos del Sistema de Modal --- */
+        .modal-overlay {
+            display: none; /* Oculto por defecto */
+            position: fixed; /* Lo saca del flujo normal y lo fija a la ventana */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6); /* Fondo semitransparente */
+            z-index: 2000; /* Se asegura de que esté por encima de todo */
+            
+            /* Centra el contenido del modal */
+            justify-content: center;
+            align-items: center;
+            
+            padding: 1rem; /* Espacio para que no se pegue a los bordes en móviles */
+            box-sizing: border-box;
+        }
+
+        .modal-overlay.is-visible {
+            display: flex; /* Lo hacemos visible cuando se activa */
+        }
+
+        .modal {
+            background: var(--color-surface);
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--color-border);
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .modal-close-btn {
+            font-size: 1.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .doi-fetcher {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .modal-footer {
+            border-top: 1px solid var(--color-border);
+            padding-top: 1.5rem;
+            margin-top: 1.5rem;
+            text-align: right;
+        }
     </style>
 </head>
 <body>
@@ -60,31 +157,47 @@
                 <h1>Tu Centro de Control</h1>
                 <p>Gestiona tu perfil público y tus proyectos de investigación desde un solo lugar.</p>
             </header>
-            <div class="profile-layout">
-                <div class="profile-card">
+
+            <div class="bento-grid">
+                <div class="bento-box profile-card">
                     <div class="profile-card__avatar-wrapper"><img id="profile-card-avatar" alt="Avatar de usuario"></div>
                     <h2 id="profile-card-name">Cargando...</h2>
                     <p id="profile-card-bio"></p>
+                    <div id="profile-card-social-links" class="social-links"></div>
                     <div class="dashboard-link-wrapper">
                         <a href="/inv/dashboard.html" id="dashboard-link-btn" class="btn-primary is-disabled"><i class="fa-solid fa-arrow-right"></i> Acceder al Dashboard</a>
                     </div>
                 </div>
-                <div class="profile-main-content">
-                    <div class="profile-form-container">
-                        <h3><i class="fa-solid fa-user-pen"></i> Editar Información Pública</h3>
-                        <form id="profile-form">
-                            <div class="form-group"><label for="display-name">Nombre a Mostrar</label><input type="text" id="display-name" required></div>
-                            <div class="form-group"><label for="bio">Biografía Corta</label><textarea id="bio" rows="3" maxlength="150"></textarea></div>
-                            <div class="form-group"><label for="orcid-url">URL de tu Perfil ORCID</label><input type="url" id="orcid-url" placeholder="https://orcid.org/..." required></div>
-                            <button type="submit" class="btn-primary"><span class="btn-text">Guardar Cambios</span></button>
-                            <p id="profile-form-message" class="form-message"></p>
-                        </form>
-                    </div>
-                    <div class="profile-projects-container">
-                        <h3><i class="fa-solid fa-book-bookmark"></i> Mis Proyectos</h3>
-                        <div id="projects-list"><p>Cargando proyectos...</p></div>
-                        <button class="btn-secondary" id="add-project-btn" style="width: 100%; margin-top: 1rem;"><i class="fa-solid fa-plus"></i> Registrar Nuevo Proyecto</button>
-                    </div>
+
+                <div class="bento-box profile-form-container">
+                    <h3><i class="fa-solid fa-user-pen"></i> Editar Información Pública</h3>
+                    <form id="profile-form">
+                        <div class="form-group">
+                            <label for="orcid-id">ORCID iD</label>
+                            <div class="input-group">
+                                <input type="text" id="orcid-id" placeholder="0000-0001-2345-6789" required>
+                                <button type="button" id="validate-orcid-btn" class="btn-secondary">Validar</button>
+                            </div>
+                        </div>
+                        <div class="form-group"><label for="display-name">Nombre a Mostrar</label><input type="text" id="display-name" required></div>
+                        <div class="form-group"><label for="bio">Biografía Corta</label><textarea id="bio" rows="3" maxlength="250"></textarea></div>
+                        
+                        <hr>
+                        <h3><i class="fa-solid fa-share-nodes"></i> Redes Sociales</h3>
+                        <div class="form-group"><label for="website-url">Sitio Web / Blog</label><input type="url" id="website-url" placeholder="https://..."></div>
+                        <div class="form-group"><label for="x-url">Perfil de X (Twitter)</label><input type="url" id="x-url" placeholder="https://x.com/usuario"></div>
+                        <div class="form-group"><label for="linkedin-url">Perfil de LinkedIn</label><input type="url" id="linkedin-url" placeholder="https://linkedin.com/in/usuario"></div>
+                        <div class="form-group"><label for="instagram-url">Perfil de Instagram</label><input type="url" id="instagram-url" placeholder="https://instagram.com/usuario"></div>
+
+                        <button type="submit" class="btn-primary"><span class="btn-text">Guardar Cambios</span></button>
+                        <p id="profile-form-message" class="form-message"></p>
+                    </form>
+                </div>
+
+                <div class="bento-box profile-projects-container">
+                    <h3><i class="fa-solid fa-book-bookmark"></i> Mis Proyectos</h3>
+                    <div id="projects-list"><p>Cargando proyectos...</p></div>
+                    <button class="btn-secondary" id="add-project-btn" style="width: 100%; margin-top: 1rem;"><i class="fa-solid fa-plus"></i> Registrar Nuevo Proyecto</button>
                 </div>
             </div>
         </div>
@@ -110,69 +223,148 @@
         });
 
         const Profile = {
+            isOrcidValidated: false, // <-- MEJORA 2: Nuevo estado de validación
             async init(userId, userMetadata) {
-                this.userId = userId; this.userMetadata = userMetadata; this.form = document.getElementById('profile-form');
+                this.userId = userId;
+                this.userMetadata = userMetadata;
+                this.form = document.getElementById('profile-form');
                 this.loadData();
                 this.form.addEventListener('submit', (e) => this.handleSave(e));
+                document.getElementById('validate-orcid-btn').addEventListener('click', () => this.handleValidateOrcid());
             },
             checkDashboardLink(profileData) {
                 const dashboardLink = document.getElementById('dashboard-link-btn');
-                const hasOrcid = profileData?.orcid && profileData.orcid.includes('orcid.org');
                 const hasProjects = profileData?.projects && profileData.projects.length > 0;
-                if (hasOrcid && hasProjects) {
+                
+                // MEJORA 2: La condición ahora depende del estado de validación
+                if (this.isOrcidValidated && hasProjects) {
                     dashboardLink.classList.remove('is-disabled');
                     dashboardLink.title = "¡Listo! Accede al dashboard.";
                 } else {
                     dashboardLink.classList.add('is-disabled');
-                    dashboardLink.title = "Debes tener un ORCID y al menos un proyecto registrado para continuar.";
+                    dashboardLink.title = "Debes validar un ORCID y tener al menos un proyecto para continuar.";
                 }
             },
             async loadData() {
                 document.getElementById('profile-card-avatar').src = this.userMetadata?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
                 const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', this.userId).single();
                 if (error && error.code !== 'PGRST116') return console.error(error);
+                
                 if (data) {
-                    document.getElementById('profile-card-name').textContent = data.display_name || this.userMetadata?.full_name;
-                    document.getElementById('profile-card-bio').textContent = data.bio || 'Añade tu biografía...';
+                    // Cargar datos principales
+                    document.getElementById('profile-card-name').textContent = data.display_name || this.userMetadata?.full_name || 'Nombre no definido';
+                    document.getElementById('profile-card-bio').textContent = data.bio || '';
                     this.form.querySelector('#display-name').value = data.display_name || '';
                     this.form.querySelector('#bio').value = data.bio || '';
-                    this.form.querySelector('#orcid-url').value = data.orcid || '';
+                    this.form.querySelector('#orcid-id').value = data.orcid ? data.orcid.split('/').pop() : '';
+
+                    // MEJORA 3: Cargar redes sociales
+                    this.form.querySelector('#website-url').value = data.website_url || '';
+                    this.form.querySelector('#x-url').value = data.x_url || '';
+                    this.form.querySelector('#linkedin-url').value = data.linkedin_url || '';
+                    this.form.querySelector('#instagram-url').value = data.instagram_url || '';
+                    
+                    // Renderizar los iconos de redes en la tarjeta de perfil
+                    const socialContainer = document.getElementById('profile-card-social-links');
+                    socialContainer.innerHTML = `
+                        ${data.website_url ? `<a href="${data.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}
+                        ${data.x_url ? `<a href="${data.x_url}" target="_blank" title="Perfil de X"><i class="fab fa-twitter"></i></a>` : ''}
+                        ${data.linkedin_url ? `<a href="${data.linkedin_url}" target="_blank" title="Perfil de LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}
+                        ${data.instagram_url ? `<a href="${data.instagram_url}" target="_blank" title="Perfil de Instagram"><i class="fab fa-instagram"></i></a>` : ''}
+                    `;
+                    
+                    if (data.orcid) this.isOrcidValidated = true; // Si ya hay un ORCID, lo marcamos como validado
                 }
                 this.checkDashboardLink(data);
             },
+            
+            // --- MEJORA 2: NUEVA FUNCIÓN PARA VALIDAR ORCID Y OBTENER DATOS ---
+            async handleValidateOrcid() {
+                const orcidInput = document.getElementById('orcid-id');
+                const orcidId = orcidInput.value.trim();
+                const messageEl = document.getElementById('profile-form-message');
+                const validateBtn = document.getElementById('validate-orcid-btn');
+                
+                // Expresión regular para validar el formato del ORCID iD
+                const orcidRegex = /^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/;
+                if (!orcidRegex.test(orcidId)) {
+                    messageEl.textContent = 'El formato del ORCID iD no es válido (ej: 0000-0001-2345-6789).';
+                    messageEl.className = 'form-message error';
+                    return;
+                }
+                
+                validateBtn.textContent = 'Validando...';
+                validateBtn.disabled = true;
+                
+                try {
+                    // Usamos un proxy para evitar problemas de CORS si es necesario
+                    const response = await fetch(`https://pub.orcid.org/v3.0/${orcidId}`, {
+                        headers: { 'Accept': 'application/json' }
+                    });
+
+                    if (!response.ok) throw new Error('ORCID iD no encontrado o no es público.');
+                    
+                    const data = await response.json();
+                    
+                    // Rellenamos el formulario con los datos de ORCID
+                    const person = data.person;
+                    const givenName = person.name['given-names']?.value || '';
+                    const familyName = person.name['family-name']?.value || '';
+                    document.getElementById('display-name').value = `${givenName} ${familyName}`.trim();
+                    
+                    const biography = data['activities-summary']?.employments?.['employment-summary']?.[0]?.['organization']?.name || '';
+                    document.getElementById('bio').value = biography;
+                    
+                    this.isOrcidValidated = true;
+                    messageEl.textContent = `¡ORCID validado para ${givenName} ${familyName}!`;
+                    messageEl.className = 'form-message success';
+                    this.checkDashboardLink({ orcid: orcidId, projects: Projects.projects });
+                    
+                } catch(error) {
+                    this.isOrcidValidated = false;
+                    messageEl.textContent = error.message;
+                    messageEl.className = 'form-message error';
+                } finally {
+                    validateBtn.textContent = 'Validar';
+                    validateBtn.disabled = false;
+                }
+            },
+
             async handleSave(e) {
                 e.preventDefault();
+                // Si el ORCID no ha sido validado, no se puede guardar
+                if (!this.isOrcidValidated) {
+                    document.getElementById('profile-form-message').textContent = 'Por favor, valida tu ORCID iD antes de guardar.';
+                    document.getElementById('profile-form-message').className = 'form-message error';
+                    return;
+                }
+                
                 const saveButton = this.form.querySelector('button[type="submit"]');
                 const btnText = saveButton.querySelector('.btn-text');
                 const messageEl = document.getElementById('profile-form-message');
                 
-                // --- NUEVA VALIDACIÓN DE ORCID ---
-                const orcidUrl = this.form.querySelector('#orcid-url').value.trim();
-                // Expresión regular para validar el formato de una URL de ORCID
-                const orcidRegex = /^https:\/\/(www\.)?orcid\.org\/(\d{4}-\d{4}-\d{4}-\d{3}[\dX])$/;
-
-                if (!orcidRegex.test(orcidUrl)) {
-                    messageEl.textContent = 'El formato del ORCID no es válido.';
-                    messageEl.className = 'form-message error';
-                    return; // Detiene el proceso si no es válido
-                }
-                // --- FIN DE LA VALIDACIÓN ---
-
                 saveButton.disabled = true; 
                 btnText.textContent = 'Guardando...';
                 
+                const orcidId = this.form.querySelector('#orcid-id').value.trim();
+
+                // MEJORA 3: Guardamos los nuevos campos de redes sociales
                 const updates = { 
                     id: this.userId, 
                     updated_at: new Date(), 
                     display_name: this.form.querySelector('#display-name').value, 
                     bio: this.form.querySelector('#bio').value, 
-                    orcid: orcidUrl // Usamos la URL ya validada y sin espacios
+                    orcid: `https://orcid.org/${orcidId}`, // Guardamos la URL completa
+                    website_url: this.form.querySelector('#website-url').value,
+                    x_url: this.form.querySelector('#x-url').value,
+                    linkedin_url: this.form.querySelector('#linkedin-url').value,
+                    instagram_url: this.form.querySelector('#instagram-url').value,
                 };
                 
                 const { error } = await supabaseClient.from('profiles').upsert(updates);
                 
-                messageEl.textContent = error ? error.message : '¡Guardado!';
-                messageEl.className = `form-message ${error ? 'success' : 'success'}`; // Siempre success si no hay error
+                messageEl.textContent = error ? error.message : '¡Cambios guardados con éxito!';
+                messageEl.className = `form-message ${error ? 'error' : 'success'}`;
                 if (!error) this.loadData();
 
                 setTimeout(() => {
@@ -180,10 +372,12 @@
                     btnText.textContent = 'Guardar Cambios';
                     messageEl.textContent = ''; 
                     messageEl.className = 'form-message';
-                }, 2000);
-        }
+                }, 3000);
+            },
+        };
 
         const Projects = {
+            projects: [], // Mantenemos una copia local de los proyectos
             fetchedProjectData: null,
             init(userId) {
                 this.userId = userId;
@@ -192,11 +386,11 @@
             },
             async loadProjects() {
                 const { data } = await supabaseClient.from('profiles').select('projects').eq('id', this.userId).single();
-                const projects = data?.projects || [];
+                this.projects = data?.projects || []; // Actualizamos la copia local
                 const listEl = document.getElementById('projects-list');
                 listEl.innerHTML = '';
-                if (projects.length > 0) {
-                    projects.forEach(p => {
+                if (this.projects.length > 0) {
+                    this.projects.forEach(p => {
                         const item = document.createElement('div');
                         item.className = 'project-item';
                         item.innerHTML = `<p>${p.title}</p><span>DOI: ${p.doi}</span>`;
@@ -205,7 +399,7 @@
                 } else {
                     listEl.innerHTML = '<p>Aún no has registrado ningún proyecto.</p>';
                 }
-                Profile.checkDashboardLink({ orcid: document.getElementById('orcid-url').value, projects });
+                Profile.checkDashboardLink({ projects: this.projects });
             },
             openModal() {
                 const modalOverlay = document.getElementById('project-modal-overlay');
@@ -226,37 +420,64 @@
                 modalOverlay.querySelector('#fetch-doi-btn').addEventListener('click', () => this.handleFetchDoi());
                 modalOverlay.querySelector('#save-project-btn').addEventListener('click', () => this.handleSaveProject());
             },
-            closeModal() { document.getElementById('project-modal-overlay').classList.remove('is-visible'); },
+            closeModal() { 
+                const modalOverlay = document.getElementById('project-modal-overlay');
+                modalOverlay.classList.remove('is-visible');
+                modalOverlay.innerHTML = '';
+            },
             async handleFetchDoi() {
                 const doiInput = document.getElementById('doi-input');
                 const statusDiv = document.getElementById('doi-fetch-status');
+                const fetchBtn = document.getElementById('fetch-doi-btn');
                 statusDiv.textContent = 'Buscando...'; statusDiv.className = 'form-message';
+                fetchBtn.disabled = true;
+                
                 try {
                     const response = await fetch(`https://api.datacite.org/dois/${doiInput.value.trim()}`);
-                    if (!response.ok) throw new Error('DOI no encontrado.');
+                    if (!response.ok) throw new Error('DOI no encontrado o inválido.');
                     const data = await response.json();
                     const metadata = data.data.attributes;
                     document.getElementById('project-title').value = metadata.titles[0]?.title || 'N/A';
                     document.getElementById('project-authors').value = metadata.creators.map(c => c.name).join(', ');
                     this.fetchedProjectData = { doi: doiInput.value, title: metadata.titles[0]?.title, authors: metadata.creators.map(c => c.name) };
                     document.getElementById('save-project-btn').disabled = false;
-                    statusDiv.textContent = '¡Metadatos encontrados!'; statusDiv.classList.add('success');
+                    statusDiv.textContent = '¡Metadatos encontrados!'; statusDiv.className = 'form-message success';
                 } catch(error) {
-                    statusDiv.textContent = error.message; statusDiv.classList.add('error');
+                    statusDiv.textContent = error.message; statusDiv.className = 'form-message error';
+                } finally {
+                    fetchBtn.disabled = false;
                 }
             },
             async handleSaveProject() {
                 if (!this.fetchedProjectData) return;
+                const saveBtn = document.getElementById('save-project-btn');
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Guardando...';
+
                 const { data: profile } = await supabaseClient.from('profiles').select('projects').eq('id', this.userId).single();
                 const existingProjects = profile?.projects || [];
+                
+                // Evitar duplicados
+                if (existingProjects.some(p => p.doi === this.fetchedProjectData.doi)) {
+                    alert("Este proyecto (DOI) ya ha sido registrado.");
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Guardar Proyecto';
+                    return;
+                }
+
                 const newProjects = [...existingProjects, this.fetchedProjectData];
                 const { error } = await supabaseClient.from('profiles').update({ projects: newProjects }).eq('id', this.userId);
-                if (error) { alert("Error al guardar el proyecto."); console.error(error); }
-                else { this.loadProjects(); this.closeModal(); }
+                if (error) { 
+                    alert("Error al guardar el proyecto."); 
+                    console.error(error);
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Guardar Proyecto';
+                } else { 
+                    this.loadProjects(); 
+                    this.closeModal(); 
+                }
             }
-            },
         };
     </script>
-
 </body>
 </html>
