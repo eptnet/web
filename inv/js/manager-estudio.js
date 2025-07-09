@@ -202,24 +202,21 @@ export const Studio = {
         }).join('');
     },
 
+    // En /inv/js/manager-estudio.js
+
     openModal(actionOrSessionData) {
         const isEditing = typeof actionOrSessionData === 'object' && actionOrSessionData !== null;
         const session = isEditing ? actionOrSessionData : null;
 
-        // --- CAMBIO CLAVE: CARGAMOS LOS PARTICIPANTES EXISTENTES ---
-        // Si estamos editando y la sesión tiene participantes, los cargamos en nuestro estado local.
         if (isEditing && session.participants) {
-            // Mapeamos los datos para que coincidan con la estructura que usamos ({id, name, avatar})
             this.participants = session.participants.map(p => ({
                 id: p.profiles.id,
                 name: p.profiles.display_name,
                 avatar: p.profiles.avatar_url
             }));
         } else {
-            // Si es una sesión nueva, la lista empieza vacía.
             this.participants = [];
         }
-        // --- FIN DEL CAMBIO ---
 
         const projectDropdown = document.getElementById('project-selector-dropdown');
         const selectedProject = projectDropdown ? projectDropdown.value : '';
@@ -235,7 +232,7 @@ export const Studio = {
             return new Date(d - tzoffset).toISOString().slice(0, 16);
         };
         
-        const initialPlatform = session?.platform || actionOrSessionData || 'vdo_ninja';
+        const initialPlatform = session?.platform || 'vdo_ninja';
         const modalContainer = document.getElementById('modal-overlay-container');
         
         modalContainer.innerHTML = `
@@ -246,14 +243,14 @@ export const Studio = {
                         <form id="studio-form">
                             <p>Proyecto: <strong>${session ? session.project_title : selectedProject}</strong></p>
                             <hr>
-
+                            
                             <div class="form-group">
                                 <label>Plataforma</label>
                                 <div class="platform-selector">
                                     <div class="platform-option" data-platform="vdo_ninja"><i class="fas fa-satellite-dish"></i><span>EPT Live</span></div>
                                     <div class="platform-option" data-platform="youtube"><i class="fab fa-youtube"></i><span>YouTube</span></div>
                                     <div class="platform-option" data-platform="substack"><i class="fas fa-bookmark"></i><span>Substack</span></div>
-                                </div>
+                                    </div>
                                 <input type="hidden" id="session-platform" name="platform" value="${initialPlatform}">
                             </div>
 
@@ -268,12 +265,11 @@ export const Studio = {
                             
                             <div class="form-group rtmps-fields" style="display: ${initialPlatform === 'youtube' || initialPlatform === 'twitch' ? 'block' : 'none'};">
                                 <hr>
-                                <label>Configuración de Transmisión Manual</label>
-                                <p class="form-hint">Opcional. Pega aquí los datos de YouTube o Twitch para transmitir directamente desde la sala de control.</p>
-                                <input id="session-rtmp-url" name="rtmp_url" type="text" value="${session?.rtmp_url || ''}" placeholder="URL del servidor RTMPS">
-                                <input id="session-rtmp-key" name="rtmp_key" type="text" value="${session?.rtmp_key || ''}" placeholder="Clave de transmisión">
+                                <label>Configuración de Transmisión Manual (Opcional)</label>
+                                <p class="form-hint">Pega aquí los datos de YouTube/Twitch para transmitir directamente desde esta sala de control.</p>
+                                <input id="session-rtmp-url" name="rtmp_url" type="text" value="${session?.rtmp_url || ''}" placeholder="URL del servidor RTMPS (ej: rtmps://a.rtmp.youtube.com/live2)">
+                                <input id="session-rtmp-key" name="rtmp_key" type="password" value="${session?.rtmp_key || ''}" placeholder="Clave de transmisión">
                             </div>
-
                             <div class="form-group">
                                 <label for="participant-search">Añadir Investigadores Participantes</label>
                                 <div class="participant-search-group">
@@ -297,19 +293,12 @@ export const Studio = {
         const platformOptions = modalContainer.querySelectorAll('.platform-option');
         const platformInput = modalContainer.querySelector('#session-platform');
         const platformSpecificFields = modalContainer.querySelector('#platform-specific-fields');
-        // CAMBIO: Hacemos que los campos RTMPS aparezcan o desaparezcan según la plataforma
-        const platformOptions = modalContainer.querySelectorAll('.platform-option');
-        platformOptions.forEach(opt => {
-            opt.addEventListener('click', () => {
-                const platform = opt.dataset.platform;
-                const rtmpsFields = modalContainer.querySelector('.rtmps-fields');
-                rtmpsFields.style.display = (platform === 'youtube' || platform === 'twitch') ? 'block' : 'none';
-            });
-        });
-
+        
         const updatePlatformSelection = (platform) => {
             platformOptions.forEach(opt => opt.classList.toggle('selected', opt.dataset.platform === platform));
             platformInput.value = platform;
+            
+            // Muestra u oculta los campos de ID de plataforma
             let fieldHTML = '';
             if (platform === 'youtube') {
                 fieldHTML = `<div class="form-group"><label for="youtube-id">ID del Video de YouTube</label><input id="youtube-id" name="youtubeId" type="text" value="${session?.platform_id || ''}" placeholder="Opcional al agendar"></div>`;
@@ -317,28 +306,46 @@ export const Studio = {
                 fieldHTML = `<div class="form-group"><label for="substack-id">ID del Directo de Substack</label><input id="substack-id" name="substackId" type="text" value="${session?.platform_id || ''}" placeholder="Opcional al agendar"></div>`;
             }
             platformSpecificFields.innerHTML = fieldHTML;
-            this.renderAddedParticipants();
+
+            // Muestra u oculta los campos de RTMPS
+            const rtmpsFields = modalContainer.querySelector('.rtmps-fields');
+            if (rtmpsFields) {
+                rtmpsFields.style.display = (platform === 'youtube' || platform === 'twitch') ? 'block' : 'none';
+            }
         };
 
-        if (!isEditing) {
-            platformOptions.forEach(opt => {
-                opt.addEventListener('click', () => updatePlatformSelection(opt.dataset.platform));
+        // --- Lógica de Eventos ---
+        platformOptions.forEach(opt => {
+            opt.addEventListener('click', () => {
+                updatePlatformSelection(opt.dataset.platform);
             });
-        }
+        });
         
-        updatePlatformSelection(initialPlatform);
+        updatePlatformSelection(initialPlatform); // Llama a la función para establecer el estado inicial
+        this.renderAddedParticipants(); // Dibuja los participantes cargados al inicio
+
         modalContainer.querySelector('.modal-close-btn').addEventListener('click', () => this.closeModal());
         form.addEventListener('submit', (e) => this.handleSaveSession(e, session));
         document.getElementById('search-participant-btn').addEventListener('click', () => {
             const searchTerm = document.getElementById('participant-search').value;
             this.searchParticipants(searchTerm);
         });
+        // Hacemos que el campo de clave sea visible al hacer clic en el icono
+        const rtmpKeyInput = document.getElementById('session-rtmp-key');
+        if (rtmpKeyInput) {
+            rtmpKeyInput.addEventListener('click', () => {
+                rtmpKeyInput.type = 'text';
+                setTimeout(() => { rtmpKeyInput.type = 'password'; }, 5000);
+            });
+        }
     },
 
     closeModal() {
         const modalContainer = document.getElementById('modal-overlay-container');
         if(modalContainer) modalContainer.innerHTML = '';
     },
+
+    // En /inv/js/manager-estudio.js
 
     async handleSaveSession(e, session = null) {
         e.preventDefault();
@@ -350,6 +357,7 @@ export const Studio = {
             return;
         }
 
+        // --- CAMBIO 1: AÑADIMOS LOS CAMPOS RTMPS A LOS DATOS A GUARDAR ---
         let sessionData = {
             project_title: projectTitle,
             session_title: formData.get('sessionTitle'),
@@ -360,41 +368,44 @@ export const Studio = {
             description: formData.get('description'),
             thumbnail_url: formData.get('thumbnail_url'),
             more_info_url: formData.get('more_info_url'),
-            platform_id: formData.get('youtubeId') || formData.get('substackId') || null
+            platform_id: formData.get('youtubeId') || formData.get('substackId') || null,
+            // Nuevos campos leídos del formulario
+            rtmp_url: formData.get('rtmp_url'),
+            rtmp_key: formData.get('rtmp_key')
         };
         
+        // Si estamos creando una sesión nueva, generamos las URLs
         if (!session) {
             sessionData.user_id = App.userId;
             sessionData.is_archived = false;
             
             const stableId = self.crypto.randomUUID().slice(0, 8);
-            // CAMBIO SUTIL PERO IMPORTANTE: Usamos un guion bajo para el nombre de la sala,
-            // ya que la URL del mixer lo usa así.
             const roomName = `ept_2_${App.userProfile.orcid.slice(-4)}_${stableId}`; 
             const directorKey = `dir-${App.userProfile.orcid.slice(-4)}`;
             const vdoDomain = 'https://vdo.epistecnologia.com';
             
             let directorParams = new URLSearchParams({ room: roomName, director: directorKey, record: 'auto' });
-            let guestParams = new URLSearchParams({ room: roomName });
             
-            // --- CAMBIO CLAVE: AÑADIMOS EL DESTINO DE LA TRANSMISIÓN ---
+            // --- CAMBIO 2: LÓGICA PARA AÑADIR EL DESTINO DE LA TRANSMISIÓN A LA URL ---
             const rtmpUrl = formData.get('rtmp_url');
             const rtmpKey = formData.get('rtmp_key');
+            
             if (rtmpUrl && rtmpKey) {
-                // El formato es &broadcast=CLAVE@URL (sin el rtmps://)
+                // VDO.Ninja espera el formato &broadcast=CLAVE@URL (sin el protocolo rtmps://)
                 const broadcastUrl = rtmpUrl.replace(/^rtmps?:\/\//, '');
                 directorParams.set('broadcast', `${rtmpKey}@${broadcastUrl}`);
+                console.log("Destino RTMPS configurado para la sala de control.");
             }
-            // --- FIN DEL CAMBIO ---
+            // --- FIN DEL CAMBIO 2 ---
 
-            // La URL del espectador debe usar 'room' y 'scene=0' para ver la salida del director.
+            let guestParams = new URLSearchParams({ room: roomName });
+            
             let viewerParams = new URLSearchParams({
                 room: roomName,
                 scene: '0',
-                showlabels: '0' // Opcional: oculta las etiquetas de los nombres
+                showlabels: '0'
             });
 
-            // Añadimos meshcast si es necesario (esto no cambia)
             if (formData.get('guestCount') > 4) {
                 directorParams.set('meshcast', '1');
                 guestParams.set('meshcast', '1');
@@ -403,10 +414,10 @@ export const Studio = {
             
             sessionData.director_url = `${vdoDomain}/mixer?${directorParams.toString()}`;
             sessionData.guest_url = `${vdoDomain}/?${guestParams.toString()}`;
-            // Construimos la URL del espectador corregida
             sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}&layout&whepshare=https://use1.meshcast.io/whep/EPTLive&cleanoutput`;
         }
 
+        // El resto de la lógica de guardado no necesita cambios
         const { data: savedSession, error } = session
             ? await App.supabase.from('sessions').update(sessionData).eq('id', session.id).select().single()
             : await App.supabase.from('sessions').insert(sessionData).select().single();
@@ -417,7 +428,7 @@ export const Studio = {
             return;
         }
 
-        // Lógica para guardar participantes
+        // Lógica para guardar participantes (sin cambios)
         await App.supabase
             .from('event_participants')
             .delete()
@@ -429,12 +440,8 @@ export const Studio = {
                 user_id: p.id
             }));
 
-            // <-- AÑADE ESTA LÍNEA PARA DEPURAR
-            console.log('Intentando guardar estos participantes:', participantsData);
-
             const { error: participantsError } = await App.supabase.from('event_participants').insert(participantsData);
             if (participantsError) {
-                // <-- AÑADE ESTO PARA VER EL ERROR EXACTO DE SUPABASE
                 console.error('Error de Supabase al guardar participantes:', participantsError); 
                 alert("La sesión se guardó, pero hubo un error al guardar los participantes.");
             }
