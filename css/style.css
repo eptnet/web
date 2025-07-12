@@ -168,8 +168,9 @@ body.dark-theme .desktop-nav { background-color: rgba(24, 25, 26, 0.8); } .deskt
     background-color: var(--color-accent);
     color: white;
     padding: 12px 28px;
-    border-radius: 8px;
+    border-radius: 25px;
     text-decoration: none;
+    text-align: center;
     font-weight: 600;
     margin-top: 1.5rem; /* Espacio sobre el botón */
     transition: transform 0.2s ease, background-color 0.2s ease;

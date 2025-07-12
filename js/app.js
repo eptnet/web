@@ -42,13 +42,15 @@ document.addEventListener('mainReady', () => {
         podcastPlayer: `<div class="bento-box bento-box--1x3 bento-podcast-player mobile-full-width" data-id="static-podcast"><h3>Podcast DiCiencia 🎙️</h3><div class="podcast-episode-list"><p>Cargando episodios...</p></div></div>`,
 
         inFeed: `<div class="bento-box bento-box--2x2 mobile-full-width bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;"><div class="card-content"><h3>¿Disfrutando el Contenido?</h3><p>Suscríbete a nuestro newsletter.</p><br/><iframe src="https://eptnews.substack.com/embed" width="100%" height="100%" style="border:0;" frameborder="0" scrolling="no"></iframe></div></div>`,
+        logos: `<div class="bento-box bento-box--4x1 mobile-full-width bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;"><div class="card-content"><h3>ESPERA</h3><p>Suscríbete a nuestro newsletter.</p><br/><iframe src="https://eptnews.substack.com/embed" width="100%" height="100%" style="border:0;" frameborder="0" scrolling="no"></iframe></div></div>`,
         end: `<div class="bento-box zenodo-module bento-box--2x2" data-id="static-zenodo"><div class="card-content"><h3>Conocimiento Citable</h3><p>Accede a nuestros datasets y preprints.</p><a href="#" class="btn">Visitar Repositorio</a></div></div><div class="bento-box bento-box--2x2 bento-box--imagen" data-id="static-video" data-panel-type="embed" data-panel-title="Video Destacado" data-embed-src="https://www.youtube.com/embed/dQw4w9WgXcQ"><div class="card-content"><span class="card-category">Ver Ahora</span><h4>El Futuro de la Exploración Espacial</h4></div></div>`
     };
 
     // --- 3. EL "PLANO DE CONSTRUCCIÓN" DE LA GRID ---
     const grid_layout = [
         { type: 'module', id: 'welcome' },
-        { type: 'module', id: 'stories' },  
+        { type: 'module', id: 'stories' },
+        { type: 'module', id: 'logos' },
         { type: 'post' }, 
         { type: 'post' }, 
         { type: 'post' }, 
