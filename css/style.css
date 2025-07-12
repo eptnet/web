@@ -83,7 +83,25 @@ main.container {
 /* 4.1 NAVEGACIÓN */
 .desktop-nav { padding: 1rem 0; position: sticky; top: 0; z-index: 1000; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); background-color: rgba(240, 242, 245, 0.8); transition: background-color 0.3s; }
 body.dark-theme .desktop-nav { background-color: rgba(24, 25, 26, 0.8); } .desktop-nav .container { display: flex; justify-content: space-between; align-items: center; gap: 1rem; } .desktop-nav .logo img { height: 40px; display: block; } .bento-box-nav { display: flex; align-items: center; gap: 0.5rem; background-color: var(--color-surface); padding: 0.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow-light); transition: background-color 0.3s; } .main-menu { flex-grow: 1; justify-content: center; } .nav-icon { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 8px; transition: background-color 0.2s ease, color 0.2s ease; color: var(--color-text-secondary); font-size: 1.1rem; } .nav-icon:hover { background-color: var(--color-background); color: var(--color-accent); } .nav-icon.active { background-color: var(--color-accent); color: white; } @keyframes pulse-live { 0% { box-shadow: 0 0 0 0 rgba(183, 42, 30, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(183, 42, 30, 0); } 100% { box-shadow: 0 0 0 0 rgba(183, 42, 30, 0); } } .nav-icon.is-live { background-color: var(--color-accent); color: white; animation: pulse-live 2s infinite; border-radius: 8px; } .desktop-nav.is-at-top { background-color: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; }
-.mobile-nav { display: none; position: fixed; bottom: 0; left: 0; width: 100%; z-index: 1000; background-color: var(--color-surface); border-top: 1px solid var(--color-border); box-shadow: 0 -2px 5px rgba(0,0,0,0.05); padding: 0.25rem 0; justify-content: space-around; } .mobile-nav__link { flex-grow: 1; color: var(--color-text-secondary); display: flex; align-items: center; justify-content: center; height: 54px; font-size: 1.5rem; } .mobile-nav__link.active { color: var(--color-accent); } .mobile-nav__text { display: none; } .mobile-more-menu { position: fixed; bottom: 0; left: 0; width: 100%; z-index: 1001; background-color: var(--color-surface); border-top-left-radius: var(--border-radius); border-top-right-radius: var(--border-radius); box-shadow: 0 -5px 15px rgba(0,0,0,0.1); transform: translateY(100%); transition: transform 0.3s ease-out; } .mobile-more-menu.is-open { transform: translateY(0); } .mobile-more-menu__content { padding: 1.5rem; } .mobile-more-menu__item { display: flex; align-items: center; gap: 1rem; padding: 1rem; font-size: 1rem; font-weight: 500; color: var(--color-text-primary); border-radius: 8px; } .mobile-more-menu__item:hover, .mobile-more-menu__item:active { background-color: var(--color-background); } .mobile-more-menu__item i { width: 24px; text-align: center; font-size: 1.2rem; color: var(--color-text-secondary); }
+.mobile-nav { display: none; position: fixed; bottom: 0; left: 0; width: 100%; z-index: 1000; background-color: var(--color-surface); border-top: 1px solid var(--color-border); box-shadow: 0 -2px 5px rgba(0,0,0,0.05); padding: 0.25rem 0; justify-content: space-around; } .mobile-nav__link { flex-grow: 1; color: var(--color-text-secondary); display: flex; align-items: center; justify-content: center; height: 54px; font-size: 1.5rem; } .mobile-nav__link.active { color: var(--color-accent); } .mobile-nav__text { display: none; } 
+.mobile-more-menu { 
+    position: fixed; 
+    bottom: 0; 
+    left: 0; 
+    width: 100%; 
+    z-index: 1002; 
+    background-color: var(--color-surface); 
+    border-top-left-radius: var(--border-radius); 
+    border-top-right-radius: var(--border-radius); 
+    box-shadow: 0 -5px 15px rgba(0,0,0,0.1); 
+    transform: translateY(100%); 
+    transition: transform 0.3s ease-out; 
+} 
+.mobile-more-menu.is-visible { 
+    transform: translateY(0); 
+}
+.mobile-more-menu__content { padding: 1.5rem; } 
+.mobile-more-menu__item { display: flex; align-items: center; gap: 1rem; padding: 1rem; font-size: 1rem; font-weight: 500; color: var(--color-text-primary); border-radius: 8px; } .mobile-more-menu__item:hover, .mobile-more-menu__item:active { background-color: var(--color-background); } .mobile-more-menu__item i { width: 24px; text-align: center; font-size: 1.2rem; color: var(--color-text-secondary); }
 
 /* 4.2 BENTO GRID */
 .bento-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; padding: 2rem 0; }
@@ -113,11 +131,25 @@ body.dark-theme .desktop-nav { background-color: rgba(24, 25, 26, 0.8); } .deskt
 
 /* --- OTROS COMPONENTES --- */
 .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1001; opacity: 0; visibility: hidden; transition: opacity 0.4s, visibility 0.4s; }
-.overlay.is-open { opacity: 1; visibility: visible; }
+.overlay.is-visible { 
+    opacity: 1; 
+    visibility: visible; 
+}
 .login-popover { position: absolute; top: calc(100% + 10px); right: 0; width: 220px; background-color: var(--color-surface); border-radius: var(--border-radius); box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 1px solid var(--color-border); padding: 1rem; z-index: 1001; display: flex; flex-direction: column; gap: 0.75rem; opacity: 0; visibility: hidden; transform: translateY(-10px); transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease; }
 .login-popover.is-open { opacity: 1; visibility: visible; transform: translateY(0); }
 .login-popover p { font-size: 0.9rem; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 0.25rem; }
-.login-provider-btn { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; border-radius: 8px; text-decoration: none; color: var(--color-text-primary); font-weight: 500; transition: background-color 0.2s ease; }
+.login-provider-btn { 
+    display: flex; 
+    align-items: center; 
+    gap: 0.75rem; 
+    padding: 0.75rem;
+    margin-bottom: 5px; 
+    border-radius: 8px; 
+    text-decoration: none; 
+    color: var(--color-text-primary); 
+    font-weight: 500; 
+    transition: background-color 0.2s ease; 
+}
 .login-provider-btn:hover { background-color: var(--color-background); }
 .login-provider-btn i { width: 20px; text-align: center; font-size: 1.2rem; }
 .login-provider-btn.is-disabled { opacity: 0.5; cursor: not-allowed; background-color: transparent !important; }
@@ -181,3 +213,109 @@ input[type="range"]::-moz-range-thumb { border: none; border-radius: 50%; backgr
     .bento-box.mobile-full-width, .bento-box.welcome-module { grid-column: span 2; }
     .bento-box.video-featured-module, .bento-box.bento-box--1x3 { grid-column: span 2; grid-row: span 2; aspect-ratio: auto !important; }
 }
+/* ==========================================================================
+   4.3 MODAL UNIFICADO (Login, Posts, etc.)
+   ========================================================================== */
+
+/* El fondo oscuro que cubre toda la página */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(18, 18, 18, 0.85); /* Fondo oscuro semitransparente */
+    z-index: 2000; /* Lo pone en una capa muy alta */
+    display: none; /* Se activa con la clase .is-visible */
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    padding: 1rem;
+}
+
+.modal-overlay.is-visible {
+    display: flex;
+    opacity: 1;
+}
+
+/* La caja principal del modal */
+.modal {
+    background: var(--color-surface);
+    width: 90%;
+    border-radius: var(--border-radius);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+    overflow: hidden; /* Controla el scroll dentro del modal */
+}
+
+/* Usamos esta clase para darle un tamaño específico al modal de login */
+.login-modal {
+    max-width: 500px;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0; /* Evita que el header se encoja */
+}
+
+.modal-header h2 {
+    font-size: 1.2rem;
+    margin: 0;
+}
+
+.modal-close-btn {
+    font-size: 1.5rem;
+    cursor: pointer;
+    background: white;
+    border: none;
+    line-height: 1;
+}
+
+.modal-content {
+    padding: 1.5rem 2rem 2rem 2rem;
+    overflow-y: auto; /* Permite scroll si el contenido es muy largo */
+}
+
+/* Contenedor para los botones de Google/Github */
+.login-options {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+/* Estilo de los botones de proveedor de login */
+.login-provider-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    color: var(--color-text-primary);
+    background-color: var(--color-background);
+    border: 1px solid var(--color-border);
+    font-size: 1rem;
+    transition: background-color 0.2s;
+}
+
+.login-provider-btn:hover {
+    background-color: var(--color-surface);
+    border-color: var(--color-text-secondary);
+}
+
+.login-provider-btn i {
+    font-size: 1.5rem;
+}
+

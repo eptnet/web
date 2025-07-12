@@ -380,7 +380,7 @@ export const Studio = {
             sessionData.is_archived = false;
             
             const stableId = self.crypto.randomUUID().slice(0, 8);
-            const roomName = `ept_2_${App.userProfile.orcid.slice(-4)}_${stableId}`; 
+            const roomName = `ept-2-${App.userProfile.orcid.slice(-4)}-${stableId}`; 
             const directorKey = `dir-${App.userProfile.orcid.slice(-4)}`;
             const vdoDomain = 'https://vdo.epistecnologia.com';
             
@@ -412,8 +412,8 @@ export const Studio = {
                 viewerParams.set('meshcast', '1');
             }
             
-            sessionData.director_url = `${vdoDomain}/mixer?${directorParams.toString()}`;
-            sessionData.guest_url = `${vdoDomain}/?${guestParams.toString()}`;
+            sessionData.director_url = `${vdoDomain}/mixer?${directorParams.toString()}&meshcast`;
+            sessionData.guest_url = `${vdoDomain}/?${guestParams.toString()}&meshcast`;
             sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}&layout&whepshare=https://use1.meshcast.io/whep/EPTLive&cleanoutput`;
         }
 

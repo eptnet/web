@@ -421,3 +421,24 @@ body {
     width: 100%;
     flex-grow: 1; /* Asegura que el contenedor del iframe también se expanda */
 }
+
+/* --- REGLA PARA REPRODUCTOR FIJO EN MÓVIL --- */
+
+@media (max-width: 1023px) { /* Se aplica en tablets y móviles */
+
+    .player-wrapper {
+        position: -webkit-sticky; /* Para compatibilidad con Safari */
+        position: sticky;
+        
+        /* Dejamos espacio para el menú de navegación que irá arriba.
+           Puedes ajustar este valor si la altura de tu menú final es diferente. */
+        top: 80px; 
+        
+        z-index: 500; /* Se asegura de que esté por encima del contenido que se desplaza */
+    }
+
+    /* Ajustamos el padding de la grilla para que no haya un doble espacio */
+    .page-grid {
+        padding-top: 1.5rem;
+    }
+}
