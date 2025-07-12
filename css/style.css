@@ -67,7 +67,7 @@ main.container {
     background-color: #18191a;
     z-index: 1;
 }
-.hero-background-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('https://i.ibb.co/ymN2p1T5/Portada-EPT-WEB-2.jpg'); background-size: cover; background-position: center; animation: kenburns-effect 25s ease-in-out infinite; z-index: 1; }
+.hero-background-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('https://i.ibb.co/rPSqjz0/a-digital-art-banner-depicting-a-futuris-9-Wt-Qkra-NRza-Qd-HG1mhcc-Ag-x-Ait-Jamg-RCat9-GLc-O810jg.jpg'); background-size: cover; background-position: center; animation: kenburns-effect 25s ease-in-out infinite; z-index: 1; }
 .hero-container::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.25); z-index: 2; }
 .hero-content { position: relative; z-index: 3; color: white; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7); padding: 1rem; padding-top: 20vh; }
 .hero-content h1 { font-size: 4.5rem; font-weight: 700; }
@@ -105,10 +105,61 @@ body.dark-theme .desktop-nav { background-color: rgba(24, 25, 26, 0.8); } .deskt
 
 /* 4.2 BENTO GRID */
 .bento-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; padding: 2rem 0; }
-.bento-box { background-color: var(--color-surface); border-radius: var(--border-radius); box-shadow: var(--shadow-light); padding: 1.5rem; transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.3s; cursor: pointer; display: flex; flex-direction: column; overflow: hidden; position: relative; } .bento-box:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1); } body.dark-theme .bento-box:hover { box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3); } .post-card { min-height: 250px; } .bento-box--1x2 { grid-column: span 1; grid-row: span 2; } .bento-box--1x3 { grid-column: span 1; grid-row: span 3; } .bento-box--2x2 { grid-column: span 2; grid-row: span 2; } .bento-box--3x2 { grid-column: span 3; grid-row: span 2; } .bento-box[style*="background-image"] { background-size: cover; background-position: center; } .bento-box[style*="background-image"]::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0.1)); opacity: 1; transition: opacity 0.3s; pointer-events: none; } .bento-box[style*="background-image"] h3, .bento-box[style*="background-image"] h4, .bento-box[style*="background-image"] p, .bento-box[style*="background-image"] .card-category { color: white; } .card-content { flex-grow: 1; display: flex; flex-direction: column; position: relative; z-index: 2; justify-content: flex-end; pointer-events: none; } .card-content > * { pointer-events: auto; } .card-category { font-size: var(--font-size-category); font-weight: 500; color: var(--color-accent); margin-bottom: 0.5rem; } .bento-box.video-featured-module { padding: 0; }
+.bento-box { background-color: var(--color-surface); border-radius: var(--border-radius); box-shadow: var(--shadow-light); padding: 1.5rem; transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.3s; cursor: pointer; display: flex; flex-direction: column; overflow: hidden; position: relative; } .bento-box:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1); } body.dark-theme .bento-box:hover { box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3); } 
+.post-card { min-height: 250px; } 
+.bento-box--1x2 { grid-column: span 1; grid-row: span 2; } 
+.bento-box--1x3 { grid-column: span 1; grid-row: span 3; }
+.bento-box--1x4 { grid-column: span 1; grid-row: span 4; }
+.bento-box--2x1 { grid-column: span 2; grid-row: span 1; } 
+.bento-box--2x2 { grid-column: span 2; grid-row: span 2; }
+.bento-box--2x3 { grid-column: span 2; grid-row: span 3; }
+.bento-box--2x4 { grid-column: span 2; grid-row: span 4; }
+.bento-box--3x1 { grid-column: span 3; grid-row: span 1; } 
+.bento-box--3x2 { grid-column: span 3; grid-row: span 2; }
+.bento-box--3x3 { grid-column: span 3; grid-row: span 3; }
+.bento-box--3x4 { grid-column: span 3; grid-row: span 4; }
+.bento-box--4x1 { grid-column: span 4; grid-row: span 1; }
+.bento-box--4x2 { grid-column: span 4; grid-row: span 2; }
+.bento-box--4x3 { grid-column: span 4; grid-row: span 3; }
+.bento-box--4x4 { grid-column: span 4; grid-row: span 4; } 
+.bento-box[style*="background-image"] { background-size: cover; background-position: center; } .bento-box[style*="background-image"]::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0.1)); opacity: 1; transition: opacity 0.3s; pointer-events: none; } .bento-box[style*="background-image"] h3, .bento-box[style*="background-image"] h4, .bento-box[style*="background-image"] p, .bento-box[style*="background-image"] .card-category { color: white; } .card-content { flex-grow: 1; display: flex; flex-direction: column; position: relative; z-index: 2; justify-content: flex-end; pointer-events: none; } .card-content > * { pointer-events: auto; } .card-category { font-size: var(--font-size-category); font-weight: 500; color: var(--color-accent); margin-bottom: 0.5rem; } .bento-box.video-featured-module { padding: 0; }
 .bento-style--flat { background-color: transparent !important; box-shadow: none !important; border: none !important; }
 .bento-style--circle { border-radius: 50% !important; aspect-ratio: 1 / 1; align-items: center; justify-content: center; text-align: center; }
 .bento-style--l-shape { -webkit-clip-path: polygon(0 0, 100% 0, 100% 40%, 40% 40%, 40% 100%, 0 100%); clip-path: polygon(0 0, 100% 0, 100% 40%, 40% 40%, 40% 100%, 0 100%); }
+
+/* ==================================
+   Estilos para el Bento de Bienvenida
+   ================================== */
+
+.welcome-module {
+    /* Centra todo el contenido */
+    text-align: left;
+    justify-content: left; 
+}
+
+/* Parámetros para el TÍTULO GRANDE */
+.welcome-module h1 {
+    font-size: 4.5rem;         /* Tamaño de la fuente (el parámetro clave) */
+    font-weight: 700;          /* Grosor del texto (negrita) */
+    line-height: 1.1;          /* Espacio entre líneas si el texto se divide */
+    letter-spacing: -0.02em;   /* Junta un poco las letras para un look más compacto */
+    margin-bottom: 1.5rem;     /* Espacio debajo del título */
+}
+
+/* Parámetros para el PÁRRAFO */
+.welcome-module p {
+    font-size: 1.1rem;         /* Un poco más grande que el texto normal */
+    max-width: 60ch;           /* Limita el ancho de línea para que sea fácil de leer */
+    margin: 1 auto;            /* Centra el párrafo horizontalmente */
+    color: var(--color-text-secondary); /* Un tono más suave para el texto secundario */
+}
+
+/* Ajuste para pantallas móviles */
+@media (max-width: 768px) {
+    .welcome-module h1 {
+        font-size: 3rem; /* Hacemos el título un poco más pequeño en móviles */
+    }
+}
 
 /* 4.3 MODAL DE INMERSIÓN */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(18, 18, 18, 0.85); z-index: 2000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
