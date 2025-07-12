@@ -38,7 +38,7 @@ body {
     transition: background-color 0.3s, color 0.3s; 
 }
 .container { 
-    max-width: 1400px; 
+    max-width: 1600px; 
     margin: 0 auto; 
     padding: 0 2rem; 
 }
@@ -106,7 +106,18 @@ body.dark-theme .desktop-nav { background-color: rgba(24, 25, 26, 0.8); } .deskt
 /* 4.2 BENTO GRID */
 .bento-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; padding: 2rem 0; }
 .bento-box { background-color: var(--color-surface); border-radius: var(--border-radius); box-shadow: var(--shadow-light); padding: 1.5rem; transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.3s; cursor: pointer; display: flex; flex-direction: column; overflow: hidden; position: relative; } .bento-box:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1); } body.dark-theme .bento-box:hover { box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3); } 
-.post-card { min-height: 250px; } 
+.post-card { 
+    min-height: 250px; 
+    aspect-ratio: 1 / 1;
+} 
+/* Nueva regla para limitar el título de los posts */
+.post-card h4 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Número máximo de líneas */
+    -webkit-box-orient: vertical;
+}
 .bento-box--1x2 { grid-column: span 1; grid-row: span 2; } 
 .bento-box--1x3 { grid-column: span 1; grid-row: span 3; }
 .bento-box--1x4 { grid-column: span 1; grid-row: span 4; }
@@ -164,7 +175,7 @@ body.dark-theme .desktop-nav { background-color: rgba(24, 25, 26, 0.8); } .deskt
 /* Estilo para el nuevo botón CTA */
 .welcome-module .cta-button {
     display: inline-block;
-    width: 25%;
+    width: 50%;
     background-color: var(--color-accent);
     color: white;
     padding: 12px 28px;
@@ -251,7 +262,7 @@ body.dark-theme .desktop-nav { background-color: rgba(24, 25, 26, 0.8); } .deskt
 }
 
 .modal-padded-content {
-    padding: 1.5rem 2rem 2rem 2rem; /* Mantenemos el padding para el texto */
+    padding: 1.5rem 1rem 2rem 1rem; /* Mantenemos el padding para el texto */
 }
 
 /* --- OTROS COMPONENTES --- */
@@ -331,6 +342,9 @@ input[type="range"]::-moz-range-thumb { border: none; border-radius: 50%; backgr
     .container { padding: 0 1rem; }
     .desktop-nav { display: none; }
     .mobile-nav { display: flex; }
+    .post-card {
+    min-height: unset; /* Anula la altura mínima en móviles */
+    }
     body { padding-bottom: 160px; } /* Espacio para menú y reproductor */
     .hero-content h1 { font-size: 2.5rem; }
     .bento-grid { grid-template-columns: repeat(2, 1fr); grid-auto-rows: minmax(140px, auto); }
@@ -443,4 +457,22 @@ input[type="range"]::-moz-range-thumb { border: none; border-radius: 50%; backgr
 .login-provider-btn i {
     font-size: 1.5rem;
 }
+/* Ajustes específicos para el modal en móviles */
+@media (max-width: 768px) {
+    /* Reduce el padding lateral para dar más espacio al texto */
+    .modal-padded-content {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
 
+    /* Reduce el tamaño del título del post */
+    .modal-padded-content h2 {
+        font-size: 1.5rem; /* Más compacto que el tamaño de escritorio */
+        line-height: 1.2;
+    }
+    
+    /* Le da más altura a la imagen para que se vea como en tu referencia */
+    .modal-post-image {
+        max-height: 250px;
+    }
+}
