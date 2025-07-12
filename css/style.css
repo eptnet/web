@@ -332,6 +332,9 @@ input[type="range"]::-moz-range-thumb { border: none; border-radius: 50%; backgr
 @media (max-width: 992px) {
     .player-content { grid-template-columns: auto 1fr; grid-template-rows: auto auto; grid-template-areas: "info volume" "timeline timeline" "controls controls"; padding: 0.75rem 1rem; }
     .track-info { grid-area: info; }
+    .post-card {
+    min-height: unset; /* Anula la altura mínima en móviles */
+    }
     .player-controls { grid-area: controls; }
     .player-timeline { grid-area: timeline; }
     .player-volume { grid-area: volume; justify-content: flex-end; }
