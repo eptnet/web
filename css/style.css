@@ -198,13 +198,24 @@ body.dark-theme .desktop-nav { background-color: rgba(24, 25, 26, 0.8); } .deskt
 .modal-container { background-color: var(--color-surface); width: 90%; height: 90%; max-width: 600px; max-height: 800px; border-radius: var(--border-radius); box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; flex-direction: column; position: relative; transform: scale(0.95); transition: transform 0.3s ease; }
 .modal-overlay.is-visible .modal-container { transform: scale(1); }
 .modal-close-btn { position: absolute; top: -15px; right: -15px; width: 40px; height: 40px; background: white; color: black; border-radius: 50%; border: none; font-size: 1.5rem; line-height: 1; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 10; }
-.modal-content { flex-grow: 1; overflow-y: auto; padding: 2.5rem; }
+.modal-content { 
+    flex-grow: 1; 
+    overflow-y: auto; 
+    padding-left: 0px;
+    padding-right: 0px;
+    padding-top: 0px; 
+}
 .modal-container--video .modal-content { padding: 0; background: #000; overflow: hidden; }
 .modal-share-footer { flex-shrink: 0; padding: 1rem 2.5rem; border-top: 1px solid var(--color-border); display: flex; gap: 0.75rem; }
 .modal-share-footer .share-btn { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--color-border); color: var(--color-text-secondary); display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; font-size: 1.2rem; }
 .modal-share-footer .share-btn:hover { background-color: var(--color-accent); color: white; border-color: var(--color-accent); }
 .modal-content .post-body p { margin-bottom: 1.5em; line-height: 1.7; color: var(--color-text-primary); }
-.modal-content .post-body img { max-width: 100%; height: auto; border-radius: var(--border-radius); margin: 2rem 0; }
+.modal-content .post-body img { 
+    max-width: 100%; 
+    height: auto; 
+    border-radius: var(--border-radius); 
+    margin: 2rem 0; 
+}
 .modal-content .post-body blockquote { border-left: 4px solid var(--color-accent); padding-left: 1.5rem; margin: 2rem 0; font-style: italic; color: var(--color-text-secondary); }
 .modal-content .post-body a { color: var(--color-accent); text-decoration: underline; }
 .modal-content h2 { font-size: var(--font-size-h2); margin-bottom: 0.5rem; }
@@ -460,22 +471,36 @@ input[type="range"]::-moz-range-thumb { border: none; border-radius: 50%; backgr
 .login-provider-btn i {
     font-size: 1.5rem;
 }
-/* Ajustes específicos para el modal en móviles */
+/* ===================================================
+   ESTILOS DEFINITIVOS PARA IMAGEN Y CONTENIDO DEL MODAL
+   =================================================== */
+
+/* Estilo para la imagen de cabecera del modal */
+.modal-post-image {
+    display: block;
+    width: 100%;
+    max-height: 300px;
+    object-fit: cover;
+    border-top-left-radius: var(--border-radius);
+    border-top-right-radius: var(--border-radius);
+}
+
+/* Contenedor que AÑADE el padding solo al texto */
+.modal-padded-content {
+    padding: 1.5rem 2.5rem 2rem 2.5rem;
+}
+
+/* AJUSTES PARA MÓVIL */
 @media (max-width: 768px) {
-    /* Reduce el padding lateral para dar más espacio al texto */
+    /* Reduce el padding lateral en móviles para que no se vea aplastado */
     .modal-padded-content {
-        padding-left: 1rem;
-        padding-right: 1rem;
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
     }
 
-    /* Reduce el tamaño del título del post */
+    /* Reduce el tamaño del título en móviles */
     .modal-padded-content h2 {
-        font-size: 1.5rem; /* Más compacto que el tamaño de escritorio */
-        line-height: 1.2;
-    }
-    
-    /* Le da más altura a la imagen para que se vea como en tu referencia */
-    .modal-post-image {
-        max-height: 250px;
+        font-size: 1.6rem;
+        line-height: 1.3;
     }
 }
