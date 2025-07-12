@@ -32,13 +32,14 @@ document.addEventListener('mainReady', () => {
                             </br>Entiende el mundo</h1>
                             </br>
                             <p>Te damos la bienvenida a <strong>Epistecnología</strong>, una <strong>plataforma abierta de divulgación científica y cultural</strong> que pone la <strong>tecnología al servicio del conocimiento con Sabiduría</strong>. Aquí, investigadores, docentes, divulgadores y curiosos del saber encuentran un espacio para <strong>crear, compartir y explorar contenidos académicos</strong>, desde artículos y podcasts hasta <strong>videos, transmisiones en vivo y publicaciones indexadas</strong>.</p>
+                            <a href="#" class="cta-button" id="welcome-cta-btn">Empezar a Crear</a>
                             </div>`,
-        stories: `<div class="bento-box bento-box--1x3 mobile-full-width" data-id="static-launch-stories" style="background-image: url('https://i.ibb.co/9kDJPK5K/Whisk-7b4dfc4406.jpg'); cursor: pointer; background-size: cover; background-position: center;"><div class="card-content"><span class="card-category" style="color: white;">Colección</span><h4 style="color: white;">Minuto cultural</h4></div></div>`,
+        stories: `<div class="bento-box bento-box--1x3 mobile-full-width" data-id="static-launch-stories" style="background-image: url('https://i.ibb.co/9kDJPK5K/Whisk-7b4dfc4406.jpg'); cursor: pointer; background-size: cover; background-position: center;"><div class="card-content"><span class="card-category" style="color: white;">Colección</span><h4 style="color: white;">Minuto cultural 📺</h4></div></div>`,
         quote: `<div class="bento-box bento-box--1x1 bento-style--flat" data-id="static-quote" style="cursor:default;"><div class="card-content" style="text-align: center;"><p style="font-size: 1.2rem; font-style: italic;">"El conocimiento es la única riqueza que no se puede robar."</p><h4 style="margin-top: 0.5rem;">- Anónimo</h4></div></div>`,
         videoFeatured: `<div class="bento-box bento-box--2x2 mobile-full-width video-featured-module" data-id="static-video-featured"><iframe src="https://www.youtube.com/embed/6PSKbO5yfDQ?rel=0&modestbranding=1&playsinline=1" title="Video destacado de YouTube" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`,
         
         // *** NUEVO MÓDULO DE PODCAST ***
-        podcastPlayer: `<div class="bento-box bento-box--1x3 bento-podcast-player mobile-full-width" data-id="static-podcast"><h3>Últimos Episodios</h3><div class="podcast-episode-list"><p>Cargando episodios...</p></div></div>`,
+        podcastPlayer: `<div class="bento-box bento-box--1x3 bento-podcast-player mobile-full-width" data-id="static-podcast"><h3>Podcast DiCiencia 🎙️</h3><div class="podcast-episode-list"><p>Cargando episodios...</p></div></div>`,
 
         inFeed: `<div class="bento-box bento-box--2x2 mobile-full-width bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;"><div class="card-content"><h3>¿Disfrutando el Contenido?</h3><p>Suscríbete a nuestro newsletter.</p><br/><iframe src="https://eptnews.substack.com/embed" width="100%" height="100%" style="border:0;" frameborder="0" scrolling="no"></iframe></div></div>`,
         end: `<div class="bento-box zenodo-module bento-box--2x2" data-id="static-zenodo"><div class="card-content"><h3>Conocimiento Citable</h3><p>Accede a nuestros datasets y preprints.</p><a href="#" class="btn">Visitar Repositorio</a></div></div><div class="bento-box bento-box--2x2 bento-box--imagen" data-id="static-video" data-panel-type="embed" data-panel-title="Video Destacado" data-embed-src="https://www.youtube.com/embed/dQw4w9WgXcQ"><div class="card-content"><span class="card-category">Ver Ahora</span><h4>El Futuro de la Exploración Espacial</h4></div></div>`
@@ -157,6 +158,16 @@ document.addEventListener('mainReady', () => {
         const doc = parser.parseFromString(htmlContent, "text/html");
         const img = doc.querySelector("img");
         return img ? img.src : null;
+    }
+
+    function truncateText(htmlContent, maxLength) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+        const plainText = tempDiv.textContent || tempDiv.innerText || "";
+        if (plainText.length <= maxLength) {
+            return plainText;
+        }
+        return plainText.substring(0, maxLength) + '...';
     }
 
     function sanitizeSubstackContent(htmlString) {
@@ -315,17 +326,56 @@ document.addEventListener('mainReady', () => {
         checkNavPosition();
     }
     
-    bentoGrid?.addEventListener("click", (event) => {
+    bentoGrid?.addEventListener("click", async (event) => {
         const bentoBox = event.target.closest('.bento-box[data-id]');
+        const ctaButton = event.target.closest('#welcome-cta-btn');
+
+        // Lógica para el botón CTA
+        if (ctaButton) {
+            event.preventDefault();
+            const { data: { session } } = await window.supabaseClient.auth.getSession();
+            if (session?.user) {
+                window.location.href = '/inv/dashboard.html';
+            } else {
+                document.getElementById('login-modal-trigger')?.click();
+            }
+            return;
+        }
+
         if (!bentoBox) return;
         const dataId = bentoBox.dataset.id;
+
         if (dataId === "static-launch-stories") {
             document.dispatchEvent(new CustomEvent('launch-stories'));
         } else if (allPostsData.some(p => p.guid === dataId)) {
             const post = allPostsData.find(p => p.guid === dataId);
-            const sanitizedContent = sanitizeSubstackContent(post.content);
+            
+            // --- INICIO DE LA LÓGICA MODIFICADA ---
             const postDate = new Date(post.pubDate).toLocaleDateString("es-ES", { year: "numeric", month: "long", day: "numeric" });
-            const contentHTML = `<h2>${post.title}</h2><div class="post-meta">Publicado por ${post.author} el ${postDate}</div><div class="post-body">${sanitizedContent}</div>`;
+            const excerpt = truncateText(post.content, 800);
+            
+            // Obtenemos la imagen del post
+            const thumbnail = post.thumbnail || extractFirstImageUrl(post.content);
+            
+            // Creamos una variable para la imagen, solo si existe
+            const imageHTML = thumbnail ? `<img src="${thumbnail}" alt="${post.title}" class="modal-post-image">` : '';
+
+            const contentHTML = `
+                ${imageHTML} 
+                <div class="modal-padded-content">
+                    <h2>${post.title}</h2>
+                    <div class="post-meta">Publicado por ${post.author} el ${postDate}</div>
+                    <div class="post-body">
+                        <p>${excerpt}</p>
+                    </div>
+                    <div class="modal-cta-container">
+                        <a href="${post.link}" target="_blank" class="modal-cta-button modal-cta-button--primary">Seguir en EPT News</a>
+                        <a href="https://eptnews.substack.com/" target="_blank" class="modal-cta-button">Suscribirse al Newsletter</a>
+                    </div>
+                </div>
+            `;
+            // --- FIN DE LA LÓGICA MODIFICADA ---
+
             openModal(contentHTML, 'article', { link: post.link, title: post.title });
         }
     });

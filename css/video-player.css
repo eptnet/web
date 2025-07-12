@@ -38,7 +38,7 @@
 #player-mute-btn {
     position: absolute;
     top: 1rem;
-    right: calc(1.5rem + 44px + 10px); /* Al lado del botón de cerrar */
+    /*  right: calc(1.5rem + 44px + 10px); Al lado del botón de cerrar */
     width: 44px;
     height: 44px;
     z-index: 1004; /* Por encima de todo */
