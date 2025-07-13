@@ -490,7 +490,7 @@ body {
    ========================================================================== */
 .sessions-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
     gap: 1.5rem;
     margin-top: 2rem;
 }
@@ -530,6 +530,38 @@ body {
 .session-card__actions .btn-secondary {
     font-size: 0.9rem;
     padding: 0.5rem 1rem;
+}
+
+/* --- Estilos para el campo de URL de Grabación --- */
+.recording-url-adder {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.recording-url-adder label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.recording-url-adder .input-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.recording-url-adder .input-group input {
+    flex-grow: 1;
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.recording-url-adder .input-group button {
+    flex-shrink: 0; /* Evita que el botón se encoja */
+    padding: 0.5rem 0.8rem; /* Ajusta el padding para que no sea tan grande */
 }
 
 /* ==========================================================================

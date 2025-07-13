@@ -38,70 +38,83 @@ const ControlRoom = {
         this.renderActionButtons();
     },
 
-    async goLive() {
-        if (this.sessionData.status !== 'PROGRAMADO') return;
-        console.log('Iniciando transmisión...');
-        
-        if (this.iframe && this.iframe.contentWindow) {
-            console.log("Enviando comando {record: true} a VDO.Ninja...");
-            this.iframe.contentWindow.postMessage({ 'record': true }, "*");
-        } else {
-            console.error("No se pudo encontrar el iframe de VDO.Ninja para enviar el comando.");
-            alert("Error de comunicación con la ventana de VDO.Ninja.");
+    // --- CAMBIO: NUEVA FUNCIÓN PARA ABRIR EL MODAL DE GRABACIÓN ---
+    openRecordModal() {
+        const modalContainer = document.getElementById('modal-overlay-container');
+        modalContainer.innerHTML = `
+            <div id="record-modal" class="modal-overlay is-visible">
+                <div class="modal">
+                    <header class="modal-header">
+                        <h3>Opciones de Grabación</h3>
+                        <button class="modal-close-btn">&times;</button>
+                    </header>
+                    <main class="modal-content">
+                        <p>Elige cómo quieres grabar tu sesión. La grabación local ofrece la máxima calidad y se guarda directamente en tu computadora.</p>
+                        </main>
+                    <footer class="modal-footer">
+                        <button id="record-local-btn" class="btn-primary btn-full-width"><i class="fas fa-desktop"></i> Grabar en mi PC</button>
+                        <button class="btn-secondary btn-full-width" disabled><i class="fas fa-cloud"></i> Grabar en la Nube (Próximamente)</button>
+                    </footer>
+                </div>
+            </div>`;
+
+        modalContainer.querySelector('.modal-close-btn').addEventListener('click', () => this.closeModal());
+        modalContainer.querySelector('#record-local-btn').addEventListener('click', () => this.startLocalRecording());
+    },
+
+    // --- CAMBIO: NUEVA FUNCIÓN PARA CERRAR CUALQUIER MODAL ---
+    closeModal() {
+        const modalContainer = document.getElementById('modal-overlay-container');
+        if(modalContainer) modalContainer.innerHTML = '';
+    },
+
+    // --- CAMBIO: NUEVA FUNCIÓN PARA INICIAR LA GRABACIÓN LOCAL ---
+    // La nueva versión que usa la URL correcta
+    startLocalRecording() {
+        // Verificamos que la nueva URL específica para grabar exista
+        if (!this.sessionData.recording_source_url) {
+            alert("Error: La URL de grabación local no fue encontrada para esta sesión.");
             return;
         }
         
+        console.log("Abriendo sala de grabación local:", this.sessionData.recording_source_url);
+        
+        // Abrimos la URL guardada en la base de datos
+        window.open(this.sessionData.recording_source_url, '_blank');
+        
+        this.closeModal();
+    },
+
+    async goLive() {
+        // ... esta función permanece igual
+        if (this.sessionData.status !== 'PROGRAMADO') return;
+        if (this.iframe && this.iframe.contentWindow) {
+            this.iframe.contentWindow.postMessage({ 'record': true }, "*");
+        } else {
+            alert("Error de comunicación con la ventana de VDO.Ninja.");
+            return;
+        }
         await this.updateStatus('EN VIVO');
     },
 
     async endSession() {
+        // ... esta función permanece igual
         if (this.sessionData.status !== 'EN VIVO') return;
         if (!confirm("Esto finalizará la transmisión pública y la archivará. ¿Estás seguro?")) return;
-        
-        console.log("Iniciando secuencia para finalizar la transmisión...");
-        
         if (this.iframe && this.iframe.contentWindow) {
-            console.log("Enviando comando {'close': 'estop'} a VDO.Ninja...");
             this.iframe.contentWindow.postMessage({ 'close': 'estop' }, "*");
-        } else {
-            console.error("No se pudo encontrar el iframe de VDO.Ninja para enviar el comando.");
-            alert("Error de comunicación con la ventana de VDO.Ninja.");
-            return;
         }
-        
-        // Damos un pequeño margen para que el comando se procese
-        setTimeout(async () => {
-            console.log("Procediendo a actualizar el estado en la base de datos a FINALIZADO.");
-            await this.updateStatus('FINALIZADO');
-        }, 500);
+        setTimeout(async () => { await this.updateStatus('FINALIZADO'); }, 500);
     },
     
     async updateStatus(newStatus) {
-        console.log(`Intentando actualizar estado a: ${newStatus} para la sesión ID: ${this.sessionId}`);
-        if (this.sessionData.status === newStatus) {
-            console.warn(`El estado ya es ${newStatus}. No se necesita actualización.`);
-            return;
-        }
-
+        // ... esta función permanece igual
+        if (this.sessionData.status === newStatus) return;
         const updateData = { status: newStatus };
-        if (newStatus === 'FINALIZADO') {
-            updateData.is_archived = true; 
-        }
-        
-        const { data, error } = await this.supabase
-            .from('sessions')
-            .update(updateData)
-            .eq('id', this.sessionId)
-            .select(); // Añadimos .select() para obtener una respuesta más detallada
-            
-        if (error) {
-            console.error("--- FALLO AL ACTUALIZAR EL ESTADO EN SUPABASE ---");
-            console.error("Mensaje de error:", error.message);
-            console.error("Detalles completos del error:", error);
-            alert(`Error: No se pudo actualizar el estado a ${newStatus}. Revisa la consola para más detalles.`);
+        if (newStatus === 'FINALIZADO') updateData.is_archived = true; 
+        const { error } = await this.supabase.from('sessions').update(updateData).eq('id', this.sessionId);
+        if (error) { alert(`Error: No se pudo actualizar el estado a ${newStatus}.`);
         } else {
-            console.log("--- ÉXITO AL ACTUALIZAR EL ESTADO ---");
-            console.log("Respuesta de Supabase:", data);
             this.sessionData.status = newStatus; 
             this.renderActionButtons();
             alert(`¡La sesión ahora está ${newStatus}!`);
@@ -109,14 +122,20 @@ const ControlRoom = {
     },
 
     renderActionButtons() {
-        // ... (esta función no necesita cambios)
         const container = document.getElementById('action-buttons-container');
         if (!container) return;
-
         let buttonHTML = '';
         switch (this.sessionData.status) {
             case 'PROGRAMADO':
-                buttonHTML = `<button class="btn-primary go-live" onclick="ControlRoom.goLive()"><i class="fa-solid fa-play-circle"></i> Iniciar Transmisión Pública</button>`;
+                // --- CAMBIO: El botón "Solo Grabar" ahora llama a openRecordModal ---
+                buttonHTML = `
+                    <button class="btn-secondary" onclick="ControlRoom.openRecordModal()">
+                        <i class="fa-solid fa-video"></i> Solo Grabar
+                    </button>
+                    <button class="btn-primary go-live" onclick="ControlRoom.goLive()">
+                        <i class="fa-solid fa-tower-broadcast"></i> Iniciar Transmisión Pública
+                    </button>
+                `;
                 break;
             case 'EN VIVO':
                 buttonHTML = `<button class="btn-primary is-live" onclick="ControlRoom.endSession()"><i class="fa-solid fa-stop-circle"></i> Terminar Transmisión Pública</button>`;

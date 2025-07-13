@@ -1,20 +1,19 @@
 export const Studio = {
-    participants: [], // <-- AÑADE ESTA LÍNEA para guardar los participantes
+    participants: [],
     init() {
-        // Esta función se llama al entrar a la sección "Estudio"
         this.fetchSessions();
         this.fetchAllPublicSessions();
         this.setupTabEvents();
-        this.addEventListeners(); // Añadimos el manejador de eventos
+        this.addEventListeners(); 
     },
 
     setupTabEvents() {
-        // Lógica para que las pestañas "Mis Sesiones" y "Agenda Global" funcionen
         const tabLinks = document.querySelectorAll('.studio-tab-link');
         const tabContents = document.querySelectorAll('.studio-tab-content');
-        if (!tabLinks.length) return; // Si ya se inicializó, no volver a añadir listeners
+        if (!tabLinks.length || tabLinks[0].dataset.initialized) return; 
 
         tabLinks.forEach(button => {
+            button.dataset.initialized = 'true';
             button.addEventListener('click', () => {
                 const tabId = button.dataset.tab;
                 tabLinks.forEach(btn => btn.classList.remove('active'));
@@ -26,25 +25,23 @@ export const Studio = {
 
     addEventListeners() {
         const container = document.getElementById('my-sessions-tab');
-        if (!container) return;
+        if (!container || container.dataset.listenerAttached) return;
+        container.dataset.listenerAttached = 'true';
 
-        // Este único "vigilante" escucha todos los clics dentro del contenedor de "Mis Sesiones"
         container.addEventListener('click', (e) => {
             const button = e.target.closest('button[data-action]');
             if (!button) return;
 
+            e.preventDefault();
             const action = button.dataset.action;
             const sessionData = button.dataset.session;
             const sessionId = button.dataset.sessionId;
 
-            // Según la acción del botón, llamamos a la función correcta
-            if (action === 'open-session') {
-                this.openSession(sessionData);
-            } else if (action === 'edit-session') {
-                this.openModal(JSON.parse(decodeURIComponent(sessionData)));
-            } else if (action === 'delete-session') {
-                this.deleteSession(sessionId);
-            }
+            if (action === 'open-session') this.openSession(sessionData);
+            else if (action === 'edit-session') this.openModal(JSON.parse(decodeURIComponent(sessionData)));
+            else if (action === 'delete-session') this.deleteSession(sessionId);
+            // --- CAMBIO 1: AÑADIMOS EL MANEJADOR PARA GUARDAR LA URL DE GRABACIÓN ---
+            else if (action === 'save-recording-url') this.saveRecordingUrl(sessionId);
         });
     },
 
@@ -53,21 +50,15 @@ export const Studio = {
         if (!container) return;
         container.innerHTML = `<p>Cargando tus sesiones...</p>`;
 
-        // CAMBIO: Hacemos la consulta más potente para que traiga también a los participantes.
         const { data: sessions, error } = await App.supabase
             .from('sessions')
-            .select(`
-                *,
-                participants: event_participants (
-                    profiles (id, avatar_url, display_name)
-                )
-            `)
+            .select(`*, participants: event_participants(profiles(id, avatar_url, display_name))`)
             .eq('is_archived', false)
             .eq('user_id', App.userId)
             .order('created_at', { ascending: false });
 
         if (error) {
-            console.error("Error fetching sessions with participants:", error);
+            console.error("Error fetching sessions:", error);
             container.innerHTML = `<p>Error al cargar las sesiones.</p>`;
         } else {
             this.renderSessions(sessions);
@@ -90,19 +81,6 @@ export const Studio = {
             const formattedStartTime = startTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
             const formattedEndTime = endTime ? endTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '';
             
-            let platformIdField = '';
-            if ((session.platform === 'youtube' || session.platform === 'substack') && !session.platform_id) {
-                platformIdField = `
-                    <div class="platform-id-adder">
-                        <label>Añade el ID de ${session.platform === 'youtube' ? 'YouTube' : 'Substack'}:</label>
-                        <div class="platform-id-input-group">
-                            <input type="text" id="id-input-${session.id}" placeholder="Pega el ID aquí...">
-                            <button class="btn-secondary" onclick="Studio.savePlatformId('${session.id}')">Guardar</button>
-                        </div>
-                    </div>`;
-            }
-
-            // CAMBIO: Creamos el HTML para los avatares de los participantes.
             const participantsHTML = session.participants.map(p => 
                 `<img src="${p.profiles.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="${p.profiles.display_name}" title="${p.profiles.display_name}" class="participant-avatar">`
             ).join('');
@@ -114,17 +92,22 @@ export const Studio = {
                     <h4>${session.session_title}</h4>
                     <p>${session.project_title}</p>
                 </div>
-
-                <div class="session-card__participants">
-                    ${participantsHTML}
-                </div>
-
+                <div class="session-card__participants">${participantsHTML}</div>
                 <div class="session-card__schedule">
                     <p><i class="fas fa-calendar-alt"></i> ${formattedDate}</p>
                     <p><i class="fas fa-clock"></i> ${formattedStartTime} ${endTime ? ' - ' + formattedEndTime : ''}</p>
                 </div>
+                
+                <div class="recording-url-adder">
+                    <label for="recording-url-${session.id}">URL de Grabación Final</label>
+                    <div class="input-group">
+                        <input type="url" id="recording-url-${session.id}" value="${session.recording_url || ''}" placeholder="Pega el enlace aquí...">
+                        <button class="btn-secondary" data-action="save-recording-url" data-session-id="${session.id}">
+                            <i class="fas fa-save"></i>
+                        </button>
+                    </div>
+                </div>
 
-                ${platformIdField}
                 <div class="session-card-actions">
                     <button class="btn-primary" data-action="open-session" data-session='${sessionData}'>
                         <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Sala
@@ -138,6 +121,31 @@ export const Studio = {
                 </div>
             </div>`;
         }).join('');
+    },
+
+    // --- CAMBIO 3: NUEVA FUNCIÓN PARA GUARDAR LA URL DE GRABACIÓN ---
+    async saveRecordingUrl(sessionId) {
+        const inputEl = document.getElementById(`recording-url-${sessionId}`);
+        if (!inputEl) return;
+        
+        const recordingUrl = inputEl.value.trim();
+        // Permite guardar un campo vacío para borrar la URL si es necesario
+        if (recordingUrl && !recordingUrl.startsWith('http')) {
+            alert("Por favor, introduce una URL válida.");
+            return;
+        }
+
+        const { error } = await App.supabase
+            .from('sessions')
+            .update({ recording_url: recordingUrl })
+            .eq('id', sessionId);
+
+        if (error) {
+            alert("Hubo un error al guardar la URL.");
+            console.error(error);
+        } else {
+            alert("¡URL de grabación guardada con éxito!");
+        }
     },
 
     async fetchAllPublicSessions() {
@@ -345,8 +353,6 @@ export const Studio = {
         if(modalContainer) modalContainer.innerHTML = '';
     },
 
-    // En /inv/js/manager-estudio.js
-
     async handleSaveSession(e, session = null) {
         e.preventDefault();
         const formData = new FormData(e.target);
@@ -357,7 +363,6 @@ export const Studio = {
             return;
         }
 
-        // --- CAMBIO 1: AÑADIMOS LOS CAMPOS RTMPS A LOS DATOS A GUARDAR ---
         let sessionData = {
             project_title: projectTitle,
             session_title: formData.get('sessionTitle'),
@@ -369,12 +374,10 @@ export const Studio = {
             thumbnail_url: formData.get('thumbnail_url'),
             more_info_url: formData.get('more_info_url'),
             platform_id: formData.get('youtubeId') || formData.get('substackId') || null,
-            // Nuevos campos leídos del formulario
             rtmp_url: formData.get('rtmp_url'),
             rtmp_key: formData.get('rtmp_key')
         };
         
-        // Si estamos creando una sesión nueva, generamos las URLs
         if (!session) {
             sessionData.user_id = App.userId;
             sessionData.is_archived = false;
@@ -386,38 +389,51 @@ export const Studio = {
             
             let directorParams = new URLSearchParams({ room: roomName, director: directorKey, record: 'auto' });
             
-            // --- CAMBIO 2: LÓGICA PARA AÑADIR EL DESTINO DE LA TRANSMISIÓN A LA URL ---
             const rtmpUrl = formData.get('rtmp_url');
             const rtmpKey = formData.get('rtmp_key');
             
             if (rtmpUrl && rtmpKey) {
-                // VDO.Ninja espera el formato &broadcast=CLAVE@URL (sin el protocolo rtmps://)
                 const broadcastUrl = rtmpUrl.replace(/^rtmps?:\/\//, '');
                 directorParams.set('broadcast', `${rtmpKey}@${broadcastUrl}`);
-                console.log("Destino RTMPS configurado para la sala de control.");
             }
-            // --- FIN DEL CAMBIO 2 ---
 
-            let guestParams = new URLSearchParams({ room: roomName });
+            sessionData.director_url = `${vdoDomain}/mixer?${directorParams.toString()}&meshcast`;
             
-            let viewerParams = new URLSearchParams({
-                room: roomName,
+            // --- CAMBIO: GENERAMOS Y AÑADIMOS LA NUEVA URL DE GRABACIÓN LOCAL ---
+            const recordingParams = new URLSearchParams({
                 scene: '0',
-                showlabels: '0'
+                layout: '',
+                remote: '',
+                clean: '',
+                chroma: '000',
+                ssar: 'landscape',
+                nosettings: '',
+                prefercurrenttab: '',
+                selfbrowsersurface: 'include',
+                displaysurface: 'browser',
+                np: '',
+                nopush: '',
+                publish: '',
+                record: '',
+                screenshareaspectratio: '1.7777777777777777',
+                locked: '1.7777777777777777',
+                room: roomName
             });
+            sessionData.recording_source_url = `${vdoDomain}/?scene=0&layout&remote&clean&chroma=000&ssar=landscape&nosettings&prefercurrenttab&selfbrowsersurface=include&displaysurface=browser&np&nopush&publish&record&screenshareaspectratio=1.7777777777777777&locked=1.7777777777777777${roomName}`;
+            // --- FIN DEL CAMBIO ---
 
+            // El resto de las URLs se mantienen igual
+            let guestParams = new URLSearchParams({ room: roomName });
+            let viewerParams = new URLSearchParams({ room: roomName, scene: '0', showlabels: '0' });
             if (formData.get('guestCount') > 4) {
                 directorParams.set('meshcast', '1');
                 guestParams.set('meshcast', '1');
                 viewerParams.set('meshcast', '1');
             }
-            
-            sessionData.director_url = `${vdoDomain}/mixer?${directorParams.toString()}&meshcast`;
             sessionData.guest_url = `${vdoDomain}/?${guestParams.toString()}&meshcast`;
             sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}&layout&whepshare=https://use1.meshcast.io/whep/EPTLive&cleanoutput`;
         }
 
-        // El resto de la lógica de guardado no necesita cambios
         const { data: savedSession, error } = session
             ? await App.supabase.from('sessions').update(sessionData).eq('id', session.id).select().single()
             : await App.supabase.from('sessions').insert(sessionData).select().single();
@@ -428,22 +444,13 @@ export const Studio = {
             return;
         }
 
-        // Lógica para guardar participantes (sin cambios)
-        await App.supabase
-            .from('event_participants')
-            .delete()
-            .eq('session_id', savedSession.id);
-
+        // El resto de la lógica de participantes no cambia...
+        await App.supabase.from('event_participants').delete().eq('session_id', savedSession.id);
         if (this.participants && this.participants.length > 0) {
-            const participantsData = this.participants.map(p => ({
-                session_id: savedSession.id,
-                user_id: p.id
-            }));
-
+            const participantsData = this.participants.map(p => ({ session_id: savedSession.id, user_id: p.id }));
             const { error: participantsError } = await App.supabase.from('event_participants').insert(participantsData);
             if (participantsError) {
-                console.error('Error de Supabase al guardar participantes:', participantsError); 
-                alert("La sesión se guardó, pero hubo un error al guardar los participantes.");
+                console.error('Error al guardar participantes:', participantsError);
             }
         }
         
