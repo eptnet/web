@@ -42,6 +42,18 @@ export const Studio = {
             else if (action === 'delete-session') this.deleteSession(sessionId);
             // --- CAMBIO 1: AÑADIMOS EL MANEJADOR PARA GUARDAR LA URL DE GRABACIÓN ---
             else if (action === 'save-recording-url') this.saveRecordingUrl(sessionId);
+
+            // --- INICIO DEL CAMBIO ---
+            else if (action === 'copy-guest-link') {
+                const guestUrl = button.dataset.url;
+                navigator.clipboard.writeText(guestUrl).then(() => {
+                    alert('¡Enlace para invitados copiado al portapapeles!');
+                }).catch(err => {
+                    console.error('Error al copiar el enlace: ', err);
+                    alert('No se pudo copiar el enlace.');
+                });
+            }
+            // --- FIN DEL CAMBIO ---
         });
     },
 
@@ -64,6 +76,8 @@ export const Studio = {
             this.renderSessions(sessions);
         }
     },
+
+    // REEMPLAZA ESTA FUNCIÓN COMPLETA
 
     renderSessions(sessions) {
         const container = document.getElementById('sessions-container');
@@ -111,6 +125,10 @@ export const Studio = {
                 <div class="session-card-actions">
                     <button class="btn-primary" data-action="open-session" data-session='${sessionData}'>
                         <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Sala
+                    </button>
+                    
+                    <button class="btn-secondary" data-action="copy-guest-link" data-url="${session.guest_url}">
+                        <i class="fas fa-copy"></i> Copiar Link Invitado
                     </button>
                     <button class="btn-secondary" data-action="edit-session" data-session='${sessionData}'>
                         <i class="fas fa-pencil-alt"></i> Editar
