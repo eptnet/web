@@ -504,3 +504,28 @@ input[type="range"]::-moz-range-thumb { border: none; border-radius: 50%; backgr
         line-height: 1.3;
     }
 }
+/* ===================================================
+   ANIMACIÓN DE CARGA PARA BENTO GRID
+   =================================================== */
+
+/* 1. Definimos la animación de "aparecer hacia arriba" */
+@keyframes fade-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 2. Por defecto, los bloques están ocultos antes de la animación */
+.bento-grid .bento-box {
+    opacity: 0;
+}
+
+/* 3. Cuando un bloque tenga la clase .is-visible, se animará */
+.bento-grid .bento-box.is-visible {
+    animation: fade-in-up 0.7s ease-out forwards;
+}

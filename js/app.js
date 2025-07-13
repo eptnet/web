@@ -103,6 +103,9 @@ document.addEventListener('mainReady', () => {
     function displayContent(articles, podcasts) {
         bentoGrid.innerHTML = "";
         let postIndex = 0;
+
+        // 1. Creamos el HTML de la cuadrícula, igual que antes.
+        //    Los bloques estarán invisibles por defecto gracias al CSS (opacity: 0).
         grid_layout.forEach(element => {
             let elementHTML = '';
             if (element.type === 'module') {
@@ -116,7 +119,37 @@ document.addEventListener('mainReady', () => {
             }
             if (elementHTML) bentoGrid.insertAdjacentHTML("beforeend", elementHTML);
         });
+
+        // --- INICIO DE LA NUEVA LÓGICA CON INTERSECTION OBSERVER ---
+
+        // 2. Función que se ejecutará cuando la cuadrícula sea visible.
+        const animateBentoGrid = () => {
+            const bentoBoxes = bentoGrid.querySelectorAll('.bento-box');
+            bentoBoxes.forEach((box, index) => {
+                // Aumentamos el retraso para una animación más pausada.
+                box.style.animationDelay = `${index * 100}ms`; // Retraso de 100ms entre bloques.
+                box.classList.add('is-visible');
+            });
+        };
+
+        // 3. Creamos un "observador" que vigile la cuadrícula (bentoGrid).
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                // Si la cuadrícula está en la pantalla (isIntersecting es true)...
+                if (entry.isIntersecting) {
+                    // ...lanzamos la animación.
+                    animateBentoGrid();
+                    // ...y dejamos de observar para que no se repita.
+                    observer.unobserve(bentoGrid);
+                }
+            });
+        }, { threshold: 0.1 }); // Se activa cuando al menos el 10% del grid es visible.
+
+        // 4. Le decimos al observador que empiece a vigilar nuestro bentoGrid.
+        observer.observe(bentoGrid);
         
+        // --- FIN DE LA NUEVA LÓGICA ---
+
         if (podcasts && podcasts.length > 0) {
             audioPlayer.setPlaylist(podcasts);
             populatePodcastPlayer(podcasts);
