@@ -329,7 +329,13 @@ body {
 .event-modal-organizer p { margin: 0; font-size: 0.8rem; color: var(--color-secondary); }
 .event-modal-schedule { font-weight: 500; margin-bottom: 1rem; }
 .event-modal-description { line-height: 1.6; color: var(--color-secondary); }
-.event-modal-footer { padding: 1.5rem; border-top: 1px solid #444; text-align: right; }
+.event-modal-footer {
+    padding: 1.5rem;
+    border-top: 1px solid var(--border-color); /* Usamos la variable de color */
+    display: flex; /* <-- AÑADIDO */
+    justify-content: flex-end; /* <-- AÑADIDO: alinea los botones a la derecha */
+    gap: 0.75rem; /* <-- AÑADIDO: espacio entre botones */
+}
 .btn-primary { 
     background-color: var(--color-accent); 
     color: white; 
@@ -337,6 +343,22 @@ body {
     border-radius: 8px;
     text-decoration: none;
     font-weight: 600;
+}
+
+/* Estilo para el botón secundario */
+.btn-secondary {
+    background-color: var(--color-surface-light);
+    color: var(--color-primary);
+    border: 1px solid var(--border-color);
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+
+.btn-secondary:hover {
+    background-color: var(--border-color);
 }
 
 /* En /live/css/live.css */

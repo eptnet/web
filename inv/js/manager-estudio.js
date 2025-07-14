@@ -23,6 +23,8 @@ export const Studio = {
         });
     },
 
+    // REEMPLAZA ESTA FUNCIÓN COMPLETA
+
     addEventListeners() {
         const container = document.getElementById('my-sessions-tab');
         if (!container || container.dataset.listenerAttached) return;
@@ -40,9 +42,8 @@ export const Studio = {
             if (action === 'open-session') this.openSession(sessionData);
             else if (action === 'edit-session') this.openModal(JSON.parse(decodeURIComponent(sessionData)));
             else if (action === 'delete-session') this.deleteSession(sessionId);
-            // --- CAMBIO 1: AÑADIMOS EL MANEJADOR PARA GUARDAR LA URL DE GRABACIÓN ---
             else if (action === 'save-recording-url') this.saveRecordingUrl(sessionId);
-
+            
             // --- INICIO DEL CAMBIO ---
             else if (action === 'copy-guest-link') {
                 const guestUrl = button.dataset.url;
@@ -401,8 +402,8 @@ export const Studio = {
             sessionData.is_archived = false;
             
             const stableId = self.crypto.randomUUID().slice(0, 8);
-            const roomName = `ept-2-${App.userProfile.orcid.slice(-4)}-${stableId}`; 
-            const directorKey = `dir-${App.userProfile.orcid.slice(-4)}`;
+            const roomName = `ept_2_${App.userProfile.orcid.slice(-4)}_${stableId}`; 
+            const directorKey = `dir_${App.userProfile.orcid.slice(-4)}`;
             const vdoDomain = 'https://vdo.epistecnologia.com';
             
             let directorParams = new URLSearchParams({ room: roomName, director: directorKey, record: 'auto' });
@@ -437,18 +438,18 @@ export const Studio = {
                 locked: '1.7777777777777777',
                 room: roomName
             });
-            sessionData.recording_source_url = `${vdoDomain}/?scene=0&layout&remote&clean&chroma=000&ssar=landscape&nosettings&prefercurrenttab&selfbrowsersurface=include&displaysurface=browser&np&nopush&publish&record&screenshareaspectratio=1.7777777777777777&locked=1.7777777777777777${roomName}`;
+            sessionData.recording_source_url = `${vdoDomain}/?scene=0&layout&remote&clean&chroma=000&ssar=landscape&nosettings&prefercurrenttab&selfbrowsersurface=include&displaysurface=browser&np&nopush&publish&record&screenshareaspectratio=1.7777777777777777&locked=1.7777777777777777&room=${roomName}`;
             // --- FIN DEL CAMBIO ---
 
             // El resto de las URLs se mantienen igual
             let guestParams = new URLSearchParams({ room: roomName });
             let viewerParams = new URLSearchParams({ room: roomName, scene: '0', showlabels: '0' });
             if (formData.get('guestCount') > 4) {
-                directorParams.set('meshcast', '1');
-                guestParams.set('meshcast', '1');
+                directorParams.set('whepshare=https://cae1.meshcast.io/whep/EPTLive', '1');
+                guestParams.set('whepshare=https://cae1.meshcast.io/whep/EPTLive', '1');
                 viewerParams.set('meshcast', '1');
             }
-            sessionData.guest_url = `${vdoDomain}/?${guestParams.toString()}&meshcast`;
+            sessionData.guest_url = `${vdoDomain}/?${guestParams.toString()}`;
             sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}&layout&whepshare=https://use1.meshcast.io/whep/EPTLive&cleanoutput`;
         }
 
@@ -594,15 +595,38 @@ export const Studio = {
         }
     },
     
+    // REEMPLAZA ESTA FUNCIÓN
+
     async deleteSession(sessionId) {
         const confirmed = confirm("¿Estás seguro de que quieres borrar esta sesión? Esta acción es irreversible.");
         if (!confirmed) return;
-        const { error } = await App.supabase.from('sessions').delete().eq('id', sessionId);
-        if (error) { 
+
+        // --- INICIO DEL CAMBIO ---
+        // 1. Primero, borramos los participantes asociados a la sesión.
+        const { error: participantsError } = await App.supabase
+            .from('event_participants')
+            .delete()
+            .eq('session_id', sessionId);
+
+        if (participantsError) {
+            alert("Hubo un error al borrar los participantes asociados. No se pudo completar la eliminación.");
+            console.error('Error deleting participants:', participantsError);
+            return;
+        }
+
+        // 2. Si lo anterior tuvo éxito, ahora sí borramos la sesión.
+        const { error: sessionError } = await App.supabase
+            .from('sessions')
+            .delete()
+            .eq('id', sessionId);
+
+        if (sessionError) { 
             alert("Hubo un error al borrar la sesión."); 
+            console.error('Error deleting session:', sessionError);
         } else {
-            alert("Sala borrada con éxito.");
+            alert("Sala y participantes borrados con éxito.");
             this.fetchSessions();
         }
+        // --- FIN DEL CAMBIO ---
     }
 };

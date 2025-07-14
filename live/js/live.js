@@ -51,10 +51,13 @@ const LiveApp = {
             modalOrganizer: document.getElementById('event-modal-organizer'),
             modalSchedule: document.getElementById('event-modal-schedule'),
             modalDescription: document.getElementById('event-modal-description'),
-            modalMoreInfo: document.getElementById('event-modal-more-info'),
+            
+            // --- INICIO DE LA CORRECCIÓN ---
+            modalFooter: document.querySelector('.event-modal-footer'), // Usamos querySelector para buscar por la CLASE
+            // --- FIN DE LA CORRECCIÓN ---
+            
             modalCloseBtn: document.getElementById('event-modal-close'),
             themeToggleBtn: document.getElementById('theme-toggle-btn'),
-            // <-- CAMBIO: Añadido el contenedor de los avatares de participantes.
             participantsContainer: document.querySelector('#investigators-box .avatar-grid'),
             participantModalOverlay: document.getElementById('participant-modal-overlay'),
             participantModalContent: document.getElementById('participant-modal-content'),
@@ -326,14 +329,33 @@ const LiveApp = {
     openEventModal(sessionId) {
         const session = this.allSessionsMap[sessionId];
         if (!session) return;
+
+        // Llenamos el contenido principal del modal (sin cambios)
         this.elements.modalTitle.textContent = session.session_title;
         this.elements.modalDescription.textContent = session.description || 'No hay descripción disponible.';
         this.elements.modalSchedule.innerHTML = `<i class="fas fa-clock"></i> ${new Date(session.scheduled_at).toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'short' })}`;
         this.elements.modalThumbnail.style.backgroundImage = `url('${session.thumbnail_url || 'https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png'}')`;
-        // <-- CAMBIO: Se usa `session.organizer` en lugar de `session.profiles`.
         if (session.organizer) this.elements.modalOrganizer.innerHTML = `<img src="${session.organizer.avatar_url || ''}" alt=""><div><strong>${session.organizer.display_name}</strong><p>${session.organizer.orcid}</p></div>`;
-        this.elements.modalMoreInfo.style.display = session.more_info_url ? 'inline-block' : 'none';
-        if(session.more_info_url) this.elements.modalMoreInfo.href = session.more_info_url;
+        
+        // --- INICIO DE LA NUEVA LÓGICA PARA EL FOOTER ---
+        const footer = this.elements.modalFooter;
+        footer.innerHTML = ''; // Limpiamos el footer para construir los botones dinámicamente
+
+        let buttonsHTML = '';
+
+        // Botón 1: Ver Grabación (solo si existe la URL)
+        if (session.recording_url) {
+            buttonsHTML += `<a href="${session.recording_url}" target="_blank" rel="noopener noreferrer" class="btn-secondary">Ver Grabación</a>`;
+        }
+
+        // Botón 2: Saber Más (solo si existe la URL)
+        if (session.more_info_url) {
+            buttonsHTML += `<a href="${session.more_info_url}" target="_blank" rel="noopener noreferrer" class="btn-primary">Saber Más</a>`;
+        }
+
+        footer.innerHTML = buttonsHTML; // Añadimos los botones que correspondan
+        // --- FIN DE LA NUEVA LÓGICA ---
+        
         this.elements.modalOverlay.classList.add('is-visible');
     },
 
