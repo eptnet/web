@@ -66,6 +66,8 @@ export const Studio = {
         });
     },
 
+    // REEMPLAZA ESTA FUNCIÓN EN manager-estudio.js
+
     async fetchSessions() {
         const container = document.getElementById('sessions-container');
         if (!container) return;
@@ -74,7 +76,7 @@ export const Studio = {
         const { data: sessions, error } = await App.supabase
             .from('sessions')
             .select(`*, participants: event_participants(profiles(id, avatar_url, display_name))`)
-            .eq('is_archived', false)
+            // .eq('is_archived', false) // <-- HEMOS ELIMINADO ESTA LÍNEA
             .eq('user_id', App.userId)
             .order('created_at', { ascending: false });
 
@@ -182,37 +184,39 @@ export const Studio = {
     },
 
     async fetchAllPublicSessions() {
-    const container = document.getElementById('global-schedule-container');
-    if (!container) return;
-    container.innerHTML = `<p>Cargando agenda global...</p>`;
+        const container = document.getElementById('global-schedule-container');
+        if (!container) return;
+        container.innerHTML = `<p>Cargando agenda global...</p>`;
 
-    // --- LÓGICA CORREGIDA CON CONSULTAS SEPARADAS ---
-    const { data: sessions, error: sessionsError } = await App.supabase
-        .from('sessions')
-        .select('*')
-        .in('status', ['PROGRAMADO', 'EN VIVO'])
-        .eq('is_archived', false)
-        .order('scheduled_at', { ascending: true });
-        
-    if (sessionsError) {
-        container.innerHTML = `<p>Error al cargar la agenda.</p>`;
-        return;
-    }
-    if (!sessions || sessions.length === 0) {
-        this.renderAllSessions([]);
-        return;
-    }
-    const userIds = [...new Set(sessions.map(s => s.user_id).filter(id => id))];
-    let profilesMap = new Map();
-    if (userIds.length > 0) {
-        const { data: profiles } = await App.supabase.from('profiles').select('id, display_name').in('id', userIds);
-        if (profiles) {
-            profiles.forEach(p => profilesMap.set(p.id, p));
+        // --- INICIO DE LA CORRECCIÓN ---
+        const { data: sessions, error: sessionsError } = await App.supabase
+            .from('sessions')
+            .select('*')
+            // Ahora también incluimos las sesiones FINALIZADO
+            .in('status', ['PROGRAMADO', 'EN VIVO', 'FINALIZADO']) 
+            // .eq('is_archived', false) // Y quitamos este filtro
+            .order('scheduled_at', { ascending: false });
+        // --- FIN DE LA CORRECCIÓN ---
+            
+        if (sessionsError) {
+            container.innerHTML = `<p>Error al cargar la agenda.</p>`;
+            return;
         }
-    }
-    const fullSessionData = sessions.map(session => ({ ...session, profiles: profilesMap.get(session.user_id) }));
-    this.renderAllSessions(fullSessionData);
-},
+        if (!sessions || sessions.length === 0) {
+            this.renderAllSessions([]);
+            return;
+        }
+        const userIds = [...new Set(sessions.map(s => s.user_id).filter(id => id))];
+        let profilesMap = new Map();
+        if (userIds.length > 0) {
+            const { data: profiles } = await App.supabase.from('profiles').select('id, display_name').in('id', userIds);
+            if (profiles) {
+                profiles.forEach(p => profilesMap.set(p.id, p));
+            }
+        }
+        const fullSessionData = sessions.map(session => ({ ...session, profiles: profilesMap.get(session.user_id) }));
+        this.renderAllSessions(fullSessionData);
+    },
 
     renderAllSessions(sessions) {
         // Dibuja las tarjetas de la "Agenda Global"

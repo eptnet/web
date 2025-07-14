@@ -120,7 +120,8 @@ const LiveApp = {
     async run() {
         console.log("Buscando estado actual con la consulta final optimizada...");
 
-        // <-- CAMBIO: Consulta única y optimizada para traer sesiones, organizador y participantes.
+        // --- INICIO DE LA CORRECCIÓN ---
+        // La consulta ahora traerá sesiones archivadas (finalizadas) para mostrar el historial
         const { data: sessions, error } = await this.supabase
             .from('sessions')
             .select(`
@@ -131,8 +132,9 @@ const LiveApp = {
                 )
             `)
             .in('status', ['PROGRAMADO', 'EN VIVO', 'FINALIZADO'])
-            .eq('is_archived', false)
+            // .eq('is_archived', false) // <-- HEMOS ELIMINADO ESTA LÍNEA PROBLEMÁTICA
             .order('scheduled_at', { ascending: false });
+        // --- FIN DE LA CORRECCIÓN ---
 
         if (error) {
             console.error("Error al buscar sesiones:", error);
