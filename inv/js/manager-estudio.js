@@ -330,25 +330,30 @@ export const Studio = {
             return new Date(d - tzoffset).toISOString().slice(0, 16);
         };
         
-        const initialPlatform = session?.platform || 'vdo_ninja';
+        // --- INICIO DEL CAMBIO ---
+        // La plataforma por defecto ahora es 'twitch' para nuevas sesiones.
+        const initialPlatform = session?.platform || 'twitch';
+        // --- FIN DEL CAMBIO ---
+
         const modalContainer = document.getElementById('modal-overlay-container');
         
         modalContainer.innerHTML = `
             <div id="studio-modal" class="modal-overlay is-visible">
                 <div class="modal">
-                    <header class="modal-header"><h2>${isEditing ? 'Editar' : 'Configurar'} Sesión</h2><button class="modal-close-btn">&times;</button></header>
+                    <header class="modal-header"><h2>${isEditing ? 'Editar' : 'Configurar'} Sesión</h2><button class="modal-close-btn">×</button></header>
                     <main class="modal-content">
                         <form id="studio-form">
                             <p>Proyecto: <strong>${session ? session.project_title : selectedProject}</strong></p>
                             <hr>
                             
                             <div class="form-group">
-                                <label>Plataforma</label>
+                                <label>Plataforma de Transmisión</label>
                                 <div class="platform-selector">
-                                    <div class="platform-option" data-platform="vdo_ninja"><i class="fas fa-satellite-dish"></i><span>EPT Live</span></div>
+                                    <div class="platform-option" data-platform="twitch"><i class="fab fa-twitch"></i><span>EPT Live (Twitch)</span></div>
+                                    <div class="platform-option" data-platform="vdo_ninja"><i class="fas fa-users"></i><span>EPT Room (PRO)</span></div>
                                     <div class="platform-option" data-platform="youtube"><i class="fab fa-youtube"></i><span>YouTube</span></div>
                                     <div class="platform-option" data-platform="substack"><i class="fas fa-bookmark"></i><span>Substack</span></div>
-                                    </div>
+                                </div>
                                 <input type="hidden" id="session-platform" name="platform" value="${initialPlatform}">
                             </div>
 
@@ -364,8 +369,8 @@ export const Studio = {
                             <div class="form-group rtmps-fields" style="display: ${initialPlatform === 'youtube' || initialPlatform === 'twitch' ? 'block' : 'none'};">
                                 <hr>
                                 <label>Configuración de Transmisión Manual (Opcional)</label>
-                                <p class="form-hint">Pega aquí los datos de YouTube/Twitch para transmitir directamente desde esta sala de control.</p>
-                                <input id="session-rtmp-url" name="rtmp_url" type="text" value="${session?.rtmp_url || ''}" placeholder="URL del servidor RTMPS (ej: rtmps://a.rtmp.youtube.com/live2)">
+                                <p class="form-hint">Pega aquí los datos de YouTube para transmitir directamente desde esta sala de control.</p>
+                                <input id="session-rtmp-url" name="rtmp_url" type="text" value="${session?.rtmp_url || ''}" placeholder="URL del servidor RTMPS (ej: rtmps://a.rtmps.youtube.com/live2)">
                                 <input id="session-rtmp-key" name="rtmp_key" type="password" value="${session?.rtmp_key || ''}" placeholder="Clave de transmisión">
                             </div>
                             <div class="form-group">
@@ -396,7 +401,6 @@ export const Studio = {
             platformOptions.forEach(opt => opt.classList.toggle('selected', opt.dataset.platform === platform));
             platformInput.value = platform;
             
-            // Muestra u oculta los campos de ID de plataforma
             let fieldHTML = '';
             if (platform === 'youtube') {
                 fieldHTML = `<div class="form-group"><label for="youtube-id">ID del Video de YouTube</label><input id="youtube-id" name="youtubeId" type="text" value="${session?.platform_id || ''}" placeholder="Opcional al agendar"></div>`;
@@ -405,22 +409,21 @@ export const Studio = {
             }
             platformSpecificFields.innerHTML = fieldHTML;
 
-            // Muestra u oculta los campos de RTMPS
             const rtmpsFields = modalContainer.querySelector('.rtmps-fields');
             if (rtmpsFields) {
+                // Tu lógica aquí ya incluía 'twitch', ¡lo cual es perfecto!
                 rtmpsFields.style.display = (platform === 'youtube' || platform === 'twitch') ? 'block' : 'none';
             }
         };
 
-        // --- Lógica de Eventos ---
         platformOptions.forEach(opt => {
             opt.addEventListener('click', () => {
                 updatePlatformSelection(opt.dataset.platform);
             });
         });
         
-        updatePlatformSelection(initialPlatform); // Llama a la función para establecer el estado inicial
-        this.renderAddedParticipants(); // Dibuja los participantes cargados al inicio
+        updatePlatformSelection(initialPlatform);
+        this.renderAddedParticipants();
 
         modalContainer.querySelector('.modal-close-btn').addEventListener('click', () => this.closeModal());
         form.addEventListener('submit', (e) => this.handleSaveSession(e, session));
@@ -428,7 +431,6 @@ export const Studio = {
             const searchTerm = document.getElementById('participant-search').value;
             this.searchParticipants(searchTerm);
         });
-        // Hacemos que el campo de clave sea visible al hacer clic en el icono
         const rtmpKeyInput = document.getElementById('session-rtmp-key');
         if (rtmpKeyInput) {
             rtmpKeyInput.addEventListener('click', () => {

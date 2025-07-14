@@ -97,6 +97,31 @@ const ControlRoom = {
         await this.updateStatus('EN VIVO');
     },
 
+    async goLiveOnTwitch() {
+        const button = document.querySelector('.go-live');
+        button.textContent = 'Generando enlace...';
+        button.disabled = true;
+
+        try {
+            // Llamamos a nuestra Edge Function segura
+            const { data, error } = await this.supabase.functions.invoke('crear-enlace-twitch', {
+                body: { session_id: this.sessionId },
+            });
+
+            if (error) throw error;
+
+            // Abrimos la URL que nos devuelve la Edge Function
+            window.open(data.twitch_url, '_blank');
+            
+            // Marcamos la sesión como 'EN VIVO' en nuestra base de datos
+            await this.updateStatus('EN VIVO');
+
+        } catch (error) {
+            alert("Error al generar el enlace de Twitch: " + error.message);
+            this.renderActionButtons(); // Restaura el botón original
+        }
+    },
+
     async endSession() {
         // ... esta función permanece igual
         if (this.sessionData.status !== 'EN VIVO') return;
@@ -134,28 +159,40 @@ const ControlRoom = {
     renderActionButtons() {
         const container = document.getElementById('action-buttons-container');
         if (!container) return;
+
         let buttonHTML = '';
         switch (this.sessionData.status) {
             case 'PROGRAMADO':
-                // --- CAMBIO: El botón "Solo Grabar" ahora llama a openRecordModal ---
-                buttonHTML = `
-                    <button class="btn-secondary" onclick="ControlRoom.openRecordModal()">
-                        <i class="fa-solid fa-video"></i> Solo Grabar
-                    </button>
-                    <button class="btn-primary go-live" onclick="ControlRoom.goLive()">
-                        <i class="fa-solid fa-tower-broadcast"></i> Iniciar Transmisión Pública
-                    </button>
-                `;
+                // --- INICIO DEL CAMBIO ---
+                // Mostramos un botón diferente si la plataforma es Twitch
+                if (this.sessionData.platform === 'twitch') {
+                    buttonHTML = `
+                        <button class="btn-primary go-live" onclick="ControlRoom.goLiveOnTwitch()">
+                            <i class="fab fa-twitch"></i> Iniciar Transmisión en Twitch
+                        </button>
+                    `;
+                } else {
+                    // Mantenemos la lógica anterior para las otras plataformas
+                    buttonHTML = `
+                        <button class="btn-secondary" onclick="ControlRoom.openRecordModal()">
+                            <i class="fa-solid fa-video"></i> Solo Grabar
+                        </button>
+                        <button class="btn-primary go-live" onclick="ControlRoom.goLive()">
+                            <i class="fa-solid fa-tower-broadcast"></i> Iniciar Transmisión Pública
+                        </button>
+                    `;
+                }
+                // --- FIN DEL CAMBIO ---
                 break;
             case 'EN VIVO':
-                buttonHTML = `<button class="btn-primary is-live" onclick="ControlRoom.endSession()"><i class="fa-solid fa-stop-circle"></i> Terminar Transmisión Pública</button>`;
+                buttonHTML = `<button class="btn-primary is-live" onclick="ControlRoom.endSession()"><i class="fa-solid fa-stop-circle"></i> Terminar Transmisión</button>`;
                 break;
             case 'FINALIZADO':
-                buttonHTML = `<p class="session-ended-message"><i class="fa-solid fa-check-circle"></i> Esta transmisión ha finalizado.</p>`;
+                buttonHTML = `<p class="session-ended-message"><i class="fa-solid fa-check-circle"></i> Transmisión finalizada.</p>`;
                 break;
         }
         container.innerHTML = buttonHTML;
-    }
+    },
 };
 
 document.addEventListener('DOMContentLoaded', () => ControlRoom.init());

@@ -664,6 +664,7 @@ body {
     display: flex;
     gap: 1rem;
     margin-top: 0.5rem;
+    flex-wrap: wrap;
 }
 .platform-option {
     flex: 1;

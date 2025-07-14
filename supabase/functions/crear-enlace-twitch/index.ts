@@ -26,7 +26,7 @@ serve(async (req) => {
 
     const { data: sessionData, error: sessionError } = await supabaseClient
       .from('sessions')
-      .select('director_url') // Obtenemos la URL que contiene el roomName
+      .select('director_url')
       .eq('id', session_id)
       .single()
 
@@ -36,16 +36,41 @@ serve(async (req) => {
     const roomName = directorUrl.searchParams.get('room')
     if (!roomName) throw new Error("No se pudo encontrar el nombre de la sala (roomName).")
 
+    // --- INICIO DE LA CORRECCIÓN ---
+    // Usamos la estructura de URL exacta que proporcionaste.
     const vdoDomain = 'https://vdo.epistecnologia.com'
-    const twitchUrl = `${vdoDomain}/?room=${roomName}&whippush=twitch&whippushtoken=${twitchKey}&cleanviewer&record`
+    const params = new URLSearchParams({
+        scene: '0',
+        layout: '',
+        remote: '',
+        room: roomName,
+        cleanviewer: '',
+        chroma: '000',
+        ssar: 'landscape',
+        nosettings: '',
+        prefercurrenttab: '',
+        showlabels: '',
+        selfbrowsersurface: 'include',
+        displaysurface: 'browser',
+        np: '',
+        nopush: '',
+        publish: '',
+        whippush: 'twitch',
+        whippushtoken: twitchKey,
+        screenshareaspectratio: '1.7777777777777777',
+        locked: '1.7777777777777777'
+    });
+    
+    // El parámetro 'record' se puede añadir aquí si siempre quieres grabar las transmisiones de Twitch
+    // params.set('record', '');
+
+    const twitchUrl = `${vdoDomain}/?${params.toString()}`;
+    // --- FIN DE LA CORRECCIÓN ---
 
     return new Response(
       JSON.stringify({ twitch_url: twitchUrl }),
       { 
-        headers: { 
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
         status: 200 
       }
     )
@@ -53,10 +78,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ error: err.message }),
       { 
-        headers: { 
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
         status: 400 
       }
     )
