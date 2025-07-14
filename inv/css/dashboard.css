@@ -564,6 +564,27 @@ body {
     padding: 0.5rem 0.8rem; /* Ajusta el padding para que no sea tan grande */
 }
 
+/* --- Estilos para tarjetas archivadas --- */
+.session-card.is-archived {
+    opacity: 0.6;
+    border-left-color: var(--color-text-secondary);
+}
+
+.session-card.is-archived:hover {
+    opacity: 1; /* La tarjeta se vuelve clara al pasar el cursor */
+}
+
+.archived-badge {
+    background-color: var(--color-text-secondary);
+    color: var(--color-surface);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 0.5rem;
+}
+
 /* ==========================================================================
    9. ESTILOS PARA DROPDOWN DE TRANSMISIÓN
    ========================================================================== */

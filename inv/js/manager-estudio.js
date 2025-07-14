@@ -64,6 +64,9 @@ export const Studio = {
             }
             // --- FIN DEL CAMBIO ---
             else if (action === 'archive-session') this.archiveSession(sessionId);
+            // --- INICIO DEL CAMBIO ---
+            else if (action === 'unarchive-session') this.unarchiveSession(sessionId);
+            // --- FIN DEL CAMBIO ---
         });
     },
 
@@ -83,6 +86,24 @@ export const Studio = {
         } else {
             alert("Sesión archivada con éxito.");
             this.fetchSessions(); // Refrescamos la vista
+        }
+    },
+
+    async unarchiveSession(sessionId) {
+        const confirmed = confirm("¿Volver a mostrar esta sesión en las vistas públicas?");
+        if (!confirmed) return;
+
+        const { error } = await App.supabase
+            .from('sessions')
+            .update({ is_archived: false }) // Cambiamos el valor a false
+            .eq('id', sessionId);
+
+        if (error) {
+            alert("Hubo un error al desarchivar la sesión.");
+            console.error('Error unarchiving session:', error);
+        } else {
+            alert("Sesión restaurada con éxito. Ahora es visible públicamente.");
+            this.fetchSessions();
         }
     },
 
@@ -131,17 +152,29 @@ export const Studio = {
                 `<img src="${p.profiles.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="${p.profiles.display_name}" title="${p.profiles.display_name}" class="participant-avatar">`
             ).join('');
 
+            // --- INICIO DEL CAMBIO ---
+            // 1. Añadimos dinámicamente el botón de Archivar o Desarchivar
+            const archiveButtonHTML = session.is_archived
+                ? `<button class="btn-secondary" data-action="unarchive-session" data-session-id="${session.id}" title="Desarchivar (volver a mostrar públicamente)">
+                    <i class="fas fa-box-open"></i>
+                </button>`
+                : `<button class="btn-secondary" data-action="archive-session" data-session-id="${session.id}" title="Archivar (ocultar de vistas públicas)">
+                    <i class="fas fa-box-archive"></i>
+                </button>`;
+            
+            // 2. Añadimos una clase si la tarjeta está archivada para darle un estilo visual
             return `
-            <div class="session-card" id="${session.id}">
+            <div class="session-card ${session.is_archived ? 'is-archived' : ''}" id="${session.id}">
                 <div class="session-card__header">
-                    <span class="session-card__meta">${session.platform === 'youtube' ? 'YouTube' : session.platform === 'substack' ? 'Substack' : 'EPT Live'}</span>
+                    ${session.is_archived ? '<span class="archived-badge">Archivado</span>' : ''}
+                    <span class="session-card__meta">${session.platform}</span>
                     <h4>${session.session_title}</h4>
                     <p>${session.project_title}</p>
                 </div>
                 <div class="session-card__participants">${participantsHTML}</div>
                 <div class="session-card__schedule">
                     <p><i class="fas fa-calendar-alt"></i> ${formattedDate}</p>
-                    <p><i class="fas fa-clock"></i> ${formattedStartTime} ${endTime ? ' - ' + formattedEndTime : ''}</p>
+                    <p><i class="fas fa-clock"></i> ${formattedStartTime}</p>
                 </div>
                 
                 <div class="recording-url-adder">
@@ -161,24 +194,20 @@ export const Studio = {
                     <button class="btn-secondary" data-action="copy-guest-link" data-url="${session.guest_url}">
                         <i class="fas fa-copy"></i> Copiar Link Invitado
                     </button>
-
-                    ${session.recording_source_url ? `
-                    <button class="btn-secondary" data-action="copy-recording-link" data-url="${session.recording_source_url}">
-                        <i class="fas fa-video"></i> Copiar Link Grabación
-                    </button>
-                    ` : ''}
+                    ${session.recording_source_url ? `<button class="btn-secondary" data-action="copy-recording-link" data-url="${session.recording_source_url}"><i class="fas fa-video"></i> Copiar Link Grabación</button>` : ''}
+                    
                     <button class="btn-secondary" data-action="edit-session" data-session='${sessionData}' style="margin-left: auto;">
                         <i class="fas fa-pencil-alt"></i>
                     </button>
+                    
+                    ${archiveButtonHTML}
 
-                    <button class="btn-secondary" data-action="archive-session" data-session-id="${session.id}" title="Archivar (ocultar de vistas públicas)">
-                        <i class="fas fa-box-archive"></i>
-                    </button>
                     <button class="btn-secondary" data-action="delete-session" data-session-id="${session.id}" title="Borrar permanentemente">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
             </div>`;
+            // --- FIN DEL CAMBIO ---
         }).join('');
     },
 
