@@ -132,7 +132,7 @@ const LiveApp = {
                 )
             `)
             .in('status', ['PROGRAMADO', 'EN VIVO', 'FINALIZADO'])
-            // .eq('is_archived', false) // <-- HEMOS ELIMINADO ESTA LÍNEA PROBLEMÁTICA
+            .eq('is_archived', false) // <-- HEMOS ELIMINADO ESTA LÍNEA PROBLEMÁTICA
             .order('scheduled_at', { ascending: false });
         // --- FIN DE LA CORRECCIÓN ---
 

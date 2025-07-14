@@ -63,7 +63,27 @@ export const Studio = {
                 });
             }
             // --- FIN DEL CAMBIO ---
+            else if (action === 'archive-session') this.archiveSession(sessionId);
         });
+    },
+
+    // AÑADE ESTA NUEVA FUNCIÓN al objeto Studio en manager-estudio.js
+    async archiveSession(sessionId) {
+        const confirmed = confirm("¿Archivar esta sesión? Desaparecerá de las vistas públicas pero no se borrará. Podrás seguir viéndola en esta sección.");
+        if (!confirmed) return;
+
+        const { error } = await App.supabase
+            .from('sessions')
+            .update({ is_archived: true })
+            .eq('id', sessionId);
+
+        if (error) {
+            alert("Hubo un error al archivar la sesión.");
+            console.error('Error archiving session:', error);
+        } else {
+            alert("Sesión archivada con éxito.");
+            this.fetchSessions(); // Refrescamos la vista
+        }
     },
 
     // REEMPLAZA ESTA FUNCIÓN EN manager-estudio.js
@@ -150,7 +170,11 @@ export const Studio = {
                     <button class="btn-secondary" data-action="edit-session" data-session='${sessionData}' style="margin-left: auto;">
                         <i class="fas fa-pencil-alt"></i>
                     </button>
-                    <button class="btn-secondary" data-action="delete-session" data-session-id="${session.id}">
+
+                    <button class="btn-secondary" data-action="archive-session" data-session-id="${session.id}" title="Archivar (ocultar de vistas públicas)">
+                        <i class="fas fa-box-archive"></i>
+                    </button>
+                    <button class="btn-secondary" data-action="delete-session" data-session-id="${session.id}" title="Borrar permanentemente">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -194,7 +218,7 @@ export const Studio = {
             .select('*')
             // Ahora también incluimos las sesiones FINALIZADO
             .in('status', ['PROGRAMADO', 'EN VIVO', 'FINALIZADO']) 
-            // .eq('is_archived', false) // Y quitamos este filtro
+            .eq('is_archived', false) // Y quitamos este filtro
             .order('scheduled_at', { ascending: false });
         // --- FIN DE LA CORRECCIÓN ---
             

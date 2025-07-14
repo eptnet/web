@@ -108,12 +108,22 @@ const ControlRoom = {
     },
     
     async updateStatus(newStatus) {
-        // ... esta función permanece igual
         if (this.sessionData.status === newStatus) return;
+
+        // --- INICIO DEL CAMBIO ---
+        // Ya no asignamos 'is_archived' automáticamente al finalizar.
+        // Esto lo hará el usuario manualmente desde el dashboard.
         const updateData = { status: newStatus };
-        if (newStatus === 'FINALIZADO') updateData.is_archived = true; 
-        const { error } = await this.supabase.from('sessions').update(updateData).eq('id', this.sessionId);
-        if (error) { alert(`Error: No se pudo actualizar el estado a ${newStatus}.`);
+        // --- FIN DEL CAMBIO ---
+        
+        const { error } = await this.supabase
+            .from('sessions')
+            .update(updateData)
+            .eq('id', this.sessionId);
+            
+        if (error) {
+            console.error("Error al actualizar estado:", error);
+            alert(`Error: No se pudo actualizar el estado a ${newStatus}.`);
         } else {
             this.sessionData.status = newStatus; 
             this.renderActionButtons();
