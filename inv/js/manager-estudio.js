@@ -43,14 +43,22 @@ export const Studio = {
             else if (action === 'edit-session') this.openModal(JSON.parse(decodeURIComponent(sessionData)));
             else if (action === 'delete-session') this.deleteSession(sessionId);
             else if (action === 'save-recording-url') this.saveRecordingUrl(sessionId);
-            
-            // --- INICIO DEL CAMBIO ---
             else if (action === 'copy-guest-link') {
                 const guestUrl = button.dataset.url;
                 navigator.clipboard.writeText(guestUrl).then(() => {
                     alert('¡Enlace para invitados copiado al portapapeles!');
                 }).catch(err => {
                     console.error('Error al copiar el enlace: ', err);
+                    alert('No se pudo copiar el enlace.');
+                });
+            }
+            // --- INICIO DEL CAMBIO ---
+            else if (action === 'copy-recording-link') {
+                const recordingUrl = button.dataset.url;
+                navigator.clipboard.writeText(recordingUrl).then(() => {
+                    alert('¡Enlace de grabación remota copiado al portapapeles!');
+                }).catch(err => {
+                    console.error('Error al copiar el enlace de grabación: ', err);
                     alert('No se pudo copiar el enlace.');
                 });
             }
@@ -80,6 +88,7 @@ export const Studio = {
 
     // REEMPLAZA ESTA FUNCIÓN COMPLETA
 
+    // REEMPLAZA ESTA FUNCIÓN COMPLETA
     renderSessions(sessions) {
         const container = document.getElementById('sessions-container');
         if (!container) return;
@@ -127,14 +136,19 @@ export const Studio = {
                     <button class="btn-primary" data-action="open-session" data-session='${sessionData}'>
                         <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Sala
                     </button>
-                    
                     <button class="btn-secondary" data-action="copy-guest-link" data-url="${session.guest_url}">
                         <i class="fas fa-copy"></i> Copiar Link Invitado
                     </button>
-                    <button class="btn-secondary" data-action="edit-session" data-session='${sessionData}'>
-                        <i class="fas fa-pencil-alt"></i> Editar
+
+                    ${session.recording_source_url ? `
+                    <button class="btn-secondary" data-action="copy-recording-link" data-url="${session.recording_source_url}">
+                        <i class="fas fa-video"></i> Copiar Link Grabación
                     </button>
-                    <button class="btn-secondary" data-action="delete-session" data-session-id="${session.id}" style="margin-left: auto;">
+                    ` : ''}
+                    <button class="btn-secondary" data-action="edit-session" data-session='${sessionData}' style="margin-left: auto;">
+                        <i class="fas fa-pencil-alt"></i>
+                    </button>
+                    <button class="btn-secondary" data-action="delete-session" data-session-id="${session.id}">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
