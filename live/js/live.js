@@ -192,15 +192,21 @@ const LiveApp = {
         this.destroyOnDemandPlayer();
         this.elements.infoContainer.style.display = 'flex';
         this.renderInfo(session);
-        this.renderParticipants(session); // <-- CAMBIO: Llama a la nueva función para mostrar avatares.
+        this.renderParticipants(session);
 
-        if (session.platform === 'youtube') {
+        // --- INICIO DEL CAMBIO ---
+        // Añadimos la lógica para la plataforma 'twitch'
+        if (session.platform === 'twitch') {
+            this.showTwitchPlayer(session); // Llama a la nueva función
+            this.showStreamChat(session);   // Llama a la función de chat actualizada
+        } else if (session.platform === 'youtube') {
             this.showYouTubePlayer(session);
-            this.showYouTubeChat(session.platform_id);
+            this.showStreamChat(session);   // Usamos la nueva función de chat
         } else if (session.platform === 'vdo_ninja') {
             this.showVDONinjaPlayer(session);
-            this.showYouTubeChat(null);
+            this.showStreamChat(null); // VDO Ninja no tiene chat
         }
+        // --- FIN DEL CAMBIO ---
     },
 
     async handleOnDemandContent() {
@@ -364,6 +370,22 @@ const LiveApp = {
     closeEventModal() {
         this.elements.modalOverlay.classList.remove('is-visible');
     },
+
+    showTwitchPlayer(session) {
+        const channelName = "epistecnologia"; // El nombre de tu canal de Twitch
+        // Limpiamos el contenedor del reproductor
+        this.elements.playerContainer.innerHTML = '<div id="twitch-player-embed"></div>';
+
+        // Usamos el método recomendado por Twitch para crear el reproductor
+        new Twitch.Player("twitch-player-embed", {
+            width: "100%",
+            height: "100%",
+            channel: channelName,
+            parent: [window.location.hostname], // Parámetro de seguridad clave
+            autoplay: true,
+            muted: true // El autoplay suele requerir que el video empiece sin sonido
+        });
+    },
     
     showYouTubePlayer(session) {
         this.elements.playerContainer.innerHTML = `<iframe src="https://www.youtube.com/embed/${session.platform_id}?autoplay=1&enablejsapi=1&rel=0" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
@@ -385,8 +407,33 @@ const LiveApp = {
         }, 3000); // 3 segundos de espera
     },
 
-    showYouTubeChat(videoId) {
-        this.elements.youtubeChatContainer.innerHTML = videoId ? `<iframe src="https://www.youtube.com/live_chat?v=${videoId}&embed_domain=${window.location.hostname}" frameborder="0"></iframe>` : '<p class="placeholder-text">El chat se activa durante los directos.</p>';
+    // REEMPLAZA showYouTubeChat CON ESTA NUEVA FUNCIÓN showStreamChat
+
+    showStreamChat(session) {
+        const container = this.elements.youtubeChatContainer;
+        // Si no hay sesión o contenedor, muestra el texto por defecto
+        if (!session || !container) {
+            container.innerHTML = '<p class="placeholder-text">El chat se activa durante los directos.</p>';
+            return;
+        }
+        
+        let chatHTML = '';
+        // Lógica para el chat de Twitch
+        if (session.platform === 'twitch') {
+            const channelName = "epistecnologia"; // Tu canal
+            const parentDomain = window.location.hostname;
+            chatHTML = `<iframe src="https://www.twitch.tv/embed/${channelName}/chat?parent=${parentDomain}&darkpopout" frameborder="0" scrolling="no" height="100%" width="100%"></iframe>`;
+        
+        // Lógica para el chat de YouTube
+        } else if (session.platform === 'youtube' && session.platform_id) {
+            chatHTML = `<iframe src="http://googleusercontent.com/youtube.com/8{session.platform_id}&embed_domain=${window.location.hostname}" frameborder="0"></iframe>`;
+        
+        // Si no es ninguna de las dos, texto por defecto
+        } else {
+            chatHTML = '<p class="placeholder-text">El chat se activa durante los directos.</p>';
+        }
+        
+        container.innerHTML = chatHTML;
     },
 
     initOnDemandPlayer() {
@@ -432,8 +479,6 @@ const LiveApp = {
             })
             .subscribe();
     }
-
-
 };
 
 // Se asegura de que la App inicie correctamente, incluso si la API de YT ya está cargada.

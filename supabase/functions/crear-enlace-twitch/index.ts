@@ -64,7 +64,7 @@ serve(async (req) => {
     // El parámetro 'record' se puede añadir aquí si siempre quieres grabar las transmisiones de Twitch
     // params.set('record', '');
 
-    const twitchUrl = `${vdoDomain}/?${params.toString()}`;
+    const twitchUrl = `${vdoDomain}/?${params.toString()}&cleanoutput`;
     // --- FIN DE LA CORRECCIÓN ---
 
     return new Response(
