@@ -372,19 +372,26 @@ const LiveApp = {
     },
 
     showTwitchPlayer(session) {
-        const channelName = "epistecnologia"; // El nombre de tu canal de Twitch
-        // Limpiamos el contenedor del reproductor
-        this.elements.playerContainer.innerHTML = '<div id="twitch-player-embed"></div>';
+        const channelName = "epistecnologia"; // Tu canal de Twitch
+        const parentDomain = 'www.epistecnologia.com';
 
-        // Usamos el método recomendado por Twitch para crear el reproductor
-        new Twitch.Player("twitch-player-embed", {
-            width: "100%",
-            height: "100%",
-            channel: channelName,
-            parent: [window.location.hostname], // Parámetro de seguridad clave
-            autoplay: true,
-            muted: true // El autoplay suele requerir que el video empiece sin sonido
-        });
+        // --- INICIO DEL CAMBIO ---
+        // Construimos el HTML del iframe directamente.
+        // Este método es más simple y a menudo más compatible.
+        const iframeHTML = `
+            <iframe 
+                src="https://player.twitch.tv/?channel=${channelName}&parent=${parentDomain}&autoplay=true&muted=true" 
+                height="100%" 
+                width="100%" 
+                frameborder="0" 
+                scrolling="no" 
+                allow="autoplay; fullscreen" 
+                allowfullscreen="true">
+            </iframe>
+        `;
+        // --- FIN DEL CAMBIO ---
+
+        this.elements.playerContainer.innerHTML = iframeHTML;
     },
     
     showYouTubePlayer(session) {
