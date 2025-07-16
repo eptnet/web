@@ -17,7 +17,6 @@ document.addEventListener('mainReady', () => {
     console.log("video-player.js: Listo y esperando la señal de 'launch-stories'.");
 
     const ShortsPlayerManager = {
-        YOUTUBE_API_KEY: 'AIzaSyCwh_RLVd7AQ-6FdMEugrA7phNwN0dN9pw', // Reemplaza con tu clave de API
         CHANNEL_ID: 'UCg3ms3gecQ-2cjMhJwaPAig',
         APP_ORIGIN: window.location.origin,
         CACHE_KEY: 'epistecnologia_shorts_cache',

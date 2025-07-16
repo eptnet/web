@@ -373,7 +373,7 @@ const LiveApp = {
 
     showTwitchPlayer(session) {
         const channelName = "epistecnologia"; // Tu canal de Twitch
-        const parentDomain = 'www.epistecnologia.com';
+        const parentDomain = 'epistecnologia.com';
 
         // --- INICIO DEL CAMBIO ---
         // Construimos el HTML del iframe directamente.
