@@ -194,18 +194,38 @@ const LiveApp = {
         this.renderInfo(session);
         this.renderParticipants(session);
 
-        // --- INICIO DEL CAMBIO ---
-        // Añadimos la lógica para la plataforma 'twitch'
-        if (session.platform === 'twitch') {
-            this.showTwitchPlayer(session); // Llama a la nueva función
-            this.showStreamChat(session);   // Llama a la función de chat actualizada
-        } else if (session.platform === 'youtube') {
-            this.showYouTubePlayer(session);
-            this.showStreamChat(session);   // Usamos la nueva función de chat
-        } else if (session.platform === 'vdo_ninja') {
-            this.showVDONinjaPlayer(session);
-            this.showStreamChat(null); // VDO Ninja no tiene chat
-        }
+        const playerContainer = this.elements.playerContainer;
+        if (!playerContainer) return;
+
+        // --- INICIO DEL CAMBIO CON INTERSECTION OBSERVER ---
+        
+        // 1. Creamos un observador que vigile el contenedor del video.
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                // 2. Si el contenedor es visible en la pantalla...
+                if (entry.isIntersecting) {
+                    console.log("El contenedor del reproductor ahora es visible. Creando el reproductor...");
+
+                    // 3. ...creamos el reproductor adecuado según la plataforma.
+                    if (session.platform === 'twitch') {
+                        this.showTwitchPlayer(session);
+                        this.showStreamChat(session);
+                    } else if (session.platform === 'youtube') {
+                        this.showYouTubePlayer(session);
+                        this.showStreamChat(session);
+                    } else if (session.platform === 'vdo_ninja') {
+                        this.showVDONinjaPlayer(session);
+                        this.showStreamChat(null);
+                    }
+
+                    // 4. Dejamos de observar para que no se ejecute de nuevo.
+                    observer.unobserve(playerContainer);
+                }
+            });
+        }, { threshold: 0.5 }); // Se activa cuando al menos el 50% del contenedor es visible
+
+        // 5. Le decimos al observador que empiece a vigilar.
+        observer.observe(playerContainer);
         // --- FIN DEL CAMBIO ---
     },
 
@@ -372,26 +392,21 @@ const LiveApp = {
     },
 
     showTwitchPlayer(session) {
-        const channelName = "epistecnologia"; // Tu canal de Twitch
-        const parentDomain = 'epistecnologia.com';
+        const channelName = "epistecnologia";
+        this.elements.playerContainer.innerHTML = '<div id="twitch-player-embed"></div>';
 
-        // --- INICIO DEL CAMBIO ---
-        // Construimos el HTML del iframe directamente.
-        // Este método es más simple y a menudo más compatible.
-        const iframeHTML = `
-            <iframe 
-                src="https://player.twitch.tv/?channel=${channelName}&parent=${parentDomain}&autoplay=true&muted=true" 
-                height="100%" 
-                width="100%" 
-                frameborder="0" 
-                scrolling="no" 
-                allow="autoplay; fullscreen" 
-                allowfullscreen="true">
-            </iframe>
-        `;
-        // --- FIN DEL CAMBIO ---
-
-        this.elements.playerContainer.innerHTML = iframeHTML;
+        new Twitch.Player("twitch-player-embed", {
+            width: "100%",
+            height: "100%",
+            channel: channelName,
+            // --- INICIO DE LA CORRECCIÓN ---
+            // Proporcionamos una lista de todos los posibles dominios válidos.
+            // Esto cubre si accedes con www, sin www, o en tu computadora local.
+            parent: ["epistecnologia.com", "www.epistecnologia.com", "localhost"],
+            // --- FIN DE LA CORRECCIÓN ---
+            autoplay: true,
+            muted: true
+        });
     },
     
     showYouTubePlayer(session) {
