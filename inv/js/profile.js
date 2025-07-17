@@ -11,10 +11,8 @@ const ProfileApp = {
         this.addEventListeners();
         await this.handleUserSession();
 
-        this.supabase.auth.onAuthStateChange((_event, session) => {
-            if (_event === "SIGNED_IN") { this.handleUserSession(); } 
-            else if (_event === "SIGNED_OUT") { window.location.href = '/'; }
-        });
+        // Al cargar la página, revisamos si venimos de la redirección de ORCID
+        this.checkForOrcidCode();
     },
 
     async handleUserSession() {
@@ -26,38 +24,93 @@ const ProfileApp = {
 
     addEventListeners() {
         document.body.addEventListener('click', (e) => {
-            if (e.target.closest('#connect-orcid-btn')) this.handleOrcidConnect();
-            if (e.target.closest('#disconnect-orcid-btn')) this.handleOrcidDisconnect(); // <-- AÑADIDO
-            if (e.target.closest('#logout-btn-header')) this.supabase.auth.signOut();
-            if (e.target.closest('#theme-switcher')) this.toggleTheme();
-            if (e.target.closest('#sync-orcid-works-btn')) this.handleSyncWorks(); // <-- AÑADIDO
+            const target = e.target.closest('button');
+            if (!target) return;
+
+            const action = target.id;
+            if (action === 'connect-orcid-btn') this.handleOrcidConnect();
+            else if (action === 'disconnect-orcid-btn') this.handleOrcidDisconnect();
+            else if (action === 'logout-btn-header') this.supabase.auth.signOut();
+            else if (action === 'theme-switcher') this.toggleTheme();
+            else if (action === 'sync-orcid-works-btn') this.handleSyncWorks();
         });
+
         document.getElementById('profile-form')?.addEventListener('submit', (e) => this.handleSave(e, 'profile'));
         document.getElementById('platforms-form')?.addEventListener('submit', (e) => this.handleSave(e, 'platforms'));
     },
     
+    // --- INICIO DE LA CORRECCIÓN: Lógica Manual de ORCID ---
     handleOrcidConnect() {
-        this.supabase.auth.signInWithOAuth({
-            provider: 'orcid',
-            options: { scopes: '/read-public', redirectTo: window.location.href },
-        });
+        // ¡IMPORTANTE! Reemplaza el marcador de posición con tu Client ID real de ORCID.
+        const ORCID_CLIENT_ID = 'APP-U2XLNHUBU73BN0VY';
+        
+        const redirectUri = window.location.origin + window.location.pathname;
+        const authUrl = `https://orcid.org/oauth/authorize?client_id=${ORCID_CLIENT_ID}&response_type=code&scope=/authenticate&redirect_uri=${encodeURIComponent(redirectUri)}`;
+        
+        // Abre la ventana de autenticación de ORCID
+        window.location.href = authUrl;
+    },
+
+    async checkForOrcidCode() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+
+        if (code) {
+            // Limpiamos la URL para que el código no quede visible y no se procese de nuevo si se recarga la página
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            // Mostramos una alerta de que estamos procesando
+            alert("Verificando código de ORCID...");
+            
+            try {
+                // Llamamos a nuestra Edge Function para intercambiar el código
+                const { data, error } = await this.supabase.functions.invoke('verificar-orcid-code', {
+                    body: { 
+                        authorization_code: code,
+                        redirect_uri: window.location.origin + window.location.pathname
+                    },
+                });
+
+                if (error) throw error;
+
+                // Si todo fue bien, guardamos el ORCID iD en el perfil del usuario
+                const { error: updateError } = await this.supabase
+                    .from('profiles')
+                    .update({ orcid: `https://orcid.org/${data.orcid}` })
+                    .eq('id', this.user.id);
+                
+                if (updateError) throw updateError;
+                
+                alert("¡Cuenta de ORCID conectada con éxito!");
+                this.renderProfileData(); // Recargamos la información del perfil
+
+            } catch(error) {
+                alert("Error al verificar el código de ORCID: " + error.message);
+            }
+        }
+    },
+    // --- FIN DE LA CORRECCIÓN ---
+
+    async handleOrcidDisconnect() {
+        if (!confirm("¿Estás seguro de que quieres desconectar tu cuenta de ORCID?")) return;
+        const { error } = await this.supabase.from('profiles').update({ orcid: null }).eq('id', this.user.id);
+        if (error) { alert("Error al desconectar la cuenta de ORCID."); } 
+        else { alert("Cuenta de ORCID desconectada."); this.renderProfileData(); }
     },
 
     async renderProfileData() {
         if (!this.user) return;
         this.renderTopBar();
-        
         const { data: profile, error } = await this.supabase.from('profiles').select('*').eq('id', this.user.id).single();
         if (error && error.code !== 'PGRST116') return console.error('Error cargando perfil:', error);
 
         if (profile) {
-            // --- Poblar Tarjeta de Perfil ---
+            // Poblar Tarjeta de Perfil
             document.getElementById('profile-card-avatar').src = profile.avatar_url || this.user.user_metadata?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
             document.getElementById('profile-card-name').textContent = profile.display_name || 'Completa tu perfil';
             document.getElementById('profile-card-orcid').textContent = profile.orcid ? profile.orcid.replace('https://orcid.org/', '') : 'ORCID no conectado';
             document.getElementById('profile-card-bio').textContent = profile.bio || '';
 
-            // --- INICIO DEL CAMBIO: AÑADIMOS TODOS LOS ICONOS SOCIALES ---
             const socialsContainer = document.getElementById('profile-card-socials');
             if(socialsContainer) {
                 socialsContainer.innerHTML = `
@@ -65,12 +118,10 @@ const ProfileApp = {
                     ${profile.x_url ? `<a href="${profile.x_url}" target="_blank" title="Perfil de X"><i class="fab fa-twitter"></i></a>` : ''}
                     ${profile.linkedin_url ? `<a href="${profile.linkedin_url}" target="_blank" title="Perfil de LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}
                     ${profile.instagram_url ? `<a href="${profile.instagram_url}" target="_blank" title="Perfil de Instagram"><i class="fab fa-instagram"></i></a>` : ''}
-                    ${profile.youtube_url ? `<a href="${profile.youtube_url}" target="_blank" title="Canal de YouTube"><i class="fab fa-youtube"></i></a>` : ''}
-                `;
+                    ${profile.youtube_url ? `<a href="${profile.youtube_url}" target="_blank" title="Canal de YouTube"><i class="fab fa-youtube"></i></a>` : ''}`;
             }
-            // --- FIN DEL CAMBIO ---
 
-            // --- Poblar Formularios ---
+            // Poblar Formularios
             document.getElementById('display-name').value = profile.display_name || '';
             document.getElementById('bio').value = profile.bio || '';
             document.getElementById('youtube-url').value = profile.youtube_url || '';
@@ -86,26 +137,14 @@ const ProfileApp = {
         const orcidSection = document.getElementById('orcid-section');
         if (orcidSection) {
             if (profile?.orcid) {
-                // --- INICIO DEL CAMBIO ---
-                orcidSection.innerHTML = `
-                    <div class="status-badge connected">
-                        <i class="fa-solid fa-circle-check"></i>
-                        <span>Conectado a ORCID</span>
-                    </div>
-                    <p class="form-hint" style="margin-top: 1rem;">Tu iD: ${profile.orcid}</p>
-                    <button id="disconnect-orcid-btn" class="btn btn-secondary">Desconectar</button>
-                `;
-                // --- FIN DEL CAMBIO ---
+                orcidSection.innerHTML = `<div class="status-badge connected"><i class="fa-solid fa-circle-check"></i><span>Conectado a ORCID</span></div> <button id="disconnect-orcid-btn" class="btn btn-secondary" style="width: auto; margin-top: 1rem;">Desconectar</button>`;
                 document.getElementById('sync-orcid-works-btn')?.removeAttribute('disabled');
             } else {
-                orcidSection.innerHTML = `
-                    <p>Valida tu perfil conectando tu cuenta de ORCID. Esto te permitirá sincronizar tus publicaciones automáticamente.</p>
-                    <button id="connect-orcid-btn" class="btn btn-orcid"><i class="fa-brands fa-orcid"></i> Conectar con ORCID</button>
-                `;
+                orcidSection.innerHTML = `<p>Valida tu perfil conectando tu cuenta de ORCID.</p><button id="connect-orcid-btn" class="btn btn-orcid"><i class="fa-brands fa-orcid"></i> Conectar con ORCID</button>`;
             }
         }
     },
-    
+
     // Se activa al hacer clic en "Sincronizar desde ORCID"
     async handleSyncWorks() {
         const syncButton = document.getElementById('sync-orcid-works-btn');
