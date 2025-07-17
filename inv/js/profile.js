@@ -44,10 +44,13 @@ const ProfileApp = {
         // ¡IMPORTANTE! Reemplaza el marcador de posición con tu Client ID real de ORCID.
         const ORCID_CLIENT_ID = 'APP-U2XLNHUBU73BN0VY';
         
-        const redirectUri = window.location.origin + window.location.pathname;
+         // Obtenemos la URL actual sin parámetros para la redirección
+        const redirectUri = window.location.href.split('?')[0];
+        
+        // Construimos la URL de autorización manual, como indica la documentación de ORCID
         const authUrl = `https://orcid.org/oauth/authorize?client_id=${ORCID_CLIENT_ID}&response_type=code&scope=/authenticate&redirect_uri=${encodeURIComponent(redirectUri)}`;
         
-        // Abre la ventana de autenticación de ORCID
+        // Redirigimos al usuario a la página de login de ORCID
         window.location.href = authUrl;
     },
 
