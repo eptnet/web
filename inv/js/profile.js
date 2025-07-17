@@ -27,8 +27,10 @@ const ProfileApp = {
     addEventListeners() {
         document.body.addEventListener('click', (e) => {
             if (e.target.closest('#connect-orcid-btn')) this.handleOrcidConnect();
+            if (e.target.closest('#disconnect-orcid-btn')) this.handleOrcidDisconnect(); // <-- AÑADIDO
             if (e.target.closest('#logout-btn-header')) this.supabase.auth.signOut();
             if (e.target.closest('#theme-switcher')) this.toggleTheme();
+            if (e.target.closest('#sync-orcid-works-btn')) this.handleSyncWorks(); // <-- AÑADIDO
         });
         document.getElementById('profile-form')?.addEventListener('submit', (e) => this.handleSave(e, 'profile'));
         document.getElementById('platforms-form')?.addEventListener('submit', (e) => this.handleSave(e, 'platforms'));
@@ -82,9 +84,93 @@ const ProfileApp = {
         }
         
         const orcidSection = document.getElementById('orcid-section');
-        if (profile?.orcid) {
-            orcidSection.innerHTML = `<div class="status-badge connected"><i class="fa-solid fa-circle-check"></i><span>Conectado a ORCID</span></div>`;
-            document.getElementById('sync-orcid-works-btn')?.removeAttribute('disabled');
+        if (orcidSection) {
+            if (profile?.orcid) {
+                // --- INICIO DEL CAMBIO ---
+                orcidSection.innerHTML = `
+                    <div class="status-badge connected">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <span>Conectado a ORCID</span>
+                    </div>
+                    <p class="form-hint" style="margin-top: 1rem;">Tu iD: ${profile.orcid}</p>
+                    <button id="disconnect-orcid-btn" class="btn btn-secondary">Desconectar</button>
+                `;
+                // --- FIN DEL CAMBIO ---
+                document.getElementById('sync-orcid-works-btn')?.removeAttribute('disabled');
+            } else {
+                orcidSection.innerHTML = `
+                    <p>Valida tu perfil conectando tu cuenta de ORCID. Esto te permitirá sincronizar tus publicaciones automáticamente.</p>
+                    <button id="connect-orcid-btn" class="btn btn-orcid"><i class="fa-brands fa-orcid"></i> Conectar con ORCID</button>
+                `;
+            }
+        }
+    },
+    
+    // Se activa al hacer clic en "Sincronizar desde ORCID"
+    async handleSyncWorks() {
+        const syncButton = document.getElementById('sync-orcid-works-btn');
+        if (!syncButton) return;
+
+        syncButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sincronizando...';
+        syncButton.disabled = true;
+
+        try {
+            // Obtenemos el perfil para sacar el ORCID iD
+            const { data: profile } = await this.supabase.from('profiles').select('orcid').eq('id', this.user.id).single();
+            if (!profile?.orcid) throw new Error("No hay un ORCID iD conectado.");
+
+            const orcidId = profile.orcid.replace('https://orcid.org/', '');
+
+            // Llamamos a nuestra nueva Edge Function
+            const { data, error } = await this.supabase.functions.invoke('get-orcid-works', {
+                body: { orcid_id: orcidId },
+            });
+
+            if (error) throw error;
+            
+            this.renderWorks(data.works); // Mostramos los resultados
+
+        } catch (error) {
+            alert("Error al sincronizar las publicaciones: " + error.message);
+        } finally {
+            syncButton.innerHTML = '<i class="fa-solid fa-sync"></i> Sincronizar desde ORCID';
+            syncButton.disabled = false;
+        }
+    },
+
+    // Dibuja la lista de trabajos en el HTML
+    renderWorks(works) {
+        const listContainer = document.getElementById('projects-list');
+        if (!listContainer) return;
+
+        if (!works || works.length === 0) {
+            listContainer.innerHTML = '<p>No se encontraron publicaciones con DOI en tu perfil de ORCID.</p>';
+            return;
+        }
+
+        listContainer.innerHTML = works.map(work => `
+            <div class="publication-item">
+                <p>${work.title}</p>
+                <span>DOI: ${work.doi}</span>
+            </div>
+        `).join('');
+    },
+
+    // AÑADE ESTA NUEVA FUNCIÓN en profile.js
+    async handleOrcidDisconnect() {
+        if (!confirm("¿Estás seguro de que quieres desconectar tu cuenta de ORCID?")) return;
+
+        const { error } = await this.supabase
+            .from('profiles')
+            .update({ orcid: null }) // Borramos el campo orcid
+            .eq('id', this.user.id);
+        
+        if (error) {
+            alert("Error al desconectar la cuenta de ORCID.");
+            console.error(error);
+        } else {
+            alert("Cuenta de ORCID desconectada.");
+            this.renderProfileData(); // Refrescamos la UI
         }
     },
     
