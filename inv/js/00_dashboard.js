@@ -15,7 +15,6 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyBBWV3tSqQ5A515exjaj5QK_D1VeAf6lGA",
   authDomain: "epistecnologia-927e0.firebaseapp.com",
   projectId: "epistecnologia-927e0",
   storageBucket: "epistecnologia-927e0.firebasestorage.app",
