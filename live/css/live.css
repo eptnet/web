@@ -1,466 +1,269 @@
-:root {
-    --color-background: #121212;
-    --color-surface: #1e1e1e;
-    --color-surface-light: #2c2c2c;
-    --color-primary: #ffffff;
-    --color-secondary: #b3b3b3;
-    --color-accent: #b72a1e;
-    --border-radius: 12px;
-}
-/* --- Lógica de Temas Claro/Oscuro --- */
+/* --- VARIABLES Y TEMA --- */
+:root { --color-background: #121212; --color-surface: #1e1e1e; --color-primary: #ffffff; --color-secondary: #b3b3b3; --color-accent: #b72a1e; --border-color: #333; --border-radius: 12px; }
+body.light-theme { --color-background: #f0f2f5; --color-surface: #ffffff; --color-primary: #050505; --color-secondary: #65676b; --border-color: #ddd; }
+body { background-color: var(--color-background); color: var(--color-primary); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding-top: 60px; }
 
-/* Estos son tus colores por defecto (Tema Oscuro) */
-:root {
-    --color-background: #121212;
-    --color-surface: #1e1e1e;
-    --color-surface-light: #2c2c2c;
-    --color-primary: #ffffff;
-    --color-secondary: #b3b3b3;
-    --color-accent: #b72a1e;
-    --border-color: #444;
-    --border-radius: 12px;
-}
+/* --- HEADER --- */
+.main-header { position: fixed; top: 0; left: 0; width: 100%; height: 60px; background-color: var(--color-surface); border-bottom: 1px solid var(--border-color); z-index: 2000; }
+.header-content { display: flex; justify-content: space-between; align-items: center; max-width: 1800px; margin: 0 auto; height: 100%; padding: 0 1.5rem; }
+.header-logo { display: flex; align-items: center; text-decoration: none; color: var(--color-primary); gap: 0.75rem; }
+.header-logo img { height: 40px; }
+.header-actions { display: flex; align-items: center; gap: 1rem; }
+.theme-toggle-btn, .profile-icon { font-size: 1.5rem; color: var(--color-secondary); background: none; border: none; cursor: pointer; }
 
-/* Cuando el body tenga la clase .light-theme, se usarán estos colores */
-body.light-theme {
-    --color-background: #f0f2f5;
-    --color-surface: #ffffff;
-    --color-surface-light: #f0f2f5;
-    --color-primary: #1c1e21;
-    --color-secondary: #65676b;
-    --border-color: #e0e0e0;
-}
+/* --- CARRUSEL HERO (ESTABLE) --- */
+.featured-carousel { position: relative; width: 100%; height: 50vh; min-height: 450px; padding: 2rem 0; box-sizing: border-box; overflow: hidden; }
+.carousel-wrapper { position: relative; width: 100%; height: 100%; perspective: 1500px; }
+.carousel-track { position: absolute; width: 100%; height: 100%; transform-style: preserve-3d; }
+.carousel-slide { display: flex; align-items: center; justify-content: center; position: absolute; left: 0; right: 0; margin: 0 auto; width: 60%; max-width: 800px; height: 100%; border-radius: var(--border-radius); background-color: #000; overflow: hidden; transition: transform 0.5s ease, opacity 0.5s; cursor: pointer; }
+.slide-player { width: 100%; height: 100%; }
+.slide-player img { width: 100%; height: 100%; object-fit: cover; }
+.slide-player iframe { width: 100%; height: 100%; border: none; }
+.slide-info-box { position: absolute; bottom: 0; left: 0; width: 100%; padding: 1.5rem; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); color: white; transition: opacity 0.3s; }
+.carousel-slide:not(.active) .slide-info-box { opacity: 0; }
+.slide-info-box h3 { margin: 0; }
+.carousel-nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; font-size: 1.5rem; }
+.carousel-nav.prev { left: 5%; }
+.carousel-nav.next { right: 5%; }
 
-/* Estilo para el botón de cambio de tema */
-.theme-toggle-btn {
-    position: fixed;
-    top: 1rem;
-    right: 1rem;
-    z-index: 2000;
-    height: 40px;
-    width: 40px;
-    border-radius: 50%;
-    border: none;
-    background-color: var(--color-surface);
-    color: var(--color-primary);
-    cursor: pointer;
-    font-size: 1.2rem;
-}
-body {
-    background-color: var(--color-background);
-    color: var(--color-primary);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    margin: 0;
-}
-.home-button {
-    position: fixed;
-    top: 1rem;
-    left: 1rem;
-    z-index: 2000;
-    height: 40px;
-    width: 40px;
-}
-.home-button img {
-    height: 100%;
-    width: 100%;
-    border-radius: 50%;
-}
-.page-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
-    gap: 1.5rem;
-    padding: 1.5rem;
-    max-width: 1600px;
-    margin: auto;
-}
-@media (min-width: 1024px) {
-    .page-grid {
-        grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
-        grid-template-rows: auto 1fr;
-        padding-top: 5rem; /* Espacio para el botón de home */
-    }
-    .player-column { grid-column: 1 / 2; grid-row: 1 / 2; }
-    .sidebar-column { grid-column: 2 / 3; grid-row: 1 / 2; }
-    .agenda-column { grid-column: 1 / 3; grid-row: 2 / 3; }
-}
-.player-wrapper {
-    position: relative;
-    width: 100%;
-    padding-top: 56.25%;
-    background-color: #000;
-    border-radius: var(--border-radius);
-    overflow: hidden;
-}
-.player-wrapper iframe, .player-wrapper #yt-player-on-demand {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-}
-.player-placeholder {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-}
-.info-container {
-    margin-top: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-.sidebar-column { display: flex; flex-direction: column; gap: 1.5rem; }
-.bento-box {
-    background-color: var(--color-surface);
-    border-radius: var(--border-radius);
-    padding: 1rem 1.5rem;
-}
-.bento-box h4 {
-    margin: 0 0 1rem 0;
-    border-bottom: 1px solid #444;
-    padding-bottom: 1rem;
-    font-size: 1.1rem;
-}
-.bento-box h4 i { margin-right: 0.75rem; color: var(--color-secondary); }
-#chat-container { height: 100%; }
-#chat-container iframe { width: 100%; height: 300px; border-radius: 4px; }
-@media (min-width: 1024px) {
-    #chat-container iframe { height: 100%; }
-}
-.researcher-info { display: flex; align-items: center; gap: 1rem; }
-.researcher-info img { width: 50px; height: 50px; border-radius: 50%; }
-.researcher-info h4 { border: none; padding: 0; margin: 0 0 0.25rem 0; }
-.researcher-info p { margin: 0; font-size: 0.8rem; color: var(--color-secondary); }
-.agenda-column { margin-top: 2rem; }
-.tabs { display: flex; border-bottom: 1px solid #444; }
+/* --- AGENDA (ESTILO ORIGINAL) --- */
+.agenda-wrapper { max-width: 1600px; margin: 2rem auto; padding: 0 1.5rem; }
+.tabs { border-bottom: 1px solid var(--border-color); }
 .tab-link { padding: 0.75rem 1rem; cursor: pointer; background: none; border: none; color: var(--color-secondary); font-size: 1rem; font-weight: 600; border-bottom: 3px solid transparent; }
 .tab-link.active { color: var(--color-primary); border-bottom-color: var(--color-accent); }
 .tab-content { display: none; }
 .tab-content.active { display: block; }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; padding-top: 1.5rem; }
+.event-card { aspect-ratio: 1 / 1; position: relative; cursor: pointer; border-radius: var(--border-radius); overflow: hidden; background-color: var(--color-surface-light); }
+.event-card .card-background { position: absolute; width: 100%; height: 100%; background-size: cover; background-position: center; z-index: 1; }
+.event-card .card-info { position: relative; z-index: 2; padding: 1rem; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); color: white; }
+.video-card { cursor: pointer; background-color: var(--color-surface); border-radius: var(--border-radius); }
+.video-card img { width: 100%; border-radius: var(--border-radius) var(--border-radius) 0 0; display: block; }
+.video-card p { font-weight: 600; margin: 0; padding: 1rem; }
 
-.card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.5rem;
-    padding-top: 1.5rem;
+/* --- ESTILOS PARA SALA DE DIRECTO (v7 - Layout Definitivo) --- */
+
+/* 1. Contenedor principal del Modal y Scroll */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: var(--color-background);
+    z-index: 3000;
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.3s;
+    overflow-y: auto;
 }
-.video-card {
+.modal-overlay.is-visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* 2. Botón de cierre */
+.modal-close-btn {
+    position: fixed;
+    top: 1.5rem;
+    right: 2rem;
+    z-index: 3010;
+    background: var(--color-surface);
+    color: var(--color-primary);
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+/* 3. Grid principal del contenido */
+.live-room-content {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 1800px;
+    min-height: 100%; /* Asegura que el grid ocupe al menos toda la altura */
+    margin: 0 auto;
+    padding: 1.5rem;
+    box-sizing: border-box;
+}
+
+/* 4. Columnas */
+.live-room-main {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* ---- INICIO DE LA CORRECCIÓN PARA EL CHAT ---- */
+.live-room-side {
+    display: flex;
+    flex-direction: column;
+    /* Importante: quitamos min-height de aquí para que sea flexible */
+}
+
+#chat-box {
     background-color: var(--color-surface);
     border-radius: var(--border-radius);
-    overflow: hidden;
-    cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    padding: 1rem;
+    flex-grow: 1; /* Hace que la caja del chat se estire */
+    display: flex; /* La caja del chat también es un contenedor flex */
+    flex-direction: column;
+    min-height: 0; /* Truco de flexbox para evitar desbordamientos */
 }
-.video-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-}
-.video-card img {
-    width: 100%;
-    height: 160px;
-    object-fit: cover;
-    background-color: var(--color-surface-light);
-    border-bottom: 1px solid #444;
-}
+/* ---- FIN DE LA CORRECCIÓN PARA EL CHAT ---- */
 
-.event-card {
-    background-color: var(--color-surface-light);
+
+/* 5. Contenedores internos */
+.live-room-player {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background-color: #000;
     border-radius: var(--border-radius);
     overflow: hidden;
+}
+.live-room-player iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.live-room-investigators-strip,
+.live-room-info {
+    background-color: var(--color-surface);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+}
+
+.live-room-side {
+    /* Limita la altura de la columna a la altura de la ventana menos el padding */
+    max-height: calc(100vh - 3rem);
+    
+    /* Hace que la columna se quede fija al hacer scroll */
+    position: -webkit-sticky;
+    position: sticky;
+    top: 1.5rem; /* La deja pegada en la parte superior, respetando el padding */
+}
+
+/* --- INICIO DE CORRECCIÓN PARA AVATARES --- */
+.live-room-investigators-strip .avatar {
+    width: 44px;  /* Más pequeño */
+    height: 44px; /* Más pequeño */
+    border-radius: 50%; /* Asegura que sea circular */
+    object-fit: cover;
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    position: relative; /* Clave para superponer elementos */
-    aspect-ratio: 1 / 1; /* Para que sea un cuadrado perfecto */
-    display: flex; /* Usamos flex para alinear el contenido */
-    flex-direction: column;
-    justify-content: flex-end; /* Alinea el texto en la parte inferior */
+}
+/* --- FIN DE CORRECCIÓN PARA AVATARES --- */
+
+
+#chat-container {
+    flex-grow: 1; /* El contenedor del iframe ocupa el espacio de #chat-box */
+}
+#chat-container iframe {
+    width: 100%;
+    height: 100%;
+    border-radius: var(--border-radius);
 }
 
-.event-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+
+/* 6. Layout para MÓVIL */
+@media (max-width: 1024px) {
+    .live-room-content {
+        grid-template-columns: 1fr;
+    }
+    .live-room-player {
+        position: -webkit-sticky;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    .live-room-side {
+        min-height: 500px;
+    }
 }
 
-/* El contenedor de la imagen de fondo */
-.event-card-background {
-    position: absolute;
+/* --- ESTILOS PARA MODAL DE INVESTIGADOR --- */
+.investigator-modal-overlay {
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-size: cover; /* La imagen cubre todo el espacio */
-    background-position: center; /* La imagen se centra */
-    z-index: 1;
-}
-
-/* Un gradiente oscuro para que el texto sea legible sobre la imagen */
-.event-card-background::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 70%;
-    background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
-}
-
-/* La fecha en la esquina superior izquierda */
-.event-card-date {
-    position: absolute;
-    top: 1rem;
-    left: 1rem;
-    background-color: rgba(0, 0, 0, 0.5);
-    color: white;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    z-index: 2;
-}
-
-.agenda-filters {
-    display: flex;
-    gap: 0.5rem;
-    padding: 1rem 0;
-}
-.filter-btn {
-    background-color: var(--color-surface-light);
-    color: var(--color-secondary);
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-.filter-btn:hover {
-    background-color: #444;
-    color: var(--color-primary);
-}
-.filter-btn.active {
-    background-color: var(--color-accent);
-    color: white;
-}
-
-/* La información principal en la parte inferior */
-.card-info {
-    position: relative;
-    z-index: 2;
-    padding: 1rem;
-    color: white;
-}
-
-.card-info h5 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.1rem;
-}
-
-.card-info p {
-    margin: 0;
-    font-size: 0.9rem;
-    color: var(--color-secondary);
-    font-weight: normal;
-}
-
-.card-info, .video-card p {
-    padding: 1rem;
-    font-weight: 600;
-}
-.card-info h5, .card-info p { margin: 0; }
-.card-info h5 { margin-bottom: 0.5rem; }
-.card-info p { font-size: 0.9rem; color: var(--color-secondary); }
-
-/* --- Estilos para el Modal de Eventos --- */
-.event-modal-overlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
     background: rgba(0, 0, 0, 0.8);
-    display: none;
-    justify-content: center;
+    display: flex;
     align-items: center;
-    z-index: 3000;
+    justify-content: center;
+    z-index: 4000;
     backdrop-filter: blur(5px);
 }
-.event-modal-overlay.is-visible {
-    display: flex;
-}
-.event-modal {
-    background: var(--color-surface);
+.investigator-modal {
+    background-color: var(--color-surface);
     border-radius: var(--border-radius);
     width: 90%;
-    max-width: 550px;
-    max-height: 90vh;
-    overflow: hidden;
+    max-width: 500px;
+    max-height: 80vh;
     display: flex;
     flex-direction: column;
     position: relative;
 }
-.event-modal-close-btn {
-    position: absolute;
-    top: 10px; right: 15px;
-    font-size: 2rem; color: #fff;
-    background: rgba(0,0,0,0.5);
-    border: none; cursor: pointer;
-    width: 40px; height: 40px;
-    border-radius: 50%;
-    line-height: 40px;
-    text-align: center;
+.investigator-modal-header {
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+    border-bottom: 1px solid var(--border-color);
 }
-.event-modal-thumbnail {
-    width: 100%;
-    height: 250px;
-    background-size: cover;
-    background-position: center;
-}
-.event-modal-content { padding: 1.5rem; overflow-y: auto; }
-.event-modal h3 { margin: 0 0 1rem 0; font-size: 1.7rem; color: var(--color-primary); }
-.event-modal-organizer { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
-.event-modal-organizer img { width: 40px; height: 40px; border-radius: 50%; }
-.event-modal-organizer strong { display: block; }
-.event-modal-organizer p { margin: 0; font-size: 0.8rem; color: var(--color-secondary); }
-.event-modal-schedule { font-weight: 500; margin-bottom: 1rem; }
-.event-modal-description { line-height: 1.6; color: var(--color-secondary); }
-.event-modal-footer {
-    padding: 1.5rem;
-    border-top: 1px solid var(--border-color); /* Usamos la variable de color */
-    display: flex; /* <-- AÑADIDO */
-    justify-content: flex-end; /* <-- AÑADIDO: alinea los botones a la derecha */
-    gap: 0.75rem; /* <-- AÑADIDO: espacio entre botones */
-}
-.btn-primary { 
-    background-color: var(--color-accent); 
-    color: white; 
-    padding: 0.8rem 1.5rem;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 600;
-}
-
-/* Estilo para el botón secundario */
-.btn-secondary {
-    background-color: var(--color-surface-light);
-    color: var(--color-primary);
-    border: 1px solid var(--border-color);
-    padding: 0.8rem 1.5rem;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 600;
-    transition: background-color 0.2s ease;
-}
-
-.btn-secondary:hover {
-    background-color: var(--border-color);
-}
-
-/* En /live/css/live.css */
-
-/* Avatares circulares y clicables */
-#investigators-box .avatar-grid .avatar {
-    border-radius: 50%;
+.investigator-modal-close-btn {
+    background: none;
+    border: none;
+    color: var(--color-secondary);
+    font-size: 1.5rem;
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-
-#investigators-box .avatar-grid .avatar:hover {
-    transform: scale(1.1);
-    box-shadow: 0 0 15px rgba(0, 195, 255, 0.6);
-}
-
-/* Estilos para el modal de participante */
-.participant-modal-content-wrapper {
+.investigator-modal-content {
+    padding: 1.5rem;
+    overflow-y: auto;
     text-align: center;
 }
-
-.participant-modal-content-wrapper img {
+.investigator-modal-content img.avatar {
     width: 100px;
     height: 100px;
     border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid var(--accent-color);
+    border: 3px solid var(--color-accent);
     margin-bottom: 1rem;
 }
-
-.participant-modal-content-wrapper h4 {
-    margin: 0.5rem 0;
-    font-size: 1.5rem;
+.investigator-modal-content h3 {
+    margin: 0 0 0.5rem;
+}
+.investigator-modal-content .project-info {
+    background-color: var(--color-surface-light);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1.5rem;
+    text-align: left;
 }
 
-.participant-modal-content-wrapper p {
-    margin: 0.2rem 0;
-    color: var(--text-secondary);
+/* --- ESTILOS PARA BOTÓN EN VIVO DEL CARRUSEL --- */
+.blinking-live-btn {
+    background-color: var(--color-accent);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 0.5rem 1rem;
+    font-weight: bold;
+    margin-top: 1rem;
+    cursor: pointer;
+    animation: blinking-animation 1.5s infinite;
 }
 
-.participant-social-links a {
-    font-size: 1.5rem;
-    margin: 0 0.5rem;
-    color: var(--text-primary);
-    transition: color 0.2s ease;
-}
-
-.participant-social-links a:hover {
-    color: var(--accent-color);
-}
-
-@media (max-width: 900px) {
-    /* Hacemos que solo el contenedor del video sea el que se quede fijo */
-    #player-container {
-        position: -webkit-sticky; /* Para compatibilidad con Safari */
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-        /* El fondo es importante si el contenedor del reproductor no tiene un color propio */
-        background-color: var(--background-primary);
+@keyframes blinking-animation {
+    0% {
+        background-color: var(--color-accent);
+        box-shadow: 0 0 5px var(--color-accent);
     }
-}
-
-/* Hacemos que la columna lateral sea un contenedor flexible */
-.sidebar-column {
-    display: flex;
-    flex-direction: column; /* Apila los elementos verticalmente */
-    gap: 1rem; /* Mantiene el espacio entre los bento-box */
-}
-
-/* Le decimos a la caja del chat que ocupe todo el espacio vertical disponible */
-#chat-box {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1; /* ¡Esta es la propiedad clave! Hace que el elemento crezca. */
-    min-height: 300px; /* Opcional: define una altura mínima para que no desaparezca si no hay espacio */
-}
-
-/* Nos aseguramos de que el contenedor del iframe y el propio iframe llenen la caja del chat */
-#chat-container, #chat-container iframe {
-    height: 100%;
-    width: 100%;
-    flex-grow: 1; /* Asegura que el contenedor del iframe también se expanda */
-}
-
-/* --- REGLA PARA REPRODUCTOR FIJO EN MÓVIL --- */
-
-@media (max-width: 1023px) { /* Se aplica en tablets y móviles */
-
-    .player-wrapper {
-        position: -webkit-sticky; /* Para compatibilidad con Safari */
-        position: sticky;
-        
-        /* Dejamos espacio para el menú de navegación que irá arriba.
-           Puedes ajustar este valor si la altura de tu menú final es diferente. */
-        top: 80px; 
-        
-        z-index: 500; /* Se asegura de que esté por encima del contenido que se desplaza */
+    50% {
+        background-color: #ff4d4d; /* Un rojo más brillante */
+        box-shadow: 0 0 15px #ff4d4d;
     }
-
-    /* Ajustamos el padding de la grilla para que no haya un doble espacio */
-    .page-grid {
-        padding-top: 1.5rem;
+    100% {
+        background-color: var(--color-accent);
+        box-shadow: 0 0 5px var(--color-accent);
     }
 }

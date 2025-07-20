@@ -1,12 +1,10 @@
 const LiveApp = {
     supabase: null,
     elements: {},
-    livePlayer: null,
-    onDemandPlaylist: [],
-    allEvents: [],
-    allSessionsMap: {},
+    allContentMap: {},
+    featuredContent: [],
+    currentSlideIndex: 0,
     isApiReady: false,
-    currentSessionId: null,
 
     init() {
         const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
@@ -34,480 +32,342 @@ const LiveApp = {
 
     cacheDOMElements() {
         this.elements = {
-            playerContainer: document.getElementById('player-container'),
-            infoContainer: document.getElementById('info-container'),
-            researcherInfoContainer: document.getElementById('researcher-info-container'),
-            projectInfoContainer: document.getElementById('project-info-container'),
-            liveTitle: document.getElementById('live-title'),
-            liveProject: document.getElementById('live-project'),
-            youtubeChatContainer: document.getElementById('chat-container'),
-            ondemandListContainer: document.getElementById('ondemand-list-container'),
+            themeToggleBtn: document.getElementById('theme-toggle-btn'),
+            carouselSection: document.getElementById('featured-carousel-section'),
             scheduleList: document.getElementById('schedule-list'),
+            ondemandListContainer: document.getElementById('ondemand-list-container'),
             tabs: document.querySelectorAll('.tab-link'),
             tabContents: document.querySelectorAll('.tab-content'),
-            modalOverlay: document.getElementById('event-modal-overlay'),
-            modalTitle: document.getElementById('event-modal-title'),
-            modalThumbnail: document.getElementById('event-modal-thumbnail'),
-            modalOrganizer: document.getElementById('event-modal-organizer'),
-            modalSchedule: document.getElementById('event-modal-schedule'),
-            modalDescription: document.getElementById('event-modal-description'),
-            
-            // --- INICIO DE LA CORRECCIÓN ---
-            modalFooter: document.querySelector('.event-modal-footer'), // Usamos querySelector para buscar por la CLASE
-            // --- FIN DE LA CORRECCIÓN ---
-            
-            modalCloseBtn: document.getElementById('event-modal-close'),
-            themeToggleBtn: document.getElementById('theme-toggle-btn'),
-            participantsContainer: document.querySelector('#investigators-box .avatar-grid'),
-            participantModalOverlay: document.getElementById('participant-modal-overlay'),
-            participantModalContent: document.getElementById('participant-modal-content'),
-            participantModalCloseBtn: document.getElementById('participant-modal-close'),
+            modalContainer: document.getElementById('modal-container'),
         };
     },
 
     addEventListeners() {
-        this.elements.tabs.forEach(button => {
-            button.addEventListener('click', () => {
-                this.elements.tabs.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                const tabId = button.dataset.tab;
-                this.elements.tabContents.forEach(content => content.classList.toggle('active', content.id === tabId));
-            });
-        });
-
-        if (this.elements.modalOverlay) {
-            this.elements.modalCloseBtn.addEventListener('click', () => this.closeEventModal());
-            this.elements.modalOverlay.addEventListener('click', (e) => {
-                if (e.target === this.elements.modalOverlay) this.closeEventModal();
-            });
-        }
-        if (this.elements.scheduleList) {
-            this.elements.scheduleList.addEventListener('click', (e) => {
-                const card = e.target.closest('.event-card[data-session-id]');
-                if (card) this.openEventModal(card.dataset.sessionId);
+        if(this.elements.themeToggleBtn) {
+            this.elements.themeToggleBtn.addEventListener('click', () => {
+                document.body.classList.toggle('light-theme');
+                localStorage.setItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
             });
         }
         
-        const filterContainer = document.querySelector('.agenda-filters');
-        if (filterContainer) {
-            filterContainer.addEventListener('click', (e) => {
-                const filterButton = e.target.closest('.filter-btn');
-                if (filterButton) {
-                    filterContainer.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-                    filterButton.classList.add('active');
-                    this.renderFilteredSchedule(filterButton.dataset.filter);
-                }
-            });
-        }
-
-        this.elements.themeToggleBtn.addEventListener('click', () => {
-            document.body.classList.toggle('light-theme');
-            localStorage.setItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
-        });
-
-        if (this.elements.participantsContainer) {
-            this.elements.participantModalCloseBtn.addEventListener('click', () => this.closeParticipantModal());
-            this.elements.participantsContainer.addEventListener('click', (e) => {
-                const avatar = e.target.closest('.avatar');
-                if (avatar && avatar.dataset.userId) {
-                    this.openParticipantModal(avatar.dataset.userId);
-                if (e.target === this.elements.participantModalOverlay) this.closeParticipantModal();
-                }
-            });
-        }
+        this.elements.scheduleList.addEventListener('click', (e) => this.handleCardClick(e));
+        this.elements.ondemandListContainer.addEventListener('click', (e) => this.handleCardClick(e));
+        this.elements.tabs.forEach(tab => tab.addEventListener('click', (e) => this.handleTabClick(e.currentTarget)));
     },
 
     async run() {
-        console.log("Buscando estado actual con la consulta final optimizada...");
+        const [{ data: sessions }, { data: videos }] = await Promise.all([
+            // Consulta ultra-estable: solo pide lo necesario para la vista principal.
+            this.supabase.from('sessions').select(`*, organizer: profiles (*)`).neq('is_archived', true).order('status', { ascending: true }).order('scheduled_at', { ascending: true }),
+            this.supabase.from('ondemand_videos').select('*').order('created_at', { ascending: false })
+        ]);
 
-        // --- INICIO DE LA CORRECCIÓN ---
-        // La consulta ahora traerá sesiones archivadas (finalizadas) para mostrar el historial
-        const { data: sessions, error } = await this.supabase
-            .from('sessions')
-            .select(`
-                *,
-                organizer: profiles (*),
-                participants: event_participants (
-                    profiles (*)
-                )
-            `)
-            .in('status', ['PROGRAMADO', 'EN VIVO', 'FINALIZADO'])
-            .eq('is_archived', false) // <-- HEMOS ELIMINADO ESTA LÍNEA PROBLEMÁTICA
-            .order('scheduled_at', { ascending: false });
-        // --- FIN DE LA CORRECCIÓN ---
+        const allEvents = sessions || [];
+        const onDemandPlaylist = videos || [];
+        
+        this.allContentMap = {};
+        allEvents.forEach(item => this.allContentMap[item.id] = { type: 'EVENT', ...item });
+        onDemandPlaylist.forEach(item => this.allContentMap[`video-${item.id}`] = { type: 'VIDEO', ...item });
 
-        if (error) {
-            console.error("Error al buscar sesiones:", error);
-            this.renderSchedule([]);
+        this.renderCarousel(allEvents, onDemandPlaylist);
+        this.renderSchedule(allEvents);
+        this.renderOnDemandList(onDemandPlaylist);
+    },
+
+    renderCarousel(events, videos) {
+        const liveContent = events.filter(s => s.status === 'EN VIVO');
+        this.featuredContent = [...liveContent, ...videos].slice(0, 7);
+        if (this.featuredContent.length === 0) {
+            this.elements.carouselSection.style.display = 'none';
             return;
         }
 
-        if (!sessions || sessions.length === 0) {
-            this.handleOnDemandContent();
-            this.renderSchedule([]);
-            return;
-        }
+        const track = this.elements.carouselSection.querySelector('.carousel-track');
+        track.innerHTML = this.featuredContent.map(item => {
+            const isEvent = !!item.session_title;
+            const data = item;
+            const id = isEvent ? data.id : `video-${data.id}`;
+            const thumbnailUrl = isEvent ? data.thumbnail_url : `https://i.ytimg.com/vi/${data.youtube_video_id}/hqdefault.jpg`;
+            const isLive = isEvent && data.status === 'EN VIVO';
+            const autoplay = isLive ? 'autoplay=true&muted=true' : 'autoplay=0';
+            
+            let playerUrl = '';
+            let infoHTML = '';
 
-        this.allEvents = sessions;
-        const liveSession = this.allEvents.find(s => s.status === 'EN VIVO');
-
-        if (liveSession) {
-            this.handleLiveSession(liveSession);
-        } else {
-            this.handleOnDemandContent();
-        }
-        
-        this.renderFilteredSchedule('all');
-    },
-
-    renderFilteredSchedule(filter) {
-        let eventsToRender = [];
-        const now = new Date();
-        const startOfDay = new Date(new Date().setHours(0, 0, 0, 0));
-
-        if (filter === 'week') {
-            const oneWeekFromNow = new Date(new Date().setDate(startOfDay.getDate() + 7));
-            eventsToRender = this.allEvents
-                .filter(event => {
-                    const eventDate = new Date(event.scheduled_at);
-                    return eventDate >= startOfDay && eventDate < oneWeekFromNow;
-                })
-                .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
-        } else if (filter === 'month') {
-            eventsToRender = this.allEvents
-                .filter(event => {
-                    const eventDate = new Date(event.scheduled_at);
-                    return eventDate.getMonth() === now.getMonth() && eventDate.getFullYear() === now.getFullYear() && eventDate >= startOfDay;
-                })
-                .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
-        } else {
-            eventsToRender = this.allEvents;
-        }
-        
-        this.renderSchedule(eventsToRender);
-    },
-
-    handleLiveSession(session) {
-        this.currentSessionId = session.id;
-        this.destroyOnDemandPlayer();
-        this.elements.infoContainer.style.display = 'flex';
-        this.renderInfo(session);
-        this.renderParticipants(session);
-
-        const playerContainer = this.elements.playerContainer;
-        if (!playerContainer) return;
-
-        // --- INICIO DEL CAMBIO CON INTERSECTION OBSERVER ---
-        
-        // 1. Creamos un observador que vigile el contenedor del video.
-        const observer = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
-                // 2. Si el contenedor es visible en la pantalla...
-                if (entry.isIntersecting) {
-                    console.log("El contenedor del reproductor ahora es visible. Creando el reproductor...");
-
-                    // 3. ...creamos el reproductor adecuado según la plataforma.
-                    if (session.platform === 'twitch') {
-                        this.showTwitchPlayer(session);
-                        this.showStreamChat(session);
-                    } else if (session.platform === 'youtube') {
-                        this.showYouTubePlayer(session);
-                        this.showStreamChat(session);
-                    } else if (session.platform === 'vdo_ninja') {
-                        this.showVDONinjaPlayer(session);
-                        this.showStreamChat(null);
-                    }
-
-                    // 4. Dejamos de observar para que no se ejecute de nuevo.
-                    observer.unobserve(playerContainer);
+            if (isEvent) {
+                const channel = data.platform_id || 'epistecnologia'; // **CORRECCIÓN PARA TWITCH**
+                playerUrl = (data.platform === 'vdo_ninja') ? data.viewer_url : `https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&${autoplay}`;
+                
+                if (isLive) {
+                    // **NUEVO DISEÑO PARA SLIDES EN VIVO**
+                    infoHTML = `
+                        <h3>${data.session_title}</h3>
+                        <p>${data.organizer.display_name}</p>
+                        <button class="blinking-live-btn">EN VIVO: Ir a la sala</button>
+                    `;
+                } else {
+                    infoHTML = `<h3>${data.session_title}</h3>`;
                 }
-            });
-        }, { threshold: 0.5 }); // Se activa cuando al menos el 50% del contenedor es visible
+            } else {
+                playerUrl = `https://www.youtube.com/embed/${data.youtube_video_id}?enablejsapi=1&${autoplay}`;
+                infoHTML = `<h3>${data.title}</h3>`;
+            }
 
-        // 5. Le decimos al observador que empiece a vigilar.
-        observer.observe(playerContainer);
-        // --- FIN DEL CAMBIO ---
-    },
-
-    async handleOnDemandContent() {
-        this.currentSessionId = null;
-        this.elements.infoContainer.style.display = 'none';
-        this.clearParticipants(); // <-- CAMBIO: Limpia los avatares cuando no hay directo.
-
-        const { data: videos } = await this.supabase.from('ondemand_videos').select('*').order('created_at', { ascending: false });
-        if (videos && videos.length > 0) {
-            this.onDemandPlaylist = videos;
-            this.renderOnDemandList(videos);
-            if(this.isApiReady && !this.livePlayer) this.initOnDemandPlayer();
-        } else {
-            this.elements.playerContainer.innerHTML = '<div class="player-placeholder"><h2>Contenido On-Demand</h2><p>Mientras no haya un evento en vivo, disfruta de nuestro archivo.</p></div>';
-        }
-    },
-
-    renderInfo(session) {
-        this.elements.liveTitle.textContent = session.session_title;
-        this.elements.liveProject.textContent = `Proyecto: ${session.project_title}`;
-        // <-- CAMBIO: Se usa `session.organizer` en lugar de `session.profiles`.
-        this.elements.researcherInfoContainer.innerHTML = session.organizer ? `<img src="${session.organizer.avatar_url || ''}" alt=""><div><h4>${session.organizer.display_name || ''}</h4><p>ORCID: ${session.organizer.orcid || ''}</p></div>` : '';
-        const project = session.organizer?.projects?.find(p => p.title === session.project_title);
-        this.elements.projectInfoContainer.innerHTML = project ? `<h4>Más infomación</h4><p>${project.authors.join(', ')}</p><a href="https://doi.org/${project.doi}" target="_blank">Ver DOI</a>` : '';
-    },
-
-    // <-- CAMBIO: Nueva función para renderizar los avatares de los participantes.
-    renderParticipants(session) {
-        if (!this.elements.participantsContainer) return;
-
-        const organizer = session.organizer;
-        const participants = session.participants.map(p => p.profiles);
-        const allUsers = [];
-
-        if (organizer) allUsers.push(organizer);
-        participants.forEach(p => {
-            if (p && !allUsers.some(u => u.id === p.id)) allUsers.push(p);
-        });
-
-        if (allUsers.length === 0) {
-            this.clearParticipants();
-            return;
-        }
-
-        // Envolvemos la imagen en un botón para que sea claramente clicable y tenga el data-attribute
-        this.elements.participantsContainer.innerHTML = allUsers.map(user => `
-            <img 
-                src="${user.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" 
-                alt="${user.display_name}" 
-                title="${user.display_name}" 
-                class="avatar"
-                data-user-id="${user.id}"
-            >
-        `).join('');
-    },  
-    
-    // <-- CAMBIO: Nueva función para limpiar la sección de participantes.
-    clearParticipants() {
-        if (this.elements.participantsContainer) {
-            this.elements.participantsContainer.innerHTML = '<p class="placeholder-text">Los participantes se mostrarán aquí.</p>';
-        }
-    },
-
-    openParticipantModal(userId) {
-        // Buscamos los datos completos del evento en vivo actual
-        const liveSession = this.allEvents.find(s => s.status === 'EN VIVO');
-        if (!liveSession) return;
-
-        // Buscamos al usuario clickeado entre el organizador y los participantes
-        let user = null;
-        if (liveSession.organizer && liveSession.organizer.id === userId) {
-            user = liveSession.organizer;
-        } else {
-            const participantData = liveSession.participants.find(p => p.profiles.id === userId);
-            if(participantData) user = participantData.profiles;
-        }
-
-        if (!user) {
-            console.error("No se encontraron los datos del participante con ID:", userId);
-            return;
-        }
-
-        // Creamos el HTML para el contenido del modal
-        this.elements.participantModalContent.innerHTML = `
-            <div class="participant-modal-content-wrapper">
-                <img src="${user.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="${user.display_name}">
-                <h4>${user.display_name}</h4>
-                <p><strong>ORCID:</strong> ${user.orcid || 'No disponible'}</p>
-                <p>${user.bio || ''}</p>
-                <div class="participant-social-links">
-                    ${user.website_url ? `<a href="${user.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}
-                    ${user.x_url ? `<a href="${user.x_url}" target="_blank" title="Perfil de X"><i class="fab fa-twitter"></i></a>` : ''}
-                </div>
-            </div>
-        `;
-        this.elements.participantModalOverlay.classList.add('is-visible');
-    },
-
-    closeParticipantModal() {
-        this.elements.participantModalOverlay.classList.remove('is-visible');
-    },    
-
-    renderSchedule(schedule) {
-        const scheduleContainer = this.elements.scheduleList;
-        if (!scheduleContainer) return;
-        this.allSessionsMap = {};
-        if(schedule) schedule.forEach(item => this.allSessionsMap[item.id] = item);
-        if (!schedule || schedule.length === 0) {
-            scheduleContainer.innerHTML = '<p class="placeholder-text">No hay eventos programados para esta vista.</p>';
-            return;
-        }
-        scheduleContainer.innerHTML = schedule.map(item => {
-            const thumbnailUrl = item.thumbnail_url || 'https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png';
-            const eventDate = new Date(item.scheduled_at);
-            const day = eventDate.toLocaleDateString('es-ES', { day: '2-digit' });
-            const month = eventDate.toLocaleDateString('es-ES', { month: 'short' });
-            // <-- CAMBIO: Se usa `item.organizer` en lugar de `item.profiles`.
-            return `<div class="event-card" data-session-id="${item.id}"><div class="event-card-background" style="background-image: url('${thumbnailUrl}')"></div><div class="event-card-date">${day} ${month}</div><div class="card-info"><h5>${item.session_title}</h5><p>${item.organizer?.display_name || 'Epistecnología'}</p></div></div>`;
+            return `<div class="carousel-slide" data-id="${id}" data-player-url="${playerUrl}" data-thumbnail-url="${thumbnailUrl}">
+                        <div class="slide-player"><img src="${thumbnailUrl}" loading="lazy"></div>
+                        <div class="slide-info-box">${infoHTML}</div>
+                    </div>`;
         }).join('');
+        
+        this.elements.carouselSection.querySelector('.prev').addEventListener('click', () => this.moveSlide(-1));
+        this.elements.carouselSection.querySelector('.next').addEventListener('click', () => this.moveSlide(1));
+        track.addEventListener('click', (e) => {
+             const slide = e.target.closest('.carousel-slide.active');
+             if(slide) this.handleCardClick(e);
+        });
+        this.updateCarouselView();
+    },
+
+    moveSlide(direction) {
+        const slideCount = this.featuredContent.length;
+        if (slideCount <= 1) return;
+        this.currentSlideIndex = (this.currentSlideIndex + direction + slideCount) % slideCount;
+        this.updateCarouselView();
+    },
+
+    updateCarouselView() {
+        const track = this.elements.carouselSection.querySelector('.carousel-track');
+        const slides = track.querySelectorAll('.carousel-slide');
+        if (slides.length === 0) return;
+        
+        slides.forEach((slide, i) => {
+            let offset = i - this.currentSlideIndex;
+            if (offset < -Math.floor(slides.length / 2)) offset += slides.length;
+            if (offset > Math.ceil(slides.length / 2)) offset -= slides.length;
+            
+            slide.style.transform = `translateX(${offset * 40}%) scale(${1 - Math.abs(offset) * 0.2})`;
+            slide.style.opacity = Math.abs(offset) > 1 ? '0.4' : '1';
+            slide.style.zIndex = slides.length - Math.abs(offset);
+            slide.classList.toggle('active', offset === 0);
+
+            const playerContainer = slide.querySelector('.slide-player');
+            if (offset === 0 && !playerContainer.querySelector('iframe')) {
+                playerContainer.innerHTML = `<iframe src="${slide.dataset.playerUrl}" allow="autoplay; fullscreen" loading="lazy"></iframe>`;
+            } else if (offset !== 0 && playerContainer.querySelector('iframe')) {
+                playerContainer.innerHTML = `<img src="${slide.dataset.thumbnailUrl}" loading="lazy">`;
+            }
+        });
+    },
+
+    handleTabClick(clickedTab) {
+        this.elements.tabs.forEach(tab => tab.classList.remove('active'));
+        clickedTab.classList.add('active');
+        this.elements.tabContents.forEach(content => content.classList.toggle('active', content.id === clickedTab.dataset.tab));
+    },
+
+    handleCardClick(e) {
+        const card = e.target.closest('[data-id]');
+        if (card && card.dataset.id) this.openLiveRoom(card.dataset.id);
+    },
+    
+    renderSchedule(events) {
+        this.elements.scheduleList.innerHTML = events.map(s => `<div class="event-card" data-id="${s.id}"><div class="card-background" style="background-image: url('${s.thumbnail_url}')"></div><div class="card-info"><h5>${s.session_title}</h5><p>${s.organizer?.display_name || ''}</p></div></div>`).join('');
     },
 
     renderOnDemandList(videos) {
-        const ondemandContainer = this.elements.ondemandListContainer;
-        if (!ondemandContainer) return;
-        ondemandContainer.innerHTML = videos.map(video => `<div class="video-card" onclick="LiveApp.playOnDemandById('${video.youtube_video_id}')"><img src="https://i.ytimg.com/vi/${video.youtube_video_id}/mqdefault.jpg" alt="${video.title}"><p>${video.title}</p></div>`).join('');
+        this.elements.ondemandListContainer.innerHTML = videos.map(v => `<div class="video-card" data-id="video-${v.id}"><img src="https://i.ytimg.com/vi/${v.youtube_video_id}/mqdefault.jpg" alt="${v.title}"><p>${v.title}</p></div>`).join('');
     },
 
-    openEventModal(sessionId) {
-        const session = this.allSessionsMap[sessionId];
-        if (!session) return;
-
-        // Llenamos el contenido principal del modal (sin cambios)
-        this.elements.modalTitle.textContent = session.session_title;
-        this.elements.modalDescription.textContent = session.description || 'No hay descripción disponible.';
-        this.elements.modalSchedule.innerHTML = `<i class="fas fa-clock"></i> ${new Date(session.scheduled_at).toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'short' })}`;
-        this.elements.modalThumbnail.style.backgroundImage = `url('${session.thumbnail_url || 'https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png'}')`;
-        if (session.organizer) this.elements.modalOrganizer.innerHTML = `<img src="${session.organizer.avatar_url || ''}" alt=""><div><strong>${session.organizer.display_name}</strong><p>${session.organizer.orcid}</p></div>`;
-        
-        // --- INICIO DE LA NUEVA LÓGICA PARA EL FOOTER ---
-        const footer = this.elements.modalFooter;
-        footer.innerHTML = ''; // Limpiamos el footer para construir los botones dinámicamente
-
-        let buttonsHTML = '';
-
-        // Botón 1: Ver Grabación (solo si existe la URL)
-        if (session.recording_url) {
-            buttonsHTML += `<a href="${session.recording_url}" target="_blank" rel="noopener noreferrer" class="btn-secondary">Ver Grabación</a>`;
+    openLiveRoom(id) {
+        // Detiene cualquier video que se esté reproduciendo en el carrusel
+        if (this.updateCarouselView) {
+            this.updateCarouselView(); 
         }
-
-        // Botón 2: Saber Más (solo si existe la URL)
-        if (session.more_info_url) {
-            buttonsHTML += `<a href="${session.more_info_url}" target="_blank" rel="noopener noreferrer" class="btn-primary">Saber Más</a>`;
-        }
-
-        footer.innerHTML = buttonsHTML; // Añadimos los botones que correspondan
-        // --- FIN DE LA NUEVA LÓGICA ---
         
-        this.elements.modalOverlay.classList.add('is-visible');
-    },
-
-    closeEventModal() {
-        this.elements.modalOverlay.classList.remove('is-visible');
-    },
-
-    showTwitchPlayer(session) {
-        const channelName = "epistecnologia";
-        this.elements.playerContainer.innerHTML = '<div id="twitch-player-embed"></div>';
-
-        new Twitch.Player("twitch-player-embed", {
-            width: "100%",
-            height: "100%",
-            channel: channelName,
-            // --- INICIO DE LA CORRECCIÓN ---
-            // Proporcionamos una lista de todos los posibles dominios válidos.
-            // Esto cubre si accedes con www, sin www, o en tu computadora local.
-            parent: ["epistecnologia.com", "www.epistecnologia.com", "localhost"],
-            // --- FIN DE LA CORRECCIÓN ---
-            autoplay: true,
-            muted: true
-        });
-    },
-    
-    showYouTubePlayer(session) {
-        this.elements.playerContainer.innerHTML = `<iframe src="https://www.youtube.com/embed/${session.platform_id}?autoplay=1&enablejsapi=1&rel=0" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
-    },
-
-    showVDONinjaPlayer(session) {
-        const iframeHTML = `<iframe id="vdo-ninja-player" src="${session.viewer_url}" allow="autoplay; fullscreen" frameborder="0"></iframe>`;
-        this.elements.playerContainer.innerHTML = iframeHTML;
-
-        // CAMBIO: Añadimos un reintento para solucionar problemas de carga.
-        // A veces, el espectador se conecta antes de que el director esté listo.
-        // Volver a cargar el 'src' después de un breve retraso puede forzar la conexión.
-        setTimeout(() => {
-            const iframe = document.getElementById('vdo-ninja-player');
-            if (iframe && iframe.src) {
-                console.log("Reintentando conexión con el reproductor de VDO.Ninja...");
-                iframe.src = session.viewer_url;
-            }
-        }, 3000); // 3 segundos de espera
-    },
-
-    // REEMPLAZA showYouTubeChat CON ESTA NUEVA FUNCIÓN showStreamChat
-
-    showStreamChat(session) {
-        const container = this.elements.youtubeChatContainer;
-        // Si no hay sesión o contenedor, muestra el texto por defecto
-        if (!session || !container) {
-            container.innerHTML = '<p class="placeholder-text">El chat se activa durante los directos.</p>';
+        const item = this.allContentMap[id];
+        if (!item) {
+            console.error("Error: No se encontró el item en el mapa con ID:", id);
             return;
         }
+
+        // --- INICIO DEL NUEVO CÓDIGO ROBUSTO ---
         
-        let chatHTML = '';
-        // Lógica para el chat de Twitch
-        if (session.platform === 'twitch') {
-            const channelName = "epistecnologia"; // Tu canal
-            const parentDomain = window.location.hostname;
-            chatHTML = `<iframe src="https://www.twitch.tv/embed/${channelName}/chat?parent=${parentDomain}&darkpopout" frameborder="0" scrolling="no" height="100%" width="100%"></iframe>`;
+        // 1. Limpiamos el contenedor de modales
+        this.elements.modalContainer.innerHTML = '';
+
+        // 2. Creamos los elementos principales del modal con JavaScript
+        const modalOverlay = document.createElement('div');
+        modalOverlay.id = 'live-room-modal';
+        modalOverlay.className = 'modal-overlay';
+
+        const closeButton = document.createElement('button');
+        closeButton.className = 'modal-close-btn';
+        closeButton.innerHTML = '×';
+        closeButton.setAttribute('aria-label', 'Cerrar');
         
-        // Lógica para el chat de YouTube
-        } else if (session.platform === 'youtube' && session.platform_id) {
-            chatHTML = `<iframe src="http://googleusercontent.com/youtube.com/8{session.platform_id}&embed_domain=${window.location.hostname}" frameborder="0"></iframe>`;
+        // 3. Añadimos el listener directamente al botón que acabamos de crear
+        closeButton.addEventListener('click', () => this.closeLiveRoom());
+
+        // 4. Construimos el contenido interno de la sala
+        const content = this.buildLiveRoomHTML();
+
+        // 5. Unimos todas las partes
+        modalOverlay.appendChild(closeButton);
+        modalOverlay.appendChild(content);
         
-        // Si no es ninguna de las dos, texto por defecto
-        } else {
-            chatHTML = '<p class="placeholder-text">El chat se activa durante los directos.</p>';
-        }
+        // 6. Añadimos el modal completo al DOM
+        this.elements.modalContainer.appendChild(modalOverlay);
+
+        // 7. Ahora que todo existe, lo poblamos con datos y lo hacemos visible
+        this.populateLiveRoom(item);
+        setTimeout(() => modalOverlay.classList.add('is-visible'), 10);
         
-        container.innerHTML = chatHTML;
+        // --- FIN DEL NUEVO CÓDIGO ROBUSTO ---
     },
 
-    initOnDemandPlayer() {
-        if (this.livePlayer || this.onDemandPlaylist.length === 0 || !this.isApiReady) return;
-        this.elements.playerContainer.innerHTML = '<div id="yt-player-on-demand"></div>';
-        let currentIndex = 0;
-        this.livePlayer = new YT.Player('yt-player-on-demand', {
-            height: '100%', width: '100%',
-            videoId: this.onDemandPlaylist[currentIndex].youtube_video_id,
-            playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0, 'loop': 0 },
-            events: {
-                'onStateChange': (e) => {
-                    if (e.data === YT.PlayerState.ENDED) {
-                        currentIndex = (currentIndex + 1) % this.onDemandPlaylist.length;
-                        this.livePlayer.loadVideoById(this.onDemandPlaylist[currentIndex].youtube_video_id);
-                    }
-                }
-            }
+    closeLiveRoom() {
+        const modalOverlay = document.getElementById('live-room-modal');
+        if (modalOverlay) {
+            modalOverlay.classList.remove('is-visible');
+            setTimeout(() => { this.elements.modalContainer.innerHTML = ''; }, 300);
+        }
+    },
+
+    openInvestigatorModal(userId, session) {
+        const organizer = session.organizer;
+        const participants = session.participants?.map(p => p.profiles) || [];
+        const allUsers = [organizer, ...participants].filter(Boolean);
+        const user = allUsers.find(u => u && u.id === userId);
+
+        if (!user) {
+            console.error("No se encontraron datos para el investigador con ID:", userId);
+            return;
+        }
+
+        const modalHTML = `
+            <div id="investigator-modal" class="investigator-modal-overlay">
+                <div class="investigator-modal">
+                    <header class="investigator-modal-header">
+                        <button class="investigator-modal-close-btn">×</button>
+                    </header>
+                    <main class="investigator-modal-content">
+                        <img src="${user.avatar_url}" alt="${user.display_name}" class="avatar">
+                        <h3>${user.display_name}</h3>
+                        <p><strong>ORCID:</strong> ${user.orcid || 'No disponible'}</p>
+                        <div class="project-info">
+                            <h4>Participa en el proyecto:</h4>
+                            <p>${session.project_title || 'N/A'}</p>
+                        </div>
+                        </main>
+                </div>
+            </div>`;
+        
+        this.elements.modalContainer.insertAdjacentHTML('beforeend', modalHTML);
+        
+        const newModal = document.getElementById('investigator-modal');
+        newModal.querySelector('.investigator-modal-close-btn').addEventListener('click', () => this.closeInvestigatorModal());
+        newModal.addEventListener('click', (e) => {
+            if (e.target === newModal) this.closeInvestigatorModal();
         });
     },
-    
-    destroyOnDemandPlayer() {
-        if (this.livePlayer && typeof this.livePlayer.destroy === 'function') {
-            this.livePlayer.destroy();
-            this.livePlayer = null;
-        }
+
+    closeInvestigatorModal() {
+        const modal = document.getElementById('investigator-modal');
+        if (modal) modal.remove();
     },
 
-    playOnDemandById(videoId) {
-        if (!this.livePlayer) this.initOnDemandPlayer();
-        if (this.livePlayer) this.livePlayer.loadVideoById(videoId);
+    buildLiveRoomHTML() {
+        const container = document.createElement('div');
+        container.className = 'live-room-content';
+        container.innerHTML = `
+            <main class="live-room-main">
+                <div id="live-room-player" class="live-room-player">
+                    </div>
+                <div class="live-room-scrollable-content">
+                    <div id="live-room-investigators-strip" class="live-room-investigators-strip">
+                    </div>
+                    </br>
+                    <div id="live-room-info" class="live-room-info">
+                    </div>
+                </div>
+            </main>
+            <aside class="live-room-side">
+                <div id="chat-box"></div>
+            </aside>`;
+        return container;
+    },
+
+    populateLiveRoom(item) {
+        console.log("Poblando modal con el siguiente item:", item); // Línea de depuración
+
+        const player = document.getElementById('live-room-player');
+        const info = document.getElementById('live-room-info');
+        const chat = document.getElementById('chat-box');
+        const investigators = document.getElementById('live-room-investigators-strip');
+
+        // Ocultamos estas secciones por defecto, las llenaremos después si hay datos
+        investigators.style.display = 'none';
+        chat.style.display = 'flex';
+
+        if (item.type === 'EVENT') {
+            const session = item;
+            if (session.status === 'EN VIVO') {
+                // --- LÓGICA CORREGIDA PARA SELECCIONAR EL REPRODUCTOR ---
+                if (session.platform === 'vdo_ninja') {
+                    player.innerHTML = `<iframe src="${session.viewer_url}" allow="autoplay; fullscreen"></iframe>`;
+                } else if (session.platform === 'youtube') {
+                    player.innerHTML = `<iframe src="https://www.youtube.com/embed/${session.platform_id}?autoplay=1" allowfullscreen></iframe>`;
+                } else { // Twitch por defecto
+                    const channel = session.platform_id || 'epistecnologia';
+                    player.innerHTML = `<iframe src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=true" allowfullscreen></iframe>`;
+                }
+                chat.innerHTML = `<h4><i class="fas fa-comments"></i> Chat</h4><div id="chat-container"><iframe src="https://www.twitch.tv/embed/${session.platform_id || 'epistecnologia'}/chat?parent=${window.location.hostname}&darkpopout"></iframe></div>`;
+            } else {
+                player.style.backgroundImage = `url('${session.thumbnail_url}')`;
+                chat.innerHTML = `<h4><i class="fas fa-comments"></i> Chat</h4><p>El chat aparecerá cuando el evento inicie.</p>`;
+            }
+            
+            const organizer = session.organizer;
+            let projectHTML = '';
+            if (organizer?.projects && session.project_title) {
+                 const project = organizer.projects.find(p => p.title === session.project_title);
+                 if (project && project.doi) {
+                    projectHTML = `<p>${project.authors.join(', ')}</p><a href="https://doi.org/${project.doi}" target="_blank" rel="noopener noreferrer" class="btn-secondary">Ver DOI</a>`;
+                 }
+            }
+            info.innerHTML = `<h3>${session.session_title}</h3><p>${session.description || ''}</p><hr><h4>Organizador</h4><p>${organizer?.display_name || 'N/A'}</p><h4>Proyecto: ${session.project_title || ''}</h4>${projectHTML}`;
+            
+            const allUsers = [organizer, ...(session.participants?.map(p => p.profiles) || [])].filter(Boolean);
+            if (allUsers.length > 0) {
+                investigators.style.display = 'block';
+                investigators.innerHTML = `<h4>Investigadores</h4><div class="avatar-grid">${allUsers.map(u => u ? `<img src="${u.avatar_url}" title="${u.display_name}" class="avatar" data-user-id="${u.id}">` : '').join('')}</div>`;
+                investigators.addEventListener('click', (e) => {
+                    const avatar = e.target.closest('.avatar[data-user-id]');
+                    if (avatar) this.openInvestigatorModal(avatar.dataset.userId, session);
+                });
+            } else {
+                investigators.style.display = 'none';
+            }
+        
+        } else {
+            const video = item;
+            player.innerHTML = `<iframe src="https://www.youtube.com/embed/${video.youtube_video_id}?autoplay=1" allowfullscreen></iframe>`;
+            info.innerHTML = `<h3>${video.title}</h3>`;
+            investigators.style.display = 'none';
+            chat.style.display = 'none';
+        }
     },
 
     listenForChanges() {
-        this.supabase.channel('sessions')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, () => {
-                console.log('Cambio detectado en la base de datos, recargando...');
-                this.run();
-            })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'event_participants' }, () => {
-                console.log('Cambio detectado en los participantes, recargando...');
+        this.supabase.channel('public-changes')
+            .on('postgres_changes', { event: '*', schema: 'public' }, () => {
+                console.log("Cambio detectado, recargando...");
                 this.run();
             })
             .subscribe();
     }
 };
 
-// Se asegura de que la App inicie correctamente, incluso si la API de YT ya está cargada.
-if (window.YT && window.YT.Player) {
+document.addEventListener('DOMContentLoaded', () => {
     LiveApp.init();
-} else {
-    window.onYouTubeIframeAPIReady = () => {
-        LiveApp.init();
-    };
-}
+});

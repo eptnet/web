@@ -9,93 +9,55 @@
     <link rel="stylesheet" href="/live/css/live.css">
 </head>
 <body>
-    <a href="/" class="home-button" aria-label="Volver a la página de inicio" title="Volver a la página de inicio">
-        <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo Epistecnología">
-    </a>
-    <button id="theme-toggle-btn" class="theme-toggle-btn" title="Cambiar tema">
-        <i class="fas fa-sun"></i>
-    </button>
 
-    <div class="page-grid">
-        <main class="player-column">
-            <div id="player-container" class="player-wrapper">
-                <div class="player-placeholder">
-                    <h2>Contenido On-Demand</h2>
-                    <p>Mientras no haya un evento en vivo, disfruta de nuestro archivo.</p>
-                </div>
-            </div>
-            <div id="info-container" class="info-container" style="display: none;">
-                <div id="researcher-info-container" class="bento-box researcher-info"></div>
-                <div id="live-info-container" class="bento-box">
-                    <h4 id="live-title"></h4>
-                    <p id="live-project"></p>
-                    <p id="project-info-container"></p>
-                </div>
-            </div>
-        </main>
-        
-        <aside class="sidebar-column">
-            <div id="investigators-box" class="bento-box">
-                <h4><i class="fas fa-users"></i> Investigadores</h4>
-                <div class="avatar-grid">
-                    <p class="placeholder-text">Próximamente...</p>
-                </div>
-            </div>
-            <div id="chat-box" class="bento-box">
-                <h4><i class="fas fa-comments"></i> Chat / Comentarios</h4>
-                <div id="chat-container">
-                     <p class="placeholder-text">El chat se activa durante los directos.</p>
-                </div>
-            </div>
-        </aside>
+    <header class="main-header">
+        <div class="header-content">
+            <a href="/" class="header-logo">
+                <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo Epistecnología">
+                <span>EPT Live</span>
+            </a>
+            <nav class="header-actions">
+                <button id="theme-toggle-btn" class="theme-toggle-btn" title="Cambiar tema">
+                    <i class="fas fa-sun"></i>
+                </button>
+                <i class="fas fa-user-circle profile-icon" title="Perfil"></i>
+            </nav>
+        </div>
+    </header>
 
-        <footer class="agenda-column bento-box">
+    <main id="main-content">
+        <section id="featured-carousel-section" class="featured-carousel">
+            <div class="carousel-wrapper">
+                <div class="carousel-track">
+                    </div>
+            </div>
+            <button class="carousel-nav prev"><i class="fas fa-chevron-left"></i></button>
+            <button class="carousel-nav next"><i class="fas fa-chevron-right"></i></button>
+        </section>
+
+        <div class="agenda-wrapper">
             <div class="tabs">
                 <button class="tab-link active" data-tab="agenda-tab">Eventos</button>
                 <button class="tab-link" data-tab="videos-tab">Videos</button>
             </div>
             <div class="tab-content-wrapper">
                 <div id="agenda-tab" class="tab-content active">
-                        <div class="agenda-filters">
-                            <button class="filter-btn" data-filter="week">Esta Semana</button>
-                            <button class="filter-btn" data-filter="month">Este Mes</button>
-                            <button class="filter-btn active" data-filter="all">Todos</button>
-                        </div>
                     <div id="schedule-list" class="card-grid"></div>
                 </div>
                 <div id="videos-tab" class="tab-content">
                     <div id="ondemand-list-container" class="card-grid"></div>
                 </div>
             </div>
-        </footer>
-    </div>
-
-    <div id="event-modal-overlay" class="event-modal-overlay">
-        <div class="event-modal">
-            <button id="event-modal-close" class="event-modal-close-btn" aria-label="Cerrar">&times;</button>
-            <div id="event-modal-thumbnail" class="event-modal-thumbnail"></div>
-            <div class="event-modal-content">
-                <h3 id="event-modal-title"></h3>
-                <div id="event-modal-organizer" class="event-modal-organizer"></div>
-                <div id="event-modal-schedule" class="event-modal-schedule"></div>
-                <p id="event-modal-description"></p>
-            </div>
-            <div class="event-modal-footer">
-                <a id="event-modal-more-info" href="#" target="_blank" rel="noopener noreferrer" class="btn-primary">Saber Más</a>
-            </div>
         </div>
-    </div>
-
-    <div id="participant-modal-overlay" class="event-modal-overlay">
-        <div class="event-modal participant-modal">
-            <button id="participant-modal-close" class="event-modal-close-btn" aria-label="Cerrar">×</button>
-            <div id="participant-modal-content" class="event-modal-content">
-                </div>
+    </main>
+    
+    <div id="modal-container">
         </div>
-    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="https://player.twitch.tv/js/embed/v1.js"></script>
     <script src="/live/js/live.js"></script>
+
 </body>
 </html>
