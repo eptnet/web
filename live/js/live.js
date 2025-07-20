@@ -5,6 +5,7 @@ const LiveApp = {
     featuredContent: [],
     currentSlideIndex: 0,
     isApiReady: false,
+    countdownInterval: null,
 
     init() {
         const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
@@ -58,7 +59,7 @@ const LiveApp = {
     async run() {
         const [{ data: sessions }, { data: videos }] = await Promise.all([
             // Consulta ultra-estable: solo pide lo necesario para la vista principal.
-            this.supabase.from('sessions').select(`*, organizer: profiles (*)`).neq('is_archived', true).order('status', { ascending: true }).order('scheduled_at', { ascending: true }),
+            this.supabase.from('sessions').select(`*, organizer: profiles (*)`).neq('is_archived', true).order('status', { ascending: true }).order('scheduled_at', { ascending: false }),
             this.supabase.from('ondemand_videos').select('*').order('created_at', { ascending: false })
         ]);
 
@@ -90,33 +91,31 @@ const LiveApp = {
             const thumbnailUrl = isEvent ? data.thumbnail_url : `https://i.ytimg.com/vi/${data.youtube_video_id}/hqdefault.jpg`;
             const isLive = isEvent && data.status === 'EN VIVO';
             const autoplay = isLive ? 'autoplay=true&muted=true' : 'autoplay=0';
-            
             let playerUrl = '';
             let infoHTML = '';
 
             if (isEvent) {
-                const channel = data.platform_id || 'epistecnologia'; // **CORRECCIÓN PARA TWITCH**
+                const channel = data.platform_id || 'epistecnologia';
                 playerUrl = (data.platform === 'vdo_ninja') ? data.viewer_url : `https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&${autoplay}`;
-                
-                if (isLive) {
-                    // **NUEVO DISEÑO PARA SLIDES EN VIVO**
-                    infoHTML = `
-                        <h3>${data.session_title}</h3>
-                        <p>${data.organizer.display_name}</p>
-                        <button class="blinking-live-btn">EN VIVO: Ir a la sala</button>
-                    `;
-                } else {
-                    infoHTML = `<h3>${data.session_title}</h3>`;
-                }
+                infoHTML = isLive ? `
+                    <h3>${data.session_title}</h3>
+                    <p>${data.organizer.display_name}</p>
+                    <button class="blinking-live-btn">EN VIVO: Ir a la sala</button>
+                ` : `<h3>${data.session_title}</h3><p>${data.organizer.display_name}</p>`;
             } else {
                 playerUrl = `https://www.youtube.com/embed/${data.youtube_video_id}?enablejsapi=1&${autoplay}`;
                 infoHTML = `<h3>${data.title}</h3>`;
             }
 
-            return `<div class="carousel-slide" data-id="${id}" data-player-url="${playerUrl}" data-thumbnail-url="${thumbnailUrl}">
-                        <div class="slide-player"><img src="${thumbnailUrl}" loading="lazy"></div>
-                        <div class="slide-info-box">${infoHTML}</div>
-                    </div>`;
+            return `
+                <div class="carousel-slide" data-id="${id}" data-player-url="${playerUrl}" data-thumbnail-url="${thumbnailUrl}">
+                    <div class="slide-player">
+                        <img src="${thumbnailUrl}" loading="lazy" alt="Miniatura del video">
+                    </div>
+                    <div class="slide-info-box">
+                        ${infoHTML}
+                    </div>
+                </div>`;
         }).join('');
         
         this.elements.carouselSection.querySelector('.prev').addEventListener('click', () => this.moveSlide(-1));
@@ -171,11 +170,40 @@ const LiveApp = {
     },
     
     renderSchedule(events) {
-        this.elements.scheduleList.innerHTML = events.map(s => `<div class="event-card" data-id="${s.id}"><div class="card-background" style="background-image: url('${s.thumbnail_url}')"></div><div class="card-info"><h5>${s.session_title}</h5><p>${s.organizer?.display_name || ''}</p></div></div>`).join('');
+        this.elements.scheduleList.innerHTML = events.map(s => {
+            const eventDate = new Date(s.scheduled_at);
+            const day = eventDate.toLocaleDateString('es-ES', { day: '2-digit' });
+            const month = eventDate.toLocaleDateString('es-ES', { month: 'short' });
+            const isLive = s.status === 'EN VIVO';
+
+            // Genera el indicador de EN VIVO solo si corresponde
+            const liveIndicatorHTML = isLive 
+                ? `<div class="card-live-indicator">EN VIVO</div>` 
+                : '';
+
+            return `
+            <div class="event-card" data-id="${s.id}">
+                <div class="card-background" style="background-image: url('${s.thumbnail_url}')"></div>
+                
+                <div class="card-top-info">
+                    <div class="card-date">${day} ${month}</div>
+                    ${liveIndicatorHTML}
+                </div>
+
+                <div class="card-info">
+                    <h5>${s.session_title}</h5>
+                    <p>${s.organizer?.display_name || ''}</p>
+                </div>
+            </div>`;
+        }).join('');
     },
 
     renderOnDemandList(videos) {
-        this.elements.ondemandListContainer.innerHTML = videos.map(v => `<div class="video-card" data-id="video-${v.id}"><img src="https://i.ytimg.com/vi/${v.youtube_video_id}/mqdefault.jpg" alt="${v.title}"><p>${v.title}</p></div>`).join('');
+        this.elements.ondemandListContainer.innerHTML = videos.map(v => `
+            <div class="video-card" data-id="video-${v.id}">
+                <img src="https://i.ytimg.com/vi/${v.youtube_video_id}/mqdefault.jpg" alt="${v.title}">
+                <p class="video-title">${v.title}</p>
+            </div>`).join('');
     },
 
     openLiveRoom(id) {
@@ -226,11 +254,40 @@ const LiveApp = {
     },
 
     closeLiveRoom() {
+        if (this.countdownInterval) {
+            clearInterval(this.countdownInterval);
+            this.countdownInterval = null;
+        }
         const modalOverlay = document.getElementById('live-room-modal');
         if (modalOverlay) {
             modalOverlay.classList.remove('is-visible');
             setTimeout(() => { this.elements.modalContainer.innerHTML = ''; }, 300);
         }
+    },
+
+    startCountdown(targetDate) {
+        const timerElement = document.getElementById('countdown-timer');
+        if (!timerElement) return;
+
+        const targetTime = new Date(targetDate).getTime();
+
+        this.countdownInterval = setInterval(() => {
+            const now = new Date().getTime();
+            const distance = targetTime - now;
+
+            if (distance < 0) {
+                clearInterval(this.countdownInterval);
+                timerElement.innerHTML = "El evento debería haber comenzado.";
+                return;
+            }
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            timerElement.innerHTML = `Comienza en: ${days}d ${hours}h ${minutes}m ${seconds}s`;
+        }, 1000);
     },
 
     openInvestigatorModal(userId, session) {
@@ -311,6 +368,8 @@ const LiveApp = {
 
         if (item.type === 'EVENT') {
             const session = item;
+            const eventDate = new Date(session.scheduled_at);
+
             if (session.status === 'EN VIVO') {
                 // --- LÓGICA CORREGIDA PARA SELECCIONAR EL REPRODUCTOR ---
                 if (session.platform === 'vdo_ninja') {
@@ -323,7 +382,7 @@ const LiveApp = {
                 }
                 chat.innerHTML = `<h4><i class="fas fa-comments"></i> Chat</h4><div id="chat-container"><iframe src="https://www.twitch.tv/embed/${session.platform_id || 'epistecnologia'}/chat?parent=${window.location.hostname}&darkpopout"></iframe></div>`;
             } else {
-                player.style.backgroundImage = `url('${session.thumbnail_url}')`;
+                player.innerHTML = `<img src="${session.thumbnail_url}" style="width:100%; height:100%; object-fit:cover;">`;
                 chat.innerHTML = `<h4><i class="fas fa-comments"></i> Chat</h4><p>El chat aparecerá cuando el evento inicie.</p>`;
             }
             
@@ -335,7 +394,25 @@ const LiveApp = {
                     projectHTML = `<p>${project.authors.join(', ')}</p><a href="https://doi.org/${project.doi}" target="_blank" rel="noopener noreferrer" class="btn-secondary">Ver DOI</a>`;
                  }
             }
-            info.innerHTML = `<h3>${session.session_title}</h3><p>${session.description || ''}</p><hr><h4>Organizador</h4><p>${organizer?.display_name || 'N/A'}</p><h4>Proyecto: ${session.project_title || ''}</h4>${projectHTML}`;
+            const dateString = eventDate.toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'short' });
+            const countdownHTML = session.status === 'PROGRAMADO' && eventDate > new Date()
+                ? `<div id="countdown-timer"></div>`
+                : '';
+
+            info.innerHTML = `
+                <h3>${session.session_title}</h3>
+                <p>${session.description || ''}</p>
+                <hr>
+                <h4>Organizador</h4>
+                <p>${organizer?.display_name || 'N/A'}</p>
+                <h4>Proyecto: ${session.project_title || ''}</h4>
+                ${projectHTML}
+                `;
+
+             // 3. Activa el contador si es necesario
+            if (session.status === 'PROGRAMADO' && eventDate > new Date()) {
+                this.startCountdown(session.scheduled_at);
+            }
             
             const allUsers = [organizer, ...(session.participants?.map(p => p.profiles) || [])].filter(Boolean);
             if (allUsers.length > 0) {
