@@ -23,14 +23,19 @@ const ProfileApp = {
     },
 
     addEventListeners() {
-        document.body.addEventListener('click', (e) => {
+        document.body.addEventListener('click', async (e) => { // <-- Añadimos async aquí
             const target = e.target.closest('button');
             if (!target) return;
 
             const action = target.id;
             if (action === 'connect-orcid-btn') this.handleOrcidConnect();
             else if (action === 'disconnect-orcid-btn') this.handleOrcidDisconnect();
-            else if (action === 'logout-btn-header') this.supabase.auth.signOut();
+            else if (action === 'logout-btn-header') {
+                // --- INICIO DE LA CORRECCIÓN ---
+                await this.supabase.auth.signOut();
+                window.location.href = '/'; // Redirige al inicio después de salir
+                // --- FIN DE LA CORRECCIÓN ---
+            }
             else if (action === 'theme-switcher') this.toggleTheme();
             else if (action === 'sync-orcid-works-btn') this.handleSyncWorks();
         });

@@ -20,7 +20,8 @@
                 <button id="theme-toggle-btn" class="theme-toggle-btn" title="Cambiar tema">
                     <i class="fas fa-sun"></i>
                 </button>
-                <i class="fas fa-user-circle profile-icon" title="Perfil"></i>
+                <div id="user-icon-container">
+                    </div>
             </nav>
         </div>
     </header>
@@ -53,6 +54,26 @@
     
     <div id="modal-container">
         </div>
+
+    <div id="login-modal-overlay" class="login-modal-overlay">
+        <div class="login-modal">
+            <header class="modal-header">
+                <h2>Accede a Epistecnología</h2>
+                <button id="login-modal-close-btn" class="modal-close-btn">&times;</button>
+            </header>
+            <main class="modal-content">
+                <p>Usa tu cuenta preferida para continuar y acceder a tu panel de investigador.</p>
+                <div class="login-options">
+                    <a href="#" class="login-provider-btn" data-provider="google">
+                        <i class="fa-brands fa-google"></i> Continuar con Google
+                    </a>
+                    <a href="#" class="login-provider-btn" data-provider="github">
+                        <i class="fa-brands fa-github"></i> Continuar con GitHub
+                    </a>
+                </div>
+            </main>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://www.youtube.com/iframe_api"></script>

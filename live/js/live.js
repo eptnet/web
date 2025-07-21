@@ -14,6 +14,12 @@ const LiveApp = {
 
         this.cacheDOMElements();
         this.addEventListeners();
+
+        // --- INICIO DE LA LÓGICA DE AUTENTICACIÓN ---
+        this.supabase.auth.onAuthStateChange((_event, session) => {
+            this.renderUserIcon(session);
+        });
+        // --- FIN DE LA LÓGICA DE AUTENTICACIÓN ---
         
         if (window.YT && typeof window.YT.Player === 'function') {
             this.isApiReady = true;
@@ -40,7 +46,28 @@ const LiveApp = {
             tabs: document.querySelectorAll('.tab-link'),
             tabContents: document.querySelectorAll('.tab-content'),
             modalContainer: document.getElementById('modal-container'),
+            userIconContainer: document.getElementById('user-icon-container')
         };
+    },
+
+    renderUserIcon(session) {
+        const container = this.elements.userIconContainer;
+        if (!container) return;
+
+        if (session && session.user) {
+            const avatarUrl = session.user.user_metadata?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
+            container.innerHTML = `
+                <a href="/inv/profile.html" title="Mi Perfil" class="nav-icon"><img src="${avatarUrl}" alt="Avatar"></a>
+                <button id="live-logout-btn" class="nav-icon" title="Cerrar Sesión"><i class="fa-solid fa-right-from-bracket"></i></button>
+            `;
+        } else {
+            // Crea un BOTÓN para abrir el modal, no un enlace
+            container.innerHTML = `
+                <button id="login-modal-trigger" title="Iniciar Sesión" class="nav-icon">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                </button>
+            `;
+        }
     },
 
     addEventListeners() {
@@ -54,6 +81,41 @@ const LiveApp = {
         this.elements.scheduleList.addEventListener('click', (e) => this.handleCardClick(e));
         this.elements.ondemandListContainer.addEventListener('click', (e) => this.handleCardClick(e));
         this.elements.tabs.forEach(tab => tab.addEventListener('click', (e) => this.handleTabClick(e.currentTarget)));
+
+        // --- INICIO DE LA NUEVA LÓGICA ---
+        const headerActions = document.querySelector('.header-actions');
+        if (headerActions) {
+            headerActions.addEventListener('click', async (e) => {
+                // Para cerrar sesión
+                if (e.target.closest('#live-logout-btn')) {
+                    await this.supabase.auth.signOut();
+                }
+                // Para abrir el modal de login
+                if (e.target.closest('#login-modal-trigger')) {
+                    document.getElementById('login-modal-overlay')?.classList.add('is-visible');
+                }
+            });
+        }
+
+        // Para cerrar el modal
+        const loginModalOverlay = document.getElementById('login-modal-overlay');
+        const loginModalCloseBtn = document.getElementById('login-modal-close-btn');
+        loginModalCloseBtn?.addEventListener('click', () => loginModalOverlay?.classList.remove('is-visible'));
+        loginModalOverlay?.addEventListener('click', (e) => {
+            if (e.target === loginModalOverlay) loginModalOverlay.classList.remove('is-visible');
+        });
+
+        // Para iniciar sesión con un proveedor
+        loginModalOverlay?.addEventListener('click', async (e) => {
+            const providerBtn = e.target.closest('.login-provider-btn');
+            if (providerBtn && providerBtn.dataset.provider) {
+                await this.supabase.auth.signInWithOAuth({ 
+                    provider: providerBtn.dataset.provider,
+                    options: { redirectTo: `${window.location.origin}/inv/profile.html` }
+                });
+            }
+        });
+        // --- FIN DE LA NUEVA LÓGICA ---
     },
 
     async run() {
