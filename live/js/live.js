@@ -120,8 +120,12 @@ const LiveApp = {
 
     async run() {
         const [{ data: sessions }, { data: videos }] = await Promise.all([
-            // Consulta ultra-estable: solo pide lo necesario para la vista principal.
-            this.supabase.from('sessions').select(`*, organizer: profiles (*)`).neq('is_archived', true).order('status', { ascending: true }).order('scheduled_at', { ascending: false }),
+            // Consulta que ahora pide los perfiles de los participantes
+            this.supabase.from('sessions').select(`
+                *,
+                organizer: profiles (*),
+                participants: event_participants ( profiles (*) )
+            `).neq('is_archived', true).order('status', { ascending: false }).order('scheduled_at', { ascending: false }),
             this.supabase.from('ondemand_videos').select('*').order('created_at', { ascending: false })
         ]);
 
@@ -363,6 +367,15 @@ const LiveApp = {
             return;
         }
 
+        // --- INICIO DEL CAMBIO ---
+        // Generamos dinámicamente los enlaces a redes sociales
+        const socialLinksHTML = `
+            ${user.website_url ? `<a href="${user.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}
+            ${user.x_url ? `<a href="${user.x_url}" target="_blank" title="Perfil de X"><i class="fab fa-twitter"></i></a>` : ''}
+            ${user.linkedin_url ? `<a href="${user.linkedin_url}" target="_blank" title="Perfil de LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}
+        `;
+        // --- FIN DEL CAMBIO ---
+
         const modalHTML = `
             <div id="investigator-modal" class="investigator-modal-overlay">
                 <div class="investigator-modal">
@@ -373,11 +386,13 @@ const LiveApp = {
                         <img src="${user.avatar_url}" alt="${user.display_name}" class="avatar">
                         <h3>${user.display_name}</h3>
                         <p><strong>ORCID:</strong> ${user.orcid || 'No disponible'}</p>
+                        <div class="profile-card__socials">${socialLinksHTML}</div>
+                        <p>${user.bio || ''}</p>
                         <div class="project-info">
                             <h4>Participa en el proyecto:</h4>
                             <p>${session.project_title || 'N/A'}</p>
                         </div>
-                        </main>
+                    </main>
                 </div>
             </div>`;
         
@@ -430,6 +445,16 @@ const LiveApp = {
 
         if (item.type === 'EVENT') {
             const session = item;
+
+             // --- INICIO DEL CAMBIO ---
+            // Creamos el título del chat con el indicador si es EN VIVO
+            const chatTitle = `
+                <h4>
+                    <i class="fas fa-comments"></i> Chat 
+                    ${session.status === 'EN VIVO' ? '<span class="card-live-indicator">EN VIVO</span>' : ''}
+                </h4>`;
+            // --- FIN DEL CAMBIO ---
+
             const eventDate = new Date(session.scheduled_at);
 
             if (session.status === 'EN VIVO') {
