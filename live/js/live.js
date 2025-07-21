@@ -125,7 +125,7 @@ const LiveApp = {
                 *,
                 organizer: profiles (*),
                 participants: event_participants ( profiles (*) )
-            `).neq('is_archived', true).order('status', { ascending: false }).order('scheduled_at', { ascending: false }),
+            `).neq('is_archived', true).order('status', { ascending: true }).order('scheduled_at', { ascending: false }),
             this.supabase.from('ondemand_videos').select('*').order('created_at', { ascending: false })
         ]);
 
@@ -367,14 +367,19 @@ const LiveApp = {
             return;
         }
 
-        // --- INICIO DEL CAMBIO ---
-        // Generamos dinámicamente los enlaces a redes sociales
+        // --- INICIO DE LA CORRECCIÓN ---
+        // Generamos dinámicamente TODOS los enlaces a redes sociales
         const socialLinksHTML = `
             ${user.website_url ? `<a href="${user.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}
+            ${user.youtube_url ? `<a href="${user.youtube_url}" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>` : ''}
+            ${user.substack_url ? `<a href="${user.substack_url}" target="_blank" title="Substack"><i class="fas fa-newspaper"></i></a>` : ''}
             ${user.x_url ? `<a href="${user.x_url}" target="_blank" title="Perfil de X"><i class="fab fa-twitter"></i></a>` : ''}
             ${user.linkedin_url ? `<a href="${user.linkedin_url}" target="_blank" title="Perfil de LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}
+            ${user.instagram_url ? `<a href="${user.instagram_url}" target="_blank" title="Perfil de Instagram"><i class="fab fa-instagram"></i></a>` : ''}
+            ${user.facebook_url ? `<a href="${user.facebook_url}" target="_blank" title="Perfil de Facebook"><i class="fab fa-facebook-f"></i></a>` : ''}
+            ${user.tiktok_url ? `<a href="${user.tiktok_url}" target="_blank" title="Perfil de TikTok"><i class="fab fa-tiktok"></i></a>` : ''}
         `;
-        // --- FIN DEL CAMBIO ---
+        // --- FIN DE LA CORRECCIÓN ---
 
         const modalHTML = `
             <div id="investigator-modal" class="investigator-modal-overlay">
@@ -387,7 +392,7 @@ const LiveApp = {
                         <h3>${user.display_name}</h3>
                         <p><strong>ORCID:</strong> ${user.orcid || 'No disponible'}</p>
                         <div class="profile-card__socials">${socialLinksHTML}</div>
-                        <p>${user.bio || ''}</p>
+                        <p class="investigator-bio">${user.bio || ''}</p>
                         <div class="project-info">
                             <h4>Participa en el proyecto:</h4>
                             <p>${session.project_title || 'N/A'}</p>
@@ -467,10 +472,12 @@ const LiveApp = {
                     const channel = session.platform_id || 'epistecnologia';
                     player.innerHTML = `<iframe src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=true" allowfullscreen></iframe>`;
                 }
-                chat.innerHTML = `<h4><i class="fas fa-comments"></i> Chat</h4><div id="chat-container"><iframe src="https://www.twitch.tv/embed/${session.platform_id || 'epistecnologia'}/chat?parent=${window.location.hostname}&darkpopout"></iframe></div>`;
+                // Se usa la variable chatTitle para incluir el indicador
+                chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.twitch.tv/embed/${session.platform_id || 'epistecnologia'}/chat?parent=${window.location.hostname}&darkpopout"></iframe></div>`;
             } else {
                 player.innerHTML = `<img src="${session.thumbnail_url}" style="width:100%; height:100%; object-fit:cover;">`;
-                chat.innerHTML = `<h4><i class="fas fa-comments"></i> Chat</h4><p>El chat aparecerá cuando el evento inicie.</p>`;
+                // Se usa la variable chatTitle también aquí
+                chat.innerHTML = `${chatTitle}<p>El chat aparecerá cuando el evento inicie.</p>`;
             }
             
             const organizer = session.organizer;

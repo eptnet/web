@@ -527,3 +527,24 @@ body { background-color: var(--color-background); color: var(--color-primary); f
 .login-provider-btn:hover {
     background-color: var(--color-surface-light);
 }
+
+/* --- Estilos Mejorados para Modal de Investigador --- */
+.profile-card__socials {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    font-size: 1.5rem;
+    margin: 1.5rem 0;
+}
+.profile-card__socials a {
+    color: var(--color-secondary);
+    transition: color 0.2s ease;
+}
+.profile-card__socials a:hover {
+    color: var(--color-primary);
+}
+.investigator-bio {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--color-secondary);
+}
