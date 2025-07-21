@@ -191,6 +191,11 @@ export const Studio = {
                     <button class="btn-primary" data-action="open-session" data-session='${sessionData}'>
                         <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Sala
                     </button>
+
+                    <a href="${session.viewer_url}" target="_blank" class="btn-secondary" title="Ver como espectador">
+                        <i class="fa-solid fa-eye"></i>
+                    </a>
+
                     <button class="btn-secondary" data-action="copy-guest-link" data-url="${session.guest_url}">
                         <i class="fas fa-copy"></i> Copiar Link Invitado
                     </button>
@@ -491,39 +496,28 @@ export const Studio = {
 
             sessionData.director_url = `${vdoDomain}/mixer?${directorParams.toString()}&meshcast`;
             
-            // --- CAMBIO: GENERAMOS Y AÑADIMOS LA NUEVA URL DE GRABACIÓN LOCAL ---
             const recordingParams = new URLSearchParams({
-                scene: '0',
-                layout: '',
-                remote: '',
-                clean: '',
-                chroma: '000',
-                ssar: 'landscape',
-                nosettings: '',
-                prefercurrenttab: '',
-                selfbrowsersurface: 'include',
-                displaysurface: 'browser',
-                np: '',
-                nopush: '',
-                publish: '',
-                record: '',
-                screenshareaspectratio: '1.7777777777777777',
-                locked: '1.7777777777777777',
-                room: roomName
+                scene: '0', layout: '', remote: '', clean: '', chroma: '000', ssar: 'landscape',
+                nosettings: '', prefercurrenttab: '', selfbrowsersurface: 'include',
+                displaysurface: 'browser', np: '', nopush: '', publish: '', record: '',
+                screenshareaspectratio: '1.7777777777777777', locked: '1.7777777777777777', room: roomName
             });
-            sessionData.recording_source_url = `${vdoDomain}/?scene=0&layout&remote&clean&chroma=000&ssar=landscape&nosettings&prefercurrenttab&selfbrowsersurface=include&displaysurface=browser&np&nopush&publish&record&screenshareaspectratio=1.7777777777777777&locked=1.7777777777777777&room=${roomName}`;
-            // --- FIN DEL CAMBIO ---
-
-            // El resto de las URLs se mantienen igual
+            sessionData.recording_source_url = `${vdoDomain}/?${recordingParams.toString()}`;
+            
             let guestParams = new URLSearchParams({ room: roomName });
-            let viewerParams = new URLSearchParams({ room: roomName, scene: '0', showlabels: '0' });
+            let viewerParams = new URLSearchParams({ scene: '0', showlabels: '0', room: roomName });
+            
+            // --- INICIO DE LA CORRECCIÓN ---
+            // Reemplazamos 'EPTLive' con la variable `roomName` para crear una sala única
             if (formData.get('guestCount') > 4) {
-                directorParams.set('whepshare=https://cae1.meshcast.io/whep/EPTLive', '1');
-                guestParams.set('whepshare=https://cae1.meshcast.io/whep/EPTLive', '1');
-                viewerParams.set('meshcast', '1');
+                const meshcastUrl = `https://cae1.meshcast.io/whep/${roomName}`;
+                directorParams.set('whepshare', meshcastUrl);
+                guestParams.set('whepshare', meshcastUrl);
+                viewerParams.set('meshcast', '1'); // meshcast=1 es el parámetro correcto
             }
             sessionData.guest_url = `${vdoDomain}/?${guestParams.toString()}`;
-            sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}&layout&whepshare=https://use1.meshcast.io/whep/EPTLive&cleanoutput`;
+            sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}&layout&whepshare=https://use1.meshcast.io/whep/${roomName}&cleanoutput`;
+            // --- FIN DE LA CORRECCIÓN ---
         }
 
         const { data: savedSession, error } = session
@@ -536,14 +530,11 @@ export const Studio = {
             return;
         }
 
-        // El resto de la lógica de participantes no cambia...
         await App.supabase.from('event_participants').delete().eq('session_id', savedSession.id);
         if (this.participants && this.participants.length > 0) {
             const participantsData = this.participants.map(p => ({ session_id: savedSession.id, user_id: p.id }));
             const { error: participantsError } = await App.supabase.from('event_participants').insert(participantsData);
-            if (participantsError) {
-                console.error('Error al guardar participantes:', participantsError);
-            }
+            if (participantsError) console.error('Error al guardar participantes:', participantsError);
         }
         
         alert(`¡Sesión ${session ? 'actualizada' : 'agendada'} con éxito!`);
