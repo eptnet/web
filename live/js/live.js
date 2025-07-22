@@ -413,9 +413,15 @@ const LiveApp = {
         // --- INICIO DE LA CORRECCIÓN ---
         // Generamos dinámicamente TODOS los enlaces a redes sociales
         const socialLinksHTML = `
+            ${user.substack_url ? `<a href="${user.substack_url}" target="_blank" title="Substack"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="Substack--Streamline-Simple-Icons" height="24" width="24">
+                <desc>
+                    Substack Streamline Icon: https://streamlinehq.com
+                </desc>
+                <title>Substack</title>
+                <path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z" fill="#e65c17" stroke-width="1"></path>
+                </svg></a>` : ''}
             ${user.website_url ? `<a href="${user.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}
             ${user.youtube_url ? `<a href="${user.youtube_url}" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>` : ''}
-            ${user.substack_url ? `<a href="${user.substack_url}" target="_blank" title="Substack"><i class="fas fa-newspaper"></i></a>` : ''}
             ${user.x_url ? `<a href="${user.x_url}" target="_blank" title="Perfil de X"><i class="fab fa-twitter"></i></a>` : ''}
             ${user.linkedin_url ? `<a href="${user.linkedin_url}" target="_blank" title="Perfil de LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}
             ${user.instagram_url ? `<a href="${user.instagram_url}" target="_blank" title="Perfil de Instagram"><i class="fab fa-instagram"></i></a>` : ''}

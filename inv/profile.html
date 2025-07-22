@@ -35,27 +35,20 @@
             </aside>
 
             <main class="main-content">
-                <div class="bento-box">
-                    <h3><i class="fa-brands fa-orcid"></i> Identidad Académica</h3>
-                    <div id="orcid-section">
-                        <p>Valida tu perfil conectando tu cuenta de ORCID.</p>
-                        <button id="connect-orcid-btn" class="btn btn-orcid"><i class="fa-brands fa-orcid"></i> Conectar con ORCID</button>
+                <div class="main-column">
+                    <div class="bento-box">
+                        <h3><i class="fa-solid fa-user-pen"></i> Perfil Público</h3>
+                        <form id="profile-form">
+                            <div class="form-group"><label for="display-name">Nombre a Mostrar</label><input type="text" id="display-name" required></div>
+                            <div class="form-group"><label for="bio">Biografía Corta (250 caracteres)</label><textarea id="bio" rows="3" maxlength="250"></textarea></div>
+                            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Guardar Perfil</button>
+                            <p id="form-message" class="form-message"></p>
+                        </form>
                     </div>
-                </div>
 
-                <div class="bento-box">
-                    <h3><i class="fa-solid fa-user-pen"></i> Perfil Público</h3>
-                    <form id="profile-form">
-                        <div class="form-group"><label for="display-name">Nombre a Mostrar</label><input type="text" id="display-name" required></div>
-                        <div class="form-group"><label for="bio">Biografía Corta (250 caracteres)</label><textarea id="bio" rows="3" maxlength="250"></textarea></div>
-                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Guardar Perfil</button>
-                        <p id="form-message" class="form-message"></p>
-                    </form>
-                </div>
-
-                <div class="bento-box">
-                    <h3><i class="fa-solid fa-share-nodes"></i> Plataformas y Redes</h3>
-                    <form id="platforms-form">
+                    <div class="bento-box">
+                        <h3><i class="fa-solid fa-share-nodes"></i> Plataformas y Redes</h3>
+                        <form id="platforms-form">
                         <h4>Plataformas Principales</h4>
                         <div class="form-group">
                             <label for="youtube-url">Canal de YouTube</label>
@@ -93,13 +86,24 @@
                         </div>
                         <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Guardar Plataformas</button>
                     </form>
+                    </div>
                 </div>
 
-                <div class="bento-box">
-                    <h3><i class="fa-solid fa-book-bookmark"></i> Proyectos (DOI)</h3>
-                    <div id="projects-section">
-                        <p class="form-hint">Una vez conectado a ORCID, podrás sincronizar tus trabajos.</p>
-                        <button id="sync-orcid-works-btn" class="btn btn-secondary" disabled><i class="fa-solid fa-sync"></i> Sincronizar desde ORCID</button>
+                <div class="side-column">
+                    <div class="bento-box">
+                        <h3><i class="fa-brands fa-orcid"></i> Identidad Académica</h3>
+                        <div id="orcid-section">
+                            </div>
+                    </div>
+
+                    <div class="bento-box">
+                        <h3><i class="fa-solid fa-book-bookmark"></i> Proyectos (DOI)</h3>
+                        <div id="projects-section">
+                            <p class="form-hint">Una vez conectado a ORCID, podrás sincronizar tus trabajos.</p>
+                            <button id="sync-orcid-works-btn" class="btn btn-secondary" disabled><i class="fa-solid fa-sync"></i> Sincronizar desde ORCID</button>
+                            
+                            <div id="projects-list" class="projects-list"></div>
+                            </div>
                     </div>
                 </div>
             </main>

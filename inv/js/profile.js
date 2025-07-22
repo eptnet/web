@@ -109,11 +109,22 @@ const ProfileApp = {
     async renderProfileData() {
         if (!this.user) return;
         this.renderTopBar();
-        const { data: profile, error } = await this.supabase.from('profiles').select('*').eq('id', this.user.id).single();
-        if (error && error.code !== 'PGRST116') return console.error('Error cargando perfil:', error);
+
+        // 1. Hacemos una consulta simple y segura solo para los datos del perfil
+        const { data: profile, error } = await this.supabase
+            .from('profiles')
+            .select('*') // Quitamos el join complejo a 'projects' para asegurar que esto funcione
+            .eq('id', this.user.id)
+            .single();
+
+        if (error && error.code !== 'PGRST116') {
+            console.error('Error cargando el perfil principal:', error);
+            alert("No se pudo cargar tu perfil.");
+            return;
+        }
 
         if (profile) {
-            // Poblar Tarjeta de Perfil
+            // 2. Poblamos toda la información del perfil como antes
             document.getElementById('profile-card-avatar').src = profile.avatar_url || this.user.user_metadata?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
             document.getElementById('profile-card-name').textContent = profile.display_name || 'Completa tu perfil';
             document.getElementById('profile-card-orcid').textContent = profile.orcid ? profile.orcid.replace('https://orcid.org/', '') : 'ORCID no conectado';
@@ -122,8 +133,15 @@ const ProfileApp = {
             const socialsContainer = document.getElementById('profile-card-socials');
             if(socialsContainer) {
                 socialsContainer.innerHTML = `
+                    ${profile.substack_url ? `<a href="${profile.substack_url}" target="_blank" title="Substack"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="Substack--Streamline-Simple-Icons" height="24" width="24">
+                        <desc>
+                            Substack Streamline Icon: https://streamlinehq.com
+                        </desc>
+                        <title>Substack</title>
+                        <path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z" fill="#e65c17" stroke-width="1"></path>
+                        </svg></a>` : ''}
                     ${profile.website_url ? `<a href="${profile.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}
-                    ${profile.x_url ? `<a href="${profile.x_url}" target="_blank" title="Perfil de X"><i class="fab fa-twitter"></i></a>` : ''}
+                    ${profile.x_url ? `<a href="${profile.x_url}" target="_blank" title="Perfil de X"><i class="fa-brands fa-x-twitter"></i></a>` : ''}
                     ${profile.linkedin_url ? `<a href="${profile.linkedin_url}" target="_blank" title="Perfil de LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}
                     ${profile.instagram_url ? `<a href="${profile.instagram_url}" target="_blank" title="Perfil de Instagram"><i class="fab fa-instagram"></i></a>` : ''}
                     ${profile.youtube_url ? `<a href="${profile.youtube_url}" target="_blank" title="Canal de YouTube"><i class="fab fa-youtube"></i></a>` : ''}`;
@@ -140,8 +158,21 @@ const ProfileApp = {
             document.getElementById('instagram-url').value = profile.instagram_url || '';
             document.getElementById('facebook-url').value = profile.facebook_url || '';
             document.getElementById('tiktok-url').value = profile.tiktok_url || '';
+            
+            // 3. Ahora, hacemos una SEGUNDA consulta solo para los proyectos
+            const { data: projects, error: projectsError } = await this.supabase
+                .from('projects')
+                .select('*')
+                .eq('user_id', this.user.id);
+            
+            if (projectsError) {
+                console.error("Error cargando los proyectos:", projectsError);
+            } else {
+                this.renderWorks(projects || []); // Mostramos los proyectos
+            }
         }
         
+        // 4. La lógica de ORCID se mantiene igual
         const orcidSection = document.getElementById('orcid-section');
         if (orcidSection) {
             if (profile?.orcid) {
@@ -162,20 +193,42 @@ const ProfileApp = {
         syncButton.disabled = true;
 
         try {
-            // Obtenemos el perfil para sacar el ORCID iD
             const { data: profile } = await this.supabase.from('profiles').select('orcid').eq('id', this.user.id).single();
             if (!profile?.orcid) throw new Error("No hay un ORCID iD conectado.");
 
             const orcidId = profile.orcid.replace('https://orcid.org/', '');
 
-            // Llamamos a nuestra nueva Edge Function
             const { data, error } = await this.supabase.functions.invoke('get-orcid-works', {
                 body: { orcid_id: orcidId },
             });
 
             if (error) throw error;
             
-            this.renderWorks(data.works); // Mostramos los resultados
+            // --- INICIO DE LA LÓGICA PARA GUARDAR ---
+            if (data.works && data.works.length > 0) {
+                // Preparamos los datos para guardarlos en la tabla 'projects'
+                const projectsToSave = data.works.map(work => ({
+                    user_id: this.user.id,
+                    doi: work.doi,
+                    title: work.title,
+                    // Asegúrate de que tu tabla 'projects' tenga estas columnas
+                    authors: work.authors || [], 
+                    publication_year: work.year || null
+                }));
+
+                // Usamos upsert para insertar nuevos y actualizar existentes (basado en el DOI)
+                const { error: saveError } = await this.supabase
+                    .from('projects')
+                    .upsert(projectsToSave, { onConflict: 'doi, user_id' });
+
+                if (saveError) throw saveError;
+            }
+            
+            alert(`Sincronización completada. Se encontraron ${data.works.length} publicaciones.`);
+            
+            // Refrescamos toda la información del perfil para mostrar los proyectos guardados
+            this.renderProfileData();
+            // --- FIN DE LA LÓGICA PARA GUARDAR ---
 
         } catch (error) {
             alert("Error al sincronizar las publicaciones: " + error.message);
