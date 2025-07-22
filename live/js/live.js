@@ -126,7 +126,7 @@ const LiveApp = {
                 organizer: profiles (*),
                 participants: event_participants ( profiles (*) )
             `).neq('is_archived', true)
-                .order('status', { ascending: false })
+                .order('status', { ascending: true })
                 .order('scheduled_at', { ascending: false }),
             this.supabase.from('ondemand_videos').select('*').order('created_at', { ascending: false })
         ]);
@@ -369,14 +369,25 @@ const LiveApp = {
     },
 
     closeLiveRoom() {
-        if (this.countdownInterval) {
-            clearInterval(this.countdownInterval);
-            this.countdownInterval = null;
-        }
         const modalOverlay = document.getElementById('live-room-modal');
         if (modalOverlay) {
+            // --- INICIO DE LA CORRECCIÓN ---
+            // Buscamos el reproductor dentro del modal y lo vaciamos para detener el video.
+            const playerContainer = modalOverlay.querySelector('#live-room-player');
+            if (playerContainer) {
+                playerContainer.innerHTML = '';
+            }
+            // --- FIN DE LA CORRECCIÓN ---
+
+            if (this.countdownInterval) {
+                clearInterval(this.countdownInterval);
+                this.countdownInterval = null;
+            }
+            
             modalOverlay.classList.remove('is-visible');
-            setTimeout(() => { this.elements.modalContainer.innerHTML = ''; }, 300);
+            setTimeout(() => {
+                this.elements.modalContainer.innerHTML = '';
+            }, 300);
         }
     },
 
