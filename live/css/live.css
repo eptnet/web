@@ -596,3 +596,40 @@ body { background-color: var(--color-background); color: var(--color-primary); f
     transform: translateY(-3px);
     box-shadow: 0 6px 20px rgba(0,0,0,0.3);
 }
+
+/* --- Estilo para Botón de Substack --- */
+.btn-substack {
+    background-color: #FF6719; /* Color oficial de Substack */
+    color: white;
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+.btn-substack:hover {
+    background-color: #e65c17; /* Un tono un poco más oscuro */
+}
+
+#live-room-primary-action {
+    margin-top: -0.5rem; /* Reduce el espacio si el contador no está */
+    margin-bottom: 1.5rem;
+}
+
+/* --- Estilos para Botones de Acción en el Modal --- */
+.action-buttons-container .btn-primary,
+.action-buttons-container .btn-secondary {
+    background-color: #a70101;
+    color: white;
+    text-decoration: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.action-buttons-container .btn-primary:hover,
+.action-buttons-container .btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}

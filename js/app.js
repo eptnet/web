@@ -28,8 +28,8 @@ document.addEventListener('mainReady', () => {
                             data-id="static-welcome" 
                             style="cursor: default;">
                             <h1>Investiga 
-                            </br>Divulga 
-                            </br>Entiende el mundo</h1>
+                            </br>Divulga
+                            </br>Comprende</h1>
                             </br>
                             <p>Te damos la bienvenida a <strong>Epistecnología</strong>, una <strong>plataforma abierta de divulgación científica y cultural</strong> que pone la <strong>tecnología al servicio del conocimiento con Sabiduría</strong>. Aquí, investigadores, docentes, divulgadores y curiosos del saber encuentran un espacio para <strong>crear, compartir y explorar contenidos académicos</strong>, desde artículos y podcasts hasta <strong>videos, transmisiones en vivo y publicaciones indexadas</strong>.</p>
                             <a href="#" class="cta-button" id="welcome-cta-btn">Empezar a Crear</a>
