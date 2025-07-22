@@ -244,6 +244,9 @@ body { background-color: var(--color-background); color: var(--color-primary); f
 
 #chat-container {
     flex-grow: 1; /* El contenedor del iframe ocupa el espacio de #chat-box */
+    min-height: 0; /* Necesario para que flexbox calcule bien la altura */
+    border-radius: var(--border-radius);
+    overflow: hidden; /* Oculta cualquier desbordamiento del iframe */
 }
 #chat-container iframe {
     width: 100%;

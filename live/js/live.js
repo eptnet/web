@@ -158,7 +158,7 @@ const LiveApp = {
             const id = isEvent ? data.id : `video-${data.id}`;
             const thumbnailUrl = isEvent ? data.thumbnail_url : `https://i.ytimg.com/vi/${data.youtube_video_id}/hqdefault.jpg`;
             const isLive = isEvent && data.status === 'EN VIVO';
-            const autoplay = isLive ? 'autoplay=true&muted=true' : 'autoplay=0';
+            const autoplay = isLive ? 'autoplay=1&muted=1' : 'autoplay=0';
             let playerUrl = '';
             let infoHTML = '';
 
@@ -231,6 +231,22 @@ const LiveApp = {
                 playerContainer.innerHTML = `<img src="${slide.dataset.thumbnailUrl}" loading="lazy">`;
             }
         });
+    },
+
+    stopCarouselPlayer() {
+        const track = this.elements.carouselSection.querySelector('.carousel-track');
+        if (!track) return;
+        
+        const activeSlide = track.querySelector('.carousel-slide.active');
+        if (activeSlide) {
+            const playerContainer = activeSlide.querySelector('.slide-player');
+            const iframe = playerContainer.querySelector('iframe');
+            
+            // Si hay un iframe reproduciéndose, lo reemplazamos por la miniatura
+            if (iframe) {
+                playerContainer.innerHTML = `<img src="${activeSlide.dataset.thumbnailUrl}" loading="lazy">`;
+            }
+        }
     },
 
     handleTabClick(clickedTab) {
