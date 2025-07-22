@@ -13,6 +13,26 @@ const ProfileApp = {
 
         // Al cargar la página, revisamos si venimos de la redirección de ORCID
         this.checkForOrcidCode();
+
+        // --- INICIO DE LA LÓGICA PARA IMGBB ---
+        window.addEventListener('message', (event) => {
+            // Verificamos que el mensaje venga del plugin de imgbb
+            if (event.origin !== 'https://imgbb.com') return;
+
+            if (event.data && typeof event.data === 'string') {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.success && data.image && data.image.url) {
+                        const newAvatarUrl = data.image.url;
+                        console.log('Nueva URL de avatar recibida:', newAvatarUrl);
+                        this.updateAvatar(newAvatarUrl);
+                    }
+                } catch (e) {
+                    console.error('Error al procesar el mensaje de imgbb:', e);
+                }
+            }
+        });
+        // --- FIN DE LA LÓGICA PARA IMGBB ---
     },
 
     async handleUserSession() {
@@ -23,7 +43,7 @@ const ProfileApp = {
     },
 
     addEventListeners() {
-        document.body.addEventListener('click', async (e) => { // <-- Añadimos async aquí
+        document.body.addEventListener('click', async (e) => {
             const target = e.target.closest('button');
             if (!target) return;
 
@@ -31,10 +51,8 @@ const ProfileApp = {
             if (action === 'connect-orcid-btn') this.handleOrcidConnect();
             else if (action === 'disconnect-orcid-btn') this.handleOrcidDisconnect();
             else if (action === 'logout-btn-header') {
-                // --- INICIO DE LA CORRECCIÓN ---
                 await this.supabase.auth.signOut();
-                window.location.href = '/'; // Redirige al inicio después de salir
-                // --- FIN DE LA CORRECCIÓN ---
+                window.location.href = '/';
             }
             else if (action === 'theme-switcher') this.toggleTheme();
             else if (action === 'sync-orcid-works-btn') this.handleSyncWorks();
@@ -42,6 +60,9 @@ const ProfileApp = {
 
         document.getElementById('profile-form')?.addEventListener('submit', (e) => this.handleSave(e, 'profile'));
         document.getElementById('platforms-form')?.addEventListener('submit', (e) => this.handleSave(e, 'platforms'));
+        
+        // --- LÍNEA AÑADIDA ---
+        document.getElementById('avatar-update-form')?.addEventListener('submit', (e) => this.handleUpdateAvatar(e));
     },
     
     // --- INICIO DE LA CORRECCIÓN: Lógica Manual de ORCID ---
@@ -344,6 +365,29 @@ const ProfileApp = {
         saveButton.disabled = false;
         
         if (!error) this.renderProfileData();
+    },
+
+    async handleUpdateAvatar(e) {
+        e.preventDefault();
+        const newUrl = document.getElementById('avatar-url').value.trim();
+        
+        if (!newUrl) {
+            alert("Por favor, pega una URL.");
+            return;
+        }
+
+        const { error } = await this.supabase
+            .from('profiles')
+            .update({ avatar_url: newUrl })
+            .eq('id', this.user.id);
+        
+        if (error) {
+            alert('Hubo un error al actualizar tu avatar.');
+            console.error(error);
+        } else {
+            alert('¡Avatar actualizado con éxito!');
+            this.renderProfileData(); // Refrescamos los datos para que se vea la nueva imagen
+        }
     },
 };
 
