@@ -548,3 +548,48 @@ body { background-color: var(--color-background); color: var(--color-primary); f
     line-height: 1.6;
     color: var(--color-secondary);
 }
+
+/* --- Estilo Mejorado para Contador en Modal --- */
+.live-room-countdown {
+    background-color: var(--color-surface);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    text-align: center;
+    border: 1px solid var(--border-color);
+    margin-bottom: 1.5rem; /* Espacio extra debajo del contador */
+}
+
+#countdown-timer {
+    font-size: 2.2rem; /* Hacemos el texto del reloj más grande */
+    font-weight: 700;
+    color: var(--color-primary);
+    font-family: "SF Mono", "Consolas", "Menlo", monospace; /* Estilo de reloj digital */
+    letter-spacing: 2px;
+    margin-bottom: 1rem; /* Espacio entre el reloj y el botón */
+}
+
+#countdown-timer strong {
+    color: var(--color-accent);
+}
+
+/* Estilo para el botón dentro del contador */
+.live-room-countdown .btn-primary {
+    margin-top: 1rem;
+    padding: 0.8rem 2rem;
+    font-size: 1rem;
+    font-weight: bold;
+    background: var(--color-accent);
+    color: white;           /* <-- CORRECCIÓN: asegura que el texto sea blanco */
+    border: none;
+    border-radius: 8px;     /* <-- CORRECCIÓN: esquinas redondeadas */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    text-decoration: none;
+    display: inline-block;
+    width: auto;
+}
+
+.live-room-countdown .btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}

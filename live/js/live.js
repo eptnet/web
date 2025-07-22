@@ -125,7 +125,9 @@ const LiveApp = {
                 *,
                 organizer: profiles (*),
                 participants: event_participants ( profiles (*) )
-            `).neq('is_archived', true).order('status', { ascending: true }).order('scheduled_at', { ascending: false }),
+            `).neq('is_archived', true)
+                .order('status', { ascending: false })
+                .order('scheduled_at', { ascending: false }),
             this.supabase.from('ondemand_videos').select('*').order('created_at', { ascending: false })
         ]);
 
@@ -162,12 +164,23 @@ const LiveApp = {
 
             if (isEvent) {
                 const channel = data.platform_id || 'epistecnologia';
-                playerUrl = (data.platform === 'vdo_ninja') ? data.viewer_url : `https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&${autoplay}`;
+                
+                // --- INICIO DE LA CORRECCIÓN ---
+                if (data.platform === 'vdo_ninja') {
+                    playerUrl = data.viewer_url;
+                } else if (data.platform === 'youtube') {
+                    playerUrl = `https://www.youtube.com/embed/${data.platform_id}?enablejsapi=1&${autoplay}`;
+                } else { // Twitch por defecto
+                    playerUrl = `https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&${autoplay}`;
+                }
+                // --- FIN DE LA CORRECCIÓN ---
+
                 infoHTML = isLive ? `
                     <h3>${data.session_title}</h3>
                     <p>${data.organizer.display_name}</p>
                     <button class="blinking-live-btn">EN VIVO: Ir a la sala</button>
                 ` : `<h3>${data.session_title}</h3><p>${data.organizer.display_name}</p>`;
+
             } else {
                 playerUrl = `https://www.youtube.com/embed/${data.youtube_video_id}?enablejsapi=1&${autoplay}`;
                 infoHTML = `<h3>${data.title}</h3>`;
@@ -175,12 +188,8 @@ const LiveApp = {
 
             return `
                 <div class="carousel-slide" data-id="${id}" data-player-url="${playerUrl}" data-thumbnail-url="${thumbnailUrl}">
-                    <div class="slide-player">
-                        <img src="${thumbnailUrl}" loading="lazy" alt="Miniatura del video">
-                    </div>
-                    <div class="slide-info-box">
-                        ${infoHTML}
-                    </div>
+                    <div class="slide-player"><img src="${thumbnailUrl}" loading="lazy"></div>
+                    <div class="slide-info-box">${infoHTML}</div>
                 </div>`;
         }).join('');
         
@@ -241,11 +250,10 @@ const LiveApp = {
             const day = eventDate.toLocaleDateString('es-ES', { day: '2-digit' });
             const month = eventDate.toLocaleDateString('es-ES', { month: 'short' });
             const isLive = s.status === 'EN VIVO';
-
-            // Genera el indicador de EN VIVO solo si corresponde
-            const liveIndicatorHTML = isLive 
-                ? `<div class="card-live-indicator">EN VIVO</div>` 
-                : '';
+            const liveIndicatorHTML = isLive ? `<div class="card-live-indicator">EN VIVO</div>` : '';
+            
+            // Si no hay thumbnail_url, usamos una imagen por defecto
+            const thumbnailUrl = s.thumbnail_url || 'https://i.ibb.co/vx57ZyXs/Leonardo-Kino-XL-Diseo-creativo-moderno-y-minimalista-de-una-e-0.jpg';
 
             return `
             <div class="event-card" data-id="${s.id}">
@@ -319,18 +327,6 @@ const LiveApp = {
         // --- FIN DEL NUEVO CÓDIGO ROBUSTO ---
     },
 
-    closeLiveRoom() {
-        if (this.countdownInterval) {
-            clearInterval(this.countdownInterval);
-            this.countdownInterval = null;
-        }
-        const modalOverlay = document.getElementById('live-room-modal');
-        if (modalOverlay) {
-            modalOverlay.classList.remove('is-visible');
-            setTimeout(() => { this.elements.modalContainer.innerHTML = ''; }, 300);
-        }
-    },
-
     startCountdown(targetDate) {
         const timerElement = document.getElementById('countdown-timer');
         if (!timerElement) return;
@@ -354,6 +350,18 @@ const LiveApp = {
 
             timerElement.innerHTML = `Comienza en: ${days}d ${hours}h ${minutes}m ${seconds}s`;
         }, 1000);
+    },
+
+    closeLiveRoom() {
+        if (this.countdownInterval) {
+            clearInterval(this.countdownInterval);
+            this.countdownInterval = null;
+        }
+        const modalOverlay = document.getElementById('live-room-modal');
+        if (modalOverlay) {
+            modalOverlay.classList.remove('is-visible');
+            setTimeout(() => { this.elements.modalContainer.innerHTML = ''; }, 300);
+        }
     },
 
     openInvestigatorModal(userId, session) {
@@ -420,15 +428,10 @@ const LiveApp = {
         container.className = 'live-room-content';
         container.innerHTML = `
             <main class="live-room-main">
-                <div id="live-room-player" class="live-room-player">
-                    </div>
-                <div class="live-room-scrollable-content">
-                    <div id="live-room-investigators-strip" class="live-room-investigators-strip">
-                    </div>
-                    </br>
-                    <div id="live-room-info" class="live-room-info">
-                    </div>
-                </div>
+                <div id="live-room-player" class="live-room-player"></div>
+                <div id="live-room-countdown" class="live-room-countdown" style="display: none;"></div>
+                <div id="live-room-investigators-strip" class="live-room-investigators-strip"></div>
+                <div id="live-room-info" class="live-room-info"></div>
             </main>
             <aside class="live-room-side">
                 <div id="chat-box"></div>
@@ -437,95 +440,102 @@ const LiveApp = {
     },
 
     populateLiveRoom(item) {
-        console.log("Poblando modal con el siguiente item:", item); // Línea de depuración
-
+        // 1. Obtenemos las referencias a los contenedores del modal
         const player = document.getElementById('live-room-player');
         const info = document.getElementById('live-room-info');
         const chat = document.getElementById('chat-box');
         const investigators = document.getElementById('live-room-investigators-strip');
+        const countdown = document.getElementById('live-room-countdown');
 
-        // Ocultamos estas secciones por defecto, las llenaremos después si hay datos
-        investigators.style.display = 'none';
-        chat.style.display = 'flex';
-
+        // 2. Manejamos si es un Evento o un Video
         if (item.type === 'EVENT') {
             const session = item;
+            const eventDate = new Date(session.scheduled_at);
 
-             // --- INICIO DEL CAMBIO ---
-            // Creamos el título del chat con el indicador si es EN VIVO
+            // 3. Creamos el título del chat (con indicador EN VIVO restaurado)
             const chatTitle = `
                 <h4>
                     <i class="fas fa-comments"></i> Chat 
                     ${session.status === 'EN VIVO' ? '<span class="card-live-indicator">EN VIVO</span>' : ''}
                 </h4>`;
-            // --- FIN DEL CAMBIO ---
 
-            const eventDate = new Date(session.scheduled_at);
-
+            // 4. Lógica del Reproductor y el Chat
             if (session.status === 'EN VIVO') {
-                // --- LÓGICA CORREGIDA PARA SELECCIONAR EL REPRODUCTOR ---
+                // --- INICIO DE LA CORRECCIÓN ---
                 if (session.platform === 'vdo_ninja') {
                     player.innerHTML = `<iframe src="${session.viewer_url}" allow="autoplay; fullscreen"></iframe>`;
+                    chat.innerHTML = `${chatTitle}<p>El chat no está disponible para VDO.Ninja.</p>`;
                 } else if (session.platform === 'youtube') {
                     player.innerHTML = `<iframe src="https://www.youtube.com/embed/${session.platform_id}?autoplay=1" allowfullscreen></iframe>`;
+                    chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}"></iframe></div>`;
                 } else { // Twitch por defecto
                     const channel = session.platform_id || 'epistecnologia';
                     player.innerHTML = `<iframe src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=true" allowfullscreen></iframe>`;
+                    chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.twitch.tv/embed/${channel}/chat?parent=${window.location.hostname}&darkpopout"></iframe></div>`;
                 }
-                // Se usa la variable chatTitle para incluir el indicador
-                chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.twitch.tv/embed/${session.platform_id || 'epistecnologia'}/chat?parent=${window.location.hostname}&darkpopout"></iframe></div>`;
+                // --- FIN DE LA CORRECCIÓN ---
             } else {
-                player.innerHTML = `<img src="${session.thumbnail_url}" style="width:100%; height:100%; object-fit:cover;">`;
-                // Se usa la variable chatTitle también aquí
+                player.innerHTML = `<img src="${session.thumbnail_url || 'https://i.ibb.com/s5s2sYy/Default-Image.png'}" style="width:100%; height:100%; object-fit:cover;">`;
                 chat.innerHTML = `${chatTitle}<p>El chat aparecerá cuando el evento inicie.</p>`;
             }
             
+            // 5. Lógica para el Contador (en su propio contenedor)
+            countdown.innerHTML = ''; // Limpiamos el contenedor por si acaso
+            if (session.status === 'PROGRAMADO' && eventDate > new Date()) {
+                countdown.style.display = 'block';
+                countdown.innerHTML = '<div id="countdown-timer"></div>'; // Placeholder para el reloj
+                this.startCountdown(session.scheduled_at);
+
+                if (session.more_info_url) {
+                    const registerButton = `<a href="${session.more_info_url}" target="_blank" rel="noopener noreferrer" class="btn-primary" style="display:block; margin-top: 1rem; text-align:center;">+INFO Y SUBCRÍBETE</a>`;
+                    countdown.insertAdjacentHTML('beforeend', registerButton);
+                }
+            } else {
+                countdown.style.display = 'none';
+            }
+            
+            // 6. Lógica para el bloque de Información (con Fecha y botón de Substack)
             const organizer = session.organizer;
+            const project = organizer?.projects?.find(p => p.title === session.project_title);
             let projectHTML = '';
-            if (organizer?.projects && session.project_title) {
-                 const project = organizer.projects.find(p => p.title === session.project_title);
-                 if (project && project.doi) {
-                    projectHTML = `<p>${project.authors.join(', ')}</p><a href="https://doi.org/${project.doi}" target="_blank" rel="noopener noreferrer" class="btn-secondary">Ver DOI</a>`;
-                 }
+            if (project) {
+                projectHTML = `<p>${project.authors.join(', ')}</p><a href="https://doi.org/${project.doi}" target="_blank" rel="noopener noreferrer" class="btn-secondary">Ver DOI</a>`;
             }
             const dateString = eventDate.toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'short' });
-            const countdownHTML = session.status === 'PROGRAMADO' && eventDate > new Date()
-                ? `<div id="countdown-timer"></div>`
-                : '';
+            
+            let substackButtonHTML = '';
+            if (session.platform === 'substack' && session.more_info_url) {
+                 substackButtonHTML = `<a href="${session.more_info_url}" target="_blank" rel="noopener noreferrer" class="btn-primary" style="display:block; margin-top: 1rem; text-align:center;">Ir a la Publicación</a>`;
+            }
 
             info.innerHTML = `
                 <h3>${session.session_title}</h3>
-                <p>${session.description || ''}</p>
+                <p><strong>Fecha:</strong> ${dateString}</p>
                 <hr>
+                <p>${session.description || ''}</p>
                 <h4>Organizador</h4>
                 <p>${organizer?.display_name || 'N/A'}</p>
                 <h4>Proyecto: ${session.project_title || ''}</h4>
                 ${projectHTML}
-                `;
-
-             // 3. Activa el contador si es necesario
-            if (session.status === 'PROGRAMADO' && eventDate > new Date()) {
-                this.startCountdown(session.scheduled_at);
-            }
+                ${substackButtonHTML}
+            `;
             
+            // 7. Lógica de Investigadores
             const allUsers = [organizer, ...(session.participants?.map(p => p.profiles) || [])].filter(Boolean);
-            if (allUsers.length > 0) {
-                investigators.style.display = 'block';
-                investigators.innerHTML = `<h4>Investigadores</h4><div class="avatar-grid">${allUsers.map(u => u ? `<img src="${u.avatar_url}" title="${u.display_name}" class="avatar" data-user-id="${u.id}">` : '').join('')}</div>`;
-                investigators.addEventListener('click', (e) => {
-                    const avatar = e.target.closest('.avatar[data-user-id]');
-                    if (avatar) this.openInvestigatorModal(avatar.dataset.userId, session);
-                });
-            } else {
-                investigators.style.display = 'none';
-            }
+            investigators.style.display = 'block'; 
+            investigators.innerHTML = allUsers.length > 0 ? `<h4>Investigadores</h4><div class="avatar-grid">${allUsers.map(u => u ? `<img src="${u.avatar_url}" title="${u.display_name}" class="avatar" data-user-id="${u.id}">` : '').join('')}</div>` : '<h4>Investigadores</h4><p>No hay investigadores registrados.</p>';
+            investigators.addEventListener('click', (e) => {
+                const avatar = e.target.closest('.avatar[data-user-id]');
+                if (avatar) this.openInvestigatorModal(avatar.dataset.userId, session);
+            });
         
-        } else {
+        } else { // Si es un VIDEO On-Demand
             const video = item;
             player.innerHTML = `<iframe src="https://www.youtube.com/embed/${video.youtube_video_id}?autoplay=1" allowfullscreen></iframe>`;
             info.innerHTML = `<h3>${video.title}</h3>`;
             investigators.style.display = 'none';
             chat.style.display = 'none';
+            countdown.style.display = 'none';
         }
     },
 
