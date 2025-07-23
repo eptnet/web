@@ -46,7 +46,8 @@ const LiveApp = {
             tabs: document.querySelectorAll('.tab-link'),
             tabContents: document.querySelectorAll('.tab-content'),
             modalContainer: document.getElementById('modal-container'),
-            userIconContainer: document.getElementById('user-icon-container')
+            userIconContainer: document.getElementById('user-icon-container'),
+            searchInput: document.getElementById('search-input')
         };
     },
 
@@ -116,6 +117,13 @@ const LiveApp = {
             }
         });
         // --- FIN DE LA NUEVA LÓGICA ---
+
+        if (this.elements.searchInput) {
+            this.elements.searchInput.addEventListener('input', (e) => {
+                this.filterCards(e.target.value);
+            });
+        }
+
     },
 
     async run() {
@@ -267,6 +275,20 @@ const LiveApp = {
         const card = e.target.closest('[data-id]');
         if (card && card.dataset.id) this.openLiveRoom(card.dataset.id);
     },
+
+    filterCards(searchTerm) {
+        const term = searchTerm.toLowerCase();
+        const cards = document.querySelectorAll('.event-card, .video-card');
+
+        cards.forEach(card => {
+            const cardText = card.textContent.toLowerCase();
+            if (cardText.includes(term)) {
+                card.style.display = 'flex'; // O 'block' si prefieres
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    },
     
     renderSchedule(events) {
         this.elements.scheduleList.innerHTML = events.map(s => {
@@ -275,14 +297,12 @@ const LiveApp = {
             const month = eventDate.toLocaleDateString('es-ES', { month: 'short' });
             const isLive = s.status === 'EN VIVO';
             const liveIndicatorHTML = isLive ? `<div class="card-live-indicator">EN VIVO</div>` : '';
-            
-            // Si no hay thumbnail_url, usamos una imagen por defecto
             const thumbnailUrl = s.thumbnail_url || 'https://i.ibb.co/vx57ZyXs/Leonardo-Kino-XL-Diseo-creativo-moderno-y-minimalista-de-una-e-0.jpg';
+            const backgroundStyle = `background-image: linear-gradient(to top, rgba(0,0,0,0.95) 20%, transparent 80%), url('${thumbnailUrl}')`;
 
             return `
             <div class="event-card" data-id="${s.id}">
-                <div class="card-background" style="background-image: url('${thumbnailUrl}')"></div>
-                
+                <div class="card-background" style="${backgroundStyle}"></div>
                 <div class="card-top-info">
                     <div class="card-date">${day} ${month}</div>
                     ${liveIndicatorHTML}
@@ -410,25 +430,21 @@ const LiveApp = {
             return;
         }
 
-        // --- INICIO DE LA CORRECCIÓN ---
-        // Generamos dinámicamente TODOS los enlaces a redes sociales
         const socialLinksHTML = `
-            ${user.substack_url ? `<a href="${user.substack_url}" target="_blank" title="Substack"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="Substack--Streamline-Simple-Icons" height="24" width="24">
-                <desc>
-                    Substack Streamline Icon: https://streamlinehq.com
-                </desc>
-                <title>Substack</title>
-                <path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z" fill="#e65c17" stroke-width="1"></path>
-                </svg></a>` : ''}
             ${user.website_url ? `<a href="${user.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}
             ${user.youtube_url ? `<a href="${user.youtube_url}" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>` : ''}
+            ${user.substack_url ? `<a href="${user.substack_url}" target="_blank" title="Substack"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w.org/2000/svg" id="Substack--Streamline-Simple-Icons" height="24" width="24"><desc>Substack Streamline Icon: https://streamlinehq.com</desc><title>Substack</title><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z" fill="#e65c17" stroke-width="1"></path></svg></a>` : ''}
             ${user.x_url ? `<a href="${user.x_url}" target="_blank" title="Perfil de X"><i class="fab fa-twitter"></i></a>` : ''}
             ${user.linkedin_url ? `<a href="${user.linkedin_url}" target="_blank" title="Perfil de LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}
             ${user.instagram_url ? `<a href="${user.instagram_url}" target="_blank" title="Perfil de Instagram"><i class="fab fa-instagram"></i></a>` : ''}
             ${user.facebook_url ? `<a href="${user.facebook_url}" target="_blank" title="Perfil de Facebook"><i class="fab fa-facebook-f"></i></a>` : ''}
             ${user.tiktok_url ? `<a href="${user.tiktok_url}" target="_blank" title="Perfil de TikTok"><i class="fab fa-tiktok"></i></a>` : ''}
         `;
-        // --- FIN DE LA CORRECCIÓN ---
+        
+        // --- LÓGICA CORREGIDA PARA EL ENLACE DE ORCID ---
+        const orcidHTML = user.orcid 
+            ? `<a href="${user.orcid}" target="_blank" rel="noopener noreferrer">${user.orcid.replace('https://orcid.org/', '')}</a>` 
+            : 'No disponible';
 
         const modalHTML = `
             <div id="investigator-modal" class="investigator-modal-overlay">
@@ -439,7 +455,7 @@ const LiveApp = {
                     <main class="investigator-modal-content">
                         <img src="${user.avatar_url}" alt="${user.display_name}" class="avatar">
                         <h3>${user.display_name}</h3>
-                        <p><strong>ORCID:</strong> ${user.orcid || 'No disponible'}</p>
+                        <p><strong>ORCID:</strong> ${orcidHTML}</p>
                         <div class="profile-card__socials">${socialLinksHTML}</div>
                         <p class="investigator-bio">${user.bio || ''}</p>
                         <div class="project-info">
@@ -525,13 +541,28 @@ const LiveApp = {
             // Lógica de Información
             const organizer = session.organizer;
             const project = organizer?.projects?.find(p => p.title === session.project_title);
-            let projectHTML = project ? `<p>${project.authors.join(', ')}</p><a href="https://doi.org/${project.doi}" target="_blank" class="btn-secondary">Ver DOI</a>` : '';
+            let projectHTML = project ? `
+                <p>${project.authors.join(', ')}</p>
+                <a href="https://doi.org/${project.doi}" target="_blank" class="btn-secondary">Ver DOI</a>` : '';
 
-            info.innerHTML = `<h3>${session.session_title}</h3><p><strong>Fecha:</strong> ${dateString}</p><p>${session.description || ''}</p><hr><h4>Organizador</h4><p>${organizer?.display_name || 'N/A'}</p><h4>Proyecto: ${session.project_title || ''}</h4>${projectHTML}<div class="action-buttons-container" style="margin-top: 1rem; display:flex; flex-direction:column; gap:1rem;">${actionButtonsHTML}</div>`;
-            
+            info.innerHTML = `
+                <h3>${session.session_title}</h3>
+                <p><strong>Fecha:</strong> ${dateString}</p>
+                <p>${session.description || ''}</p>
+                <hr>
+                <h4>Organizador</h4>
+                <p>${organizer?.display_name || 'N/A'}</p>
+                <h4>Proyecto: ${session.project_title || ''}</h4>
+                ${projectHTML}
+                <div class="action-buttons-container" style="margin-top: 1rem; display:flex; flex-direction:column; gap:1rem;">
+                ${actionButtonsHTML}</div>`;
+                
             // Lógica de Investigadores
             const allUsers = [organizer, ...(session.participants?.map(p => p.profiles) || [])].filter(Boolean);
-            investigators.innerHTML = allUsers.length > 0 ? `<h4>Investigadores</h4><div class="avatar-grid">${allUsers.map(u => u ? `<img src="${u.avatar_url}" title="${u.display_name}" class="avatar" data-user-id="${u.id}">` : '').join('')}</div>` : '<h4>Investigadores</h4><p>No hay investigadores registrados.</p>';
+            investigators.innerHTML = allUsers.length > 0 ? `
+                <h4>Investigadores</h4>
+                <div class="avatar-grid">${allUsers.map(u => u ? `<img src="${u.avatar_url}" title="${u.display_name}" class="avatar" data-user-id="${u.id}">` : '')
+                .join('')}</div>` : '<h4>Investigadores</h4><p>No hay investigadores registrados.</p>';
             investigators.addEventListener('click', (e) => {
                 const avatar = e.target.closest('.avatar[data-user-id]');
                 if (avatar) this.openInvestigatorModal(avatar.dataset.userId, session);
