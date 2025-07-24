@@ -153,3 +153,20 @@ input, textarea {
     font-size: 0.85rem;
     color: var(--color-secondary);
 }
+
+/* --- Estilo para Aviso de Sincronización ORCID --- */
+.orcid-sync-hint {
+    background-color: var(--color-surface-light);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    color: var(--color-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.orcid-sync-hint i {
+    color: var(--color-accent);
+}

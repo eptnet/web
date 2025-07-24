@@ -307,9 +307,18 @@ export const Studio = {
 
     // En /inv/js/manager-estudio.js
 
-    openModal(actionOrSessionData) {
-        const isEditing = typeof actionOrSessionData === 'object' && actionOrSessionData !== null;
-        const session = isEditing ? actionOrSessionData : null;
+    openModal(session = null) { // Simplificamos el parámetro
+        const isEditing = !!session;
+
+        // --- INICIO DE LA MODIFICACIÓN ---
+        // Obtenemos el proyecto activo desde sessionStorage
+        const activeProjectString = sessionStorage.getItem('activeProject');
+        if (!isEditing && !activeProjectString) {
+            alert("Por favor, selecciona primero un proyecto en la página de Inicio.");
+            return;
+        }
+        const activeProject = activeProjectString ? JSON.parse(activeProjectString) : null;
+        // --- FIN DE LA MODIFICACIÓN ---
 
         if (isEditing && session.participants) {
             this.participants = session.participants.map(p => ({
@@ -321,25 +330,13 @@ export const Studio = {
             this.participants = [];
         }
 
-        const projectDropdown = document.getElementById('project-selector-dropdown');
-        const selectedProject = projectDropdown ? projectDropdown.value : '';
-
-        if (!isEditing && !selectedProject) {
-            alert("Por favor, selecciona primero un proyecto.");
-            return;
-        }
-
         const toLocalISOString = (date) => {
             if (!date) return '';
             const d = new Date(date), tzoffset = d.getTimezoneOffset() * 60000;
             return new Date(d - tzoffset).toISOString().slice(0, 16);
         };
         
-        // --- INICIO DEL CAMBIO ---
-        // La plataforma por defecto ahora es 'twitch' para nuevas sesiones.
-        const initialPlatform = session?.platform || 'twitch';
-        // --- FIN DEL CAMBIO ---
-
+        const initialPlatform = session?.platform || 'vdo_ninja'; // Cambiado a vdo_ninja por defecto
         const modalContainer = document.getElementById('modal-overlay-container');
         
         modalContainer.innerHTML = `
@@ -348,7 +345,7 @@ export const Studio = {
                     <header class="modal-header"><h2>${isEditing ? 'Editar' : 'Configurar'} Sesión</h2><button class="modal-close-btn">×</button></header>
                     <main class="modal-content">
                         <form id="studio-form">
-                            <p>Proyecto: <strong>${session ? session.project_title : selectedProject}</strong></p>
+                            <p>Proyecto: <strong>${session ? session.project_title : activeProject.title}</strong></p>
                             <hr>
                             
                             <div class="form-group">
@@ -454,11 +451,18 @@ export const Studio = {
         e.preventDefault();
         const formData = new FormData(e.target);
         const platform = formData.get('platform');
-        const projectTitle = document.getElementById('project-selector-dropdown')?.value || session?.project_title || '';
+        
+        // --- INICIO DE LA MODIFICACIÓN ---
+        // Obtenemos el proyecto activo desde sessionStorage para asignarlo a la nueva sesión
+        const activeProjectString = sessionStorage.getItem('activeProject');
+        const activeProject = activeProjectString ? JSON.parse(activeProjectString) : null;
+        const projectTitle = session ? session.project_title : activeProject?.title;
+
         if (!projectTitle) {
-            alert("Error: No se pudo determinar el proyecto asociado.");
+            alert("Error: No se pudo determinar el proyecto asociado. Por favor, selecciónalo de nuevo.");
             return;
         }
+        // --- FIN DE LA MODIFICACIÓN ---
 
         let sessionData = {
             project_title: projectTitle,

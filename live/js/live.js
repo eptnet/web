@@ -498,6 +498,7 @@ const LiveApp = {
     },
 
     populateLiveRoom(item) {
+        // 1. Obtenemos las referencias a los contenedores del modal
         const player = document.getElementById('live-room-player');
         const info = document.getElementById('live-room-info');
         const chat = document.getElementById('chat-box');
@@ -505,46 +506,65 @@ const LiveApp = {
         const countdown = document.getElementById('live-room-countdown');
         const primaryAction = document.getElementById('live-room-primary-action');
 
+        // 2. Manejamos si es un Evento o un Video
         if (item.type === 'EVENT') {
             const session = item;
             const eventDate = new Date(session.scheduled_at);
             const dateString = eventDate.toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'short' });
+
+            // 3. Lógica del Reproductor y el Chat (Unificada)
             const chatTitle = `<h4><i class="fas fa-comments"></i> Chat ${session.status === 'EN VIVO' ? '<span class="card-live-indicator">EN VIVO</span>' : ''}</h4>`;
+            
+            // Ocultamos/mostramos contenedores por defecto
+            primaryAction.innerHTML = '';
+            chat.style.display = 'block';
+            investigators.style.display = 'block';
+            countdown.style.display = 'none';
 
-            // Botones de acción dinámicos
-            let actionButtonsHTML = '';
-            if (session.more_info_url) actionButtonsHTML += `<a href="${session.more_info_url}" target="_blank" class="btn-secondary" style="display:block; text-align:center;">Saber Más</a>`;
-            if (session.recording_url) actionButtonsHTML += `<a href="${session.recording_url}" target="_blank" class="btn-secondary" style="display:block; margin-top: 1rem; text-align:center;">Ver Grabación</a>`;
-
-            // Lógica por Plataforma
             if (session.platform === 'substack') {
                 player.innerHTML = `<img src="${session.thumbnail_url || 'https://i.ibb.co/s5s2sYy/Default-Image.png'}" style="width:100%; height:100%; object-fit:cover;">`;
-                primaryAction.innerHTML = `<a href="https://open.substack.com/live-stream/${session.platform_id}" target="_blank" class="btn-substack" style="display:block; text-align:center;">Ir a la Sala en Substack</a>`;
+                primaryAction.innerHTML = `<a href="https://open.substack.com/live-stream/${session.platform_id}" target="_blank" rel="noopener noreferrer" class="btn-substack" style="display:block; text-align:center;">Ir a la Sala en Substack</a>`;
                 chat.innerHTML = `${chatTitle}<p>El chat para este evento está disponible directamente en Substack.</p>`;
             } else if (session.status === 'EN VIVO') {
-                if (session.platform === 'vdo_ninja') player.innerHTML = `<iframe src="${session.viewer_url}" allow="autoplay; fullscreen"></iframe>`;
-                else player.innerHTML = `<iframe src="https://player.twitch.tv/?channel=${session.platform_id || 'epistecnologia'}&parent=${window.location.hostname}&autoplay=true&muted=true" allowfullscreen></iframe>`;
-                chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.twitch.tv/embed/${session.platform_id || 'epistecnologia'}/chat?parent=${window.location.hostname}&darkpopout"></iframe></div>`;
-            } else {
-                player.innerHTML = `<img src="${session.thumbnail_url || 'https://i.ibb.co/vx57ZyXs/Leonardo-Kino-XL-Diseo-creativo-moderno-y-minimalista-de-una-e-0.jpg'}" style="width:100%; height:100%; object-fit:cover;">`;
+                if (session.platform === 'vdo_ninja') {
+                    player.innerHTML = `<iframe src="${session.viewer_url}" allow="autoplay; fullscreen"></iframe>`;
+                    chat.innerHTML = `${chatTitle}<p>El chat no está disponible para esta plataforma.</p>`;
+                } else if (session.platform === 'youtube') {
+                    player.innerHTML = `<iframe src="https://www.youtube.com/embed/${session.platform_id}?autoplay=1" allowfullscreen></iframe>`;
+                    chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}"></iframe></div>`;
+                } else { // Twitch por defecto
+                    const channel = session.platform_id || 'epistecnologia';
+                    player.innerHTML = `<iframe src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=true" allowfullscreen></iframe>`;
+                    chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.twitch.tv/embed/${channel}/chat?parent=${window.location.hostname}&darkpopout"></iframe></div>`;
+                }
+            } else { // Eventos Programados o Finalizados (no Substack)
+                player.innerHTML = `<img src="${session.thumbnail_url || 'https://i.ibb.co/s5s2sYy/Default-Image.png'}" style="width:100%; height:100%; object-fit:cover;">`;
                 chat.innerHTML = `${chatTitle}<p>El chat aparecerá cuando el evento inicie.</p>`;
             }
             
-            // Lógica de Contador
-            countdown.style.display = 'none';
+            // 4. Lógica para el Contador
             if (session.status === 'PROGRAMADO' && eventDate > new Date()) {
                 countdown.style.display = 'block';
                 countdown.innerHTML = '<div id="countdown-timer"></div>';
                 this.startCountdown(session.scheduled_at);
             }
             
-            // Lógica de Información
+            // 5. Lógica para el bloque de Información (incluyendo botones dinámicos)
             const organizer = session.organizer;
             const project = organizer?.projects?.find(p => p.title === session.project_title);
-            let projectHTML = project ? `
-                <p>${project.authors.join(', ')}</p>
-                <a href="https://doi.org/${project.doi}" target="_blank" class="btn-secondary">Ver DOI</a>` : '';
-
+            let projectHTML = '';
+            if (project) {
+                projectHTML = `<p>${project.authors.join(', ')}</p><a href="https://doi.org/${project.doi}" target="_blank" rel="noopener noreferrer" class="btn-secondary">Ver DOI</a>`;
+            }
+            
+            let actionButtonsHTML = '';
+            if (session.more_info_url) {
+                actionButtonsHTML += `<a href="${session.more_info_url}" target="_blank" rel="noopener noreferrer" class="btn-primary" style="display:block; text-align:center;">Saber Más</a>`;
+            }
+            if (session.recording_url) {
+                actionButtonsHTML += `<a href="${session.recording_url}" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="display:block; margin-top: 1rem; text-align:center;">Ver Grabación</a>`;
+            }
+            
             info.innerHTML = `
                 <h3>${session.session_title}</h3>
                 <p><strong>Fecha:</strong> ${dateString}</p>
@@ -554,15 +574,12 @@ const LiveApp = {
                 <p>${organizer?.display_name || 'N/A'}</p>
                 <h4>Proyecto: ${session.project_title || ''}</h4>
                 ${projectHTML}
-                <div class="action-buttons-container" style="margin-top: 1rem; display:flex; flex-direction:column; gap:1rem;">
-                ${actionButtonsHTML}</div>`;
-                
-            // Lógica de Investigadores
+                <div class="action-buttons-container" style="margin-top: 1rem; display:flex; flex-direction:column; gap:1rem;">${actionButtonsHTML}</div>
+            `;
+            
+            // 6. Lógica de Investigadores (se ejecuta para todas las plataformas de eventos)
             const allUsers = [organizer, ...(session.participants?.map(p => p.profiles) || [])].filter(Boolean);
-            investigators.innerHTML = allUsers.length > 0 ? `
-                <h4>Investigadores</h4>
-                <div class="avatar-grid">${allUsers.map(u => u ? `<img src="${u.avatar_url}" title="${u.display_name}" class="avatar" data-user-id="${u.id}">` : '')
-                .join('')}</div>` : '<h4>Investigadores</h4><p>No hay investigadores registrados.</p>';
+            investigators.innerHTML = allUsers.length > 0 ? `<h4>Investigadores</h4><div class="avatar-grid">${allUsers.map(u => u ? `<img src="${u.avatar_url}" title="${u.display_name}" class="avatar" data-user-id="${u.id}">` : '').join('')}</div>` : '<h4>Investigadores</h4><p>No hay investigadores registrados.</p>';
             investigators.addEventListener('click', (e) => {
                 const avatar = e.target.closest('.avatar[data-user-id]');
                 if (avatar) this.openInvestigatorModal(avatar.dataset.userId, session);

@@ -123,6 +123,30 @@
                             <div id="projects-list" class="projects-list"></div>
                             </div>
                     </div>
+
+                    <div class="bento-box">
+                    <h3><i class="fa-solid fa-cloud-arrow-up"></i> Publicar en Zenodo y Obtener DOI</h3>
+                    <p class="form-hint">
+                        Sube un trabajo (dataset, presentación, etc.) a la comunidad de Epistecnología en Zenodo para obtener un DOI citable.
+                    </p>
+                    <form id="zenodo-form">
+                        <div class="form-group">
+                            <label for="zenodo-title">Título de la Publicación</label>
+                            <input type="text" id="zenodo-title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="zenodo-description">Descripción / Abstract</label>
+                            <textarea id="zenodo-description" rows="4" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="zenodo-file">Archivo a Publicar (PDF, ZIP, etc.)</label>
+                            <input type="file" id="zenodo-file" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Publicar y Obtener DOI</button>
+                    </form>
+                    <div id="zenodo-message" class="form-message" style="margin-top: 1rem;"></div>
+                </div>
+                
                 </div>
             </main>
         </div>

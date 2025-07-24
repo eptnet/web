@@ -63,6 +63,7 @@ const ProfileApp = {
         
         // --- LÍNEA AÑADIDA ---
         document.getElementById('avatar-update-form')?.addEventListener('submit', (e) => this.handleUpdateAvatar(e));
+        document.getElementById('zenodo-form')?.addEventListener('submit', (e) => this.handleZenodoSubmit(e));
     },
     
     // --- INICIO DE LA CORRECCIÓN: Lógica Manual de ORCID ---
@@ -210,7 +211,7 @@ const ProfileApp = {
         const syncButton = document.getElementById('sync-orcid-works-btn');
         if (!syncButton) return;
 
-        syncButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sincronizando...';
+        syncButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sincronizando... (esto puede tardar)';
         syncButton.disabled = true;
 
         try {
@@ -219,37 +220,36 @@ const ProfileApp = {
 
             const orcidId = profile.orcid.replace('https://orcid.org/', '');
 
-            const { data, error } = await this.supabase.functions.invoke('get-orcid-works', {
+            const { data, error: functionError } = await this.supabase.functions.invoke('get-orcid-works', {
                 body: { orcid_id: orcidId },
             });
 
-            if (error) throw error;
+            if (functionError) throw functionError;
             
-            // --- INICIO DE LA LÓGICA PARA GUARDAR ---
-            if (data.works && data.works.length > 0) {
-                // Preparamos los datos para guardarlos en la tabla 'projects'
-                const projectsToSave = data.works.map(work => ({
-                    user_id: this.user.id,
-                    doi: work.doi,
-                    title: work.title,
-                    // Asegúrate de que tu tabla 'projects' tenga estas columnas
-                    authors: work.authors || [], 
-                    publication_year: work.year || null
-                }));
+            if (data.works) {
+                const orcidDois = data.works.map(work => work.doi);
+                if (orcidDois.length > 0) {
+                    // Borramos los proyectos que ya no están en ORCID
+                    await this.supabase.from('projects').delete().eq('user_id', this.user.id).not('doi', 'in', `(${orcidDois.map(d => `'${d}'`).join(',')})`);
+                }
 
-                // Usamos upsert para insertar nuevos y actualizar existentes (basado en el DOI)
-                const { error: saveError } = await this.supabase
-                    .from('projects')
-                    .upsert(projectsToSave, { onConflict: 'doi, user_id' });
+                if (data.works.length > 0) {
+                    const projectsToSave = data.works.map(work => ({
+                        user_id: this.user.id,
+                        doi: work.doi,
+                        title: work.title,
+                        authors: work.authors || [], 
+                        publication_year: work.year || null,
+                        description: work.description || null // <-- Se añade la descripción
+                    }));
 
-                if (saveError) throw saveError;
+                    const { error: saveError } = await this.supabase.from('projects').upsert(projectsToSave, { onConflict: 'doi, user_id' });
+                    if (saveError) throw saveError;
+                }
             }
             
-            alert(`Sincronización completada. Se encontraron ${data.works.length} publicaciones.`);
-            
-            // Refrescamos toda la información del perfil para mostrar los proyectos guardados
+            alert(`Sincronización completada. Se encontraron y guardaron ${data.works.length} publicaciones.`);
             this.renderProfileData();
-            // --- FIN DE LA LÓGICA PARA GUARDAR ---
 
         } catch (error) {
             alert("Error al sincronizar las publicaciones: " + error.message);
@@ -259,22 +259,88 @@ const ProfileApp = {
         }
     },
 
+    async handleZenodoSubmit(e) {
+        e.preventDefault();
+        if (!this.user) return alert("Debes iniciar sesión para publicar.");
+
+        const title = document.getElementById('zenodo-title').value;
+        const description = document.getElementById('zenodo-description').value;
+        const fileInput = document.getElementById('zenodo-file');
+        const file = fileInput.files[0];
+        const messageEl = document.getElementById('zenodo-message');
+
+        if (!title || !description || !file) {
+            alert("Por favor, completa todos los campos.");
+            return;
+        }
+
+        messageEl.textContent = "Subiendo archivo...";
+        messageEl.className = 'form-message';
+
+        try {
+            // 1. Subimos el archivo a una carpeta temporal segura en Supabase Storage
+            const filePath = `${this.user.id}/${Date.now()}-${file.name}`;
+            const { error: uploadError } = await this.supabase.storage
+                .from('avatars') // Usamos el bucket 'avatars', o puedes crear uno nuevo 'uploads'
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            // 2. Llamamos a la Edge Function con los metadatos y la ruta del archivo
+            messageEl.textContent = "Procesando en Zenodo... (esto puede tardar un minuto)";
+            const { data, error: functionError } = await this.supabase.functions.invoke('create-zenodo-doi', {
+                body: {
+                    filePath,
+                    metadata: {
+                        title: title,
+                        description: description,
+                        // El nombre del autor se obtiene del perfil en la Edge Function
+                    }
+                },
+            });
+
+            if (functionError) throw functionError;
+
+            messageEl.textContent = `¡Éxito! Tu trabajo ha sido publicado con el DOI: ${data.doi}`;
+            messageEl.classList.add('success');
+            
+            // Refrescamos la lista de proyectos para que aparezca el nuevo
+            this.renderProfileData();
+
+        } catch (error) {
+            messageEl.textContent = `Error: ${error.message}`;
+            messageEl.classList.add('error');
+            console.error("Error en el proceso de Zenodo:", error);
+        }
+    },
+
     // Dibuja la lista de trabajos en el HTML
     renderWorks(works) {
         const listContainer = document.getElementById('projects-list');
         if (!listContainer) return;
 
         if (!works || works.length === 0) {
-            listContainer.innerHTML = '<p>No se encontraron publicaciones con DOI en tu perfil de ORCID.</p>';
+            listContainer.innerHTML = '<p class="form-hint">No tienes publicaciones sincronizadas.</p>';
             return;
         }
 
-        listContainer.innerHTML = works.map(work => `
-            <div class="publication-item">
-                <p>${work.title}</p>
-                <span>DOI: ${work.doi}</span>
-            </div>
-        `).join('');
+        listContainer.innerHTML = works.map(work => {
+            // Si el proyecto fue creado en la plataforma, añadimos un aviso.
+            const syncHintHTML = work.created_via_platform ? `
+                <div class="orcid-sync-hint">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>Recuerda añadir este DOI a tu perfil de ORCID y vuelve a sincronizar.</span>
+                </div>
+            ` : '';
+
+            return `
+                <div class="publication-item">
+                    <p>${work.title}</p>
+                    <span>DOI: ${work.doi}</span>
+                    ${syncHintHTML}
+                </div>
+            `;
+        }).join('');
     },
 
     // AÑADE ESTA NUEVA FUNCIÓN en profile.js

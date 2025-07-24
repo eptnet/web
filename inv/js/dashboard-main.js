@@ -1,4 +1,6 @@
 import { Navigation } from './manager-navegacion.js';
+import { Projects } from './manager-proyectos.js'; // <-- LÍNEA AÑADIDA
+
 
 // Objeto global para compartir datos como supabase y userProfile
 const App = {
@@ -13,33 +15,54 @@ const App = {
 
         const { data: { session } } = await this.supabase.auth.getSession();
         if (!session) {
-            window.location.href = '/'; // Redirige si no hay sesión
+            window.location.href = '/';
             return;
         }
         this.userId = session.user.id;
         
+        // 1. Hacemos una consulta simple y segura solo para el perfil
         const { data: profileData, error } = await this.supabase.from('profiles').select('*').eq('id', this.userId).single();
-        if (error && error.code !== 'PGRST116') {
+        
+        if (error) {
             alert("Hubo un error al cargar tu perfil.");
+            console.error("Error fetching profile:", error);
             return;
         }
         
         this.userProfile = { ...session.user.user_metadata, ...profileData };
-        
-        // Verificación de perfil completo para poder usar el dashboard
-        if (!this.userProfile.orcid) {
-            alert("Perfil incompleto. Debes registrar tu ORCID para continuar.");
-            window.location.href = '/inv/profile.html';
-            return;
-        }
+        window.App = this;
         
         Header.init(this.userProfile);
         Navigation.init();
-
-        // Muestra el enlace de "Gestionar Contenido" si el usuario es admin
+        
+        // 2. Ahora que el perfil cargó, revisamos el rol de admin
         const contentNavLink = document.querySelector('.nav-link[data-section="content-section"]');
         if (contentNavLink && this.userProfile.role === 'admin') {
             contentNavLink.style.display = 'flex';
+        }
+
+        // 3. Hacemos una SEGUNDA consulta solo para los proyectos
+        const { data: projects, error: projectsError } = await this.supabase.from('projects').select('*').eq('user_id', this.userId);
+        
+        if (projectsError) {
+            console.error("Error al cargar proyectos:", projectsError);
+        } else {
+            this.userProfile.projects = projects || []; // Añadimos los proyectos al perfil
+        }
+
+        // 4. Verificamos si hay proyectos para mostrar la vista correcta
+        if (!this.userProfile.projects || this.userProfile.projects.length === 0) {
+            const homeSection = document.getElementById('home-section');
+            if (homeSection) {
+                 homeSection.innerHTML = `<div class="workflow-step"><h2><span class="step-number">1</span> ¡Bienvenido! Añade tu primer proyecto</h2><p>Para crear contenido, necesitas un proyecto con DOI. Sincroniza con ORCID o crea uno en tu perfil.</p><a href="/inv/profile.html" class="btn btn-primary" style="margin-top: 1rem; width: auto; text-decoration: none;">Ir a mi Perfil</a></div>`;
+            }
+        } else {
+            const homeTemplate = document.getElementById('template-home-section');
+            const homeSection = document.getElementById('home-section');
+            if (homeTemplate && homeSection) {
+                homeSection.innerHTML = homeTemplate.innerHTML;
+            }
+            Projects.init();
         }
     },
 };
