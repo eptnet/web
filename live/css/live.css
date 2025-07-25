@@ -681,3 +681,29 @@ body { background-color: var(--color-background); color: var(--color-primary); f
     transform: translateY(-2px);
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
+
+/* --- Estilos para el Modal de Investigador (Adicional) --- */
+.project-info h5 {
+    font-size: 1rem;
+    margin: 0.5rem 0;
+}
+.project-authors, .project-description {
+    font-size: 0.9rem;
+    color: var(--color-secondary);
+    margin-bottom: 1rem;
+}
+
+.doi-badge {
+    display: inline-block;
+    background-color: #0077b3; /* Un color azul estándar para DOI */
+    color: white !important;
+    padding: 0.3rem 0.8rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+.doi-badge:hover {
+    background-color: #005f8f;
+}

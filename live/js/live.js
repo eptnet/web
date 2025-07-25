@@ -62,7 +62,6 @@ const LiveApp = {
                 <button id="live-logout-btn" class="nav-icon" title="Cerrar Sesión"><i class="fa-solid fa-right-from-bracket"></i></button>
             `;
         } else {
-            // Crea un BOTÓN para abrir el modal, no un enlace
             container.innerHTML = `
                 <button id="login-modal-trigger" title="Iniciar Sesión" class="nav-icon">
                     <i class="fa-solid fa-right-to-bracket"></i>
@@ -83,22 +82,18 @@ const LiveApp = {
         this.elements.ondemandListContainer.addEventListener('click', (e) => this.handleCardClick(e));
         this.elements.tabs.forEach(tab => tab.addEventListener('click', (e) => this.handleTabClick(e.currentTarget)));
 
-        // --- INICIO DE LA NUEVA LÓGICA ---
         const headerActions = document.querySelector('.header-actions');
         if (headerActions) {
             headerActions.addEventListener('click', async (e) => {
-                // Para cerrar sesión
                 if (e.target.closest('#live-logout-btn')) {
                     await this.supabase.auth.signOut();
                 }
-                // Para abrir el modal de login
                 if (e.target.closest('#login-modal-trigger')) {
                     document.getElementById('login-modal-overlay')?.classList.add('is-visible');
                 }
             });
         }
 
-        // Para cerrar el modal
         const loginModalOverlay = document.getElementById('login-modal-overlay');
         const loginModalCloseBtn = document.getElementById('login-modal-close-btn');
         loginModalCloseBtn?.addEventListener('click', () => loginModalOverlay?.classList.remove('is-visible'));
@@ -106,7 +101,6 @@ const LiveApp = {
             if (e.target === loginModalOverlay) loginModalOverlay.classList.remove('is-visible');
         });
 
-        // Para iniciar sesión con un proveedor
         loginModalOverlay?.addEventListener('click', async (e) => {
             const providerBtn = e.target.closest('.login-provider-btn');
             if (providerBtn && providerBtn.dataset.provider) {
@@ -116,19 +110,16 @@ const LiveApp = {
                 });
             }
         });
-        // --- FIN DE LA NUEVA LÓGICA ---
 
         if (this.elements.searchInput) {
             this.elements.searchInput.addEventListener('input', (e) => {
                 this.filterCards(e.target.value);
             });
         }
-
     },
 
     async run() {
         const [{ data: sessions }, { data: videos }] = await Promise.all([
-            // Consulta que ahora pide los perfiles de los participantes
             this.supabase.from('sessions').select(`
                 *,
                 organizer: profiles (*),
@@ -173,9 +164,7 @@ const LiveApp = {
             if (isEvent) {
                 const channel = data.platform_id || 'epistecnologia';
                 
-                // --- INICIO DEL FRAGMENTO A REEMPLAZAR ---
                 if (data.platform === 'substack') {
-                    // Para Substack, no asignamos URL de reproductor para que solo se vea la imagen
                     playerUrl = '';
                 } else if (data.platform === 'vdo_ninja') {
                     playerUrl = data.viewer_url;
@@ -184,7 +173,6 @@ const LiveApp = {
                 } else { // Twitch por defecto
                     playerUrl = `https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&${autoplay}`;
                 }
-                // --- FIN DEL FRAGMENTO A REEMPLAZAR ---
 
                 infoHTML = isLive ? `
                     <h3>${data.session_title}</h3>
@@ -238,14 +226,11 @@ const LiveApp = {
             const playerContainer = slide.querySelector('.slide-player');
             const playerUrl = slide.dataset.playerUrl;
 
-            // --- INICIO DE LA CORRECCIÓN ---
-            // Solo cargamos el iframe si la URL del reproductor existe
             if (offset === 0 && playerUrl && !playerContainer.querySelector('iframe')) {
                 playerContainer.innerHTML = `<iframe src="${playerUrl}" allow="autoplay; fullscreen" loading="lazy"></iframe>`;
             } else if (offset !== 0 && playerContainer.querySelector('iframe')) {
                 playerContainer.innerHTML = `<img src="${slide.dataset.thumbnailUrl}" loading="lazy">`;
             }
-            // --- FIN DE LA CORRECCIÓN ---
         });
     },
 
@@ -258,7 +243,6 @@ const LiveApp = {
             const playerContainer = activeSlide.querySelector('.slide-player');
             const iframe = playerContainer.querySelector('iframe');
             
-            // Si hay un iframe reproduciéndose, lo reemplazamos por la miniatura
             if (iframe) {
                 playerContainer.innerHTML = `<img src="${activeSlide.dataset.thumbnailUrl}" loading="lazy">`;
             }
@@ -283,7 +267,7 @@ const LiveApp = {
         cards.forEach(card => {
             const cardText = card.textContent.toLowerCase();
             if (cardText.includes(term)) {
-                card.style.display = 'flex'; // O 'block' si prefieres
+                card.style.display = 'flex';
             } else {
                 card.style.display = 'none';
             }
@@ -307,7 +291,6 @@ const LiveApp = {
                     <div class="card-date">${day} ${month}</div>
                     ${liveIndicatorHTML}
                 </div>
-
                 <div class="card-info">
                     <h5>${s.session_title}</h5>
                     <p>${s.organizer?.display_name || ''}</p>
@@ -324,10 +307,9 @@ const LiveApp = {
             </div>`).join('');
     },
 
-    openLiveRoom(id) {
-        // Detiene cualquier video que se esté reproduciendo en el carrusel
+    async openLiveRoom(id) {
         if (this.updateCarouselView) {
-            this.updateCarouselView(); 
+            this.stopCarouselPlayer(); 
         }
         
         const item = this.allContentMap[id];
@@ -335,63 +317,41 @@ const LiveApp = {
             console.error("Error: No se encontró el item en el mapa con ID:", id);
             return;
         }
-
-        // --- INICIO DEL NUEVO CÓDIGO ROBUSTO ---
         
-        // 1. Limpiamos el contenedor de modales
         this.elements.modalContainer.innerHTML = '';
-
-        // 2. Creamos los elementos principales del modal con JavaScript
         const modalOverlay = document.createElement('div');
         modalOverlay.id = 'live-room-modal';
         modalOverlay.className = 'modal-overlay';
-
         const closeButton = document.createElement('button');
         closeButton.className = 'modal-close-btn';
         closeButton.innerHTML = '×';
         closeButton.setAttribute('aria-label', 'Cerrar');
-        
-        // 3. Añadimos el listener directamente al botón que acabamos de crear
         closeButton.addEventListener('click', () => this.closeLiveRoom());
-
-        // 4. Construimos el contenido interno de la sala
         const content = this.buildLiveRoomHTML();
-
-        // 5. Unimos todas las partes
         modalOverlay.appendChild(closeButton);
         modalOverlay.appendChild(content);
-        
-        // 6. Añadimos el modal completo al DOM
         this.elements.modalContainer.appendChild(modalOverlay);
 
-        // 7. Ahora que todo existe, lo poblamos con datos y lo hacemos visible
-        this.populateLiveRoom(item);
+        await this.populateLiveRoom(item); // Se convierte en llamada asíncrona
         setTimeout(() => modalOverlay.classList.add('is-visible'), 10);
-        
-        // --- FIN DEL NUEVO CÓDIGO ROBUSTO ---
     },
 
     startCountdown(targetDate) {
         const timerElement = document.getElementById('countdown-timer');
         if (!timerElement) return;
-
         const targetTime = new Date(targetDate).getTime();
-
         this.countdownInterval = setInterval(() => {
             const now = new Date().getTime();
             const distance = targetTime - now;
-
             if (distance < 0) {
                 clearInterval(this.countdownInterval);
                 timerElement.innerHTML = "El evento debería haber comenzado.";
                 return;
             }
-
             const days = Math.floor(distance / (1000 * 60 * 60 * 24));
             const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
             timerElement.innerHTML = `Comienza en: ${days}d ${hours}h ${minutes}m ${seconds}s`;
         }, 1000);
     },
@@ -399,19 +359,12 @@ const LiveApp = {
     closeLiveRoom() {
         const modalOverlay = document.getElementById('live-room-modal');
         if (modalOverlay) {
-            // --- INICIO DE LA CORRECCIÓN ---
-            // Buscamos el reproductor dentro del modal y lo vaciamos para detener el video.
             const playerContainer = modalOverlay.querySelector('#live-room-player');
-            if (playerContainer) {
-                playerContainer.innerHTML = '';
-            }
-            // --- FIN DE LA CORRECCIÓN ---
-
+            if (playerContainer) playerContainer.innerHTML = '';
             if (this.countdownInterval) {
                 clearInterval(this.countdownInterval);
                 this.countdownInterval = null;
             }
-            
             modalOverlay.classList.remove('is-visible');
             setTimeout(() => {
                 this.elements.modalContainer.innerHTML = '';
@@ -419,65 +372,89 @@ const LiveApp = {
         }
     },
 
-    openInvestigatorModal(userId, session) {
-        const organizer = session.organizer;
-        const participants = session.participants?.map(p => p.profiles) || [];
-        const allUsers = [organizer, ...participants].filter(Boolean);
-        const user = allUsers.find(u => u && u.id === userId);
-
-        if (!user) {
-            console.error("No se encontraron datos para el investigador con ID:", userId);
+    async openInvestigatorModal(userId) {
+        if (!userId) {
+            console.error("ID de usuario no proporcionado.");
             return;
         }
 
-        const socialLinksHTML = `
-            ${user.website_url ? `<a href="${user.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}
-            ${user.youtube_url ? `<a href="${user.youtube_url}" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>` : ''}
-            ${user.substack_url ? `<a href="${user.substack_url}" target="_blank" title="Substack"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w.org/2000/svg" id="Substack--Streamline-Simple-Icons" height="24" width="24"><desc>Substack Streamline Icon: https://streamlinehq.com</desc><title>Substack</title><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z" fill="#e65c17" stroke-width="1"></path></svg></a>` : ''}
-            ${user.x_url ? `<a href="${user.x_url}" target="_blank" title="Perfil de X"><i class="fab fa-twitter"></i></a>` : ''}
-            ${user.linkedin_url ? `<a href="${user.linkedin_url}" target="_blank" title="Perfil de LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}
-            ${user.instagram_url ? `<a href="${user.instagram_url}" target="_blank" title="Perfil de Instagram"><i class="fab fa-instagram"></i></a>` : ''}
-            ${user.facebook_url ? `<a href="${user.facebook_url}" target="_blank" title="Perfil de Facebook"><i class="fab fa-facebook-f"></i></a>` : ''}
-            ${user.tiktok_url ? `<a href="${user.tiktok_url}" target="_blank" title="Perfil de TikTok"><i class="fab fa-tiktok"></i></a>` : ''}
-        `;
-        
-        // --- LÓGICA CORREGIDA PARA EL ENLACE DE ORCID ---
-        const orcidHTML = user.orcid 
-            ? `<a href="${user.orcid}" target="_blank" rel="noopener noreferrer">${user.orcid.replace('https://orcid.org/', '')}</a>` 
-            : 'No disponible';
+        const loadingModalHTML = `<div id="investigator-modal" class="investigator-modal-overlay"><div class="investigator-modal"><p>Cargando...</p></div></div>`;
+        this.elements.modalContainer.insertAdjacentHTML('beforeend', loadingModalHTML);
+        const modalElement = document.getElementById('investigator-modal');
+        setTimeout(() => modalElement.classList.add('is-visible'), 10);
 
-        const modalHTML = `
-            <div id="investigator-modal" class="investigator-modal-overlay">
+        try {
+            const [profileResponse, projectsResponse] = await Promise.all([
+                this.supabase.from('profiles').select('*').eq('id', userId).single(),
+                this.supabase.from('projects').select('title').eq('user_id', userId).order('created_at', { ascending: false }).limit(3)
+            ]);
+
+            const { data: user, error: userError } = profileResponse;
+            const { data: projects, error: projectsError } = projectsResponse;
+
+            // --- INICIO DE LA CORRECCIÓN (DEPURACIÓN) ---
+            // Esta línea nos ayudará a ver qué está pasando con los datos.
+            console.log('Proyectos recibidos para el usuario:', projects);
+            if (projectsError) {
+                console.error('Error al obtener proyectos:', projectsError);
+            }
+            // --- FIN DE LA CORRECCIÓN (DEPURACIÓN) ---
+
+            if (userError) throw userError;
+
+            const socialLinksHTML = `
+                ${user.substack_url ? `<a href="${user.substack_url}" target="_blank" title="Substack"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w.org/2000/svg" id="Substack--Streamline-Simple-Icons" height="24" width="24"><desc>Substack Streamline Icon: https://streamlinehq.com</desc><title>Substack</title><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z" fill="#e65c17" stroke-width="1"></path></svg></a>` : ''}
+                ${user.website_url ? `<a href="${user.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}
+                ${user.youtube_url ? `<a href="${user.youtube_url}" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>` : ''}
+                ${user.x_url ? `<a href="${user.x_url}" target="_blank" title="Perfil de X"><i class="fab fa-twitter"></i></a>` : ''}
+                ${user.linkedin_url ? `<a href="${user.linkedin_url}" target="_blank" title="Perfil de LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}
+                ${user.instagram_url ? `<a href="${user.instagram_url}" target="_blank" title="Perfil de Instagram"><i class="fab fa-instagram"></i></a>` : ''}
+            `;
+            const orcidHTML = user.orcid ? `<a href="${user.orcid}" target="_blank">${user.orcid.replace('https://orcid.org/','')}</a>` : 'No disponible';
+
+            let projectInfoHTML = '';
+            if (projects && projects.length > 0) {
+                const projectList = projects.map(p => `<li>${p.title}</li>`).join('');
+                projectInfoHTML = `<div class="project-info"><h4>Últimos proyectos:</h4><ul>${projectList}</ul></div>`;
+            } else {
+                projectInfoHTML = `<div class="project-info"><p>No tiene proyectos publicados en la plataforma.</p></div>`;
+            }
+
+            const finalModalHTML = `
                 <div class="investigator-modal">
-                    <header class="investigator-modal-header">
-                        <button class="investigator-modal-close-btn">×</button>
-                    </header>
+                    <header class="investigator-modal-header"><button class="investigator-modal-close-btn">×</button></header>
                     <main class="investigator-modal-content">
-                        <img src="${user.avatar_url}" alt="${user.display_name}" class="avatar">
-                        <h3>${user.display_name}</h3>
+                        <img src="${user.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="${user.display_name || ''}" class="avatar">
+                        <h3>${user.display_name || 'Nombre no disponible'}</h3>
                         <p><strong>ORCID:</strong> ${orcidHTML}</p>
                         <div class="profile-card__socials">${socialLinksHTML}</div>
                         <p class="investigator-bio">${user.bio || ''}</p>
-                        <div class="project-info">
-                            <h4>Participa en el proyecto:</h4>
-                            <p>${session.project_title || 'N/A'}</p>
-                        </div>
+                        ${projectInfoHTML}
                     </main>
-                </div>
-            </div>`;
-        
-        this.elements.modalContainer.insertAdjacentHTML('beforeend', modalHTML);
-        
-        const newModal = document.getElementById('investigator-modal');
-        newModal.querySelector('.investigator-modal-close-btn').addEventListener('click', () => this.closeInvestigatorModal());
-        newModal.addEventListener('click', (e) => {
-            if (e.target === newModal) this.closeInvestigatorModal();
-        });
+                </div>`;
+            
+            modalElement.innerHTML = finalModalHTML;
+            modalElement.querySelector('.investigator-modal-close-btn').addEventListener('click', () => this.closeInvestigatorModal());
+            modalElement.addEventListener('click', (e) => {
+                if (e.target === modalElement) this.closeInvestigatorModal();
+            });
+
+        } catch (error) {
+            console.error("Error al abrir modal de investigador:", error);
+            const modal = document.getElementById('investigator-modal');
+            if (modal) {
+                modal.innerHTML = `<div class="investigator-modal"><p>Error al cargar la información.</p><button class="investigator-modal-close-btn">×</button></div>`;
+                modal.querySelector('.investigator-modal-close-btn').addEventListener('click', () => this.closeInvestigatorModal());
+            }
+        }
     },
 
     closeInvestigatorModal() {
         const modal = document.getElementById('investigator-modal');
-        if (modal) modal.remove();
+        if (modal) {
+            modal.classList.remove('is-visible');
+            setTimeout(() => modal.remove(), 300);
+        }
     },
 
     buildLiveRoomHTML() {
@@ -497,8 +474,7 @@ const LiveApp = {
         return container;
     },
 
-    populateLiveRoom(item) {
-        // 1. Obtenemos las referencias a los contenedores del modal
+    async populateLiveRoom(item) {
         const player = document.getElementById('live-room-player');
         const info = document.getElementById('live-room-info');
         const chat = document.getElementById('chat-box');
@@ -506,16 +482,12 @@ const LiveApp = {
         const countdown = document.getElementById('live-room-countdown');
         const primaryAction = document.getElementById('live-room-primary-action');
 
-        // 2. Manejamos si es un Evento o un Video
         if (item.type === 'EVENT') {
             const session = item;
             const eventDate = new Date(session.scheduled_at);
             const dateString = eventDate.toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'short' });
-
-            // 3. Lógica del Reproductor y el Chat (Unificada)
             const chatTitle = `<h4><i class="fas fa-comments"></i> Chat ${session.status === 'EN VIVO' ? '<span class="card-live-indicator">EN VIVO</span>' : ''}</h4>`;
-            
-            // Ocultamos/mostramos contenedores por defecto
+
             primaryAction.innerHTML = '';
             chat.style.display = 'block';
             investigators.style.display = 'block';
@@ -526,66 +498,82 @@ const LiveApp = {
                 primaryAction.innerHTML = `<a href="https://open.substack.com/live-stream/${session.platform_id}" target="_blank" rel="noopener noreferrer" class="btn-substack" style="display:block; text-align:center;">Ir a la Sala en Substack</a>`;
                 chat.innerHTML = `${chatTitle}<p>El chat para este evento está disponible directamente en Substack.</p>`;
             } else if (session.status === 'EN VIVO') {
+                const channel = session.platform_id || 'epistecnologia';
                 if (session.platform === 'vdo_ninja') {
                     player.innerHTML = `<iframe src="${session.viewer_url}" allow="autoplay; fullscreen"></iframe>`;
                     chat.innerHTML = `${chatTitle}<p>El chat no está disponible para esta plataforma.</p>`;
                 } else if (session.platform === 'youtube') {
                     player.innerHTML = `<iframe src="https://www.youtube.com/embed/${session.platform_id}?autoplay=1" allowfullscreen></iframe>`;
                     chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}"></iframe></div>`;
-                } else { // Twitch por defecto
-                    const channel = session.platform_id || 'epistecnologia';
+                } else { // Twitch
                     player.innerHTML = `<iframe src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=true" allowfullscreen></iframe>`;
-                    chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.twitch.tv/embed/${channel}/chat?parent=${window.location.hostname}&darkpopout"></iframe></div>`;
+                    chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.twitch.tv/embed/${channel}/chat?parent=${window.location.hostname}&darkpopout" height="100%" width="100%" style="border:none;"></iframe></div>`;
                 }
-            } else { // Eventos Programados o Finalizados (no Substack)
+            } else {
                 player.innerHTML = `<img src="${session.thumbnail_url || 'https://i.ibb.co/s5s2sYy/Default-Image.png'}" style="width:100%; height:100%; object-fit:cover;">`;
                 chat.innerHTML = `${chatTitle}<p>El chat aparecerá cuando el evento inicie.</p>`;
             }
-            
-            // 4. Lógica para el Contador
+
             if (session.status === 'PROGRAMADO' && eventDate > new Date()) {
                 countdown.style.display = 'block';
                 countdown.innerHTML = '<div id="countdown-timer"></div>';
                 this.startCountdown(session.scheduled_at);
             }
-            
-            // 5. Lógica para el bloque de Información (incluyendo botones dinámicos)
-            const organizer = session.organizer;
-            const project = organizer?.projects?.find(p => p.title === session.project_title);
+
+            let project = null;
+            if (session.project_title && session.organizer?.id) {
+                const { data } = await this.supabase.from('projects').select('*').eq('user_id', session.organizer.id).eq('title', session.project_title).single();
+                project = data;
+            }
+
             let projectHTML = '';
             if (project) {
-                projectHTML = `<p>${project.authors.join(', ')}</p><a href="https://doi.org/${project.doi}" target="_blank" rel="noopener noreferrer" class="btn-secondary">Ver DOI</a>`;
+                const uniqueAuthors = project.authors && Array.isArray(project.authors) ? [...new Set(project.authors)].join(', ') : 'No disponible';
+                const doiLink = project.doi_url ? `<a href="${project.doi_url}" target="_blank" rel="noopener noreferrer" class="btn-secondary">Ver Proyecto (DOI)</a>` : '';
+                projectHTML = `
+                    <h4>Proyecto</h4>
+                    <h3 class="live-room-project-title">${project.title}</h3>
+                    <p><strong>Autores:</strong> ${uniqueAuthors}</p>
+                    <p>${project.description || 'Resumen no disponible.'}</p>
+                    ${doiLink}`;
             }
-            
+
             let actionButtonsHTML = '';
-            if (session.more_info_url) {
-                actionButtonsHTML += `<a href="${session.more_info_url}" target="_blank" rel="noopener noreferrer" class="btn-primary" style="display:block; text-align:center;">Saber Más</a>`;
-            }
-            if (session.recording_url) {
-                actionButtonsHTML += `<a href="${session.recording_url}" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="display:block; margin-top: 1rem; text-align:center;">Ver Grabación</a>`;
-            }
-            
+            if (session.more_info_url) actionButtonsHTML += `<a href="${session.more_info_url}" target="_blank" rel="noopener noreferrer" class="btn-primary" style="display:block; text-align:center;">Saber Más</a>`;
+            if (session.recording_url) actionButtonsHTML += `<a href="${session.recording_url}" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="display:block; margin-top: 1rem; text-align:center;">Ver Grabación</a>`;
+
+            const organizer = session.organizer;
+            // --- INICIO DE LA CORRECCIÓN DEL ANFITRIÓN ---
+            const organizerHTML = `
+                <div class="organizer-info">
+                    <img src="${organizer?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" 
+                        alt="Avatar de ${organizer?.display_name || 'Anfitrión'}" 
+                        style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+                    <div class="organizer-name-block">
+                        <span>Anfitrión</span>
+                        <strong>${organizer?.display_name || 'Nombre no disponible'}</strong>
+                    </div>
+                </div>`;
+            // --- FIN DE LA CORRECCIÓN DEL ANFITRIÓN ---
+
             info.innerHTML = `
                 <h3>${session.session_title}</h3>
-                <p><strong>Fecha:</strong> ${dateString}</p>
                 <p>${session.description || ''}</p>
+                ${organizerHTML}
+                <p><strong>Fecha:</strong> ${dateString}</p>
                 <hr>
-                <h4>Organizador</h4>
-                <p>${organizer?.display_name || 'N/A'}</p>
-                <h4>Proyecto: ${session.project_title || ''}</h4>
                 ${projectHTML}
                 <div class="action-buttons-container" style="margin-top: 1rem; display:flex; flex-direction:column; gap:1rem;">${actionButtonsHTML}</div>
             `;
-            
-            // 6. Lógica de Investigadores (se ejecuta para todas las plataformas de eventos)
-            const allUsers = [organizer, ...(session.participants?.map(p => p.profiles) || [])].filter(Boolean);
-            investigators.innerHTML = allUsers.length > 0 ? `<h4>Investigadores</h4><div class="avatar-grid">${allUsers.map(u => u ? `<img src="${u.avatar_url}" title="${u.display_name}" class="avatar" data-user-id="${u.id}">` : '').join('')}</div>` : '<h4>Investigadores</h4><p>No hay investigadores registrados.</p>';
+
+            const allUsers = [session.organizer, ...(session.participants?.map(p => p.profiles) || [])].filter(Boolean);
+            investigators.innerHTML = allUsers.length > 0 ? `<h4>Investigadores</h4><div class="avatar-grid">${allUsers.map(u => u ? `<img src="${u.avatar_url}" title="${u.display_name}" class="avatar" data-user-id="${u.id}">` : '').join('')}</div>` : '';
             investigators.addEventListener('click', (e) => {
                 const avatar = e.target.closest('.avatar[data-user-id]');
-                if (avatar) this.openInvestigatorModal(avatar.dataset.userId, session);
+                if (avatar) this.openInvestigatorModal(avatar.dataset.userId);
             });
-        
-        } else { // Si es un VIDEO On-Demand
+
+        } else {
             const video = item;
             player.innerHTML = `<iframe src="https://www.youtube.com/embed/${video.youtube_video_id}?autoplay=1" allowfullscreen></iframe>`;
             info.innerHTML = `<h3>${video.title}</h3>`;
