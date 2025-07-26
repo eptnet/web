@@ -507,8 +507,17 @@ const LiveApp = {
                     chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}"></iframe></div>`;
                 } else { // Twitch
                     player.innerHTML = `<iframe src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=true" allowfullscreen></iframe>`;
-                    chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.twitch.tv/embed/${channel}/chat?parent=${window.location.hostname}&darkpopout" height="100%" width="100%" style="border:none;"></iframe></div>`;
-                }
+                    // DESPUÉS (Solución con CSS Grid)
+                    const chatTitle = `<h4><i class="fas fa-comments"></i> Chat ${session.status === 'EN VIVO' ? '<span class="card-live-indicator">EN VIVO</span>' : ''}</h4>`;
+                    chat.style.display = 'grid';
+                    chat.style.gridTemplateRows = 'auto 1fr'; // Fila para el título (altura automática) y fila para el chat (ocupa el resto)
+                    chat.style.gap = '1rem'; // Espacio entre título y chat
+                    chat.innerHTML = `
+                        ${chatTitle}
+                        <div id="chat-container">
+                            <iframe src="https://www.twitch.tv/embed/${channel}/chat?parent=${window.location.hostname}&darkpopout" style="width:100%; height:100%; border:none;"></iframe>
+                        </div>
+                    `;                }
             } else {
                 player.innerHTML = `<img src="${session.thumbnail_url || 'https://i.ibb.co/s5s2sYy/Default-Image.png'}" style="width:100%; height:100%; object-fit:cover;">`;
                 chat.innerHTML = `${chatTitle}<p>El chat aparecerá cuando el evento inicie.</p>`;
@@ -529,8 +538,8 @@ const LiveApp = {
             let projectHTML = '';
             if (project) {
                 const uniqueAuthors = project.authors && Array.isArray(project.authors) ? [...new Set(project.authors)].join(', ') : 'No disponible';
-                const doiLink = project.doi_url ? `<a href="${project.doi_url}" target="_blank" rel="noopener noreferrer" class="btn-secondary">Ver Proyecto (DOI)</a>` : '';
-                projectHTML = `
+                // DESPUÉS
+                const doiLink = project.doi ? `<a href="https://doi.org/${project.doi}" target="_blank" rel="noopener noreferrer" class="doi-badge">Ver Proyecto (DOI)</a>` : '';                projectHTML = `
                     <h4>Proyecto</h4>
                     <h3 class="live-room-project-title">${project.title}</h3>
                     <p><strong>Autores:</strong> ${uniqueAuthors}</p>
