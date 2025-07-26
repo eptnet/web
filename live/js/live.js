@@ -6,6 +6,8 @@ const LiveApp = {
     currentSlideIndex: 0,
     isApiReady: false,
     countdownInterval: null,
+    currentChannel: null,
+    viewerCount: 0,
 
     init() {
         const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
@@ -308,16 +310,21 @@ const LiveApp = {
     },
 
     async openLiveRoom(id) {
+        if (this.currentChannel) {
+            this.supabase.removeChannel(this.currentChannel);
+            this.currentChannel = null;
+        }
+
         if (this.updateCarouselView) {
-            this.stopCarouselPlayer(); 
+            this.stopCarouselPlayer();
         }
-        
+
         const item = this.allContentMap[id];
-        if (!item) {
-            console.error("Error: No se encontró el item en el mapa con ID:", id);
-            return;
-        }
-        
+        if (!item) return;
+
+        this.viewerCount = 0; // Reiniciamos el contador
+
+        // (El código para crear el modal se mantiene igual)
         this.elements.modalContainer.innerHTML = '';
         const modalOverlay = document.createElement('div');
         modalOverlay.id = 'live-room-modal';
@@ -332,7 +339,32 @@ const LiveApp = {
         modalOverlay.appendChild(content);
         this.elements.modalContainer.appendChild(modalOverlay);
 
-        await this.populateLiveRoom(item); // Se convierte en llamada asíncrona
+        const channelName = `session-${id}`;
+        this.currentChannel = this.supabase.channel(channelName);
+
+        this.currentChannel.on('presence', { event: 'sync' }, () => {
+            const presenceState = this.currentChannel.presenceState();
+            this.viewerCount = Object.keys(presenceState).length;
+            this.updateViewerCountUI();
+        });
+
+        this.currentChannel.subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                // --- INICIO DE LA CORRECCIÓN DE SINTAXIS ---
+                // Obtenemos la sesión actual para identificar al usuario
+                const { data: { session } } = await this.supabase.auth.getSession();
+                const userId = session?.user?.id || 'invitado';
+                
+                await this.currentChannel.track({ user_id: userId, online_at: new Date().toISOString() });
+                // --- FIN DE LA CORRECCIÓN DE SINTAXIS ---
+                
+                const currentPresenceState = this.currentChannel.presenceState();
+                this.viewerCount = Object.keys(currentPresenceState).length;
+                this.updateViewerCountUI();
+            }
+        });
+
+        await this.populateLiveRoom(item);
         setTimeout(() => modalOverlay.classList.add('is-visible'), 10);
     },
 
@@ -357,6 +389,13 @@ const LiveApp = {
     },
 
     closeLiveRoom() {
+
+        // Nos desconectamos del canal de Supabase al cerrar la sala
+        if (this.currentChannel) {
+            this.supabase.removeChannel(this.currentChannel);
+            this.currentChannel = null;
+        }
+
         const modalOverlay = document.getElementById('live-room-modal');
         if (modalOverlay) {
             const playerContainer = modalOverlay.querySelector('#live-room-player');
@@ -369,6 +408,13 @@ const LiveApp = {
             setTimeout(() => {
                 this.elements.modalContainer.innerHTML = '';
             }, 300);
+        }
+    },
+
+    updateViewerCountUI() {
+        const viewerCountElement = document.getElementById('live-viewer-count');
+        if (viewerCountElement) {
+            viewerCountElement.innerHTML = `<i class="fas fa-eye"></i> ${this.viewerCount}`;
         }
     },
 
@@ -486,12 +532,21 @@ const LiveApp = {
             const session = item;
             const eventDate = new Date(session.scheduled_at);
             const dateString = eventDate.toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'short' });
-            const chatTitle = `<h4><i class="fas fa-comments"></i> Chat ${session.status === 'EN VIVO' ? '<span class="card-live-indicator">EN VIVO</span>' : ''}</h4>`;
-
+            
             primaryAction.innerHTML = '';
             chat.style.display = 'block';
             investigators.style.display = 'block';
             countdown.style.display = 'none';
+
+            // --- INICIO DE LA LÓGICA UNIFICADA ---
+            // Este título ahora es igual para TODAS las plataformas en vivo.
+            let chatTitle = `<h4><i class="fas fa-comments"></i> Chat 
+                ${session.status === 'EN VIVO' ? `
+                    <span class="card-live-indicator">EN VIVO</span> 
+                    <span id="live-viewer-count" class="viewer-count"><i class="fas fa-eye"></i> ${this.viewerCount}</span>
+                ` : ''}
+            </h4>`;
+            // --- FIN DE LA LÓGICA UNIFICADA ---
 
             if (session.platform === 'substack') {
                 player.innerHTML = `<img src="${session.thumbnail_url || 'https://i.ibb.co/s5s2sYy/Default-Image.png'}" style="width:100%; height:100%; object-fit:cover;">`;
