@@ -17,109 +17,171 @@ const LiveApp = {
         this.cacheDOMElements();
         this.addEventListeners();
 
-        // --- INICIO DE LA LÓGICA DE AUTENTICACIÓN ---
         this.supabase.auth.onAuthStateChange((_event, session) => {
-            this.renderUserIcon(session);
+            this.renderUserUI(session);
         });
-        // --- FIN DE LA LÓGICA DE AUTENTICACIÓN ---
         
         if (window.YT && typeof window.YT.Player === 'function') {
-            this.isApiReady = true;
-            this.run();
+            this.isApiReady = true; this.run();
         } else {
-            window.onYouTubeIframeAPIReady = () => {
-                this.isApiReady = true;
-                this.run();
-            };
+            window.onYouTubeIframeAPIReady = () => { this.isApiReady = true; this.run(); };
         }
         this.listenForChanges();
-
-        if (localStorage.getItem('theme') === 'light') {
-            document.body.classList.add('light-theme');
-        }
+        this.applyTheme(localStorage.getItem('theme') || 'light');
     },
 
     cacheDOMElements() {
         this.elements = {
-            themeToggleBtn: document.getElementById('theme-toggle-btn'),
+            // Elementos del menú (NUEVOS)
+            desktopNav: document.querySelector('.desktop-nav'),
+            guestViewDesktop: document.getElementById('guest-view'),
+            userViewDesktop: document.getElementById('user-view'),
+            avatarLinkDesktop: document.getElementById('user-avatar-link'),
+            logoutBtnDesktop: document.getElementById('logout-btn-header'),
+            themeSwitcherDesktop: document.getElementById('theme-switcher-desktop'),
+            mobileMoreBtn: document.getElementById('mobile-more-btn'),
+            mobileMoreMenu: document.getElementById('mobile-more-menu'),
+            mobileMoreMenuClose: document.getElementById('mobile-more-menu-close'),
+            mobileUserActions: document.getElementById('mobile-user-actions'),
+            themeSwitcherMobile: document.getElementById('theme-switcher-mobile'),
+            overlay: document.getElementById('overlay'),
+            loginModalTriggerDesktop: document.getElementById('login-modal-trigger-desktop'),
+            loginModalOverlay: document.getElementById('login-modal-overlay'),
+            loginModalCloseBtn: document.getElementById('login-modal-close-btn'),
+            
+            // Elementos de la página de Live (EXISTENTES)
             carouselSection: document.getElementById('featured-carousel-section'),
             scheduleList: document.getElementById('schedule-list'),
             ondemandListContainer: document.getElementById('ondemand-list-container'),
             tabs: document.querySelectorAll('.tab-link'),
             tabContents: document.querySelectorAll('.tab-content'),
             modalContainer: document.getElementById('modal-container'),
-            userIconContainer: document.getElementById('user-icon-container'),
-            searchInput: document.getElementById('search-input')
+            searchInput: document.getElementById('search-input'),
         };
     },
+    
+    // --- INICIO: FUNCIONES UNIFICADAS PARA EL MENÚ ---
+    
+    applyTheme(theme) {
+        document.body.classList.toggle("dark-theme", theme === "dark");
+        const iconClass = theme === "dark" ? "fa-sun" : "fa-moon";
+        if (this.elements.themeSwitcherDesktop) this.elements.themeSwitcherDesktop.querySelector('i').className = `fa-solid ${iconClass}`;
+        if (this.elements.themeSwitcherMobile) this.elements.themeSwitcherMobile.querySelector('i').className = `fa-solid ${iconClass}`;
+    },
 
-    renderUserIcon(session) {
-        const container = this.elements.userIconContainer;
-        if (!container) return;
+    toggleTheme() {
+        const newTheme = document.body.classList.contains("dark-theme") ? "light" : "dark";
+        localStorage.setItem("theme", newTheme);
+        this.applyTheme(newTheme);
+    },
+    
+    handleOAuthLogin(provider) {
+        const redirectTo = `${window.location.origin}/inv/profile.html`;
+        this.supabase.auth.signInWithOAuth({ provider, options: { redirectTo } });
+    },
 
-        if (session && session.user) {
-            const avatarUrl = session.user.user_metadata?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
-            container.innerHTML = `
-                <a href="/inv/profile.html" title="Mi Perfil" class="nav-icon"><img src="${avatarUrl}" alt="Avatar"></a>
-                <button id="live-logout-btn" class="nav-icon" title="Cerrar Sesión"><i class="fa-solid fa-right-from-bracket"></i></button>
-            `;
-        } else {
-            container.innerHTML = `
-                <button id="login-modal-trigger" title="Iniciar Sesión" class="nav-icon">
-                    <i class="fa-solid fa-right-to-bracket"></i>
-                </button>
-            `;
+    renderUserUI(session) {
+        const user = session?.user;
+        
+        // Vista de Escritorio
+        if (this.elements.guestViewDesktop && this.elements.userViewDesktop) {
+            if (user) {
+                this.elements.guestViewDesktop.style.display = 'none';
+                this.elements.userViewDesktop.style.display = 'flex';
+                const avatarUrl = user.user_metadata?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
+                this.elements.avatarLinkDesktop.innerHTML = `<img src="${avatarUrl}" alt="Avatar">`;
+            } else {
+                this.elements.guestViewDesktop.style.display = 'flex';
+                this.elements.userViewDesktop.style.display = 'none';
+            }
+        }
+
+        // Vista Móvil (Menú "Más")
+        if (this.elements.mobileUserActions) {
+            if (user) {
+                const avatarUrl = user.user_metadata?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
+                this.elements.mobileUserActions.innerHTML = `
+                    <a href="/inv/profile.html" class="mobile-more-menu__item">
+                        <img src="${avatarUrl}" alt="Avatar">
+                        <span>Mi Perfil</span>
+                    </a>
+                    <button id="logout-btn-mobile" class="mobile-more-menu__item">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span>Cerrar Sesión</span>
+                    </button>
+                `;
+            } else {
+                this.elements.mobileUserActions.innerHTML = `
+                    <a href="#" class="mobile-more-menu__item login-provider-btn" data-provider="google">
+                        <i class="fa-brands fa-google"></i><span>Iniciar con Google</span>
+                    </a>
+                    <a href="#" class="mobile-more-menu__item login-provider-btn" data-provider="github">
+                        <i class="fa-brands fa-github"></i><span>Iniciar con GitHub</span>
+                    </a>
+                `;
+            }
         }
     },
 
+    // --- FIN: FUNCIONES UNIFICADAS PARA EL MENÚ ---
+
     addEventListeners() {
-        if(this.elements.themeToggleBtn) {
-            this.elements.themeToggleBtn.addEventListener('click', () => {
-                document.body.classList.toggle('light-theme');
-                localStorage.setItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
-            });
-        }
+        // --- INICIO: EVENTOS DEL NUEVO MENÚ ---
+        this.elements.themeSwitcherDesktop?.addEventListener("click", () => this.toggleTheme());
+        this.elements.themeSwitcherMobile?.addEventListener("click", () => this.toggleTheme());
+        this.elements.logoutBtnDesktop?.addEventListener('click', async () => { await this.supabase.auth.signOut(); });
         
-        this.elements.scheduleList.addEventListener('click', (e) => this.handleCardClick(e));
-        this.elements.ondemandListContainer.addEventListener('click', (e) => this.handleCardClick(e));
-        this.elements.tabs.forEach(tab => tab.addEventListener('click', (e) => this.handleTabClick(e.currentTarget)));
-
-        const headerActions = document.querySelector('.header-actions');
-        if (headerActions) {
-            headerActions.addEventListener('click', async (e) => {
-                if (e.target.closest('#live-logout-btn')) {
-                    await this.supabase.auth.signOut();
-                }
-                if (e.target.closest('#login-modal-trigger')) {
-                    document.getElementById('login-modal-overlay')?.classList.add('is-visible');
-                }
-            });
-        }
-
-        const loginModalOverlay = document.getElementById('login-modal-overlay');
-        const loginModalCloseBtn = document.getElementById('login-modal-close-btn');
-        loginModalCloseBtn?.addEventListener('click', () => loginModalOverlay?.classList.remove('is-visible'));
-        loginModalOverlay?.addEventListener('click', (e) => {
-            if (e.target === loginModalOverlay) loginModalOverlay.classList.remove('is-visible');
-        });
-
-        loginModalOverlay?.addEventListener('click', async (e) => {
+        document.body.addEventListener('click', async (e) => {
+            // Logout para móvil (se añade dinámicamente)
+            if (e.target.closest('#logout-btn-mobile')) {
+                await this.supabase.auth.signOut();
+            }
+            // Login con proveedores (para ambos modales)
             const providerBtn = e.target.closest('.login-provider-btn');
             if (providerBtn && providerBtn.dataset.provider) {
-                await this.supabase.auth.signInWithOAuth({ 
-                    provider: providerBtn.dataset.provider,
-                    options: { redirectTo: `${window.location.origin}/inv/profile.html` }
-                });
+                this.handleOAuthLogin(providerBtn.dataset.provider);
             }
         });
 
-        if (this.elements.searchInput) {
-            this.elements.searchInput.addEventListener('input', (e) => {
-                this.filterCards(e.target.value);
-            });
-        }
+        // Abrir/Cerrar Modal de Login
+        this.elements.loginModalTriggerDesktop?.addEventListener('click', () => {
+            this.elements.loginModalOverlay?.classList.add('is-visible');
+        });
+        this.elements.loginModalCloseBtn?.addEventListener('click', () => {
+            this.elements.loginModalOverlay?.classList.remove('is-visible');
+        });
+        this.elements.loginModalOverlay?.addEventListener('click', (e) => {
+            if (e.target === this.elements.loginModalOverlay) {
+                this.elements.loginModalOverlay.classList.remove('is-visible');
+            }
+        });
+        
+        // Abrir/Cerrar Menú Móvil "Más"
+        const openMobileMenu = () => {
+            this.elements.mobileMoreMenu?.classList.add('is-visible');
+            this.elements.overlay?.classList.add('is-visible');
+            document.body.style.overflow = 'hidden'; 
+        };
+        const closeMobileMenu = () => {
+            this.elements.mobileMoreMenu?.classList.remove('is-visible');
+            this.elements.overlay?.classList.remove('is-visible');
+            document.body.style.overflow = '';
+        };
+        this.elements.mobileMoreBtn?.addEventListener('click', openMobileMenu);
+        this.elements.mobileMoreMenuClose?.addEventListener('click', closeMobileMenu);
+        this.elements.overlay?.addEventListener('click', closeMobileMenu);
+        
+        // --- FIN: EVENTOS DEL NUEVO MENÚ ---
+
+        // Eventos existentes de la página Live
+        this.elements.scheduleList.addEventListener('click', (e) => this.handleCardClick(e));
+        this.elements.ondemandListContainer.addEventListener('click', (e) => this.handleCardClick(e));
+        this.elements.tabs.forEach(tab => tab.addEventListener('click', (e) => this.handleTabClick(e.currentTarget)));
+        this.elements.searchInput?.addEventListener('input', (e) => this.filterCards(e.target.value));
     },
 
+    // ... (El resto de las funciones de LiveApp como run, renderCarousel, openLiveRoom, etc., se mantienen sin cambios)
+    
     async run() {
         const [{ data: sessions }, { data: videos }] = await Promise.all([
             this.supabase.from('sessions').select(`
@@ -449,7 +511,7 @@ const LiveApp = {
             if (userError) throw userError;
 
             const socialLinksHTML = `
-                ${user.substack_url ? `<a href="${user.substack_url}" target="_blank" title="Substack"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w.org/2000/svg" id="Substack--Streamline-Simple-Icons" height="24" width="24"><desc>Substack Streamline Icon: https://streamlinehq.com</desc><title>Substack</title><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z" fill="#e65c17" stroke-width="1"></path></svg></a>` : ''}
+                ${user.substack_url ? `<a href="${user.substack_url}" target="_blank" title="Substack"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="Substack--Streamline-Simple-Icons" height="24" width="24"><desc>Substack Streamline Icon: https://streamlinehq.com</desc><title>Substack</title><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z" fill="#e65c17" stroke-width="1"></path></svg></a>` : ''}
                 ${user.website_url ? `<a href="${user.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}
                 ${user.youtube_url ? `<a href="${user.youtube_url}" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>` : ''}
                 ${user.x_url ? `<a href="${user.x_url}" target="_blank" title="Perfil de X"><i class="fab fa-twitter"></i></a>` : ''}

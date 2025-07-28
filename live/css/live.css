@@ -1,6 +1,23 @@
-/* --- VARIABLES Y TEMA --- */
-:root { --color-background: #121212; --color-surface: #1e1e1e; --color-primary: #ffffff; --color-secondary: #b3b3b3; --color-accent: #b72a1e; --border-color: #333; --border-radius: 12px; }
-body.light-theme { --color-background: #f0f2f5; --color-surface: #ffffff; --color-primary: #050505; --color-secondary: #65676b; --border-color: #ddd; }
+/* DESPUÉS (Lógica de tema unificada) */
+:root {
+    /* Ahora las variables por defecto son las del tema CLARO */
+    --color-background: #f0f2f5;
+    --color-surface: #ffffff;
+    --color-primary: #050505;
+    --color-secondary: #65676b;
+    --color-accent: #b72a1e;
+    --border-color: #ddd;
+    --border-radius: 12px;
+}
+body.dark-theme {
+    /* La clase .dark-theme aplicará las variables del tema OSCURO */
+    --color-background: #121212;
+    --color-surface: #1e1e1e;
+    --color-primary: #ffffff;
+    --color-secondary: #b3b3b3;
+    --border-color: #333;
+}
+
 body { background-color: var(--color-background); color: var(--color-primary); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding-top: 60px; }
 
 /* --- HEADER --- */
@@ -758,3 +775,215 @@ body { background-color: var(--color-background); color: var(--color-primary); f
     }
 }
 /* --- FIN DE LA CORRECCIÓN --- */
+
+/* --- INICIO DE ESTILOS DE NAVEGACIÓN (AÑADIR A LIVE.CSS) --- */
+
+/* 1. NAVEGACIÓN DE ESCRITORIO */
+.desktop-nav {
+   padding: 1rem 0;
+   position: sticky;
+   top: 0;
+   z-index: 1000;
+   -webkit-backdrop-filter: blur(10px);
+   backdrop-filter: blur(10px);
+   transition: background-color 0.3s;
+}
+body.dark-theme .desktop-nav {
+    /* Color de fondo para el tema oscuro con 80% de opacidad */
+    background-color: rgba(24, 25, 26, 0.8);
+}
+/* Fondo oscuro por defecto (sin transparencia inicial) */
+.desktop-nav {
+   background-color: var(--color-background);
+   background-color: rgba(240, 242, 245, 0.8);
+}
+/* Fondo claro para tema light (sin transparencia inicial) */
+body.light-theme .desktop-nav {
+   background-color: var(--color-background);
+}
+.desktop-nav .container { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    gap: 1rem; 
+    max-width: 1800px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+.desktop-nav .logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--color-primary);
+    text-decoration: none;
+}
+.desktop-nav .logo img { 
+    height: 40px; 
+    display: block; 
+}
+.bento-box-nav { 
+    display: flex; 
+    align-items: center; 
+    gap: 0.5rem; 
+    background-color: var(--color-surface); 
+    padding: 0.5rem; 
+    border-radius: var(--border-radius); 
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
+    transition: background-color 0.3s; 
+}
+.main-menu { 
+    flex-grow: 1; 
+    justify-content: center; 
+}
+.nav-icon { 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    width: 44px; 
+    height: 44px; 
+    border-radius: 8px; 
+    transition: background-color 0.2s ease, color 0.2s ease; 
+    color: var(--color-secondary); 
+    font-size: 1.1rem; 
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+}
+.nav-icon:hover { 
+    background-color: var(--color-background); 
+    color: var(--color-accent); 
+}
+.nav-icon.active { 
+    background-color: var(--color-accent); 
+    color: white; 
+}
+.nav-icon img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* 2. NAVEGACIÓN MÓVIL */
+.mobile-nav { 
+    display: none; 
+    position: fixed; 
+    bottom: 0; 
+    left: 0; 
+    width: 100%; 
+    z-index: 1000; 
+    background-color: var(--color-surface); 
+    border-top: 1px solid var(--border-color); 
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.05); 
+    padding: 0.25rem 0; 
+    justify-content: space-around; 
+}
+.mobile-nav__link { 
+    flex-grow: 1; 
+    color: var(--color-secondary); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    height: 54px; 
+    font-size: 1.5rem; 
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+.mobile-nav__link.active { 
+    color: var(--color-accent); 
+}
+
+/* 3. MENÚ DESPLEGABLE MÓVIL (MÁS OPCIONES) */
+.mobile-more-menu { 
+    position: fixed; 
+    bottom: 0; 
+    left: 0; 
+    width: 100%; 
+    z-index: 1002; 
+    background-color: var(--color-surface); 
+    border-top-left-radius: var(--border-radius); 
+    border-top-right-radius: var(--border-radius); 
+    box-shadow: 0 -5px 15px rgba(0,0,0,0.1); 
+    transform: translateY(100%); 
+    transition: transform 0.3s ease-out; 
+} 
+.mobile-more-menu.is-visible { 
+    transform: translateY(0); 
+}
+.mobile-more-menu__content { 
+    padding: 1.5rem; 
+} 
+.mobile-more-menu__item { 
+    display: flex; 
+    align-items: center; 
+    gap: 1rem; 
+    padding: 1rem; 
+    font-size: 1rem; 
+    font-weight: 500; 
+    color: var(--color-primary); 
+    border-radius: 8px; 
+    width: 100%;
+    text-decoration: none;
+}
+.mobile-more-menu__item:hover, .mobile-more-menu__item:active { 
+    background-color: var(--color-background); 
+}
+.mobile-more-menu__item i { 
+    width: 24px; 
+    text-align: center; 
+    font-size: 1.2rem; 
+    color: var(--color-secondary); 
+}
+.mobile-more-menu__item img {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+}
+
+.overlay { 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: rgba(0,0,0,0.5); 
+    z-index: 1001; 
+    opacity: 0; 
+    visibility: hidden; 
+    transition: opacity 0.4s, visibility 0.4s; 
+}
+.overlay.is-visible { 
+    opacity: 1; 
+    visibility: visible; 
+}
+
+/* 4. AJUSTES RESPONSIVOS */
+@media (max-width: 768px) {
+    .desktop-nav { 
+        display: none; 
+    }
+    .mobile-nav { 
+        display: flex; 
+    }
+    body { 
+        padding-bottom: 60px; /* Espacio para el menú móvil */
+    }
+}
+
+/* 5. OTROS AJUSTES */
+/* Reposicionamos la barra de búsqueda que movimos en el HTML */
+.search-bar-wrapper {
+    margin-bottom: 1.5rem;
+}
+/* Ocultamos el header original de live.css */
+.main-header {
+    display: none;
+}
+/* Hacemos que el body no tenga padding superior, ya que el nuevo menú es sticky */
+body {
+    padding-top: 10px; /* Altura del nuevo header + padding */
+}
+
+/* --- FIN DE ESTILOS DE NAVEGACIÓN --- */
