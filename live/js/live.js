@@ -575,7 +575,7 @@ const LiveApp = {
                     `;                }
             } else {
                 player.innerHTML = `<img src="${session.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg'}" style="width:100%; height:100%; object-fit:cover;">`;
-                chat.innerHTML = `${chatTitle}<p>El chat aparecerá cuando el evento inicie.</p>`;
+                chat.innerHTML = `${chatTitle}<p>El chat aparecerá cuando el evento esta En Vivo.</p>`;
             }
 
             if (session.status === 'PROGRAMADO' && eventDate > new Date()) {

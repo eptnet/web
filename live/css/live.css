@@ -707,3 +707,54 @@ body { background-color: var(--color-background); color: var(--color-primary); f
 .doi-badge:hover {
     background-color: #005f8f;
 }
+
+/* --- INICIO DE LA CORRECCIÓN DEFINITIVA DEL CARRUSEL EN MÓVIL --- */
+/* Por favor, reemplaza el bloque @media anterior con este */
+
+@media (max-width: 768px) {
+    .featured-carousel {
+        height: auto; /* La altura del carrusel se adaptará a su contenido */
+        min-height: unset; /* Reseteamos la altura mínima de escritorio */
+        padding: 1.5rem 0;
+    }
+
+    .carousel-track {
+        /* Convertimos el track en un simple contenedor de scroll horizontal */
+        display: flex;
+        overflow-x: auto; /* Habilitamos el scroll con el dedo */
+        gap: 1rem; /* Espacio entre cada tarjeta */
+        padding: 0 1rem; /* Padding a los lados para que no se pegue a los bordes */
+
+        /* Desactivamos por completo el comportamiento 3D y de posicionamiento absoluto */
+        position: static;
+        transform-style: flat;
+        perspective: none;
+    }
+
+    .carousel-slide {
+        /* Cada slide ahora es un item flexible que no se encoge */
+        flex: 0 0 80%; /* Cada slide ocupará el 80% del ancho de la pantalla */
+        max-width: 320px; /* Un ancho máximo por si el 80% es demasiado en tablets */
+        
+        /* Reseteamos el posicionamiento y las transformaciones del modo escritorio */
+        position: static;
+        transform: none !important;
+        opacity: 1 !important;
+        height: auto; /* La altura de la tarjeta se adapta a su contenido */
+    }
+
+    .slide-player {
+        /* LA CLAVE: Forzamos la proporción correcta del video/imagen */
+        aspect-ratio: 16 / 9;
+        height: auto; /* La altura es automática, basada en el ancho y la proporción */
+    }
+    
+    .slide-info-box {
+        height: auto; /* La altura de la caja de texto se adapta a su contenido */
+    }
+
+    .carousel-nav {
+        display: none; /* Ocultamos las flechas de navegación, se usa el scroll */
+    }
+}
+/* --- FIN DE LA CORRECCIÓN --- */
