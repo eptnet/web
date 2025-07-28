@@ -549,7 +549,7 @@ const LiveApp = {
             // --- FIN DE LA LÓGICA UNIFICADA ---
 
             if (session.platform === 'substack') {
-                player.innerHTML = `<img src="${session.thumbnail_url || 'https://i.ibb.co/s5s2sYy/Default-Image.png'}" style="width:100%; height:100%; object-fit:cover;">`;
+                player.innerHTML = `<img src="${session.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg'}" style="width:100%; height:100%; object-fit:cover;">`;
                 primaryAction.innerHTML = `<a href="https://open.substack.com/live-stream/${session.platform_id}" target="_blank" rel="noopener noreferrer" class="btn-substack" style="display:block; text-align:center;">Ir a la Sala en Substack</a>`;
                 chat.innerHTML = `${chatTitle}<p>El chat para este evento está disponible directamente en Substack.</p>`;
             } else if (session.status === 'EN VIVO') {
@@ -574,7 +574,7 @@ const LiveApp = {
                         </div>
                     `;                }
             } else {
-                player.innerHTML = `<img src="${session.thumbnail_url || 'https://i.ibb.co/s5s2sYy/Default-Image.png'}" style="width:100%; height:100%; object-fit:cover;">`;
+                player.innerHTML = `<img src="${session.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg'}" style="width:100%; height:100%; object-fit:cover;">`;
                 chat.innerHTML = `${chatTitle}<p>El chat aparecerá cuando el evento inicie.</p>`;
             }
 
