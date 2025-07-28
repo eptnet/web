@@ -987,3 +987,19 @@ body {
 }
 
 /* --- FIN DE ESTILOS DE NAVEGACIÓN --- */
+
+/* --- Estilo para el indicador "Live" en el Header --- */
+
+.header-logo .live-indicator {
+    /* Reutilizamos el estilo del indicador de las tarjetas de evento */
+    background-color: var(--color-accent);
+    color: white;
+    padding: 0.25rem 0.6rem;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1; /* Ayuda al centrado vertical */
+    
+    /* Reutilizamos la animación titilante que ya existe en tu CSS */
+    animation: blinking-animation 1.5s infinite;
+}
