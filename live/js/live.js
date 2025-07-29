@@ -28,6 +28,28 @@ const LiveApp = {
         }
         this.listenForChanges();
         this.applyTheme(localStorage.getItem('theme') || 'light');
+
+        this.handleAnchorLink();
+    },
+
+    handleAnchorLink() {
+        // Revisa si la URL actual tiene el ancla #seccion-eventos
+        if (window.location.hash === '#seccion-eventos') {
+            const eventSection = document.getElementById('seccion-eventos');
+            const eventTab = document.querySelector('.tab-link[data-tab="agenda-tab"]');
+
+            // Si la pestaña de eventos existe, simula un clic para activarla
+            if (eventTab) {
+                this.handleTabClick(eventTab);
+            }
+
+            // Si la sección existe, nos desplazamos suavemente hacia ella
+            if (eventSection) {
+                setTimeout(() => {
+                    eventSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100); // Pequeño retraso para dar tiempo a que se renderice el cambio de pestaña
+            }
+        }
     },
 
     cacheDOMElements() {
