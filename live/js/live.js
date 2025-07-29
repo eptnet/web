@@ -576,13 +576,16 @@ const LiveApp = {
                 const channel = session.platform_id || 'epistecnologia';
                 let chatContentHTML = '';
                 if (session.platform === 'vdo_ninja') {
-                    player.innerHTML = `<iframe src="${session.viewer_url}" allow="autoplay; fullscreen"></iframe>`;
+                    // player.innerHTML = `<iframe src="${session.viewer_url}" allow="autoplay; fullscreen"></iframe>`;
+                    player.innerHTML = `<iframe src="${session.viewer_url}" allow="autoplay; fullscreen; picture-in-picture"></iframe>`;
                     chatContentHTML = `<p>El chat no está disponible para esta plataforma.</p>`;
                 } else if (session.platform === 'youtube') {
-                    player.innerHTML = `<iframe src="https://www.youtube.com/embed/${session.platform_id}?autoplay=1" allowfullscreen></iframe>`;
+                    // player.innerHTML = `<iframe src="https://www.youtube.com/embed/${session.platform_id}?autoplay=1" allowfullscreen></iframe>`;
+                    player.innerHTML = `<iframe src="https://www.youtube.com/embed/${session.platform_id}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
                     chatContentHTML = `<div id="chat-container"><iframe src="https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}"></iframe></div>`;
                 } else { // Twitch
-                    player.innerHTML = `<iframe src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=true" allowfullscreen></iframe>`;
+                    // player.innerHTML = `<iframe src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=true" allowfullscreen></iframe>`;
+                    player.innerHTML = `<iframe src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=true" allowfullscreen allow="picture-in-picture"></iframe>`;
                     chatContentHTML = `<div id="chat-container"><iframe src="https://www.twitch.tv/embed/${channel}/chat?parent=${window.location.hostname}&darkpopout" style="width:100%; height:100%; border:none;"></iframe></div>`;
                 }
                 chat.style.display = 'grid';
