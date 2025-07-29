@@ -29,6 +29,84 @@ document.addEventListener('DOMContentLoaded', () => {
         const loginPopover = document.getElementById('login-popover');
         const liveIconDesktop = document.getElementById('nav-live-desktop'); // <-- LÍNEA REINTEGRADA
 
+        // --- INICIO: LÓGICA DE NOTIFICACIONES EN TIEMPO REAL ---
+        const notificationsIcon = document.querySelector('a[aria-label="Notificaciones"]'); // Usamos el icono de la campana
+        const notificationsModal = document.createElement('div');
+        notificationsModal.className = 'notifications-modal';
+        document.body.appendChild(notificationsModal);
+
+        // Función para mostrar el punto rojo
+        const showNotificationAlert = () => {
+            if (notificationsIcon) {
+                notificationsIcon.classList.add('has-notifications');
+            }
+        };
+
+        // Función para mostrar el modal con las últimas notificaciones
+        const openNotificationsModal = async () => {
+            if (!window.supabaseClient) return;
+
+            // 1. Quitamos el punto rojo
+            notificationsIcon.classList.remove('has-notifications');
+            
+            // 2. Mostramos un mensaje de carga
+            notificationsModal.innerHTML = '<div class="notifications-content"><p>Cargando...</p></div>';
+            notificationsModal.classList.add('is-visible');
+
+            // 3. Buscamos las últimas 5 notificaciones
+            const { data, error } = await window.supabaseClient
+                .from('notifications')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(5);
+
+            if (error || !data || data.length === 0) {
+                notificationsModal.innerHTML = '<div class="notifications-content"><p>No hay notificaciones nuevas.</p></div>';
+                return;
+            }
+
+            // 4. Creamos el HTML para cada notificación
+            const notificationsHTML = data.map(notif => {
+                const timeAgo = new Date(notif.created_at).toLocaleString('es-ES');
+                return `
+                    <a href="${notif.link || '#'}" class="notification-item">
+                        <p>${notif.message}</p>
+                        <span>${timeAgo}</span>
+                    </a>
+                `;
+            }).join('');
+
+            notificationsModal.innerHTML = `
+                <div class="notifications-content">
+                    <h3>Últimas Novedades</h3>
+                    ${notificationsHTML}
+                </div>
+            `;
+        };
+
+        // Listener para el clic en el icono de la campana
+        notificationsIcon?.addEventListener('click', (e) => {
+            e.preventDefault();
+            openNotificationsModal();
+        });
+
+        // Cerramos el modal si se hace clic fuera de él
+        document.addEventListener('click', (e) => {
+            if (!notificationsModal.contains(e.target) && !notificationsIcon.contains(e.target)) {
+                notificationsModal.classList.remove('is-visible');
+            }
+        });
+
+        // Escuchamos por NUEVAS notificaciones en la base de datos
+        window.supabaseClient
+            .channel('public:notifications')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, payload => {
+                console.log('¡Nueva notificación recibida!', payload.new);
+                showNotificationAlert();
+            })
+            .subscribe();
+
+        // --- FIN: LÓGICA DE NOTIFICACIONES ---
         // --- Funciones de UI ---
         const showUserUI = (user) => {
             if (guestView) guestView.style.display = 'none';
