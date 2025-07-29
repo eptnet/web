@@ -27,12 +27,18 @@ document.addEventListener('mainReady', () => {
                             bento-box--3x3 bento-style--flat" 
                             data-id="static-welcome" 
                             style="cursor: default;">
-                            <h1>Investiga 
+                            <h1>Crea
                             </br>Divulga
-                            </br>Comprende</h1>
+                            </br>Comparte</h1>
                             </br>
-                            <p>Te damos la bienvenida a <strong>Epistecnología</strong>, una <strong>plataforma abierta de divulgación científica y cultural</strong> que pone la <strong>tecnología al servicio del conocimiento con Sabiduría</strong>. Aquí, investigadores, docentes, divulgadores y curiosos del saber encuentran un espacio para <strong>crear, compartir y explorar contenidos académicos</strong>, desde artículos y podcasts hasta <strong>videos, transmisiones en vivo y publicaciones indexadas</strong>.</p>
-                            <a href="#" class="cta-button" id="welcome-cta-btn">Empezar a Crear</a>
+                            <p>Te damos la bienvenida a <strong>Epistecnología</strong>, 
+                            una <strong>plataforma abierta de divulgación científica y cultural</strong> 
+                            que pone la <strong>tecnología al servicio del conocimiento y con Sabiduría</strong>. 
+                            Aquí, investigadores, docentes, divulgadores y curiosos del saber encuentran un 
+                            espacio para <strong>crear, compartir y explorar contenidos académicos y culturales</strong>, 
+                            desde artículos, podcasts hasta <strong>videos, transmisiones en vivo y 
+                            publicaciones indexadas</strong>.</p>
+                            <a href="#" class="cta-button" id="welcome-cta-btn">Divulgador, a Crear 🚀</a>
                             </div>`,
         stories: `<div class="bento-box bento-box--1x3 mobile-full-width" data-id="static-launch-stories" style="background-image: url('https://i.ibb.co/9kDJPK5K/Whisk-7b4dfc4406.jpg'); cursor: pointer; background-size: cover; background-position: center;"><div class="card-content"><span class="card-category" style="color: white;">Colección</span><h4 style="color: white;">Minuto cultural 📺</h4></div></div>`,
         quote: `<div class="bento-box bento-box--4x1 bento-style--flat mobile-full-width" data-id="static-quote" style="cursor:default;"><div class="card-content" style="text-align: center;"><p style="font-size: 1.2rem; font-style: italic;">"El conocimiento es la única riqueza que no se puede robar."</p><h4 style="margin-top: 0.5rem;">- Anónimo</h4></div></div>`,
@@ -87,9 +93,30 @@ document.addEventListener('mainReady', () => {
                 </div>
             </div>`,
         
-            subs: `<div class="bento-box bento-box--2x2 mobile-full-width bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;"><div class="card-content"><h3>¿Disfrutando el Contenido?</h3><p>Suscríbete a nuestro newsletter.</p><br/><iframe src="https://eptnews.substack.com/embed" width="100%" height="100%" style="border:0;" frameborder="0" scrolling="no"></iframe></div></div>`,
-            end: `<div class="bento-box zenodo-module bento-box--1x1" data-id="static-zenodo"><div class="card-content"><h3>Conocimiento Citable</h3><p>Accede a nuestros datasets y preprints.</p><a href="#" class="btn">Visitar Repositorio</a></div></div>
-            <div class="bento-box bento-box--1x1 bento-box--imagen" data-id="static-video" data-panel-type="embed" data-panel-title="Video Destacado" data-embed-src="https://www.youtube.com/embed/dQw4w9WgXcQ"><div class="card-content"><span class="card-category">Ver Ahora</span><h4>El Futuro de la Exploración Espacial</h4></div></div>`
+            subs: `
+                <div class="bento-box bento-box--2x3 mobile-full-width bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;">
+                    <div class="card-content">
+                        <h3>Nuestro cóntenido en tu email</h3
+                        <p>Suscríbete a nuestro newsletter.</p>
+                        <br/>
+                        <iframe src="https://eptnews.substack.com/embed" width="100%" height="100%" style="border:0;" frameborder="0" scrolling="no">
+                        </iframe>
+                    </div>
+                </div>`,
+            zenodo: `
+                <div class="bento-box zenodo-module bento-box--2x3 mobile-full-width" data-id="static-zenodo" style="background-image: url('https://i.ibb.co/x8JbV61H/a-futuristic-digital-artwork-depicting-a-k9-Jb0c-3-R0u8by-Ev-GGOrw-x-Ait-Jamg-RCat9-GLc-O810jg.jpg'); cursor: pointer;">
+                    <div class="card-content">
+                        <h3>Únete a la Comunidad</h3>
+                        <p>Publica tus trabajos, obtén un DOI y forma parte de nuestro ecosistema de conocimiento abierto.</p>
+                    </div>
+                </div>`,
+            end: `
+                <div class="bento-box bento-box--4x1 bento-box--imagen" data-id="static-video" data-panel-type="embed" data-panel-title="Video Destacado" data-embed-src="https://www.youtube.com/embed/dQw4w9WgXcQ">
+                    <div class="card-content">
+                        <span class="card-category">Ver Ahora</span>
+                        <h4>El Futuro de la Exploración Espacial</h4>
+                    </div>
+                </div>`
     };
 
     // --- 3. EL "PLANO DE CONSTRUCCIÓN" DE LA GRID ---
@@ -97,29 +124,37 @@ document.addEventListener('mainReady', () => {
         { type: 'module', id: 'welcome' },
         { type: 'module', id: 'podcastPlayer' },
         { type: 'module', id: 'logos' },
+
         { type: 'post' }, 
         { type: 'post' }, 
         { type: 'post' }, 
-        { type: 'post' },       
+        { type: 'post' },
+
+        { type: 'module', id: 'zenodo' },
+        { type: 'module', id: 'subs' },
+
+        { type: 'post' }, 
+        { type: 'post' }, 
+        { type: 'post' }, 
+        { type: 'post' },
+
         { type: 'module', id: 'stories' },
         { type: 'module', id: 'videoFeatured' },
-        { type: 'module', id: 'quote' },  
+        { type: 'module', id: 'quote' },
+
         { type: 'post' }, 
         { type: 'post' }, 
         { type: 'post' }, 
+        { type: 'post' },
+
         { type: 'post' }, 
-        { type: 'module', id: 'subs' }, 
-        { type: 'post' }, 
-        { type: 'post' }, 
-        { type: 'post' }, 
-        { type: 'post' }, 
-        { type: 'post' }, 
-        { type: 'post' }, 
+        { type: 'post' },
+
         { type: 'module', id: 'end' }
     ];
 
     // --- 4. LÓGICA DE LA APLICACIÓN ---
-    const articlesApiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua&order_dir=desc&count=20';
+    const articlesApiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua&order_dir=desc&count=15';
     const podcastApiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fapi.substack.com%2Ffeed%2Fpodcast%2F2867518%2Fs%2F186951.rss';
     let allPostsData = [];
     
@@ -428,7 +463,29 @@ document.addEventListener('mainReady', () => {
 
         if (dataId === "static-launch-stories") {
             document.dispatchEvent(new CustomEvent('launch-stories'));
-        } else if (allPostsData.some(p => p.guid === dataId)) {
+        } 
+        // --- AÑADE ESTE BLOQUE DE CÓDIGO ---
+        else if (dataId === "static-zenodo") {
+            const imageURL = 'https://i.ibb.co/x8JbV61H/a-futuristic-digital-artwork-depicting-a-k9-Jb0c-3-R0u8by-Ev-GGOrw-x-Ait-Jamg-RCat9-GLc-O810jg.jpg';
+            const contentHTML = `
+                <img src="${imageURL}" alt="Comunidad Epistecnología en Zenodo" class="modal-post-image">
+                <div class="modal-padded-content">
+                    <h2>Publica tu Trabajo, Obtén un DOI y Únete a la Comunidad</h2>
+                    <div class="post-body">
+                        <p>En Epistecnología, te ofrecemos las herramientas para que tu conocimiento sea reconocido y citable. Nuestra integración con Zenodo te permite publicar tus trabajos directamente desde tu perfil y obtener un DOI oficial a tu nombre.</p>
+                        
+                        <h4>La Vía Epistecnología (Recomendado)</h4>
+                        <p>Crea una cuenta o inicia sesión en nuestra plataforma, conecta tu ORCID y utiliza nuestra herramienta de publicación. Tu trabajo será enviado a nuestra comunidad en Zenodo con tu autoría, de forma simple y directa.</p>
+                    </div>
+                    <div class="modal-cta-container">
+                        <button id="zenodo-modal-cta-btn" class="modal-cta-button modal-cta-button--primary">Publicar desde Epistecnología</button>
+                        <a href="https://zenodo.org/communities/epistecnologia" target="_blank" class="modal-cta-button">Explorar la Comunidad en Zenodo</a>
+                    </div>
+                </div>
+            `;
+            openModal(contentHTML, 'article', { link: 'https://zenodo.org/communities/epistecnologia' });
+        }
+        else if (allPostsData.some(p => p.guid === dataId)) {
             const post = allPostsData.find(p => p.guid === dataId);
             
             // --- INICIO DE LA LÓGICA MODIFICADA ---
@@ -460,6 +517,33 @@ document.addEventListener('mainReady', () => {
             openModal(contentHTML, 'article', { link: post.link, title: post.title });
         }
     });
+
+    // --- INICIO: LÓGICA PARA EL BOTÓN DEL MODAL DE ZENODO ---
+    // (Puedes añadir este código después del listener de "bentoGrid")
+
+    document.body.addEventListener('click', async (e) => {
+        // Verificamos si se hizo clic en el botón principal del modal de Zenodo
+        if (e.target.closest('#zenodo-modal-cta-btn')) {
+            e.preventDefault();
+            
+            // Obtenemos la sesión del usuario para saber si está logueado
+            const { data: { session } } = await window.supabaseClient.auth.getSession();
+
+            if (session?.user) {
+                // Si el usuario ya inició sesión, lo redirigimos a su perfil para que publique
+                window.location.href = '/inv/profile.html';
+            } else {
+                // Si es un invitado, cerramos el modal actual y abrimos el de login
+                closeModal();
+                // Usamos un pequeño retraso para asegurar que el modal se cierre antes de abrir el otro
+                setTimeout(() => {
+                    // Hacemos "clic" programáticamente en el botón de login del menú
+                    document.getElementById('login-modal-trigger')?.click();
+                }, 300);
+            }
+        }
+    });
+    // --- FIN: LÓGICA PARA EL BOTÓN DEL MODAL DE ZENODO ---
 
     modalCloseBtn?.addEventListener('click', () => { if (history.state?.modalOpen) history.back(); else closeModal(); });
     modalOverlay?.addEventListener('click', (e) => { if (e.target === modalOverlay) { if (history.state?.modalOpen) history.back(); else closeModal(); } });
