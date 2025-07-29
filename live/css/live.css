@@ -983,7 +983,7 @@ body.light-theme .desktop-nav {
 }
 /* Hacemos que el body no tenga padding superior, ya que el nuevo menú es sticky */
 body {
-    padding-top: 10px; /* Altura del nuevo header + padding */
+    padding-top: 0px; /* Altura del nuevo header + padding */
 }
 
 /* --- FIN DE ESTILOS DE NAVEGACIÓN --- */
@@ -1003,3 +1003,80 @@ body {
     /* Reutilizamos la animación titilante que ya existe en tu CSS */
     animation: blinking-animation 1.5s infinite;
 }
+
+/* --- INICIO: ESTILOS PARA NOTIFICACIONES --- */
+
+.nav-icon {
+    position: relative; /* Asegura que el punto se ancle al icono */
+}
+
+.nav-icon.has-notifications::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    background-color: var(--color-accent);
+    border-radius: 50%;
+    border: 2px solid var(--color-surface);
+}
+
+.notifications-modal {
+    position: fixed;
+    top: 70px; /* Debajo del header */
+    right: 1.5rem;
+    width: 350px;
+    max-height: 400px;
+    background-color: var(--color-surface);
+    border-radius: var(--border-radius);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    z-index: 2000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s ease-out;
+}
+
+.notifications-modal.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.notifications-content {
+    padding: 1rem;
+    overflow-y: auto;
+    max-height: 380px;
+}
+
+.notifications-content h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 0.75rem;
+}
+
+.notification-item {
+    display: block;
+    padding: 0.75rem;
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--color-primary);
+}
+
+.notification-item:hover {
+    background-color: var(--color-background);
+}
+
+.notification-item p {
+    margin: 0 0 0.25rem 0;
+    font-weight: 500;
+}
+
+.notification-item span {
+    font-size: 0.8rem;
+    color: var(--color-secondary);
+}
+
+/* --- FIN: ESTILOS PARA NOTIFICACIONES --- */

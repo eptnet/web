@@ -18,7 +18,7 @@ const LiveApp = {
         this.addEventListeners();
 
         this.supabase.auth.onAuthStateChange((_event, session) => {
-            this.renderUserUI(session);
+            this.renderUserIcon(session); 
         });
         
         if (window.YT && typeof window.YT.Player === 'function') {
@@ -29,7 +29,75 @@ const LiveApp = {
         this.listenForChanges();
         this.applyTheme(localStorage.getItem('theme') || 'light');
 
+        // --- INICIO: LÓGICA DE NOTIFICACIONES EN INIT ---
+        this.checkForUnreadNotifications();
+
+        this.supabase
+            .channel('public:notifications')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, payload => {
+                console.log('¡Nueva notificación recibida en Live!', payload.new);
+                this.showNotificationAlert();
+            })
+            .subscribe();
+        // --- FIN: LÓGICA DE NOTIFICACIONES EN INIT ---
+
         this.handleAnchorLink();
+    },
+
+    showNotificationAlert() {
+        const notificationsIcon = document.getElementById('notifications-bell-icon');
+        if (notificationsIcon) {
+            notificationsIcon.classList.add('has-notifications');
+        }
+    },
+
+    async openNotificationsModal() {
+        const notificationsIcon = document.getElementById('notifications-bell-icon');
+        const notificationsModal = document.querySelector('.notifications-modal') || document.createElement('div');
+        if (!notificationsModal.classList.contains('notifications-modal')) {
+            notificationsModal.className = 'notifications-modal';
+            document.body.appendChild(notificationsModal);
+        }
+
+        notificationsIcon?.classList.remove('has-notifications');
+        notificationsModal.innerHTML = '<div class="notifications-content"><p>Cargando...</p></div>';
+        notificationsModal.classList.add('is-visible');
+
+        const { data, error } = await this.supabase
+            .from('notifications')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(5);
+
+        if (error || !data || data.length === 0) {
+            notificationsModal.innerHTML = '<div class="notifications-content"><p>No hay notificaciones nuevas.</p></div>';
+            return;
+        }
+
+        localStorage.setItem('lastSeenNotificationTimestamp', data[0].created_at);
+
+        const notificationsHTML = data.map(notif => {
+            const timeAgo = new Date(notif.created_at).toLocaleString('es-ES');
+            return `<a href="${notif.link || '#'}" class="notification-item"><p>${notif.message}</p><span>${timeAgo}</span></a>`;
+        }).join('');
+
+        notificationsModal.innerHTML = `<div class="notifications-content"><h3>Últimas Novedades</h3>${notificationsHTML}</div>`;
+    },
+
+    async checkForUnreadNotifications() {
+        const { data: latestNotification } = await this.supabase
+            .from('notifications')
+            .select('created_at')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+        if (!latestNotification) return;
+
+        const lastSeenTimestamp = localStorage.getItem('lastSeenNotificationTimestamp');
+        if (!lastSeenTimestamp || new Date(latestNotification.created_at) > new Date(lastSeenTimestamp)) {
+            this.showNotificationAlert();
+        }
     },
 
     handleAnchorLink() {
@@ -194,6 +262,19 @@ const LiveApp = {
         this.elements.overlay?.addEventListener('click', closeMobileMenu);
         
         // --- FIN: EVENTOS DEL NUEVO MENÚ ---
+
+        const notificationsIcon = document.getElementById('notifications-bell-icon');
+        notificationsIcon?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.openNotificationsModal();
+        });
+
+        document.addEventListener('click', (e) => {
+            const notificationsModal = document.querySelector('.notifications-modal');
+            if (notificationsModal && !notificationsModal.contains(e.target) && !notificationsIcon.contains(e.target)) {
+                notificationsModal.classList.remove('is-visible');
+            }
+        });
 
         // Eventos existentes de la página Live
         this.elements.scheduleList.addEventListener('click', (e) => this.handleCardClick(e));
