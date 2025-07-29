@@ -35,34 +35,80 @@ document.addEventListener('mainReady', () => {
                             <a href="#" class="cta-button" id="welcome-cta-btn">Empezar a Crear</a>
                             </div>`,
         stories: `<div class="bento-box bento-box--1x3 mobile-full-width" data-id="static-launch-stories" style="background-image: url('https://i.ibb.co/9kDJPK5K/Whisk-7b4dfc4406.jpg'); cursor: pointer; background-size: cover; background-position: center;"><div class="card-content"><span class="card-category" style="color: white;">Colección</span><h4 style="color: white;">Minuto cultural 📺</h4></div></div>`,
-        quote: `<div class="bento-box bento-box--1x1 bento-style--flat" data-id="static-quote" style="cursor:default;"><div class="card-content" style="text-align: center;"><p style="font-size: 1.2rem; font-style: italic;">"El conocimiento es la única riqueza que no se puede robar."</p><h4 style="margin-top: 0.5rem;">- Anónimo</h4></div></div>`,
-        videoFeatured: `<div class="bento-box bento-box--2x2 mobile-full-width video-featured-module" data-id="static-video-featured"><iframe src="https://www.youtube.com/embed/6PSKbO5yfDQ?rel=0&modestbranding=1&playsinline=1" title="Video destacado de YouTube" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`,
+        quote: `<div class="bento-box bento-box--4x1 bento-style--flat mobile-full-width" data-id="static-quote" style="cursor:default;"><div class="card-content" style="text-align: center;"><p style="font-size: 1.2rem; font-style: italic;">"El conocimiento es la única riqueza que no se puede robar."</p><h4 style="margin-top: 0.5rem;">- Anónimo</h4></div></div>`,
+        videoFeatured: `<div class="bento-box bento-box--3x3 mobile-full-width video-featured-module" data-id="static-video-featured"><iframe src="https://www.youtube.com/embed/6PSKbO5yfDQ?rel=0&modestbranding=1&playsinline=1" title="Video destacado de YouTube" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`,
         
         // *** NUEVO MÓDULO DE PODCAST ***
-        podcastPlayer: `<div class="bento-box bento-box--1x3 bento-podcast-player mobile-full-width" data-id="static-podcast"><h3>Podcast DiCiencia 🎙️</h3><div class="podcast-episode-list"><p>Cargando episodios...</p></div></div>`,
+        // DESPUÉS
+        podcastPlayer: `
+            <div class="bento-box bento-box--1x3 bento-podcast-player mobile-full-width" data-id="static-podcast">
+                <div class="podcast-header">
+                    <h3>Podcast DiCiencia 🎙️</h3>
+                    <div class="waveform-placeholder">
+                        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                    </div>
+                </div>
+                <div class="podcast-episode-list">
+                    <p>Cargando episodios...</p>
+                </div>
+                <div class="podcast-footer">
+                    <a href="https://eptnews.substack.com/s/diciencias" target="_blank" rel="noopener noreferrer" class="podcast-cta-button">Seguir escuchando</a>
+                </div>
+            </div>`,
 
-        inFeed: `<div class="bento-box bento-box--2x2 mobile-full-width bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;"><div class="card-content"><h3>¿Disfrutando el Contenido?</h3><p>Suscríbete a nuestro newsletter.</p><br/><iframe src="https://eptnews.substack.com/embed" width="100%" height="100%" style="border:0;" frameborder="0" scrolling="no"></iframe></div></div>`,
-        logos: `<div class="bento-box bento-box--4x1 mobile-full-width bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;"><div class="card-content"><h3>ESPERA</h3><p>Suscríbete a nuestro newsletter.</p><br/><iframe src="https://eptnews.substack.com/embed" width="100%" height="100%" style="border:0;" frameborder="0" scrolling="no"></iframe></div></div>`,
-        end: `<div class="bento-box zenodo-module bento-box--2x2" data-id="static-zenodo"><div class="card-content"><h3>Conocimiento Citable</h3><p>Accede a nuestros datasets y preprints.</p><a href="#" class="btn">Visitar Repositorio</a></div></div><div class="bento-box bento-box--2x2 bento-box--imagen" data-id="static-video" data-panel-type="embed" data-panel-title="Video Destacado" data-embed-src="https://www.youtube.com/embed/dQw4w9WgXcQ"><div class="card-content"><span class="card-category">Ver Ahora</span><h4>El Futuro de la Exploración Espacial</h4></div></div>`
+        // DESPUÉS
+        logos: `
+            <div class="bento-box bento-box--4x1 mobile-full-width logo-ticker-bento" data-id="static-logos">
+                <div class="logo-ticker-track">
+                    <div class="ticker-row">
+                        <img src="https://i.ibb.co/3V9MS9N/1024px-Universita-t-Potsdam-logo-svg.png" alt="Universität Potsdam">
+                        <img src="https://i.ibb.co/QF67Hyr9/BMZ-Logo.png" alt="BMZ">
+                        <img src="https://i.ibb.co/RpLcpmxT/Culture-logo.png" alt="Culture & Cooperation">
+                        <img src="https://i.ibb.co/Xr0YxR2g/DAAD-LOGO-100-an-os.png" alt="DAAD">
+                        <img src="https://i.ibb.co/k2j629Mh/HRKEFM16.gif" alt="HRK">
+                        
+                        <img src="https://i.ibb.co/3V9MS9N/1024px-Universita-t-Potsdam-logo-svg.png" alt="Universität Potsdam">
+                        <img src="https://i.ibb.co/QF67Hyr9/BMZ-Logo.png" alt="BMZ">
+                        <img src="https://i.ibb.co/RpLcpmxT/Culture-logo.png" alt="Culture & Cooperation">
+                        <img src="https://i.ibb.co/Xr0YxR2g/DAAD-LOGO-100-an-os.png" alt="DAAD">
+                        <img src="https://i.ibb.co/k2j629Mh/HRKEFM16.gif" alt="HRK">
+                    </div>
+                    <div class="ticker-row reverse">
+                        <img src="https://i.ibb.co/1YLf7HsJ/Logo-DIES-MOI-sin-10-an-os.png" alt="DIES MOI">
+                        <img src="https://i.ibb.co/NdGH67sg/NMT-Logo2021.jpg" alt="NMT">
+                        <img src="https://i.ibb.co/39j2mnth/U-Austral-de-Chile.png" alt="Universidad Austral de Chile">
+                        <img src="https://i.ibb.co/4RYrHfSR/UCSP-en-letras-negras-Arequipa-1.png" alt="UCSP">
+
+                        <img src="https://i.ibb.co/1YLf7HsJ/Logo-DIES-MOI-sin-10-an-os.png" alt="DIES MOI">
+                        <img src="https://i.ibb.co/NdGH67sg/NMT-Logo2021.jpg" alt="NMT">
+                        <img src="https://i.ibb.co/39j2mnth/U-Austral-de-Chile.png" alt="Universidad Austral de Chile">
+                        <img src="https://i.ibb.co/4RYrHfSR/UCSP-en-letras-negras-Arequipa-1.png" alt="UCSP">
+                    </div>
+                </div>
+            </div>`,
+        
+            subs: `<div class="bento-box bento-box--2x2 mobile-full-width bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;"><div class="card-content"><h3>¿Disfrutando el Contenido?</h3><p>Suscríbete a nuestro newsletter.</p><br/><iframe src="https://eptnews.substack.com/embed" width="100%" height="100%" style="border:0;" frameborder="0" scrolling="no"></iframe></div></div>`,
+            end: `<div class="bento-box zenodo-module bento-box--1x1" data-id="static-zenodo"><div class="card-content"><h3>Conocimiento Citable</h3><p>Accede a nuestros datasets y preprints.</p><a href="#" class="btn">Visitar Repositorio</a></div></div>
+            <div class="bento-box bento-box--1x1 bento-box--imagen" data-id="static-video" data-panel-type="embed" data-panel-title="Video Destacado" data-embed-src="https://www.youtube.com/embed/dQw4w9WgXcQ"><div class="card-content"><span class="card-category">Ver Ahora</span><h4>El Futuro de la Exploración Espacial</h4></div></div>`
     };
 
     // --- 3. EL "PLANO DE CONSTRUCCIÓN" DE LA GRID ---
     const grid_layout = [
         { type: 'module', id: 'welcome' },
-        { type: 'module', id: 'stories' },
+        { type: 'module', id: 'podcastPlayer' },
         { type: 'module', id: 'logos' },
         { type: 'post' }, 
         { type: 'post' }, 
         { type: 'post' }, 
         { type: 'post' },       
-        { type: 'module', id: 'podcastPlayer' },
+        { type: 'module', id: 'stories' },
         { type: 'module', id: 'videoFeatured' },
         { type: 'module', id: 'quote' },  
         { type: 'post' }, 
         { type: 'post' }, 
         { type: 'post' }, 
         { type: 'post' }, 
-        { type: 'module', id: 'inFeed' }, 
+        { type: 'module', id: 'subs' }, 
         { type: 'post' }, 
         { type: 'post' }, 
         { type: 'post' }, 
