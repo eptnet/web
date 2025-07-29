@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const liveIconDesktop = document.getElementById('nav-live-desktop'); // <-- LÍNEA REINTEGRADA
 
         // --- INICIO: LÓGICA DE NOTIFICACIONES EN TIEMPO REAL ---
-        const notificationsIcon = document.querySelector('a[aria-label="Notificaciones"]'); // Usamos el icono de la campana
+        const notificationsIcon = document.getElementById('notifications-bell-icon');
         const notificationsModal = document.createElement('div');
         notificationsModal.className = 'notifications-modal';
         document.body.appendChild(notificationsModal);
@@ -46,14 +46,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const openNotificationsModal = async () => {
             if (!window.supabaseClient) return;
 
-            // 1. Quitamos el punto rojo
             notificationsIcon.classList.remove('has-notifications');
-            
-            // 2. Mostramos un mensaje de carga
             notificationsModal.innerHTML = '<div class="notifications-content"><p>Cargando...</p></div>';
             notificationsModal.classList.add('is-visible');
 
-            // 3. Buscamos las últimas 5 notificaciones
             const { data, error } = await window.supabaseClient
                 .from('notifications')
                 .select('*')
@@ -65,7 +61,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // 4. Creamos el HTML para cada notificación
+            // --- INICIO DE LA LÍNEA AÑADIDA ---
+            // Guardamos la fecha de la notificación más reciente (la primera de la lista)
+            localStorage.setItem('lastSeenNotificationTimestamp', data[0].created_at);
+            // --- FIN DE LA LÍNEA AÑADIDA ---
+
             const notificationsHTML = data.map(notif => {
                 const timeAgo = new Date(notif.created_at).toLocaleString('es-ES');
                 return `
@@ -82,6 +82,32 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${notificationsHTML}
                 </div>
             `;
+        };  
+
+        // AÑADE ESTA NUEVA FUNCIÓN
+        const checkForUnreadNotifications = async () => {
+            if (!window.supabaseClient) return;
+
+            // 1. Buscamos la notificación más reciente en la base de datos
+            const { data: latestNotification, error } = await window.supabaseClient
+                .from('notifications')
+                .select('created_at')
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single();
+
+            if (error || !latestNotification) {
+                return; // No hay notificaciones o hubo un error
+            }
+
+            // 2. Obtenemos la fecha de la última notificación que el usuario vio
+            const lastSeenTimestamp = localStorage.getItem('lastSeenNotificationTimestamp');
+
+            // 3. Comparamos: si no hay fecha guardada, o si la notificación más reciente es posterior a la última vista...
+            if (!lastSeenTimestamp || new Date(latestNotification.created_at) > new Date(lastSeenTimestamp)) {
+                // ...mostramos el punto rojo.
+                showNotificationAlert();
+            }
         };
 
         // Listener para el clic en el icono de la campana
@@ -228,6 +254,9 @@ document.addEventListener('DOMContentLoaded', () => {
         (async () => {
             const { data: { session } } = await window.supabaseClient.auth.getSession();
             session?.user ? showUserUI(session.user) : showGuestUI();
+
+            checkForUnreadNotifications();
+
         })();
 
         document.dispatchEvent(new CustomEvent('mainReady'));
