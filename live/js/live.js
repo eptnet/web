@@ -18,7 +18,7 @@ const LiveApp = {
         this.addEventListeners();
 
         this.supabase.auth.onAuthStateChange((_event, session) => {
-            this.renderUserIcon(session); 
+            this.renderUserUI(session);
         });
         
         if (window.YT && typeof window.YT.Player === 'function') {
@@ -29,9 +29,8 @@ const LiveApp = {
         this.listenForChanges();
         this.applyTheme(localStorage.getItem('theme') || 'light');
 
-        // --- INICIO: LÓGICA DE NOTIFICACIONES EN INIT ---
+        // Lógica de Notificaciones
         this.checkForUnreadNotifications();
-
         this.supabase
             .channel('public:notifications')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, payload => {
@@ -39,10 +38,11 @@ const LiveApp = {
                 this.showNotificationAlert();
             })
             .subscribe();
-        // --- FIN: LÓGICA DE NOTIFICACIONES EN INIT ---
 
         this.handleAnchorLink();
     },
+
+    // --- INICIO: FUNCIONES MOVIDAS DENTRO DEL OBJETO ---
 
     showNotificationAlert() {
         const notificationsIcon = document.getElementById('notifications-bell-icon');
@@ -101,28 +101,24 @@ const LiveApp = {
     },
 
     handleAnchorLink() {
-        // Revisa si la URL actual tiene el ancla #seccion-eventos
         if (window.location.hash === '#seccion-eventos') {
             const eventSection = document.getElementById('seccion-eventos');
             const eventTab = document.querySelector('.tab-link[data-tab="agenda-tab"]');
-
-            // Si la pestaña de eventos existe, simula un clic para activarla
             if (eventTab) {
                 this.handleTabClick(eventTab);
             }
-
-            // Si la sección existe, nos desplazamos suavemente hacia ella
             if (eventSection) {
                 setTimeout(() => {
                     eventSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 100); // Pequeño retraso para dar tiempo a que se renderice el cambio de pestaña
+                }, 100);
             }
         }
     },
 
+    // --- FIN: FUNCIONES MOVIDAS DENTRO DEL OBJETO ---
+
     cacheDOMElements() {
         this.elements = {
-            // Elementos del menú (NUEVOS)
             desktopNav: document.querySelector('.desktop-nav'),
             guestViewDesktop: document.getElementById('guest-view'),
             userViewDesktop: document.getElementById('user-view'),
@@ -138,8 +134,6 @@ const LiveApp = {
             loginModalTriggerDesktop: document.getElementById('login-modal-trigger-desktop'),
             loginModalOverlay: document.getElementById('login-modal-overlay'),
             loginModalCloseBtn: document.getElementById('login-modal-close-btn'),
-            
-            // Elementos de la página de Live (EXISTENTES)
             carouselSection: document.getElementById('featured-carousel-section'),
             scheduleList: document.getElementById('schedule-list'),
             ondemandListContainer: document.getElementById('ondemand-list-container'),
@@ -149,8 +143,6 @@ const LiveApp = {
             searchInput: document.getElementById('search-input'),
         };
     },
-    
-    // --- INICIO: FUNCIONES UNIFICADAS PARA EL MENÚ ---
     
     applyTheme(theme) {
         document.body.classList.toggle("dark-theme", theme === "dark");
@@ -172,8 +164,6 @@ const LiveApp = {
 
     renderUserUI(session) {
         const user = session?.user;
-        
-        // Vista de Escritorio
         if (this.elements.guestViewDesktop && this.elements.userViewDesktop) {
             if (user) {
                 this.elements.guestViewDesktop.style.display = 'none';
@@ -185,8 +175,6 @@ const LiveApp = {
                 this.elements.userViewDesktop.style.display = 'none';
             }
         }
-
-        // Vista Móvil (Menú "Más")
         if (this.elements.mobileUserActions) {
             if (user) {
                 const avatarUrl = user.user_metadata?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
@@ -213,27 +201,21 @@ const LiveApp = {
         }
     },
 
-    // --- FIN: FUNCIONES UNIFICADAS PARA EL MENÚ ---
-
     addEventListeners() {
-        // --- INICIO: EVENTOS DEL NUEVO MENÚ ---
         this.elements.themeSwitcherDesktop?.addEventListener("click", () => this.toggleTheme());
         this.elements.themeSwitcherMobile?.addEventListener("click", () => this.toggleTheme());
         this.elements.logoutBtnDesktop?.addEventListener('click', async () => { await this.supabase.auth.signOut(); });
         
         document.body.addEventListener('click', async (e) => {
-            // Logout para móvil (se añade dinámicamente)
             if (e.target.closest('#logout-btn-mobile')) {
                 await this.supabase.auth.signOut();
             }
-            // Login con proveedores (para ambos modales)
             const providerBtn = e.target.closest('.login-provider-btn');
             if (providerBtn && providerBtn.dataset.provider) {
                 this.handleOAuthLogin(providerBtn.dataset.provider);
             }
         });
 
-        // Abrir/Cerrar Modal de Login
         this.elements.loginModalTriggerDesktop?.addEventListener('click', () => {
             this.elements.loginModalOverlay?.classList.add('is-visible');
         });
@@ -246,7 +228,6 @@ const LiveApp = {
             }
         });
         
-        // Abrir/Cerrar Menú Móvil "Más"
         const openMobileMenu = () => {
             this.elements.mobileMoreMenu?.classList.add('is-visible');
             this.elements.overlay?.classList.add('is-visible');
@@ -261,8 +242,6 @@ const LiveApp = {
         this.elements.mobileMoreMenuClose?.addEventListener('click', closeMobileMenu);
         this.elements.overlay?.addEventListener('click', closeMobileMenu);
         
-        // --- FIN: EVENTOS DEL NUEVO MENÚ ---
-
         const notificationsIcon = document.getElementById('notifications-bell-icon');
         notificationsIcon?.addEventListener('click', (e) => {
             e.preventDefault();
@@ -271,29 +250,20 @@ const LiveApp = {
 
         document.addEventListener('click', (e) => {
             const notificationsModal = document.querySelector('.notifications-modal');
-            if (notificationsModal && !notificationsModal.contains(e.target) && !notificationsIcon.contains(e.target)) {
+            if (notificationsModal && !notificationsModal.contains(e.target) && !notificationsIcon?.contains(e.target)) {
                 notificationsModal.classList.remove('is-visible');
             }
         });
 
-        // Eventos existentes de la página Live
         this.elements.scheduleList.addEventListener('click', (e) => this.handleCardClick(e));
         this.elements.ondemandListContainer.addEventListener('click', (e) => this.handleCardClick(e));
         this.elements.tabs.forEach(tab => tab.addEventListener('click', (e) => this.handleTabClick(e.currentTarget)));
         this.elements.searchInput?.addEventListener('input', (e) => this.filterCards(e.target.value));
     },
-
-    // ... (El resto de las funciones de LiveApp como run, renderCarousel, openLiveRoom, etc., se mantienen sin cambios)
     
     async run() {
         const [{ data: sessions }, { data: videos }] = await Promise.all([
-            this.supabase.from('sessions').select(`
-                *,
-                organizer: profiles (*),
-                participants: event_participants ( profiles (*) )
-            `).neq('is_archived', true)
-                .order('status', { ascending: true })
-                .order('scheduled_at', { ascending: false }),
+            this.supabase.from('sessions').select(`*, organizer: profiles (*), participants: event_participants ( profiles (*) )`).neq('is_archived', true).order('status', { ascending: true }).order('scheduled_at', { ascending: false }),
             this.supabase.from('ondemand_videos').select('*').order('created_at', { ascending: false })
         ]);
 
@@ -330,39 +300,23 @@ const LiveApp = {
 
             if (isEvent) {
                 const channel = data.platform_id || 'epistecnologia';
-                
-                if (data.platform === 'substack') {
-                    playerUrl = '';
-                } else if (data.platform === 'vdo_ninja') {
-                    playerUrl = data.viewer_url;
-                } else if (data.platform === 'youtube') {
-                    playerUrl = `https://www.youtube.com/embed/${data.platform_id}?enablejsapi=1&${autoplay}`;
-                } else { // Twitch por defecto
-                    playerUrl = `https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&${autoplay}`;
-                }
-
-                infoHTML = isLive ? `
-                    <h3>${data.session_title}</h3>
-                    <p>${data.organizer.display_name}</p>
-                    <button class="blinking-live-btn">EN VIVO: Ir a la sala</button>
-                ` : `<h3>${data.session_title}</h3><p>${data.organizer.display_name}</p>`;
-
+                if (data.platform === 'substack') playerUrl = '';
+                else if (data.platform === 'vdo_ninja') playerUrl = data.viewer_url;
+                else if (data.platform === 'youtube') playerUrl = `https://www.youtube.com/embed/${data.platform_id}?enablejsapi=1&${autoplay}`;
+                else playerUrl = `https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&${autoplay}`;
+                infoHTML = isLive ? `<h3>${data.session_title}</h3><p>${data.organizer.display_name}</p><button class="blinking-live-btn">EN VIVO: Ir a la sala</button>` : `<h3>${data.session_title}</h3><p>${data.organizer.display_name}</p>`;
             } else {
                 playerUrl = `https://www.youtube.com/embed/${data.youtube_video_id}?enablejsapi=1&${autoplay}`;
                 infoHTML = `<h3>${data.title}</h3>`;
             }
 
-            return `
-                <div class="carousel-slide" data-id="${id}" data-player-url="${playerUrl}" data-thumbnail-url="${thumbnailUrl}">
-                    <div class="slide-player"><img src="${thumbnailUrl}" loading="lazy"></div>
-                    <div class="slide-info-box">${infoHTML}</div>
-                </div>`;
+            return `<div class="carousel-slide" data-id="${id}" data-player-url="${playerUrl}" data-thumbnail-url="${thumbnailUrl}"><div class="slide-player"><img src="${thumbnailUrl}" loading="lazy"></div><div class="slide-info-box">${infoHTML}</div></div>`;
         }).join('');
         
         this.elements.carouselSection.querySelector('.prev').addEventListener('click', () => this.moveSlide(-1));
         this.elements.carouselSection.querySelector('.next').addEventListener('click', () => this.moveSlide(1));
         track.addEventListener('click', (e) => {
-             const slide = e.target.closest('.carousel-slide.active');
+             const slide = e.target.closest('.carousel-slide');
              if(slide) this.handleCardClick(e);
         });
         this.updateCarouselView();
@@ -404,16 +358,20 @@ const LiveApp = {
     stopCarouselPlayer() {
         const track = this.elements.carouselSection.querySelector('.carousel-track');
         if (!track) return;
-        
-        const activeSlide = track.querySelector('.carousel-slide.active');
-        if (activeSlide) {
-            const playerContainer = activeSlide.querySelector('.slide-player');
-            const iframe = playerContainer.querySelector('iframe');
+
+        // Buscamos TODOS los iframes que puedan estar activos en el carrusel
+        const iframes = track.querySelectorAll('iframe');
+
+        // Recorremos cada uno y lo reemplazamos por su miniatura
+        iframes.forEach(iframe => {
+            const playerContainer = iframe.parentElement;
+            const slide = playerContainer.closest('.carousel-slide');
             
-            if (iframe) {
-                playerContainer.innerHTML = `<img src="${activeSlide.dataset.thumbnailUrl}" loading="lazy">`;
+            // Nos aseguramos de tener todo lo necesario antes de reemplazar
+            if (playerContainer && slide && slide.dataset.thumbnailUrl) {
+                playerContainer.innerHTML = `<img src="${slide.dataset.thumbnailUrl}" loading="lazy">`;
             }
-        }
+        });
     },
 
     handleTabClick(clickedTab) {
@@ -429,15 +387,8 @@ const LiveApp = {
 
     filterCards(searchTerm) {
         const term = searchTerm.toLowerCase();
-        const cards = document.querySelectorAll('.event-card, .video-card');
-
-        cards.forEach(card => {
-            const cardText = card.textContent.toLowerCase();
-            if (cardText.includes(term)) {
-                card.style.display = 'flex';
-            } else {
-                card.style.display = 'none';
-            }
+        document.querySelectorAll('.event-card, .video-card').forEach(card => {
+            card.style.display = card.textContent.toLowerCase().includes(term) ? 'flex' : 'none';
         });
     },
     
@@ -451,27 +402,12 @@ const LiveApp = {
             const thumbnailUrl = s.thumbnail_url || 'https://i.ibb.co/vx57ZyXs/Leonardo-Kino-XL-Diseo-creativo-moderno-y-minimalista-de-una-e-0.jpg';
             const backgroundStyle = `background-image: linear-gradient(to top, rgba(0,0,0,0.95) 20%, transparent 80%), url('${thumbnailUrl}')`;
 
-            return `
-            <div class="event-card" data-id="${s.id}">
-                <div class="card-background" style="${backgroundStyle}"></div>
-                <div class="card-top-info">
-                    <div class="card-date">${day} ${month}</div>
-                    ${liveIndicatorHTML}
-                </div>
-                <div class="card-info">
-                    <h5>${s.session_title}</h5>
-                    <p>${s.organizer?.display_name || ''}</p>
-                </div>
-            </div>`;
+            return `<div class="event-card" data-id="${s.id}"><div class="card-background" style="${backgroundStyle}"></div><div class="card-top-info"><div class="card-date">${day} ${month}</div>${liveIndicatorHTML}</div><div class="card-info"><h5>${s.session_title}</h5><p>${s.organizer?.display_name || ''}</p></div></div>`;
         }).join('');
     },
 
     renderOnDemandList(videos) {
-        this.elements.ondemandListContainer.innerHTML = videos.map(v => `
-            <div class="video-card" data-id="video-${v.id}">
-                <img src="https://i.ytimg.com/vi/${v.youtube_video_id}/mqdefault.jpg" alt="${v.title}">
-                <p class="video-title">${v.title}</p>
-            </div>`).join('');
+        this.elements.ondemandListContainer.innerHTML = videos.map(v => `<div class="video-card" data-id="video-${v.id}"><img src="https://i.ytimg.com/vi/${v.youtube_video_id}/mqdefault.jpg" alt="${v.title}"><p class="video-title">${v.title}</p></div>`).join('');
     },
 
     async openLiveRoom(id) {
@@ -479,17 +415,10 @@ const LiveApp = {
             this.supabase.removeChannel(this.currentChannel);
             this.currentChannel = null;
         }
-
-        if (this.updateCarouselView) {
-            this.stopCarouselPlayer();
-        }
-
+        if (this.updateCarouselView) this.stopCarouselPlayer();
         const item = this.allContentMap[id];
         if (!item) return;
-
-        this.viewerCount = 0; // Reiniciamos el contador
-
-        // (El código para crear el modal se mantiene igual)
+        this.viewerCount = 0;
         this.elements.modalContainer.innerHTML = '';
         const modalOverlay = document.createElement('div');
         modalOverlay.id = 'live-room-modal';
@@ -503,32 +432,23 @@ const LiveApp = {
         modalOverlay.appendChild(closeButton);
         modalOverlay.appendChild(content);
         this.elements.modalContainer.appendChild(modalOverlay);
-
         const channelName = `session-${id}`;
         this.currentChannel = this.supabase.channel(channelName);
-
         this.currentChannel.on('presence', { event: 'sync' }, () => {
             const presenceState = this.currentChannel.presenceState();
             this.viewerCount = Object.keys(presenceState).length;
             this.updateViewerCountUI();
         });
-
         this.currentChannel.subscribe(async (status) => {
             if (status === 'SUBSCRIBED') {
-                // --- INICIO DE LA CORRECCIÓN DE SINTAXIS ---
-                // Obtenemos la sesión actual para identificar al usuario
                 const { data: { session } } = await this.supabase.auth.getSession();
                 const userId = session?.user?.id || 'invitado';
-                
                 await this.currentChannel.track({ user_id: userId, online_at: new Date().toISOString() });
-                // --- FIN DE LA CORRECCIÓN DE SINTAXIS ---
-                
                 const currentPresenceState = this.currentChannel.presenceState();
                 this.viewerCount = Object.keys(currentPresenceState).length;
                 this.updateViewerCountUI();
             }
         });
-
         await this.populateLiveRoom(item);
         setTimeout(() => modalOverlay.classList.add('is-visible'), 10);
     },
@@ -554,13 +474,10 @@ const LiveApp = {
     },
 
     closeLiveRoom() {
-
-        // Nos desconectamos del canal de Supabase al cerrar la sala
         if (this.currentChannel) {
             this.supabase.removeChannel(this.currentChannel);
             this.currentChannel = null;
         }
-
         const modalOverlay = document.getElementById('live-room-modal');
         if (modalOverlay) {
             const playerContainer = modalOverlay.querySelector('#live-room-player');
@@ -570,9 +487,7 @@ const LiveApp = {
                 this.countdownInterval = null;
             }
             modalOverlay.classList.remove('is-visible');
-            setTimeout(() => {
-                this.elements.modalContainer.innerHTML = '';
-            }, 300);
+            setTimeout(() => { this.elements.modalContainer.innerHTML = ''; }, 300);
         }
     },
 
@@ -584,72 +499,30 @@ const LiveApp = {
     },
 
     async openInvestigatorModal(userId) {
-        if (!userId) {
-            console.error("ID de usuario no proporcionado.");
-            return;
-        }
-
+        if (!userId) return;
         const loadingModalHTML = `<div id="investigator-modal" class="investigator-modal-overlay"><div class="investigator-modal"><p>Cargando...</p></div></div>`;
         this.elements.modalContainer.insertAdjacentHTML('beforeend', loadingModalHTML);
         const modalElement = document.getElementById('investigator-modal');
         setTimeout(() => modalElement.classList.add('is-visible'), 10);
-
         try {
-            const [profileResponse, projectsResponse] = await Promise.all([
+            const [{ data: user, error: userError }, { data: projects, error: projectsError }] = await Promise.all([
                 this.supabase.from('profiles').select('*').eq('id', userId).single(),
                 this.supabase.from('projects').select('title').eq('user_id', userId).order('created_at', { ascending: false }).limit(3)
             ]);
-
-            const { data: user, error: userError } = profileResponse;
-            const { data: projects, error: projectsError } = projectsResponse;
-
-            // --- INICIO DE LA CORRECCIÓN (DEPURACIÓN) ---
-            // Esta línea nos ayudará a ver qué está pasando con los datos.
-            console.log('Proyectos recibidos para el usuario:', projects);
-            if (projectsError) {
-                console.error('Error al obtener proyectos:', projectsError);
-            }
-            // --- FIN DE LA CORRECCIÓN (DEPURACIÓN) ---
-
+            if (projectsError) console.error('Error al obtener proyectos:', projectsError);
             if (userError) throw userError;
-
-            const socialLinksHTML = `
-                ${user.substack_url ? `<a href="${user.substack_url}" target="_blank" title="Substack"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="Substack--Streamline-Simple-Icons" height="24" width="24"><desc>Substack Streamline Icon: https://streamlinehq.com</desc><title>Substack</title><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z" fill="#e65c17" stroke-width="1"></path></svg></a>` : ''}
-                ${user.website_url ? `<a href="${user.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}
-                ${user.youtube_url ? `<a href="${user.youtube_url}" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>` : ''}
-                ${user.x_url ? `<a href="${user.x_url}" target="_blank" title="Perfil de X"><i class="fab fa-twitter"></i></a>` : ''}
-                ${user.linkedin_url ? `<a href="${user.linkedin_url}" target="_blank" title="Perfil de LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}
-                ${user.instagram_url ? `<a href="${user.instagram_url}" target="_blank" title="Perfil de Instagram"><i class="fab fa-instagram"></i></a>` : ''}
-            `;
+            const socialLinksHTML = `${user.substack_url ? `<a href="${user.substack_url}" target="_blank" title="Substack"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="Substack--Streamline-Simple-Icons" height="24" width="24"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z" fill="#e65c17" stroke-width="1"></path></svg></a>` : ''}${user.website_url ? `<a href="${user.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}${user.youtube_url ? `<a href="${user.youtube_url}" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>` : ''}${user.x_url ? `<a href="${user.x_url}" target="_blank" title="Perfil de X"><i class="fab fa-twitter"></i></a>` : ''}${user.linkedin_url ? `<a href="${user.linkedin_url}" target="_blank" title="Perfil de LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}${user.instagram_url ? `<a href="${user.instagram_url}" target="_blank" title="Perfil de Instagram"><i class="fab fa-instagram"></i></a>` : ''}`;
             const orcidHTML = user.orcid ? `<a href="${user.orcid}" target="_blank">${user.orcid.replace('https://orcid.org/','')}</a>` : 'No disponible';
-
             let projectInfoHTML = '';
             if (projects && projects.length > 0) {
-                const projectList = projects.map(p => `<li>${p.title}</li>`).join('');
-                projectInfoHTML = `<div class="project-info"><h4>Últimos proyectos:</h4><ul>${projectList}</ul></div>`;
+                projectInfoHTML = `<div class="project-info"><h4>Últimos proyectos:</h4><ul>${projects.map(p => `<li>${p.title}</li>`).join('')}</ul></div>`;
             } else {
                 projectInfoHTML = `<div class="project-info"><p>No tiene proyectos publicados en la plataforma.</p></div>`;
             }
-
-            const finalModalHTML = `
-                <div class="investigator-modal">
-                    <header class="investigator-modal-header"><button class="investigator-modal-close-btn">×</button></header>
-                    <main class="investigator-modal-content">
-                        <img src="${user.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="${user.display_name || ''}" class="avatar">
-                        <h3>${user.display_name || 'Nombre no disponible'}</h3>
-                        <p><strong>ORCID:</strong> ${orcidHTML}</p>
-                        <div class="profile-card__socials">${socialLinksHTML}</div>
-                        <p class="investigator-bio">${user.bio || ''}</p>
-                        ${projectInfoHTML}
-                    </main>
-                </div>`;
-            
+            const finalModalHTML = `<div class="investigator-modal"><header class="investigator-modal-header"><button class="investigator-modal-close-btn">×</button></header><main class="investigator-modal-content"><img src="${user.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="${user.display_name || ''}" class="avatar"><h3>${user.display_name || 'Nombre no disponible'}</h3><p><strong>ORCID:</strong> ${orcidHTML}</p><div class="profile-card__socials">${socialLinksHTML}</div><p class="investigator-bio">${user.bio || ''}</p>${projectInfoHTML}</main></div>`;
             modalElement.innerHTML = finalModalHTML;
             modalElement.querySelector('.investigator-modal-close-btn').addEventListener('click', () => this.closeInvestigatorModal());
-            modalElement.addEventListener('click', (e) => {
-                if (e.target === modalElement) this.closeInvestigatorModal();
-            });
-
+            modalElement.addEventListener('click', (e) => { if (e.target === modalElement) this.closeInvestigatorModal(); });
         } catch (error) {
             console.error("Error al abrir modal de investigador:", error);
             const modal = document.getElementById('investigator-modal');
@@ -671,17 +544,7 @@ const LiveApp = {
     buildLiveRoomHTML() {
         const container = document.createElement('div');
         container.className = 'live-room-content';
-        container.innerHTML = `
-            <main class="live-room-main">
-                <div id="live-room-player" class="live-room-player"></div>
-                <div id="live-room-primary-action"></div> 
-                <div id="live-room-countdown" class="live-room-countdown" style="display: none;"></div>
-                <div id="live-room-investigators-strip" class="live-room-investigators-strip"></div>
-                <div id="live-room-info" class="live-room-info"></div>
-            </main>
-            <aside class="live-room-side">
-                <div id="chat-box"></div>
-            </aside>`;
+        container.innerHTML = `<main class="live-room-main"><div id="live-room-player" class="live-room-player"></div><div id="live-room-primary-action"></div> <div id="live-room-countdown" class="live-room-countdown" style="display: none;"></div><div id="live-room-investigators-strip" class="live-room-investigators-strip"></div><div id="live-room-info" class="live-room-info"></div></main><aside class="live-room-side"><div id="chat-box"></div></aside>`;
         return container;
     },
 
@@ -703,15 +566,7 @@ const LiveApp = {
             investigators.style.display = 'block';
             countdown.style.display = 'none';
 
-            // --- INICIO DE LA LÓGICA UNIFICADA ---
-            // Este título ahora es igual para TODAS las plataformas en vivo.
-            let chatTitle = `<h4><i class="fas fa-comments"></i> Chat 
-                ${session.status === 'EN VIVO' ? `
-                    <span class="card-live-indicator">EN VIVO</span> 
-                    <span id="live-viewer-count" class="viewer-count"><i class="fas fa-eye"></i> ${this.viewerCount}</span>
-                ` : ''}
-            </h4>`;
-            // --- FIN DE LA LÓGICA UNIFICADA ---
+            let chatTitle = `<h4><i class="fas fa-comments"></i> Chat ${session.status === 'EN VIVO' ? `<span class="card-live-indicator">EN VIVO</span> <span id="live-viewer-count" class="viewer-count"><i class="fas fa-eye"></i> ${this.viewerCount}</span>` : ''}</h4>`;
 
             if (session.platform === 'substack') {
                 player.innerHTML = `<img src="${session.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg'}" style="width:100%; height:100%; object-fit:cover;">`;
@@ -719,28 +574,24 @@ const LiveApp = {
                 chat.innerHTML = `${chatTitle}<p>El chat para este evento está disponible directamente en Substack.</p>`;
             } else if (session.status === 'EN VIVO') {
                 const channel = session.platform_id || 'epistecnologia';
+                let chatContentHTML = '';
                 if (session.platform === 'vdo_ninja') {
                     player.innerHTML = `<iframe src="${session.viewer_url}" allow="autoplay; fullscreen"></iframe>`;
-                    chat.innerHTML = `${chatTitle}<p>El chat no está disponible para esta plataforma.</p>`;
+                    chatContentHTML = `<p>El chat no está disponible para esta plataforma.</p>`;
                 } else if (session.platform === 'youtube') {
                     player.innerHTML = `<iframe src="https://www.youtube.com/embed/${session.platform_id}?autoplay=1" allowfullscreen></iframe>`;
-                    chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}"></iframe></div>`;
+                    chatContentHTML = `<div id="chat-container"><iframe src="https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}"></iframe></div>`;
                 } else { // Twitch
                     player.innerHTML = `<iframe src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=true" allowfullscreen></iframe>`;
-                    // DESPUÉS (Solución con CSS Grid)
-                    const chatTitle = `<h4><i class="fas fa-comments"></i> Chat ${session.status === 'EN VIVO' ? '<span class="card-live-indicator">EN VIVO</span>' : ''}</h4>`;
-                    chat.style.display = 'grid';
-                    chat.style.gridTemplateRows = 'auto 1fr'; // Fila para el título (altura automática) y fila para el chat (ocupa el resto)
-                    chat.style.gap = '1rem'; // Espacio entre título y chat
-                    chat.innerHTML = `
-                        ${chatTitle}
-                        <div id="chat-container">
-                            <iframe src="https://www.twitch.tv/embed/${channel}/chat?parent=${window.location.hostname}&darkpopout" style="width:100%; height:100%; border:none;"></iframe>
-                        </div>
-                    `;                }
+                    chatContentHTML = `<div id="chat-container"><iframe src="https://www.twitch.tv/embed/${channel}/chat?parent=${window.location.hostname}&darkpopout" style="width:100%; height:100%; border:none;"></iframe></div>`;
+                }
+                chat.style.display = 'grid';
+                chat.style.gridTemplateRows = 'auto 1fr';
+                chat.style.gap = '1rem';
+                chat.innerHTML = `${chatTitle}${chatContentHTML}`;
             } else {
                 player.innerHTML = `<img src="${session.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg'}" style="width:100%; height:100%; object-fit:cover;">`;
-                chat.innerHTML = `${chatTitle}<p>El chat aparecerá cuando el evento esta En Vivo.</p>`;
+                chat.innerHTML = `${chatTitle}<p>El chat aparecerá cuando el evento inicie.</p>`;
             }
 
             if (session.status === 'PROGRAMADO' && eventDate > new Date()) {
@@ -758,13 +609,8 @@ const LiveApp = {
             let projectHTML = '';
             if (project) {
                 const uniqueAuthors = project.authors && Array.isArray(project.authors) ? [...new Set(project.authors)].join(', ') : 'No disponible';
-                // DESPUÉS
-                const doiLink = project.doi ? `<a href="https://doi.org/${project.doi}" target="_blank" rel="noopener noreferrer" class="doi-badge">Ver Proyecto (DOI)</a>` : '';                projectHTML = `
-                    <h4>Proyecto</h4>
-                    <h3 class="live-room-project-title">${project.title}</h3>
-                    <p><strong>Autores:</strong> ${uniqueAuthors}</p>
-                    <p>${project.description || 'Resumen no disponible.'}</p>
-                    ${doiLink}`;
+                const doiLink = project.doi ? `<a href="https://doi.org/${project.doi}" target="_blank" rel="noopener noreferrer" class="doi-badge">Ver Proyecto (DOI)</a>` : '';
+                projectHTML = `<h4>Proyecto</h4><h3 class="live-room-project-title">${project.title}</h3><p><strong>Autores:</strong> ${uniqueAuthors}</p><p>${project.description || 'Resumen no disponible.'}</p>${doiLink}`;
             }
 
             let actionButtonsHTML = '';
@@ -772,30 +618,10 @@ const LiveApp = {
             if (session.recording_url) actionButtonsHTML += `<a href="${session.recording_url}" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="display:block; margin-top: 1rem; text-align:center;">Ver Grabación</a>`;
 
             const organizer = session.organizer;
-            // --- INICIO DE LA CORRECCIÓN DEL ANFITRIÓN ---
-            const organizerHTML = `
-                <div class="organizer-info">
-                    <img src="${organizer?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" 
-                        alt="Avatar de ${organizer?.display_name || 'Anfitrión'}" 
-                        style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
-                    <div class="organizer-name-block">
-                        <span>Anfitrión</span>
-                        <strong>${organizer?.display_name || 'Nombre no disponible'}</strong>
-                    </div>
-                </div>`;
-            // --- FIN DE LA CORRECCIÓN DEL ANFITRIÓN ---
+            const organizerHTML = `<div class="organizer-info"><img src="${organizer?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="Avatar de ${organizer?.display_name || 'Anfitrión'}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;"><div class="organizer-name-block"><span>Anfitrión</span><strong>${organizer?.display_name || 'Nombre no disponible'}</strong></div></div>`;
+            info.innerHTML = `<h3>${session.session_title}</h3><p>${session.description || ''}</p>${organizerHTML}<p><strong>Fecha:</strong> ${dateString}</p><hr>${projectHTML}<div class="action-buttons-container" style="margin-top: 1rem; display:flex; flex-direction:column; gap:1rem;">${actionButtonsHTML}</div>`;
 
-            info.innerHTML = `
-                <h3>${session.session_title}</h3>
-                <p>${session.description || ''}</p>
-                ${organizerHTML}
-                <p><strong>Fecha:</strong> ${dateString}</p>
-                <hr>
-                ${projectHTML}
-                <div class="action-buttons-container" style="margin-top: 1rem; display:flex; flex-direction:column; gap:1rem;">${actionButtonsHTML}</div>
-            `;
-
-            const allUsers = [session.organizer, ...(session.participants?.map(p => p.profiles) || [])].filter(Boolean);
+            const allUsers = [organizer, ...(session.participants?.map(p => p.profiles) || [])].filter(Boolean);
             investigators.innerHTML = allUsers.length > 0 ? `<h4>Investigadores</h4><div class="avatar-grid">${allUsers.map(u => u ? `<img src="${u.avatar_url}" title="${u.display_name}" class="avatar" data-user-id="${u.id}">` : '').join('')}</div>` : '';
             investigators.addEventListener('click', (e) => {
                 const avatar = e.target.closest('.avatar[data-user-id]');
