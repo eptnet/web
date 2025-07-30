@@ -486,7 +486,7 @@ export const Studio = {
             const stableId = self.crypto.randomUUID().slice(0, 8);
             const roomName = `ept_2_${App.userProfile.orcid.slice(-4)}_${stableId}`; 
             const directorKey = `dir_${App.userProfile.orcid.slice(-4)}`;
-            const vdoDomain = 'https://vdo.ninja/alpha/';
+            const vdoDomain = 'https://vdo.ninja/alpha';
             
             let directorParams = new URLSearchParams({ room: roomName, director: directorKey, record: 'auto' });
             
