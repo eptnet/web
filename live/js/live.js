@@ -115,6 +115,32 @@ const LiveApp = {
         }
     },
 
+    // AÑADE ESTA NUEVA FUNCIÓN
+    handleDirectLink() {
+        const params = new URLSearchParams(window.location.search);
+        const sessionId = params.get('sesion');
+
+        // Si no hay un parámetro 'sesion', no hacemos nada.
+        if (!sessionId) {
+            return;
+        }
+
+        // Buscamos el evento o video en nuestro mapa de contenido ya cargado.
+        const item = this.allContentMap[sessionId] || this.allContentMap[`video-${sessionId}`];
+
+        if (item) {
+            // Si lo encontramos, abrimos la sala correspondiente.
+            this.openLiveRoom(sessionId);
+
+            // (Opcional, pero recomendado) Limpiamos la URL para que si el usuario
+            // recarga la página, no se vuelva a abrir el modal automáticamente.
+            const newUrl = window.location.pathname;
+            history.replaceState({}, '', newUrl);
+        } else {
+            console.warn(`No se encontró contenido para la sesión con ID: ${sessionId}`);
+        }
+    },
+
     // --- FIN: FUNCIONES MOVIDAS DENTRO DEL OBJETO ---
 
     cacheDOMElements() {
@@ -277,6 +303,7 @@ const LiveApp = {
         this.renderCarousel(allEvents, onDemandPlaylist);
         this.renderSchedule(allEvents);
         this.renderOnDemandList(onDemandPlaylist);
+        this.handleDirectLink();
     },
 
     renderCarousel(events, videos) {
