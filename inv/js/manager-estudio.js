@@ -498,7 +498,7 @@ export const Studio = {
                 directorParams.set('broadcast', `${rtmpKey}@${broadcastUrl}`);
             }
 
-            sessionData.director_url = `${vdoDomain}/alpha/mixer?${directorParams.toString()}&meshcast`;
+            sessionData.director_url = `${vdoDomain}/mixer?${directorParams.toString()}&meshcast`;
             
             const recordingParams = new URLSearchParams({
                 scene: '0', layout: '', remote: '', clean: '', chroma: '000', ssar: 'landscape',
