@@ -486,7 +486,7 @@ export const Studio = {
             const stableId = self.crypto.randomUUID().slice(0, 8);
             const roomName = `ept_2_${App.userProfile.orcid.slice(-4)}_${stableId}`; 
             const directorKey = `dir_${App.userProfile.orcid.slice(-4)}`;
-            const vdoDomain = 'https://vdo.epistecnologia.com';
+            const vdoDomain = 'https://vdo.ninja/alpha/';
             
             let directorParams = new URLSearchParams({ room: roomName, director: directorKey, record: 'auto' });
             
@@ -498,7 +498,7 @@ export const Studio = {
                 directorParams.set('broadcast', `${rtmpKey}@${broadcastUrl}`);
             }
 
-            sessionData.director_url = `${vdoDomain}/mixer?${directorParams.toString()}&meshcast`;
+            sessionData.director_url = `${vdoDomain}/alpha/mixer?${directorParams.toString()}&meshcast`;
             
             const recordingParams = new URLSearchParams({
                 scene: '0', layout: '', remote: '', clean: '', chroma: '000', ssar: 'landscape',
