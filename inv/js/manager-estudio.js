@@ -47,26 +47,27 @@ export const Studio = {
                 const guestUrl = button.dataset.url;
                 navigator.clipboard.writeText(guestUrl).then(() => {
                     alert('¡Enlace para invitados copiado al portapapeles!');
-                }).catch(err => {
-                    console.error('Error al copiar el enlace: ', err);
-                    alert('No se pudo copiar el enlace.');
                 });
             }
-            // --- INICIO DEL CAMBIO ---
             else if (action === 'copy-recording-link') {
                 const recordingUrl = button.dataset.url;
                 navigator.clipboard.writeText(recordingUrl).then(() => {
                     alert('¡Enlace de grabación remota copiado al portapapeles!');
+                });
+            }
+            // --- INICIO: LÓGICA AÑADIDA ---
+            else if (action === 'copy-direct-link') {
+                const directUrl = button.dataset.url;
+                navigator.clipboard.writeText(directUrl).then(() => {
+                    alert('¡Enlace directo para la audiencia copiado!');
                 }).catch(err => {
-                    console.error('Error al copiar el enlace de grabación: ', err);
+                    console.error('Error al copiar enlace:', err);
                     alert('No se pudo copiar el enlace.');
                 });
             }
-            // --- FIN DEL CAMBIO ---
+            // --- FIN: LÓGICA AÑADIDA ---
             else if (action === 'archive-session') this.archiveSession(sessionId);
-            // --- INICIO DEL CAMBIO ---
             else if (action === 'unarchive-session') this.unarchiveSession(sessionId);
-            // --- FIN DEL CAMBIO ---
         });
     },
 
@@ -129,9 +130,6 @@ export const Studio = {
         }
     },
 
-    // REEMPLAZA ESTA FUNCIÓN COMPLETA
-
-    // REEMPLAZA ESTA FUNCIÓN COMPLETA
     renderSessions(sessions) {
         const container = document.getElementById('sessions-container');
         if (!container) return;
@@ -143,26 +141,18 @@ export const Studio = {
         container.innerHTML = sessions.map(session => {
             const sessionData = encodeURIComponent(JSON.stringify(session));
             const startTime = new Date(session.scheduled_at);
-            const endTime = session.end_at ? new Date(session.end_at) : null;
             const formattedDate = startTime.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
             const formattedStartTime = startTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-            const formattedEndTime = endTime ? endTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '';
-            
             const participantsHTML = session.participants.map(p => 
                 `<img src="${p.profiles.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="${p.profiles.display_name}" title="${p.profiles.display_name}" class="participant-avatar">`
             ).join('');
-
-            // --- INICIO DEL CAMBIO ---
-            // 1. Añadimos dinámicamente el botón de Archivar o Desarchivar
-            const archiveButtonHTML = session.is_archived
-                ? `<button class="btn-secondary" data-action="unarchive-session" data-session-id="${session.id}" title="Desarchivar (volver a mostrar públicamente)">
-                    <i class="fas fa-box-open"></i>
-                </button>`
-                : `<button class="btn-secondary" data-action="archive-session" data-session-id="${session.id}" title="Archivar (ocultar de vistas públicas)">
-                    <i class="fas fa-box-archive"></i>
-                </button>`;
             
-            // 2. Añadimos una clase si la tarjeta está archivada para darle un estilo visual
+            const directLink = `${window.location.origin}/live.html?sesion=${session.id}`;
+            
+            const archiveButtonHTML = session.is_archived
+                ? `<button class="btn-secondary" data-action="unarchive-session" data-session-id="${session.id}" title="Restaurar"><i class="fas fa-box-open"></i><span>Restaurar</span></button>`
+                : `<button class="btn-secondary" data-action="archive-session" data-session-id="${session.id}" title="Archivar"><i class="fas fa-box-archive"></i><span>Archivar</span></button>`;
+            
             return `
             <div class="session-card ${session.is_archived ? 'is-archived' : ''}" id="${session.id}">
                 <div class="session-card__header">
@@ -186,33 +176,35 @@ export const Studio = {
                         </button>
                     </div>
                 </div>
-
-                <div class="session-card-actions">
+                <div class="session-card-actions icon-text-buttons">
                     <button class="btn-primary" data-action="open-session" data-session='${sessionData}'>
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Sala
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        <span>Sala de control</span>
                     </button>
-
+                    <button class="btn-secondary" data-action="copy-direct-link" data-url="${directLink}" title="Copiar enlace directo para el público">
+                        <i class="fa-solid fa-share-nodes"></i>
+                        <span>Compartir evento</span>
+                    </button>
                     <a href="${session.viewer_url}" target="_blank" class="btn-secondary" title="Ver como espectador">
                         <i class="fa-solid fa-eye"></i>
+                        <span>Ver</span>
                     </a>
-
                     <button class="btn-secondary" data-action="copy-guest-link" data-url="${session.guest_url}">
-                        <i class="fas fa-copy"></i> Copiar Link Invitado
+                        <i class="fas fa-copy"></i>
+                        <span>Link para invitados</span>
                     </button>
-                    ${session.recording_source_url ? `<button class="btn-secondary" data-action="copy-recording-link" data-url="${session.recording_source_url}"><i class="fas fa-video"></i> Copiar Link Grabación</button>` : ''}
                     
                     <button class="btn-secondary" data-action="edit-session" data-session='${sessionData}' style="margin-left: auto;">
                         <i class="fas fa-pencil-alt"></i>
+                        <span>Editar evento</span>
                     </button>
-                    
                     ${archiveButtonHTML}
-
-                    <button class="btn-secondary" data-action="delete-session" data-session-id="${session.id}" title="Borrar permanentemente">
+                    <button class="btn-secondary" data-action="delete-session" data-session-id="${session.id}" title="Borrar">
                         <i class="fas fa-trash"></i>
+                        <span>Borrar</span>
                     </button>
                 </div>
             </div>`;
-            // --- FIN DEL CAMBIO ---
         }).join('');
     },
 
@@ -351,8 +343,8 @@ export const Studio = {
                             <div class="form-group">
                                 <label>Plataforma de Transmisión</label>
                                 <div class="platform-selector">
-                                    <div class="platform-option" data-platform="twitch"><i class="fab fa-twitch"></i><span>EPT Live (Twitch)</span></div>
-                                    <div class="platform-option" data-platform="vdo_ninja"><i class="fas fa-users"></i><span>EPT Room (PRO)</span></div>
+                                    <div class="platform-option" data-platform="vdo_ninja"><i class="fas fa-users"></i><span>EPT Live</span></div>    
+                                    <div class="platform-option" data-platform="twitch"><i class="fab fa-twitch"></i><span>Twitch</span></div>
                                     <div class="platform-option" data-platform="youtube"><i class="fab fa-youtube"></i><span>YouTube</span></div>
                                     <div class="platform-option" data-platform="substack"><i class="fas fa-bookmark"></i><span>Substack</span></div>
                                 </div>
@@ -370,8 +362,8 @@ export const Studio = {
                             
                             <div class="form-group rtmps-fields" style="display: ${initialPlatform === 'youtube' || initialPlatform === 'twitch' ? 'block' : 'none'};">
                                 <hr>
-                                <label>Configuración de Transmisión Manual (Opcional)</label>
-                                <p class="form-hint">Pega aquí los datos de YouTube para transmitir directamente desde esta sala de control.</p>
+                                <label>Conf. Manual - Próx. (Usar un software como OBS)</label>
+                                <p class="form-hint">Pega aquí los datos de RTMP para transmitir directamente desde la sala de control.</p>
                                 <input id="session-rtmp-url" name="rtmp_url" type="text" value="${session?.rtmp_url || ''}" placeholder="URL del servidor RTMPS (ej: rtmps://a.rtmps.youtube.com/live2)">
                                 <input id="session-rtmp-key" name="rtmp_key" type="password" value="${session?.rtmp_key || ''}" placeholder="Clave de transmisión">
                             </div>
@@ -404,10 +396,14 @@ export const Studio = {
             platformInput.value = platform;
             
             let fieldHTML = '';
-            if (platform === 'youtube') {
-                fieldHTML = `<div class="form-group"><label for="youtube-id">ID del Video de YouTube</label><input id="youtube-id" name="youtubeId" type="text" value="${session?.platform_id || ''}" placeholder="Opcional al agendar"></div>`;
-            } else if (platform === 'substack') {
-                fieldHTML = `<div class="form-group"><label for="substack-id">ID del Directo de Substack</label><input id="substack-id" name="substackId" type="text" value="${session?.platform_id || ''}" placeholder="Opcional al agendar"></div>`;
+            // Ahora este bloque se activa para YouTube y Twitch
+        if (platform === 'youtube' || platform === 'twitch') {
+            const platformName = platform === 'youtube' ? 'Video de YouTube' : 'Canal de Twitch';
+            fieldHTML = `<div class="form-group"><label for="platform-id">ID del ${platformName}</label><input id="platform-id" name="platformId" type="text" value="${session?.platform_id || ''}" placeholder="El ID de tu canal o video"></div>`;
+        } 
+        // --- FIN: CAMBIO PUNTUAL --- 
+        else if (platform === 'substack') {
+                fieldHTML = `<div class="form-group"><label for="substack-id">ID del Directo de Substack</label><input id="substack-id" name="substackId" type="text" value="${session?.platform_id || ''}" placeholder="Lo optienes al agendar tu transmisión"></div>`;
             }
             platformSpecificFields.innerHTML = fieldHTML;
 
