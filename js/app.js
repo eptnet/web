@@ -33,11 +33,14 @@ document.addEventListener('mainReady', () => {
                             </br>
                             <p>Te damos la bienvenida a <strong>Epistecnología</strong>, 
                             una <strong>plataforma abierta de divulgación científica y cultural</strong> 
-                            que pone la <strong>tecnología al servicio del conocimiento y con Sabiduría</strong>. 
+                            que pone la <strong>tecnología al servicio del conocimiento con Sabiduría</strong>. 
                             Aquí, investigadores, docentes, divulgadores y curiosos del saber encuentran un 
-                            espacio para <strong>crear, compartir y explorar contenidos académicos y culturales</strong>, 
-                            desde artículos, podcasts hasta <strong>videos, transmisiones en vivo y 
-                            publicaciones indexadas</strong>.</p>
+                            espacio para <strong>crear, explorar y compartir contenidos académicos y culturales.</strong> 
+                            </br>
+                            <strong>Como investigador,</strong> únete y crea desde artículos, poster, podcasts hasta 
+                            <strong>videos, eventos híbridos, transmisiones en vivo y mucho más, dales un DOI y haz 
+                            que tus creaciones sean citables.</strong>
+                            </p>
                             <a href="#" class="cta-button" id="welcome-cta-btn">Divulgador, a Crear 🚀</a>
                             </div>`,
         stories: `<div class="bento-box bento-box--1x3 mobile-full-width" data-id="static-launch-stories" style="background-image: url('https://i.ibb.co/9kDJPK5K/Whisk-7b4dfc4406.jpg'); cursor: pointer; background-size: cover; background-position: center;"><div class="card-content"><span class="card-category" style="color: white;">Colección</span><h4 style="color: white;">Minuto cultural 📺</h4></div></div>`,
@@ -121,14 +124,14 @@ document.addEventListener('mainReady', () => {
 
     // --- 3. EL "PLANO DE CONSTRUCCIÓN" DE LA GRID ---
     const grid_layout = [
-        { type: 'module', id: 'welcome' },
-        { type: 'module', id: 'podcastPlayer' },
-        { type: 'module', id: 'logos' },
 
         { type: 'post' }, 
         { type: 'post' }, 
         { type: 'post' }, 
         { type: 'post' },
+
+        { type: 'module', id: 'welcome' },
+        { type: 'module', id: 'podcastPlayer' },
 
         { type: 'module', id: 'zenodo' },
         { type: 'module', id: 'subs' },
@@ -146,6 +149,8 @@ document.addEventListener('mainReady', () => {
         { type: 'post' }, 
         { type: 'post' }, 
         { type: 'post' },
+
+        { type: 'module', id: 'logos' },
 
         { type: 'post' }, 
         { type: 'post' },
@@ -294,24 +299,34 @@ document.addEventListener('mainReady', () => {
     }
     
     function openModal(content, type = 'article', shareConfig = null) {
-        if (!modalOverlay || !modalContent) return;
-        document.body.dataset.modalType = type;
-        modalContent.innerHTML = content;
-        if (type === 'stories') {
-            modalContainer.classList.add('modal-container--video');
-            modalShareFooter.style.display = 'none';
-        } else {
-            modalContainer.classList.remove('modal-container--video');
-            modalShareFooter.style.display = 'flex';
-            if (shareConfig) setupShareButtons(shareConfig);
-        }
-        modalOverlay.classList.add('is-visible');
-        document.body.style.overflow = 'hidden';
+    if (!modalOverlay || !modalContent) return;
 
-        if (!history.state?.modalOpen) {
-            history.pushState({ modalOpen: true }, '');
-        }
+    document.body.dataset.modalType = type;
+    modalContent.innerHTML = content;
+
+    // --- INICIO DE LA CORRECCIÓN ---
+    // Movemos el reseteo del scroll aquí y lo envolvemos en un setTimeout.
+    // Esto asegura que el DOM se haya actualizado antes de ejecutar el comando.
+    setTimeout(() => {
+        modalContent.scrollTop = 0;
+    }, 0);
+    // --- FIN DE LA CORRECCIÓN ---
+
+    if (type === 'stories') {
+        modalContainer.classList.add('modal-container--video');
+        modalShareFooter.style.display = 'none';
+    } else {
+        modalContainer.classList.remove('modal-container--video');
+        modalShareFooter.style.display = 'flex';
+        if (shareConfig) setupShareButtons(shareConfig);
     }
+    modalOverlay.classList.add('is-visible');
+    document.body.style.overflow = 'hidden';
+
+    if (!history.state?.modalOpen) {
+        history.pushState({ modalOpen: true }, '');
+    }
+}
 
     function closeModal() {
         if (!modalOverlay || !modalOverlay.classList.contains('is-visible')) return;
