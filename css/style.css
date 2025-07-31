@@ -9,6 +9,7 @@
     --color-text-primary: #1c1e21;
     --color-text-secondary: #65676b;
     --color-accent: #b72a1e;
+    --color-accent-rgb: 183, 42, 30; /* Definimos el RGB de --color-accent */
     --color-border: #ddd;
     --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.1);
     --border-radius: 12px;
@@ -72,7 +73,11 @@ main.container {
 .hero-content { position: relative; z-index: 3; color: white; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7); padding: 1rem; padding-top: 20vh; }
 .hero-content h1 { font-size: 4.5rem; font-weight: 700; }
 .hero-content p { font-size: 1.5rem; font-weight: 400; }
-.hero-button { position: absolute; bottom: 40px; width: 50px; height: 50px; border: 2px solid #f2f3f4; border-radius: 50%; font-size: 1.5rem; color: #f2f3f4; background: transparent; transition: background-color 0.3s, transform 0.3s; animation: bounce 2s infinite; z-index: 3; }
+.hero-button { 
+    position: absolute; 
+    bottom: 25vh; 
+    width: 50px; 
+    height: 50px; border: 2px solid #f2f3f4; border-radius: 50%; font-size: 1.5rem; color: #f2f3f4; background: transparent; transition: background-color 0.3s, transform 0.3s; animation: bounce 2s infinite; z-index: 3; }
 .hero-button:hover { background-color: rgba(255, 255, 255, 0.1); transform: scale(1.1); animation-play-state: paused; }
 @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }
 @keyframes kenburns-effect { 0% { transform: scale(1.0) translate(0, 0); opacity: 0.7; } 50% { transform: scale(1.15) translate(-2%, 2%); opacity: 1; } 100% { transform: scale(1.0) translate(0, 0); opacity: 0.7; } }
@@ -866,3 +871,269 @@ body.dark-theme .ticker-row img:hover {
 }
 
 /* --- FIN: ESTILOS PARA NOTIFICACIONES --- */
+
+/* --- INICIO: ESTILOS PARA NUEVOS BENTOS DE INICIO --- */
+
+/* 1. Bento "Próximo Evento" */
+#next-event-bento {
+    padding: 0;
+    overflow: hidden;
+}
+.bento-next-event {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    background-size: cover;
+    background-position: center;
+    color: white;
+}
+.event-date-box {
+    flex: 0 0 35%; /* Ocupa el 35% del ancho */
+    background-color: rgba(var(--color-accent-rgb), 0.8); /* Añadimos transparencia (0.8) */
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+}
+.date-day {
+    font-size: 6rem;
+    font-weight: 700;
+    line-height: 1;
+}
+.date-month {
+    font-size: 1.5rem;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+.date-weekday {
+    font-size: 1rem;
+    margin-top: 1rem;
+    opacity: 0.8;
+}
+.live-indicator {
+    font-weight: 700;
+    animation: pulse-live 2s infinite;
+}
+.event-details {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+.event-details h4 {
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+}
+.event-details .cta-button {
+    display: inline-block;
+    align-self: flex-start;
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: transform 0.2s ease;
+}
+.event-details .cta-button:hover {
+    transform: scale(1.05);
+}
+
+/* 2. Bento "Ver Todas las Publicaciones" */
+.all-posts-cta {
+    background-color: var(--color-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+.all-posts-cta .cta-content h3 {
+    font-size: 1.5rem;
+}
+.all-posts-cta .cta-content p {
+    color: var(--color-text-secondary);
+    margin: 0.5rem 0 1.5rem 0;
+}
+.all-posts-cta .cta-content .cta-button {
+    font-weight: 600;
+    color: var(--color-accent);
+}
+
+/* 3. Ajustes para Móvil */
+@media (max-width: 768px) {
+    .bento-next-event {
+        flex-direction: column;
+    }
+    .event-date-box {
+        flex-basis: auto; /* La altura se vuelve automática */
+        padding: 1rem;
+    }
+    .date-day { font-size: 4rem; }
+    .date-month { font-size: 1.2rem; }
+    .event-details { padding: 1.5rem; }
+    .event-details h4 { font-size: 1.3rem; }
+}
+/* --- FIN: ESTILOS PARA NUEVOS BENTOS --- */
+
+/* --- INICIO: ESTILOS PARA BENTO CTA SUBSTACK --- */
+.all-posts-cta-substack {
+    background-color: #f4f4f4; /* Un gris claro similar a Substack */
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    padding: 1.5rem;
+    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+}
+
+.all-posts-cta-substack:hover {
+    background-color: #e9e9e9;
+    border-color: #ccc;
+}
+
+.substack-content {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    width: 100%;
+}
+
+.substack-logo {
+    flex-shrink: 0;
+}
+
+.substack-text {
+    flex-grow: 1;
+}
+
+.substack-text h3 {
+    font-size: 1.2rem;
+    margin-bottom: 0.25rem;
+    color: var(--color-text-primary);
+}
+
+.substack-text p {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 0;
+}
+
+.substack-button {
+    background-color: #0072b1; /* Un azul similar al de LinkedIn (usado en Substack) */
+    color: white;
+    padding: 0.75rem 1.25rem;
+    border-radius: 6px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.2s ease-in-out;
+    white-space: nowrap; /* Evita que el texto del botón se rompa */
+}
+
+.substack-button i {
+    margin-left: 0.5rem;
+}
+
+.substack-button:hover {
+    background-color: #005c8e;
+}
+
+/* Ajustes para móvil */
+@media (max-width: 768px) {
+    .substack-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .substack-logo {
+        margin-bottom: 0.5rem;
+    }
+
+    .substack-button {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* --- FIN: ESTILOS PARA BENTO CTA SUBSTACK --- */
+
+/* --- Ajustes para Bento de Próximo Evento --- */
+.event-date-box {
+    /* Mantenemos la transparencia que pediste */
+    background-color: rgba(183, 42, 30, 0.9);
+}
+.event-type {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.event-details {
+    /* Hacemos que el contenido se alinee abajo */
+    justify-content: flex-end;
+}
+.event-description {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin: -1rem 0 1.5rem 0; /* Ajustamos el espaciado */
+    /* Limitamos el texto a 3 líneas */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}
+.event-time-info {
+    font-size: 0.9rem;
+    font-weight: 500;
+    opacity: 0.8;
+}
+.event-details .cta-button {
+    margin-top: 1.5rem; /* Espacio entre texto y botón */
+    align-self: flex-start;
+}
+
+/* --- INICIO: ESTILOS PARA BENTO SUBSTACK DESTACADO --- */
+.bento-substack-featured {
+    padding: 0;
+    color: white;
+}
+.bento-substack-featured .card-content {
+    justify-content: space-between; /* Alinea el texto arriba y el botón abajo */
+    padding: 2rem;
+}
+.bento-substack-featured .featured-text h4 {
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+}
+.bento-substack-featured .featured-text p {
+    font-size: 1rem;
+    opacity: 0.9;
+    max-width: 50ch; /* Limita el ancho del texto para legibilidad */
+}
+.bento-substack-featured .cta-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+.bento-substack-featured .cta-button i {
+    border: 2px solid white;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Ajustes para Móvil */
+@media (max-width: 768px) {
+    .bento-substack-featured .featured-text h4 {
+        font-size: 1.3rem;
+    }
+}
+/* --- FIN: ESTILOS PARA BENTO SUBSTACK DESTACADO --- */

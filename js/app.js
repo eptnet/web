@@ -113,6 +113,27 @@ document.addEventListener('mainReady', () => {
                         <p>Publica tus trabajos, obtén un DOI y forma parte de nuestro ecosistema de conocimiento abierto.</p>
                     </div>
                 </div>`,
+
+            // Un placeholder que llenaremos dinámicamente con el próximo evento
+            nextEventPlaceholder: `<div class="bento-box bento-box--4x3 mobile-full-width" id="next-event-bento"></div>`,
+
+            // Un bento estático para la llamada a la acción de Substack
+            allPostsCTA: `
+                <div class="bento-box bento-box--4x3 bento-substack-featured mobile-full-width" 
+                    data-url="https://eptnews.substack.com/" 
+                    style="background-image: url('https://i.ibb.co/hJ5jsbv9/Leonardo-Phoenix-10-A-vibrant-and-dynamic-scene-depicting-the-2.jpg'); cursor: pointer;">
+                    <div class="card-content">
+                        <div class="featured-text">
+                            <h4>Explora Todas Nuestras Publicaciones</h4>
+                            <p>Lee todos nuestros artículos, investigaciones y posts directamente en EPT News.</p>
+                        </div>
+                        <span class="cta-button">
+                            <i class="fa-solid fa-arrow-right"></i> Ir a Substack
+                        </span>
+                    </div>
+                </div>
+            `,
+
             end: `
                 <div class="bento-box bento-box--4x1 bento-box--imagen" data-id="static-video" data-panel-type="embed" data-panel-title="Video Destacado" data-embed-src="https://www.youtube.com/embed/dQw4w9WgXcQ">
                     <div class="card-content">
@@ -125,6 +146,8 @@ document.addEventListener('mainReady', () => {
     // --- 3. EL "PLANO DE CONSTRUCCIÓN" DE LA GRID ---
     const grid_layout = [
 
+        { type: 'module', id: 'nextEventPlaceholder' }, // <-- NUEVO EVENTO AQUÍ
+
         { type: 'post' }, 
         { type: 'post' }, 
         { type: 'post' }, 
@@ -132,15 +155,10 @@ document.addEventListener('mainReady', () => {
 
         { type: 'module', id: 'welcome' },
         { type: 'module', id: 'podcastPlayer' },
-
+        
         { type: 'module', id: 'zenodo' },
         { type: 'module', id: 'subs' },
-
-        { type: 'post' }, 
-        { type: 'post' }, 
-        { type: 'post' }, 
-        { type: 'post' },
-
+        
         { type: 'module', id: 'stories' },
         { type: 'module', id: 'videoFeatured' },
         { type: 'module', id: 'quote' },
@@ -150,11 +168,9 @@ document.addEventListener('mainReady', () => {
         { type: 'post' }, 
         { type: 'post' },
 
+        { type: 'module', id: 'allPostsCTA' }, // <-- NUEVO CTA AQUÍ
+
         { type: 'module', id: 'logos' },
-
-        { type: 'post' }, 
-        { type: 'post' },
-
         { type: 'module', id: 'end' }
     ];
 
@@ -239,6 +255,91 @@ document.addEventListener('mainReady', () => {
         if (podcasts && podcasts.length > 0) {
             audioPlayer.setPlaylist(podcasts);
             populatePodcastPlayer(podcasts);
+        }
+
+        loadNextEvent();
+    }
+
+    // AÑADE ESTAS DOS FUNCIONES NUEVAS en app.js
+
+    function createNextEventHTML(session) {
+        const eventDate = new Date(session.scheduled_at);
+        const day = eventDate.getDate();
+        const month = eventDate.toLocaleDateString('es-ES', { month: 'long' });
+        const weekday = eventDate.toLocaleDateString('es-ES', { weekday: 'long' });
+        // Forzamos el formato de 24h para evitar confusiones
+        const time = eventDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+        let eventType = 'PRÓXIMO EVENTO';
+        let statusText = `Inicia: ${weekday}, ${time}h`;
+        const now = new Date();
+
+        if (session.status === 'EN VIVO') {
+            eventType = '<span class="live-indicator">AHORA EN VIVO</span>';
+        } else if (eventDate < now) {
+            eventType = 'EVENTO FINALIZADO';
+            statusText = 'Esta sesión ha concluido';
+        }
+        
+        // Fallback por si no hay imagen en la base de datos
+        const thumbnailUrl = session.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg';
+
+        return `
+            <div class="bento-next-event" style="background-image: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.7)), url('${thumbnailUrl}');">
+                <div class="event-date-box">
+                    <div class="event-type">${eventType}</div>
+                    <div class="date-day">${day}</div>
+                    <div class="date-month">${month}</div>
+                </div>
+                <div class="event-details">
+                    <div>
+                        <h4>${session.session_title}</h4>
+                        <p class="event-description">${session.description || ''}</p>
+                        <p class="event-time-info">${statusText}</p>
+                    </div>
+                    <a href="/live.html?sesion=${session.id}" class="cta-button">Ir al Evento</a>
+                </div>
+            </div>
+        `;
+    }
+
+    async function loadNextEvent() {
+        if (!window.supabaseClient) return;
+        const bentoContainer = document.getElementById('next-event-bento');
+        if (!bentoContainer) return;
+
+        let nextOrLastEvent = null;
+
+        // 1. Intentamos buscar el próximo evento PROGRAMADO
+        let { data: nextEvent } = await window.supabaseClient
+            .from('sessions')
+            .select('*')
+            .eq('is_archived', false)
+            .eq('status', 'PROGRAMADO')
+            .order('scheduled_at', { ascending: true })
+            .limit(1)
+            .single();
+
+        if (nextEvent && new Date(nextEvent.scheduled_at) > new Date()) {
+            nextOrLastEvent = nextEvent;
+        } else {
+            // 2. Si no hay programados en el futuro, buscamos el último FINALIZADO o EN VIVO
+            let { data: lastEvent } = await window.supabaseClient
+                .from('sessions')
+                .select('*')
+                .eq('is_archived', false)
+                .in('status', ['EN VIVO', 'FINALIZADO'])
+                .order('scheduled_at', { ascending: false })
+                .limit(1)
+                .single();
+            nextOrLastEvent = lastEvent;
+        }
+
+        if (nextOrLastEvent) {
+            bentoContainer.innerHTML = createNextEventHTML(nextOrLastEvent);
+            bentoContainer.classList.add('is-visible');
+        } else {
+            bentoContainer.style.display = 'none';
         }
     }
     
@@ -442,11 +543,28 @@ document.addEventListener('mainReady', () => {
     };
     audioPlayer.init();
 
+    // REEMPLAZA ESTA FUNCIÓN COMPLETA EN APP.JS
+
     function initHero() {
         const heroButton = document.getElementById('scroll-to-content-btn');
+        // Apuntamos al contenido principal, que siempre es visible
+        const mainContent = document.querySelector('main.container'); 
+
+        if (heroButton && mainContent) {
+            heroButton.addEventListener('click', () => {
+                mainContent.scrollIntoView({ behavior: 'smooth' });
+            });
+        }
+
+        // La lógica para la transparencia del menú se mantiene
         const desktopNav = document.querySelector('.desktop-nav');
-        if (heroButton && desktopNav) { heroButton.addEventListener('click', () => { desktopNav.scrollIntoView({ behavior: 'smooth' }); }); }
-        if (desktopNav) { const checkNavPosition = () => { desktopNav.classList.toggle('is-at-top', window.scrollY < 50); }; window.addEventListener('scroll', checkNavPosition, { passive: true }); checkNavPosition(); }
+        if (desktopNav) { 
+            const checkNavPosition = () => { 
+                desktopNav.classList.toggle('is-at-top', window.scrollY < 50); 
+            }; 
+            window.addEventListener('scroll', checkNavPosition, { passive: true }); 
+            checkNavPosition(); 
+        }
     }
 
     function initMobileNav() {
@@ -460,6 +578,7 @@ document.addEventListener('mainReady', () => {
     bentoGrid?.addEventListener("click", async (event) => {
         const bentoBox = event.target.closest('.bento-box[data-id]');
         const ctaButton = event.target.closest('#welcome-cta-btn');
+        const allPostsCta = event.target.closest('.bento-substack-featured'); 
 
         // Lógica para el botón CTA
         if (ctaButton) {
@@ -470,6 +589,11 @@ document.addEventListener('mainReady', () => {
             } else {
                 document.getElementById('login-modal-trigger')?.click();
             }
+            return;
+        }
+
+        if (allPostsCta) {
+            window.open(allPostsCta.dataset.url, '_blank');
             return;
         }
 
