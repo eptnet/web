@@ -191,12 +191,12 @@ export const Studio = {
                     </a>
                     <button class="btn-secondary" data-action="copy-guest-link" data-url="${session.guest_url}">
                         <i class="fas fa-copy"></i>
-                        <span>Link para invitados</span>
+                        <span>Link invitados</span>
                     </button>
                     
                     <button class="btn-secondary" data-action="edit-session" data-session='${sessionData}' style="margin-left: auto;">
                         <i class="fas fa-pencil-alt"></i>
-                        <span>Editar evento</span>
+                        <span>Editar</span>
                     </button>
                     ${archiveButtonHTML}
                     <button class="btn-secondary" data-action="delete-session" data-session-id="${session.id}" title="Borrar">
