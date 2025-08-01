@@ -167,8 +167,11 @@ document.addEventListener('mainReady', () => {
         { type: 'post' }, 
         { type: 'post' }, 
         { type: 'post' },
-
         { type: 'module', id: 'allPostsCTA' }, // <-- NUEVO CTA AQUÍ
+        { type: 'post' }, 
+        { type: 'post' }, 
+        { type: 'post' }, 
+        { type: 'post' },
 
         { type: 'module', id: 'logos' },
         { type: 'module', id: 'end' }
