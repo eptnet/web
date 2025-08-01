@@ -10,6 +10,7 @@ const ProfileApp = {
 
         this.addEventListeners();
         await this.handleUserSession();
+        this.setupTabNavigation(); // <-- AÑADE ESTA LÍNEA
 
         // Al cargar la página, revisamos si venimos de la redirección de ORCID
         this.checkForOrcidCode();
@@ -33,6 +34,27 @@ const ProfileApp = {
             }
         });
         // --- FIN DE LA LÓGICA PARA IMGBB ---
+    },
+
+    // AÑADE ESTA FUNCIÓN en profile.js
+    setupTabNavigation() {
+        const navLinks = document.querySelectorAll('.profile-card-nav__link');
+        const tabContents = document.querySelectorAll('.profile-tab-content');
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                const tabId = link.dataset.tab;
+
+                // Cambia el botón activo
+                navLinks.forEach(nav => nav.classList.remove('active'));
+                link.classList.add('active');
+
+                // Cambia el contenido activo
+                tabContents.forEach(content => {
+                    content.classList.toggle('active', content.id === tabId);
+                });
+            });
+        });
     },
 
     async handleUserSession() {
@@ -366,11 +388,18 @@ const ProfileApp = {
         if (!topBar) return;
         const avatarUrl = this.user.user_metadata?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
         topBar.innerHTML = `
-            <div class="top-bar__left"><a href="/" class="top-bar__logo"><img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo"></a></div>
+            <div class="top-bar__left">
+                <a href="/" class="top-bar__logo"><img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo"></a>
+            </div>
             <div class="top-bar__right">
+                <a href="/live.html" class="top-bar-btn" title="Ir a EPT Live">
+                    <i class="fa-solid fa-satellite-dish"></i>
+                </a>
                 <button class="top-bar-btn" id="theme-switcher" title="Cambiar tema"><i class="fa-solid fa-moon"></i></button>
                 <button class="top-bar-btn" id="logout-btn-header" title="Cerrar Sesión"><i class="fa-solid fa-right-from-bracket"></i></button>
-                <a href="#" id="user-avatar-header" title="Mi Perfil"><img src="${avatarUrl}" alt="Avatar"></a>
+                <a href="/inv/dashboard.html" id="user-avatar-header" title="Ir al Dashboard">
+                    <img src="${avatarUrl}" alt="Avatar">
+                </a>
             </div>`;
         this.applyTheme();
     },

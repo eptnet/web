@@ -14,10 +14,7 @@
             <a href="/" class="top-bar__logo"><img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo Epistecnología"></a>
         </div>
         <div class="top-bar__right">
-            <button class="top-bar-btn" id="theme-switcher" title="Cambiar tema"><i class="fa-solid fa-moon"></i></button>
-            <button class="top-bar-btn" id="logout-btn-header" title="Cerrar Sesión"><i class="fa-solid fa-right-from-bracket"></i></button>
-            <a href="/inv/dashboard.html" id="user-avatar-header" title="Ir al Dashboard"></a>
-        </div>
+            </div>
     </header>
 
     <div class="page-container">
@@ -30,12 +27,24 @@
                     <p id="profile-card-bio"></p>
                     <div id="profile-card-socials" class="profile-card__socials"></div>
                     <hr>
+                    <nav class="profile-card-nav">
+                        <button class="profile-card-nav__link active" data-tab="tab-perfil">
+                            <i class="fa-solid fa-user-pen"></i> Perfil y Redes
+                        </button>
+                        <button class="profile-card-nav__link" data-tab="tab-identidad">
+                            <i class="fa-brands fa-orcid"></i> Identidad y Avatar
+                        </button>
+                        <button class="profile-card-nav__link" data-tab="tab-proyectos">
+                            <i class="fa-solid fa-book-bookmark"></i> Proyectos y DOI
+                        </button>
+                    </nav>
+                    <hr>
                     <a href="/inv/dashboard.html" id="dashboard-link-btn" class="btn btn-primary"><i class="fa-solid fa-arrow-right"></i> Ir al Dashboard</a>
                 </div>
             </aside>
 
             <main class="main-content">
-                <div class="main-column">
+                <div id="tab-perfil" class="profile-tab-content active">
                     <div class="bento-box">
                         <h3><i class="fa-solid fa-user-pen"></i> Perfil Público</h3>
                         <form id="profile-form">
@@ -49,104 +58,57 @@
                     <div class="bento-box">
                         <h3><i class="fa-solid fa-share-nodes"></i> Plataformas y Redes</h3>
                         <form id="platforms-form">
-                        <h4>Plataformas Principales</h4>
-                        <div class="form-group">
-                            <label for="youtube-url">Canal de YouTube</label>
-                            <input type="url" id="youtube-url" placeholder="https://youtube.com/c/...">
-                        </div>
-                        <div class="form-group">
-                            <label for="substack-url">Perfil de Substack</label>
-                            <input type="url" id="substack-url" placeholder="https://tupublicacion.substack.com">
-                        </div>
-                        <hr>
-                        <h4>Otras Redes Sociales</h4>
-                        <div class="form-group">
-                            <label for="website-url">Sitio Web / Blog</label>
-                            <input type="url" id="website-url" placeholder="https://...">
-                        </div>
-                        <div class="form-group">
-                            <label for="x-url">Perfil de X (Twitter)</label>
-                            <input type="url" id="x-url" placeholder="https://x.com/usuario">
-                        </div>
-                        <div class="form-group">
-                            <label for="linkedin-url">Perfil de LinkedIn</label>
-                            <input type="url" id="linkedin-url" placeholder="https://linkedin.com/in/usuario">
-                        </div>
-                        <div class="form-group">
-                            <label for="instagram-url">Perfil de Instagram</label>
-                            <input type="url" id="instagram-url" placeholder="https://instagram.com/usuario">
-                        </div>
-                        <div class="form-group">
-                            <label for="facebook-url">Perfil de Facebook</label>
-                            <input type="url" id="facebook-url" placeholder="https://facebook.com/usuario">
-                        </div>
-                        <div class="form-group">
-                            <label for="tiktok-url">Perfil de TikTok</label>
-                            <input type="url" id="tiktok-url" placeholder="https://tiktok.com/@usuario">
-                        </div>
-                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Guardar Plataformas</button>
-                    </form>
+                            <h4>Plataformas Principales</h4>
+                            <div class="form-group"><label for="youtube-url">Canal de YouTube</label><input type="url" id="youtube-url" placeholder="https://youtube.com/c/..."></div>
+                            <div class="form-group"><label for="substack-url">Perfil de Substack</label><input type="url" id="substack-url" placeholder="https://tupublicacion.substack.com"></div>
+                            <hr>
+                            <h4>Otras Redes Sociales</h4>
+                            <div class="form-group"><label for="website-url">Sitio Web / Blog</label><input type="url" id="website-url" placeholder="https://..."></div>
+                            <div class="form-group"><label for="x-url">Perfil de X (Twitter)</label><input type="url" id="x-url" placeholder="https://x.com/usuario"></div>
+                            <div class="form-group"><label for="linkedin-url">Perfil de LinkedIn</label><input type="url" id="linkedin-url" placeholder="https://linkedin.com/in/usuario"></div>
+                            <div class="form-group"><label for="instagram-url">Perfil de Instagram</label><input type="url" id="instagram-url" placeholder="https://instagram.com/usuario"></div>
+                            <div class="form-group"><label for="facebook-url">Perfil de Facebook</label><input type="url" id="facebook-url" placeholder="https://facebook.com/usuario"></div>
+                            <div class="form-group"><label for="tiktok-url">Perfil de TikTok</label><input type="url" id="tiktok-url" placeholder="https://tiktok.com/@usuario"></div>
+                            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Guardar Plataformas</button>
+                        </form>
                     </div>
                 </div>
 
-                <div class="side-column">
+                <div id="tab-identidad" class="profile-tab-content">
                     <div class="bento-box">
                         <h3><i class="fa-brands fa-orcid"></i> Identidad Académica</h3>
-                        <div id="orcid-section">
-                            </div>
+                        <div id="orcid-section"></div>
                     </div>
-
-                <div class="bento-box">
-                    <h3><i class="fa-solid fa-camera"></i> Avatar</h3>
-                    <p class="form-hint">
-                        Sube tu imagen a un servicio gratuito como <a href="https://imgbb.com/" target="_blank">imgbb.com</a>, 
-                        copia el enlace directo (URL.jpg) y pégalo aquí.
-                    </p>
-                    
-                    <form id="avatar-update-form">
-                        <div class="form-group">
-                            <label for="avatar-url">URL de la imagen del perfil</label>
-                            <input type="url" id="avatar-url" placeholder="https://i.ibb.co/...tu-imagen.jpg" required>
-                        </div>
-                        <button type="submit" class="btn btn-secondary">
-                            <i class="fa-solid fa-floppy-disk"></i> Guardar Avatar
-                        </button>
-                    </form>
+                    <div class="bento-box">
+                        <h3><i class="fa-solid fa-camera"></i> Avatar</h3>
+                        <p class="form-hint">Sube tu imagen a un servicio gratuito como <a href="https://imgbb.com/" target="_blank">imgbb.com</a>, copia el enlace directo (URL.jpg) y pégalo aquí.</p>
+                        <form id="avatar-update-form">
+                            <div class="form-group"><label for="avatar-url">URL de la imagen del perfil</label><input type="url" id="avatar-url" placeholder="https://i.ibb.co/...tu-imagen.jpg" required></div>
+                            <button type="submit" class="btn btn-secondary"><i class="fa-solid fa-floppy-disk"></i> Guardar Avatar</button>
+                        </form>
+                    </div>
                 </div>
 
+                <div id="tab-proyectos" class="profile-tab-content">
                     <div class="bento-box">
                         <h3><i class="fa-solid fa-book-bookmark"></i> Proyectos (DOI)</h3>
                         <div id="projects-section">
                             <p class="form-hint">Una vez conectado a ORCID, podrás sincronizar tus trabajos.</p>
                             <button id="sync-orcid-works-btn" class="btn btn-secondary" disabled><i class="fa-solid fa-sync"></i> Sincronizar desde ORCID</button>
-                            
                             <div id="projects-list" class="projects-list"></div>
-                            </div>
+                        </div>
                     </div>
-
                     <div class="bento-box">
-                    <h3><i class="fa-solid fa-cloud-arrow-up"></i> Publicar en Zenodo y Obtener DOI</h3>
-                    <p class="form-hint">
-                        Sube un trabajo (dataset, presentación, etc.) a la comunidad de Epistecnología en Zenodo para obtener un DOI citable.
-                    </p>
-                    <form id="zenodo-form">
-                        <div class="form-group">
-                            <label for="zenodo-title">Título de la Publicación</label>
-                            <input type="text" id="zenodo-title" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="zenodo-description">Descripción / Abstract</label>
-                            <textarea id="zenodo-description" rows="4" required></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="zenodo-file">Archivo a Publicar (PDF, ZIP, etc.)</label>
-                            <input type="file" id="zenodo-file" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Publicar y Obtener DOI</button>
-                    </form>
-                    <div id="zenodo-message" class="form-message" style="margin-top: 1rem;"></div>
-                </div>
-                
+                        <h3><i class="fa-solid fa-cloud-arrow-up"></i> Publicar en Zenodo y Obtener DOI</h3>
+                        <p class="form-hint">Sube un trabajo (dataset, presentación, etc.) a la comunidad de Epistecnología en Zenodo para obtener un DOI citable.</p>
+                        <form id="zenodo-form">
+                            <div class="form-group"><label for="zenodo-title">Título de la Publicación</label><input type="text" id="zenodo-title" required></div>
+                            <div class="form-group"><label for="zenodo-description">Descripción / Abstract</label><textarea id="zenodo-description" rows="4" required></textarea></div>
+                            <div class="form-group"><label for="zenodo-file">Archivo a Publicar (PDF, ZIP, etc.)</label><input type="file" id="zenodo-file" required></div>
+                            <button type="submit" class="btn btn-primary">Publicar y Obtener DOI</button>
+                            <div id="zenodo-message" class="form-message" style="margin-top: 1rem;"></div>
+                        </form>
+                    </div>
                 </div>
             </main>
         </div>
