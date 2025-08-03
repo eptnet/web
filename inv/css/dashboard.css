@@ -1,16 +1,6 @@
 /**
  * ==========================================================================
- * DASHBOARD.CSS - OPTIMIZADO POR ASISTENTE DE PROGRAMACIÓN
- * FECHA: 2025-06-29
- * VERSIÓN: 6.0
- *
- * MEJORAS CLAVE:
- * - Reorganización completa con secciones claras para fácil mantenimiento.
- * - Adición de variables CSS para consistencia (transiciones, fuentes).
- * - Diseño Responsivo (Media Queries) para tablets y móviles.
- * - Refinamiento de estilos en componentes (botones, modales, tarjetas).
- * - Mejora de la accesibilidad con estados :focus-visible.
- * - Estilos consistentes para elementos de formulario y selectores.
+ * DASHBOARD.CSS - VERSIÓN 7.0 (CORREGIDA CON CSS GRID)
  * ==========================================================================
  */
 
@@ -18,67 +8,115 @@
    1. CONFIGURACIÓN GLOBAL Y VARIABLES
    ========================================================================== */
 :root {
-    /* Paleta de Colores */
     --color-background: #f0f2f5;
     --color-surface: #ffffff;
     --color-text-primary: #1c1e21;
     --color-text-secondary: #65676b;
     --color-accent: #b72a1e;
-    --color-primary-cta: #1877f2; /* Call-to-action primario */
+    --color-primary-cta: #1877f2;
     --color-border: #e0e0e0;
-    --color-success: #42b72a;
-    --color-disabled: #bcc0c4;
-
-    /* Tipografía */
     --font-family-main: 'Inter', sans-serif;
-
-    /* Layout */
     --sidebar-width: 80px;
-    
-    /* UI */
     --border-radius: 8px;
     --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.08);
-    --shadow-strong: 0 4px 12px rgba(0, 0, 0, 0.12);
     --transition-fast: all 0.2s ease-in-out;
 }
-
-/* --- Tema Oscuro --- */
 body.dark-theme {
     --color-background: #18191a;
     --color-surface: #242526;
     --color-text-primary: #e4e6eb;
     --color-text-secondary: #b0b3b8;
     --color-border: #3a3b3c;
-    --color-disabled: #4a4c4e;
 }
-
-/* --- Reseteo y Estilos Base --- */
-*, *::before, *::after {
-    box-sizing: border-box;
-}
-
+*, *::before, *::after { box-sizing: border-box; }
 body {
     font-family: var(--font-family-main);
     margin: 0;
     background-color: var(--color-background);
     color: var(--color-text-primary);
-    line-height: 1.6;
 }
 
 /* ==========================================================================
-   2. LAYOUT PRINCIPAL
+   2. LAYOUT PRINCIPAL (CORREGIDO CON GRID)
    ========================================================================== */
 .dashboard-container {
-    display: flex;
-    min-height: 100vh; /* AÑADIDO: asegura que el contenedor ocupe al menos toda la altura de la pantalla */
+    display: grid;
+    /* Define 2 columnas: una para el sidebar y otra flexible para el contenido */
+    grid-template-columns: var(--sidebar-width) 1fr;
+    min-height: 100vh;
 }
 
 .main-content {
-    flex-grow: 1;
     padding: 2rem 3rem;
-    margin-left: var(--sidebar-width);
-    position: relative;
-    transition: margin-left 0.3s ease; /* Para futuras expansiones del menú */
+}
+
+/* ==========================================================================
+   3. BARRA LATERAL (SIDEBAR) (CORREGIDO)
+   ========================================================================== */
+.sidebar {
+    height: 100vh;
+    position: sticky; /* Se queda "pegado" al hacer scroll */
+    top: 0;
+    background-color: var(--color-surface);
+    border-right: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem 0;
+    z-index: 200;
+}
+/* (El resto de los estilos del sidebar como .sidebar-header, .nav-link, etc., no necesitan cambios) */
+.sidebar-header { display: flex; justify-content: center; align-items: center; padding-bottom: 1.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--color-border); }
+.sidebar-header .logo { height: 32px; }
+.sidebar-header h2, .link-text { display: none; }
+.sidebar-nav { flex-grow: 1; }
+.nav-link { display: flex; justify-content: center; align-items: center; padding: 1rem 0; text-decoration: none; color: var(--color-text-secondary); border-left: 4px solid transparent; transition: var(--transition-fast); }
+.nav-link:hover { background-color: var(--color-background); color: var(--color-accent); }
+.nav-link.active { color: var(--color-accent); border-left-color: var(--color-accent); background-color: var(--color-background); }
+.nav-link i { font-size: 1.5rem; }
+.sidebar-footer { border-top: 1px solid var(--color-border); padding-top: 1rem; }
+#logout-btn { width: 100%; background: none; border: none; }
+
+
+/* ==========================================================================
+   4. LAYOUT RESPONSIVO (CORREGIDO)
+   ========================================================================== */
+@media (max-width: 768px) {
+    .dashboard-container {
+        grid-template-columns: 1fr; /* Colapsamos a 1 columna */
+    }
+    .sidebar {
+        /* Convertimos el sidebar en una barra inferior fija */
+        flex-direction: row;
+        width: 100%;
+        height: 60px;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        top: auto;
+        border-top: 1px solid var(--color-border);
+        border-right: none;
+        padding: 0;
+    }
+    .sidebar-header, .sidebar-footer, .link-text {
+        display: none; /* Ocultamos elementos no necesarios en la barra móvil */
+    }
+    .sidebar-nav {
+        display: flex;
+        width: 100%;
+    }
+    .nav-link {
+        flex: 1; /* Cada icono ocupa el mismo espacio */
+        border-left: none;
+        border-top: 3px solid transparent;
+    }
+    .nav-link.active {
+        border-top-color: var(--color-accent);
+        border-left-color: transparent;
+    }
+    .main-content {
+        padding: 1.5rem;
+        padding-bottom: 80px; /* Espacio para que el contenido no quede debajo de la nueva barra */
+    }
 }
 
 .main-header {
@@ -112,11 +150,9 @@ body {
    3. BARRA LATERAL (SIDEBAR)
    ========================================================================== */
 .sidebar {
-    width: var(--sidebar-width);
     height: 100vh;
-    position: fixed;
+    position: sticky; /* Hacemos que sea pegajoso al hacer scroll */
     top: 0;
-    left: 0;
     background-color: var(--color-surface);
     border-right: 1px solid var(--color-border);
     display: flex;
@@ -468,22 +504,49 @@ body {
 }
 
 /* --- Para Móviles muy pequeños (hasta 480px) --- */
-@media (max-width: 480px) {
-    .main-content {
-        padding: 1rem;
-        margin-left: 0; /* El menú podría superponerse en lugar de empujar */
-        /* Para una versión futura con menú flotante, el 'margin-left' debería ser 0 */
-    }
-
-    .sidebar {
-        /* Aquí se podría cambiar a un menú 'bottom-bar' o un 'hamburger' que se superponga */
-        /* Por ahora, mantenemos el de 80px que funciona bien */
+    @media (max-width: 768px) { /* Aplicamos el cambio desde tablets */
+        .dashboard-container {
+            grid-template-columns: 1fr; /* El contenido principal ocupa todo el ancho */
+        }
+        .sidebar {
+            /* Convertimos el sidebar en una barra inferior fija en móvil */
+            flex-direction: row;
+            width: 100%;
+            height: 60px;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            top: auto;
+            border-top: 1px solid var(--color-border);
+            border-right: none;
+            padding: 0;
+        }
+        .sidebar-header, .sidebar-footer, .link-text {
+            display: none; /* Ocultamos elementos no necesarios en la barra móvil */
+        }
+        .sidebar-nav {
+            display: flex;
+            width: 100%;
+        }
+        .nav-link {
+            flex: 1; /* Cada icono ocupa el mismo espacio */
+            border-left: none;
+            border-top: 3px solid transparent;
+        }
+        .nav-link.active {
+            border-top-color: var(--color-accent);
+            border-left-color: transparent;
+        }
+        .main-content {
+            padding: 1.5rem;
+            margin-left: 0;
+            padding-bottom: 80px; /* Espacio para que el contenido no quede debajo de la nueva barra */
+        }
     }
 
     body {
         font-size: 15px; /* Ligeramente más pequeño para caber más info */
     }
-}
 
 /* ==========================================================================
    8. ESTILOS PARA TARJETAS DE SESIÓN EN ESTUDIO

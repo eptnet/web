@@ -1,0 +1,127 @@
+/* ==========================================================================
+   ESTILOS PARA LA PÁGINA DE DIRECTORIO
+   ========================================================================== */
+
+/* 1. Cabecera de la Página */
+.directory-header {
+    text-align: center;
+    padding: 2rem 0;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 2rem;
+}
+
+.directory-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.directory-header p {
+    font-size: 1.1rem;
+    color: var(--color-text-secondary);
+    max-width: 600px;
+    margin: 0 auto 1.5rem auto;
+}
+
+.search-bar-container {
+    position: relative;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.search-bar-container i {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text-secondary);
+}
+
+#search-input {
+    width: 100%;
+    padding: 0.8rem 1rem 0.8rem 3rem; /* Padding izquierdo para el icono */
+    border-radius: 25px;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+    font-size: 1rem;
+}
+
+#search-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+}
+
+/* 2. Rejilla de Investigadores */
+.researcher-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    padding-bottom: 3rem;
+}
+
+.loading-message {
+    grid-column: 1 / -1; /* Ocupa todas las columnas */
+    text-align: center;
+    color: var(--color-text-secondary);
+}
+
+/* 3. Tarjeta Individual de Investigador */
+.researcher-card {
+    background-color: var(--color-surface);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-light);
+    padding: 2rem 1.5rem;
+    text-align: center;
+    text-decoration: none;
+    color: var(--color-text-primary);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.researcher-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+body.dark-theme .researcher-card:hover {
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+}
+
+.card-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 1rem;
+    border: 3px solid var(--color-border);
+}
+
+.card-name {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.card-bio {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    /* Limita el texto a 3 líneas */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}
+
+.nav-icon { 
+    position: relative;
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    width: 44px; 
+    height: 44px; 
+    border-radius: 8px; 
+    transition: background-color 0.2s ease, color 0.2s ease; 
+    color: var(--color-secondary); 
+    font-size: 1.1rem;
+    line-height: 1; /* <-- AÑADE ESTA LÍNEA */
+}

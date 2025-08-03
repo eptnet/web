@@ -19,13 +19,12 @@ body.dark-theme {
 
 /* --- ESTILOS GENERALES --- */
 *, *::before, *::after { box-sizing: border-box; }
-
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     margin: 0;
     background-color: var(--color-background);
-    color: var(--color-primary); /* <-- CORRECCIÓN CLAVE */
-    transition: background-color 0.3s, color 0.3s;
+    color: var(--color-primary);
+    padding-top: 0px; /* Espacio para el nuevo header sticky */
 }
 
 h3 {
@@ -40,7 +39,7 @@ h3 i { margin-right: 0.75rem; color: var(--color-accent); }
 
 .page-container {
     padding: 2rem 1.5rem;
-    max-width: 1400px;
+    max-width: 1600px;
     margin: 0 auto;
 }
 
@@ -75,20 +74,22 @@ body.dark-theme .top-bar {
 .profile-layout { display: grid; gap: 1.5rem; }
 @media (min-width: 1024px) {
     .profile-layout { grid-template-columns: 320px 1fr; }
-    .profile-sidebar { position: sticky; top: calc(70px + 2rem); } /* 70px del header + padding */
+    .profile-sidebar { position: sticky; top: calc(86px + 2rem); }
 }
-
 .main-content { display: grid; gap: 1.5rem; grid-auto-rows: min-content; }
 .bento-box { background-color: var(--color-surface); padding: 1.5rem; border-radius: var(--border-radius); }
+.bento-box.full-width { grid-column: 1 / -1; }
 
 /* --- TARJETA DE PERFIL (SIDEBAR) --- */
-.profile-card { text-align: center; }
+.profile-card { 
+    text-align: center;
+ }
 .profile-card__avatar {
     width: 120px;
     height: 120px;
     border-radius: 50%;
     object-fit: cover;
-    margin-bottom: 1rem;
+    margin: 0 auto 1rem auto;
     border: 4px solid var(--color-accent);
     background-color: var(--color-border); /* <-- CORRECCIÓN para evitar el "salto" */
 }
@@ -171,42 +172,117 @@ input, textarea {
     color: var(--color-accent);
 }
 
-/* --- ESTILOS PARA NAVEGACIÓN Y PESTAÑAS DE PERFIL --- */
+/* --- INICIO: NUEVOS ESTILOS PARA PESTAÑAS (CORREGIDO) --- */
+.profile-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--color-border);
+    grid-column: 1 / -1;
+    /* --- LÓGICA STICKY --- */
+    position: -webkit-sticky;
+    position: sticky;
+    top: 85px; /* Altura del header para que se pegue justo debajo */
+    background-color: var(--color-background);
+    z-index: 100;
+}
+.profile-tab-link {
+    flex: 1; padding: 1rem; background: none; border: none;
+    border-bottom: 3px solid transparent; cursor: pointer; font-size: 1rem;
+    font-weight: 500; color: var(--color-secondary); display: flex;
+    align-items: center; justify-content: center; gap: 0.5rem;
+}
+.profile-tab-link:hover { background-color: var(--color-surface); }
+.profile-tab-link.active { color: var(--color-accent); border-bottom-color: var(--color-accent); }
+.profile-tab-content { display: none; gap: 1.5rem; grid-column: 1 / -1; }
+.profile-tab-content.active { display: grid; }
+
+@media (min-width: 1024px) {
+    .profile-tab-content.active {
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); 
+        align-items: start;
+    }
+}
+@media (max-width: 1024px) {
+    .profile-tabs {
+        top: 0; /* En móvil no hay header de escritorio, se pega arriba del todo */
+        overflow-x: auto;
+        justify-content: flex-start;
+    }
+    body { padding-top: 0; }
+}
+@media (max-width: 480px) {
+    .profile-tab-link span { display: none; } /* Oculta texto, solo muestra iconos */
+    .profile-tab-link { flex: 1; }
+}
+/* --- FIN: NUEVOS ESTILOS PARA PESTAÑAS --- */
+
+/* --- Estilos para la Vista de Perfil Público --- */
+
+/* Cuando el body tiene la clase .public-view, ocultamos los formularios */
+body.public-view form,
+body.public-view #orcid-section .btn,
+body.public-view #projects-section .btn-secondary { display: none; }
+body.public-view .main-content { display: none; }
+body.loading-profile .main-content { opacity: 0; visibility: hidden; }
+
+/* Ocultamos también cualquier sección que solo sea para el dueño del perfil */
+body.public-view #orcid-section .btn,
+body.public-view #projects-section .btn-secondary {
+    display: none;
+}
+
+/* --- AÑADE ESTA NUEVA REGLA --- */
+/* Oculta toda la columna de contenido principal en la vista pública */
+body.public-view .main-content {
+    display: none;
+}
+/* Oculta el contenido principal mientras se determina el permiso */
+body.loading-profile .main-content {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease-in-out;
+}
+/* --- INICIO: Ajustes Finales de Perfil --- */
+
+/* 1. Alinea correctamente el avatar en el menú superior */
+.desktop-nav .user-actions .nav-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 2. Añade espacio y organización a los botones de la tarjeta de perfil */
 .profile-card-nav {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.5rem; /* Esto añade el espacio que faltaba entre los botones */
     margin: 1.5rem 0;
 }
-.profile-card-nav__link {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    text-align: left;
-    font-size: 0.95rem;
-    font-weight: 500;
-    border-radius: 8px;
+
+/* 3. Estilo para el nuevo botón "Próximamente" */
+.profile-card-nav__link.is-coming-soon {
     color: var(--color-secondary);
-    transition: background-color 0.2s, color 0.2s;
-}
-.profile-card-nav__link i {
-    width: 20px;
-    text-align: center;
-}
-.profile-card-nav__link:hover {
+    cursor: not-allowed;
     background-color: var(--color-background);
-    color: var(--color-primary);
+    opacity: 0.6;
 }
-.profile-card-nav__link.active {
-    background-color: var(--color-accent);
-    color: white;
+
+.profile-card-nav__link.is-coming-soon:hover {
+    color: var(--color-secondary); /* Evita que cambie de color al pasar el cursor */
 }
-.profile-tab-content {
-    display: none; /* Oculto por defecto */
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-}
-.profile-tab-content.active {
-    display: grid; /* Se muestra como grid al estar activo */
+
+
+/* --- FIN: Ajustes Finales de Perfil --- */
+
+.nav-icon { 
+    position: relative;
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    width: 44px; 
+    height: 44px; 
+    border-radius: 8px; 
+    transition: background-color 0.2s ease, color 0.2s ease; 
+    color: var(--color-secondary); 
+    font-size: 1.1rem;
+    line-height: 1; /* <-- AÑADE ESTA LÍNEA */
 }

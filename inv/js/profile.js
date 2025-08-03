@@ -36,20 +36,16 @@ const ProfileApp = {
         // --- FIN DE LA LÓGICA PARA IMGBB ---
     },
 
-    // AÑADE ESTA FUNCIÓN en profile.js
     setupTabNavigation() {
-        const navLinks = document.querySelectorAll('.profile-card-nav__link');
+        // Apuntamos a los botones en su nueva ubicación
+        const navLinks = document.querySelectorAll('.profile-tab-link'); 
         const tabContents = document.querySelectorAll('.profile-tab-content');
 
         navLinks.forEach(link => {
             link.addEventListener('click', () => {
                 const tabId = link.dataset.tab;
-
-                // Cambia el botón activo
                 navLinks.forEach(nav => nav.classList.remove('active'));
                 link.classList.add('active');
-
-                // Cambia el contenido activo
                 tabContents.forEach(content => {
                     content.classList.toggle('active', content.id === tabId);
                 });
@@ -59,9 +55,20 @@ const ProfileApp = {
 
     async handleUserSession() {
         const { data: { session } } = await this.supabase.auth.getSession();
-        if (!session) { window.location.href = '/'; return; }
+        if (!session) { 
+            window.location.href = '/'; 
+            return; 
+        }
         this.user = session.user;
-        this.renderProfileData();
+
+        // Guardamos el perfil completo del usuario actual
+        const { data: userProfile } = await this.supabase.from('profiles').select('*').eq('id', this.user.id).single();
+        this.currentUserProfile = userProfile;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const profileIdFromUrl = urlParams.get('id');
+        const targetProfileId = profileIdFromUrl || this.user.id;
+        this.renderProfileData(targetProfileId);
     },
 
     addEventListeners() {
@@ -150,26 +157,49 @@ const ProfileApp = {
         else { alert("Cuenta de ORCID desconectada."); this.renderProfileData(); }
     },
 
-    async renderProfileData() {
+    async renderProfileData(profileId) {
         if (!this.user) return;
         this.renderTopBar();
 
-        // 1. Hacemos una consulta simple y segura solo para los datos del perfil
+        // 1. Usamos el 'profileId' que recibimos para buscar el perfil
         const { data: profile, error } = await this.supabase
             .from('profiles')
-            .select('*') // Quitamos el join complejo a 'projects' para asegurar que esto funcione
-            .eq('id', this.user.id)
+            .select('*')
+            .eq('id', profileId)
             .single();
 
-        if (error && error.code !== 'PGRST116') {
-            console.error('Error cargando el perfil principal:', error);
-            alert("No se pudo cargar tu perfil.");
+            // --- INICIO DE LA MODIFICACIÓN ---
+            // Quitamos la clase de carga DESPUÉS de tener una respuesta, sea cual sea.
+            document.body.classList.remove('loading-profile');
+            // --- FIN DE LA MODIFICACIÓN ---
+
+        if (error) {
+            console.error('Error cargando el perfil:', error);
+            document.querySelector('.main-content').innerHTML = '<h2>Perfil no encontrado</h2><p>El investigador que buscas no existe o el enlace es incorrecto.</p>';
             return;
         }
 
+        // --- LÓGICA PARA VISTA PÚBLICA VS. VISTA PROPIA ---
+        // Comparamos el ID del perfil mostrado con el del usuario logueado
+        const isMyOwnProfile = (profile.id === this.user.id);
+        
+        // Si NO es mi perfil, añadimos una clase al body para ocultar los formularios
+        document.body.classList.toggle('public-view', !isMyOwnProfile);
+        // --- FIN DE LA LÓGICA ---
+
         if (profile) {
+            // --- INICIO: LÓGICA DE ROLES MEJORADA ---
+            const isMyOwnProfile = (profile.id === this.user.id);
+            const isAdmin = (this.currentUserProfile?.role === 'admin');
+
+            // La vista será editable si es mi perfil O si soy admin
+            const isEditable = isMyOwnProfile || isAdmin;
+
+            // Añadimos la clase 'public-view' solo si la vista NO es editable
+            document.body.classList.toggle('public-view', !isEditable);
+            // --- FIN: LÓGICA DE ROLES ---
             // 2. Poblamos toda la información del perfil como antes
-            document.getElementById('profile-card-avatar').src = profile.avatar_url || this.user.user_metadata?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
+            document.getElementById('profile-card-avatar').src = profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
             document.getElementById('profile-card-name').textContent = profile.display_name || 'Completa tu perfil';
             document.getElementById('profile-card-orcid').textContent = profile.orcid ? profile.orcid.replace('https://orcid.org/', '') : 'ORCID no conectado';
             document.getElementById('profile-card-bio').textContent = profile.bio || '';
@@ -207,7 +237,7 @@ const ProfileApp = {
             const { data: projects, error: projectsError } = await this.supabase
                 .from('projects')
                 .select('*')
-                .eq('user_id', this.user.id);
+                .eq('user_id', profile.id);
             
             if (projectsError) {
                 console.error("Error cargando los proyectos:", projectsError);
@@ -225,6 +255,25 @@ const ProfileApp = {
             } else {
                 orcidSection.innerHTML = `<p>Valida tu perfil conectando tu cuenta de ORCID.</p><button id="connect-orcid-btn" class="btn btn-orcid"><i class="fa-brands fa-orcid"></i> Conectar con ORCID</button>`;
             }
+        }
+
+        // --- INICIO: LÓGICA MODIFICADA PARA LOS NUEVOS BOTONES ---
+        const directoryBtnContainer = document.getElementById('directory-button-container');
+        if (directoryBtnContainer) {
+            let buttonsHTML = '';
+            // Si el usuario tiene ORCID, mostramos los botones
+            if (profile.orcid) {
+                buttonsHTML = `
+                    <a href="/inv/directorio.html" class="profile-card-nav__link">
+                        <i class="fa-solid fa-users"></i> Directorio
+                    </a>
+                    <a href="#" class="profile-card-nav__link is-coming-soon">
+                        <i class="fa-brands fa-bluesky"></i> Comunidad (Próx.)
+                    </a>
+                `;
+            }
+            directoryBtnContainer.innerHTML = buttonsHTML;
+        // --- FIN: LÓGICA MODIFICADA ---
         }
     },
 
@@ -250,10 +299,7 @@ const ProfileApp = {
             
             if (data.works) {
                 const orcidDois = data.works.map(work => work.doi);
-                if (orcidDois.length > 0) {
-                    // Borramos los proyectos que ya no están en ORCID
-                    await this.supabase.from('projects').delete().eq('user_id', this.user.id).not('doi', 'in', `(${orcidDois.map(d => `'${d}'`).join(',')})`);
-                }
+                // if (orcidDois.length > 0) {...}
 
                 if (data.works.length > 0) {
                     const projectsToSave = data.works.map(work => ({
@@ -271,7 +317,7 @@ const ProfileApp = {
             }
             
             alert(`Sincronización completada. Se encontraron y guardaron ${data.works.length} publicaciones.`);
-            this.renderProfileData();
+            this.renderProfileData(this.user.id);
 
         } catch (error) {
             alert("Error al sincronizar las publicaciones: " + error.message);
@@ -336,33 +382,44 @@ const ProfileApp = {
         }
     },
 
-    // Dibuja la lista de trabajos en el HTML
+    // REEMPLAZA ESTA FUNCIÓN en profile.js
     renderWorks(works) {
-        const listContainer = document.getElementById('projects-list');
-        if (!listContainer) return;
+        const orcidListContainer = document.getElementById('projects-list');
+        const eptDoiListContainer = document.getElementById('ept-doi-list'); // Nuevo contenedor
 
-        if (!works || works.length === 0) {
-            listContainer.innerHTML = '<p class="form-hint">No tienes publicaciones sincronizadas.</p>';
-            return;
-        }
+        if (!orcidListContainer || !eptDoiListContainer) return;
 
-        listContainer.innerHTML = works.map(work => {
-            // Si el proyecto fue creado en la plataforma, añadimos un aviso.
-            const syncHintHTML = work.created_via_platform ? `
-                <div class="orcid-sync-hint">
-                    <i class="fa-solid fa-circle-info"></i>
-                    <span>Recuerda añadir este DOI a tu perfil de ORCID y vuelve a sincronizar.</span>
-                </div>
-            ` : '';
+        // Filtramos los proyectos: los que vienen de ORCID y los creados en la plataforma
+        const orcidProjects = works.filter(work => !work.created_via_platform);
+        const eptProjects = works.filter(work => work.created_via_platform);
 
-            return `
+        // Renderizamos la lista de proyectos de ORCID
+        if (orcidProjects.length === 0) {
+            orcidListContainer.innerHTML = '<p class="form-hint">No tienes publicaciones sincronizadas desde ORCID.</p>';
+        } else {
+            orcidListContainer.innerHTML = orcidProjects.map(work => `
                 <div class="publication-item">
                     <p>${work.title}</p>
                     <span>DOI: ${work.doi}</span>
-                    ${syncHintHTML}
                 </div>
-            `;
-        }).join('');
+            `).join('');
+        }
+
+        // Renderizamos la lista de proyectos creados en EPT
+        if (eptProjects.length === 0) {
+            eptDoiListContainer.innerHTML = '<p class="form-hint">Aquí aparecerán los proyectos que publiques a través de esta herramienta.</p>';
+        } else {
+            eptDoiListContainer.innerHTML = eptProjects.map(work => `
+                <div class="publication-item">
+                    <p>${work.title}</p>
+                    <span>DOI: ${work.doi}</span>
+                    <div class="orcid-sync-hint">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Recuerda añadir este DOI a tu perfil de ORCID y vuelve a sincronizar.</span>
+                    </div>
+                </div>
+            `).join('');
+        }
     },
 
     // AÑADE ESTA NUEVA FUNCIÓN en profile.js

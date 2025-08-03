@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Directorio de Investigadores - Epistecnología</title>
+    <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
+    
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/inv/css/directorio.css">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+</head>
+<body>
+    
+    <header class="desktop-nav">
+        <div class="container">
+            <a href="/" class="logo">
+                <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Epistecnologia Logo">
+            </a>
+            <nav class="main-menu bento-box-nav">
+                <a href="/" class="nav-icon" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
+                <a href="https://eptnews.substack.com/" class="nav-icon" aria-label="Newsletter"><i class="fa-solid fa-newspaper"></i></a>
+                <a href="https://nas.io/es-mx/ept" class="nav-icon" aria-label="Comunidad"><i class="fa-solid fa-users"></i></a>
+            </nav>
+            <div class="live-channels bento-box-nav">
+                <a href="/live.html" class="nav-icon" id="nav-live-desktop" aria-label="En Vivo"><i class="fa-solid fa-satellite-dish"></i></a>
+                <a href="/live.html#seccion-eventos" class="nav-icon" aria-label="Eventos"><i class="fa-solid fa-calendar-days"></i></a>
+                <a href="#" class="nav-icon" id="notifications-bell-icon" aria-label="Notificaciones"><i class="fa-solid fa-bell"></i></a>
+            </div>
+            <div class="user-actions bento-box-nav">
+                <div id="guest-view">
+                    <button id="login-modal-trigger" class="nav-icon" aria-label="Iniciar sesión"><i class="fa-solid fa-user"></i></button>
+                </div>
+                <div id="user-view" style="display: none;">
+                    <a href="/inv/dashboard.html" id="user-avatar-link" class="nav-icon" title="Ir al Dashboard"></a>
+                    <button id="logout-btn-header" class="nav-icon" title="Cerrar Sesión"><i class="fa-solid fa-right-from-bracket"></i></button>
+                </div>
+                <button class="theme-switcher nav-icon" id="theme-switcher-desktop" aria-label="Cambiar tema"><i class="fa-solid fa-moon"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="directory-header">
+            <h1>Directorio de Investigadores</h1>
+            <p>Explora los perfiles de los miembros que forman parte de la comunidad Epistecnología.</p>
+            <div class="search-bar-container">
+                <i class="fa-solid fa-search"></i>
+                <input type="search" id="search-input" placeholder="Buscar por nombre o especialidad...">
+            </div>
+        </div>
+
+        <div id="directory-grid" class="researcher-grid">
+            <p class="loading-message">Cargando investigadores...</p>
+        </div>
+    </main>
+    
+    <nav class="mobile-nav">
+        <a href="/" class="mobile-nav__link active" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
+        <a href="https://eptnews.substack.com/" class="mobile-nav__link" aria-label="Newsletter"><i class="fa-solid fa-newspaper"></i></a>
+        <a href="#" class="mobile-nav__link" aria-label="Explorar"><i class="fa-solid fa-search"></i></a>
+        <a href="/live.html" class="mobile-nav__link" id="nav-live-mobile" aria-label="En Vivo"><i class="fa-solid fa-satellite-dish"></i></a>
+        <button class="mobile-nav__link" id="mobile-more-btn" aria-label="Más opciones"><i class="fa-solid fa-bars"></i></button>
+    </nav>
+
+    <div class="mobile-more-menu" id="mobile-more-menu">
+        <div class="mobile-more-menu__content">
+            <a href="#" data-provider="google" id="login-google-btn-mobile" class="mobile-more-menu__item login-provider-btn"><i class="fa-brands fa-google"></i><span>Iniciar con Google</span></a>
+            <a href="#" data-provider="github" id="login-github-btn-mobile" class="mobile-more-menu__item login-provider-btn"><i class="fa-brands fa-github"></i><span>Iniciar con GitHub</span></a>
+            <a href="#" class="mobile-more-menu__item is-disabled"><i class="fa-brands fa-orcid"></i><span>ORCID (Próximamente)</span></a>
+            <hr style="border: none; border-top: 1px solid var(--color-border); margin: 0.5rem 0;">
+            <a href="https://substack.com/chat/2867518" class="mobile-more-menu__item"><i class="fa-solid fa-message"></i><span>Comunidad</span></a>
+            <a href="/live.html#seccion-eventos" class="mobile-more-menu__item"><i class="fa-solid fa-calendar-days"></i><span>Eventos</span></a>
+            <hr style="border: none; border-top: 1px solid var(--color-border); margin: 0.5rem 0;">
+            <button class="mobile-more-menu__item" id="theme-switcher-mobile"><i class="fa-solid fa-moon"></i><span>Cambiar Tema</span></button>
+            <button class="mobile-more-menu__item" id="mobile-more-menu-close"><i class="fa-solid fa-xmark"></i><span>Cerrar</span></button>
+        </div>
+    </div>
+    
+    <div class="overlay" id="overlay"></div>
+
+    <footer class="site-footer">
+        <div class="container footer-content">
+            <div class="footer-column">
+                <p class="footer-logo-text">Epistecnología</p>
+                <p>&copy; 2025 Todos los derechos reservados.</p>
+            </div>
+
+            <div class="footer-column">
+                <h4 class="footer-heading">Propiedad Intelectual</h4>
+                <div class="footer-badges">
+                    <a href="https://doi.org/10.5281/zenodo.16403615" target="_blank" rel="noopener noreferrer" title="DOI de la Plataforma">
+                        <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.16403615.svg" alt="DOI">
+                    </a>
+                    <a href="https://orcid.org/0009-0008-3022-5207" class="footer-link" target="_blank" rel="noopener noreferrer" title="Perfil ORCID">
+                        <i class="fa-brands fa-orcid"></i> 0009-0008-3022-5207
+                    </a>
+                </div>
+            </div>
+
+            <div class="footer-column">
+                <h4 class="footer-heading">Contacto</h4>
+                <a href="mailto:hmarquez@epistecnologia.com" class="footer-link">
+                    <i class="fa-solid fa-envelope"></i> hmarquez@epistecnologia.com
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/main.js"></script>
+    <script type="module" src="/inv/js/directorio.js"></script>
+
+</body>
+</html>

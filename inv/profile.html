@@ -6,15 +6,35 @@
     <title>Mi Perfil - Epistecnología</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/inv/css/profile.css">
 </head>
-<body>
-    <header class="top-bar">
-        <div class="top-bar__left">
-            <a href="/" class="top-bar__logo"><img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo Epistecnología"></a>
-        </div>
-        <div class="top-bar__right">
+<body class="loading-profile">
+
+    <header class="desktop-nav">
+        <div class="container">
+            <a href="/" class="logo"><img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Epistecnologia Logo"></a>
+            <nav class="main-menu bento-box-nav">
+                <a href="/" class="nav-icon" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
+                <a href="https://eptnews.substack.com/" class="nav-icon" aria-label="Newsletter"><i class="fa-solid fa-newspaper"></i></a>
+                <a href="https://nas.io/es-mx/ept" class="nav-icon" aria-label="Comunidad"><i class="fa-solid fa-users"></i></a>
+            </nav>
+            <div class="live-channels bento-box-nav">
+                <a href="/live.html" class="nav-icon" id="nav-live-desktop" aria-label="En Vivo"><i class="fa-solid fa-satellite-dish"></i></a>
+                <a href="/live.html#seccion-eventos" class="nav-icon" aria-label="Eventos"><i class="fa-solid fa-calendar-days"></i></a>
+                <a href="#" class="nav-icon" id="notifications-bell-icon" aria-label="Notificaciones"><i class="fa-solid fa-bell"></i></a>
             </div>
+            <div class="user-actions bento-box-nav">
+                <div id="guest-view">
+                    <button id="login-modal-trigger" class="nav-icon" aria-label="Iniciar sesión"><i class="fa-solid fa-user"></i></button>
+                </div>
+                <div id="user-view" style="display: none;">
+                    <a href="/inv/profile.html" id="user-avatar-link" class="nav-icon active" title="Mi Perfil"></a>
+                    <button id="logout-btn-header" class="nav-icon" title="Cerrar Sesión"><i class="fa-solid fa-right-from-bracket"></i></button>
+                </div>
+                <button class="theme-switcher nav-icon" id="theme-switcher-desktop" aria-label="Cambiar tema"><i class="fa-solid fa-moon"></i></button>
+            </div>
+        </div>
     </header>
 
     <div class="page-container">
@@ -27,23 +47,18 @@
                     <p id="profile-card-bio"></p>
                     <div id="profile-card-socials" class="profile-card__socials"></div>
                     <hr>
-                    <nav class="profile-card-nav">
-                        <button class="profile-card-nav__link active" data-tab="tab-perfil">
-                            <i class="fa-solid fa-user-pen"></i> Perfil y Redes
-                        </button>
-                        <button class="profile-card-nav__link" data-tab="tab-identidad">
-                            <i class="fa-brands fa-orcid"></i> Identidad y Avatar
-                        </button>
-                        <button class="profile-card-nav__link" data-tab="tab-proyectos">
-                            <i class="fa-solid fa-book-bookmark"></i> Proyectos y DOI
-                        </button>
-                    </nav>
-                    <hr>
+                    <div id="directory-button-container" class="profile-card-nav"></div>
                     <a href="/inv/dashboard.html" id="dashboard-link-btn" class="btn btn-primary"><i class="fa-solid fa-arrow-right"></i> Ir al Dashboard</a>
                 </div>
             </aside>
 
             <main class="main-content">
+                <nav class="profile-tabs">
+                    <button class="profile-tab-link active" data-tab="tab-perfil"><i class="fa-solid fa-user-pen"></i> <span>Perfil</span></button>
+                    <button class="profile-tab-link" data-tab="tab-identidad"><i class="fa-brands fa-orcid"></i> <span>ID ORCID</span></button>
+                    <button class="profile-tab-link" data-tab="tab-proyectos"><i class="fa-solid fa-cloud-arrow-up"></i> <span>EPT DOI</span></button>
+                </nav>
+
                 <div id="tab-perfil" class="profile-tab-content active">
                     <div class="bento-box">
                         <h3><i class="fa-solid fa-user-pen"></i> Perfil Público</h3>
@@ -56,22 +71,32 @@
                     </div>
 
                     <div class="bento-box">
-                        <h3><i class="fa-solid fa-share-nodes"></i> Plataformas y Redes</h3>
-                        <form id="platforms-form">
-                            <h4>Plataformas Principales</h4>
-                            <div class="form-group"><label for="youtube-url">Canal de YouTube</label><input type="url" id="youtube-url" placeholder="https://youtube.com/c/..."></div>
-                            <div class="form-group"><label for="substack-url">Perfil de Substack</label><input type="url" id="substack-url" placeholder="https://tupublicacion.substack.com"></div>
-                            <hr>
-                            <h4>Otras Redes Sociales</h4>
-                            <div class="form-group"><label for="website-url">Sitio Web / Blog</label><input type="url" id="website-url" placeholder="https://..."></div>
-                            <div class="form-group"><label for="x-url">Perfil de X (Twitter)</label><input type="url" id="x-url" placeholder="https://x.com/usuario"></div>
-                            <div class="form-group"><label for="linkedin-url">Perfil de LinkedIn</label><input type="url" id="linkedin-url" placeholder="https://linkedin.com/in/usuario"></div>
-                            <div class="form-group"><label for="instagram-url">Perfil de Instagram</label><input type="url" id="instagram-url" placeholder="https://instagram.com/usuario"></div>
-                            <div class="form-group"><label for="facebook-url">Perfil de Facebook</label><input type="url" id="facebook-url" placeholder="https://facebook.com/usuario"></div>
-                            <div class="form-group"><label for="tiktok-url">Perfil de TikTok</label><input type="url" id="tiktok-url" placeholder="https://tiktok.com/@usuario"></div>
-                            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Guardar Plataformas</button>
-                        </form>
+                        <h3><i class="fa-solid fa-camera"></i> Avatar</h3>
+                        <p class="form-hint">Sube tu imagen a un servicio gratuito como <a href="https://imgbb.com/" target="_blank">imgbb.com</a>, copia el enlace directo (URL.jpg) y pégalo aquí.</p>
+                            <form id="avatar-update-form">
+                                <div class="form-group"><label for="avatar-url">URL de la imagen del perfil</label><input type="url" id="avatar-url" placeholder="https://i.ibb.co/...tu-imagen.jpg" required></div>
+                                <button type="submit" class="btn btn-secondary"><i class="fa-solid fa-floppy-disk"></i> Guardar Avatar</button>
+                            </form>
                     </div>
+
+                    <div class="bento-box">
+                        <h3><i class="fa-solid fa-share-nodes"></i> Plataformas y Redes</h3>
+                            <form id="platforms-form">
+                                <h4>Plataformas Principales</h4>
+                                <div class="form-group"><label for="youtube-url">Canal de YouTube</label><input type="url" id="youtube-url" placeholder="https://youtube.com/c/..."></div>
+                                <div class="form-group"><label for="substack-url">Perfil de Substack</label><input type="url" id="substack-url" placeholder="https://tupublicacion.substack.com"></div>
+                                <hr>
+                                <h4>Otras Redes Sociales</h4>
+                                <div class="form-group"><label for="website-url">Sitio Web / Blog</label><input type="url" id="website-url" placeholder="https://..."></div>
+                                <div class="form-group"><label for="x-url">Perfil de X (Twitter)</label><input type="url" id="x-url" placeholder="https://x.com/usuario"></div>
+                                <div class="form-group"><label for="linkedin-url">Perfil de LinkedIn</label><input type="url" id="linkedin-url" placeholder="https://linkedin.com/in/usuario"></div>
+                                <div class="form-group"><label for="instagram-url">Perfil de Instagram</label><input type="url" id="instagram-url" placeholder="https://instagram.com/usuario"></div>
+                                <div class="form-group"><label for="facebook-url">Perfil de Facebook</label><input type="url" id="facebook-url" placeholder="https://facebook.com/usuario"></div>
+                                <div class="form-group"><label for="tiktok-url">Perfil de TikTok</label><input type="url" id="tiktok-url" placeholder="https://tiktok.com/@usuario"></div>
+                                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Guardar Plataformas</button>
+                            </form>
+                    </div>
+
                 </div>
 
                 <div id="tab-identidad" class="profile-tab-content">
@@ -80,27 +105,42 @@
                         <div id="orcid-section"></div>
                     </div>
                     <div class="bento-box">
-                        <h3><i class="fa-solid fa-camera"></i> Avatar</h3>
-                        <p class="form-hint">Sube tu imagen a un servicio gratuito como <a href="https://imgbb.com/" target="_blank">imgbb.com</a>, copia el enlace directo (URL.jpg) y pégalo aquí.</p>
-                        <form id="avatar-update-form">
-                            <div class="form-group"><label for="avatar-url">URL de la imagen del perfil</label><input type="url" id="avatar-url" placeholder="https://i.ibb.co/...tu-imagen.jpg" required></div>
-                            <button type="submit" class="btn btn-secondary"><i class="fa-solid fa-floppy-disk"></i> Guardar Avatar</button>
-                        </form>
+                        <h3><i class="fa-solid fa-book-bookmark"></i> Proyectos Sincronizados</h3>
+                         <div id="projects-section">
+                            <p class="form-hint">Una vez conectado a ORCID, podrás sincronizar tus trabajos.</p>
+                            <button id="sync-orcid-works-btn" class="btn btn-secondary" disabled><i class="fa-solid fa-sync"></i> Sincronizar desde ORCID</button>
+                            
+                            <div id="projects-list" class="projects-list"></div>
+                        </div>
                     </div>
                 </div>
 
                 <div id="tab-proyectos" class="profile-tab-content">
+                    
                     <div class="bento-box">
-                        <h3><i class="fa-solid fa-book-bookmark"></i> Proyectos (DOI)</h3>
-                        <div id="projects-section">
-                            <p class="form-hint">Una vez conectado a ORCID, podrás sincronizar tus trabajos.</p>
-                            <button id="sync-orcid-works-btn" class="btn btn-secondary" disabled><i class="fa-solid fa-sync"></i> Sincronizar desde ORCID</button>
-                            <div id="projects-list" class="projects-list"></div>
+                        <h3><i class="fa-solid fa-circle-info"></i> ¿Cómo Funciona?</h3>
+                        <div class="instructions-content">
+                            <p>Al publicar desde aquí, tu trabajo se sube a la comunidad oficial de Epistecnología en Zenodo, obteniendo un DOI citable a tu nombre.</p>
+                            <strong>Beneficios:</strong>
+                            <ul>
+                                <li>✓ Obtienes un identificador persistente (DOI).</li>
+                                <li>✓ Aumentas la visibilidad y el impacto de tu trabajo.</li>
+                                <li>✓ Tu publicación queda asociada a tu perfil ORCID y a nuestra comunidad.</li>
+                            </ul>
+                            <strong>Importante:</strong>
+                            <p>Una vez publicado, no olvides añadir el nuevo DOI a tu perfil de ORCID y volver a sincronizar para que aparezca en tu lista de proyectos.</p>
                         </div>
                     </div>
+
                     <div class="bento-box">
-                        <h3><i class="fa-solid fa-cloud-arrow-up"></i> Publicar en Zenodo y Obtener DOI</h3>
-                        <p class="form-hint">Sube un trabajo (dataset, presentación, etc.) a la comunidad de Epistecnología en Zenodo para obtener un DOI citable.</p>
+                        <h3><i class="fa-solid fa-th-list"></i> Tus Publicaciones EPT DOI</h3>
+                        <div id="ept-doi-list">
+                            <p class="form-hint">Aquí aparecerán los proyectos que publiques a través de esta herramienta.</p>
+                        </div>
+                    </div>
+
+                    <div class="bento-box">
+                        <h3><i class="fa-solid fa-cloud-arrow-up"></i> Obtener DOI en Zenodo EPT</h3>
                         <form id="zenodo-form">
                             <div class="form-group"><label for="zenodo-title">Título de la Publicación</label><input type="text" id="zenodo-title" required></div>
                             <div class="form-group"><label for="zenodo-description">Descripción / Abstract</label><textarea id="zenodo-description" rows="4" required></textarea></div>
@@ -109,12 +149,80 @@
                             <div id="zenodo-message" class="form-message" style="margin-top: 1rem;"></div>
                         </form>
                     </div>
+
                 </div>
             </main>
         </div>
     </div>
+
+    <nav class="mobile-nav">
+        <a href="/" class="mobile-nav__link active" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
+        <a href="https://eptnews.substack.com/" class="mobile-nav__link" aria-label="Newsletter"><i class="fa-solid fa-newspaper"></i></a>
+        <a href="#" class="mobile-nav__link" aria-label="Explorar"><i class="fa-solid fa-search"></i></a>
+        <a href="/live.html" class="mobile-nav__link" id="nav-live-mobile" aria-label="En Vivo"><i class="fa-solid fa-satellite-dish"></i></a>
+        <button class="mobile-nav__link" id="mobile-more-btn" aria-label="Más opciones"><i class="fa-solid fa-bars"></i></button>
+    </nav>
+
+    <div class="mobile-more-menu" id="mobile-more-menu">
+        <div class="mobile-more-menu__content">
+            <a href="#" data-provider="google" id="login-google-btn-mobile" class="mobile-more-menu__item login-provider-btn"><i class="fa-brands fa-google"></i><span>Iniciar con Google</span></a>
+            <a href="#" data-provider="github" id="login-github-btn-mobile" class="mobile-more-menu__item login-provider-btn"><i class="fa-brands fa-github"></i><span>Iniciar con GitHub</span></a>
+            <a href="#" class="mobile-more-menu__item is-disabled"><i class="fa-brands fa-orcid"></i><span>ORCID (Próximamente)</span></a>
+            <hr style="border: none; border-top: 1px solid var(--color-border); margin: 0.5rem 0;">
+            <a href="https://substack.com/chat/2867518" class="mobile-more-menu__item"><i class="fa-solid fa-message"></i><span>Comunidad</span></a>
+            <a href="/live.html#seccion-eventos" class="mobile-more-menu__item"><i class="fa-solid fa-calendar-days"></i><span>Eventos</span></a>
+            <hr style="border: none; border-top: 1px solid var(--color-border); margin: 0.5rem 0;">
+            <button class="mobile-more-menu__item" id="theme-switcher-mobile"><i class="fa-solid fa-moon"></i><span>Cambiar Tema</span></button>
+            <button class="mobile-more-menu__item" id="mobile-more-menu-close"><i class="fa-solid fa-xmark"></i><span>Cerrar</span></button>
+        </div>
+    </div>
     
+    <div class="overlay" id="overlay"></div>
+
+    <footer class="site-footer">
+        <div class="container footer-content">
+            <div class="footer-column">
+                <p class="footer-logo-text">Epistecnología</p>
+                <p>&copy; 2025 Todos los derechos reservados.</p>
+            </div>
+
+            <div class="footer-column">
+                <h4 class="footer-heading">Propiedad Intelectual</h4>
+                <div class="footer-badges">
+                    <a href="https://doi.org/10.5281/zenodo.16403615" target="_blank" rel="noopener noreferrer" title="DOI de la Plataforma">
+                        <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.16403615.svg" alt="DOI">
+                    </a>
+                    <a href="https://orcid.org/0009-0008-3022-5207" class="footer-link" target="_blank" rel="noopener noreferrer" title="Perfil ORCID">
+                        <i class="fa-brands fa-orcid"></i> 0009-0008-3022-5207
+                    </a>
+                </div>
+            </div>
+
+            <div class="footer-column">
+                <h4 class="footer-heading">Contacto</h4>
+                <a href="mailto:hmarquez@epistecnologia.com" class="footer-link">
+                    <i class="fa-solid fa-envelope"></i> hmarquez@epistecnologia.com
+                </a>
+            </div>
+        </div>
+    </footer>
+    
+    <!--Start of Tawk.to Script-->
+    <script type="text/javascript">
+    var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
+    (function(){
+    var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
+    s1.async=true;
+    s1.src='https://embed.tawk.to/688ee471171f1719311e6fde/1j1n2onlt';
+    s1.charset='UTF-8';
+    s1.setAttribute('crossorigin','*');
+    s0.parentNode.insertBefore(s1,s0);
+    })();
+    </script>
+    <!--End of Tawk.to Script-->
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/main.js"></script>
     <script type="module" src="/inv/js/profile.js"></script>
 </body>
 </html>
