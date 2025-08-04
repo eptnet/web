@@ -75,11 +75,16 @@ const DirectoryApp = {
             return;
         }
 
-        // Filtramos el array local sin necesidad de volver a la base de datos
         const filteredProfiles = this.allProfiles.filter(profile => {
-            const nameMatch = profile.display_name.toLowerCase().includes(lowerCaseSearchTerm);
-            const bioMatch = profile.bio ? profile.bio.toLowerCase().includes(lowerCaseSearchTerm) : false;
-            return nameMatch || bioMatch;
+            // --- INICIO DE LA CORRECCIÓN ---
+            // Nos aseguramos de que los campos existan antes de buscar en ellos
+            const name = profile.display_name || '';
+            const bio = profile.bio || '';
+
+            // Comprobamos si el término de búsqueda está en el nombre O en la biografía
+            return name.toLowerCase().includes(lowerCaseSearchTerm) ||
+                bio.toLowerCase().includes(lowerCaseSearchTerm);
+            // --- FIN DE LA CORRECCIÓN ---
         });
 
         this.renderGrid(filteredProfiles);

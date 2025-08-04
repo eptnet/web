@@ -687,38 +687,46 @@ const LiveApp = {
 
         // 3. Movemos el listener al contenedor principal para que capture todos los clics
         const mainContainer = document.querySelector('.live-room-main');
-        mainContainer.addEventListener('click', (e) => {
-            const avatar = e.target.closest('.avatar[data-user-id]');
-            const reportButton = e.target.closest('button[data-action="report-session"]');
+        // Añadimos una comprobación para no añadir múltiples listeners si la función se llama varias veces
+        if (!mainContainer.dataset.listenerAttached) {
+            mainContainer.dataset.listenerAttached = 'true';
+            mainContainer.addEventListener('click', async (e) => { // <-- Hacemos la función asíncrona
+                const avatar = e.target.closest('.avatar[data-user-id]');
+                const reportButton = e.target.closest('button[data-action="report-session"]');
 
-            if (avatar) {
-                this.openInvestigatorModal(avatar.dataset.userId);
-            }
-            
-            if (reportButton) {
-                const sessionIdToReport = reportButton.dataset.sessionId;
-                const confirmed = confirm("¿Estás seguro de que quieres reportar esta sesión por contenido inapropiado? Se enviará una alerta a los administradores.");
-                
-                if (confirmed) {
-                    // --- INICIO: CAMBIO DE ESTRATEGIA A HEADERS ---
-                    this.supabase.functions.invoke('report-session', {
-                        method: 'POST',
-                        headers: {
-                            'x-session-id': sessionIdToReport // Enviamos el ID en una cabecera
-                        }
-                        // Ya no hay 'body'
-                    })
-                    // --- FIN: CAMBIO DE ESTRATEGIA ---
-                    .then(() => {
-                        alert(`Reporte para la sesión ${sessionIdToReport} enviado. Gracias por tu colaboración.`);
-                    })
-                    .catch(error => {
-                        alert('Hubo un error al enviar el reporte.');
-                        console.error('Error al invocar la función de reporte:', error);
-                    });
+                if (avatar) {
+                    this.openInvestigatorModal(avatar.dataset.userId);
                 }
-            }
-        });
+                
+                if (reportButton) {
+                    const sessionIdToReport = reportButton.dataset.sessionId;
+                    const confirmed = confirm("¿Estás seguro de que quieres reportar esta sesión por contenido inapropiado? Se enviará una alerta a los administradores.");
+                    
+                    if (confirmed) {
+                        // --- INICIO DE LA CORRECCIÓN CRÍTICA ---
+                        // Obtenemos la sesión del usuario actual ANTES de llamar a la función
+                        const { data: { session } } = await this.supabase.auth.getSession();
+                        const reporterId = session?.user?.id || 'invitado_anónimo';
+                        // --- FIN DE LA CORRECCIÓN CRÍTICA ---
+
+                        this.supabase.functions.invoke('report-session', {
+                            method: 'POST',
+                            headers: {
+                                'x-session-id': sessionIdToReport,
+                                'x-reporter-id': reporterId 
+                            }
+                        })
+                        .then(() => {
+                            alert(`Reporte para la sesión ${sessionIdToReport} enviado. Gracias por tu colaboración.`);
+                        })
+                        .catch(error => {
+                            alert('Hubo un error al enviar el reporte.');
+                            console.error('Error al invocar la función de reporte:', error);
+                        });
+                    }
+                }
+            });
+        }
         // --- FIN: LÓGICA DE ADVERTENCIA Y REPORTE ---
 
         } else { // Si es un VIDEO On-Demand
