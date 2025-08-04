@@ -1080,3 +1080,45 @@ body {
 }
 
 /* --- FIN: ESTILOS PARA NOTIFICACIONES --- */
+
+/* --- INICIO: ESTILOS DE ADVERTENCIA Y REPORTE --- */
+
+.live-room-disclaimer, .live-room-report {
+    background-color: var(--color-surface);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    margin-top: 1.5rem; /* Asegura que esté al final y separado */
+}
+
+.live-room-disclaimer p {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--color-secondary);
+    line-height: 1.5;
+    text-align: center;
+}
+
+.live-room-report {
+    padding: 1rem;
+    text-align: center;
+}
+
+.report-button {
+    background: none;
+    border: none;
+    color: var(--color-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.report-button:hover {
+    color: var(--color-accent);
+}
+
+.report-button i {
+    margin-right: 0.5rem;
+}
+
+/* --- FIN: ESTILOS --- */

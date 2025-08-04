@@ -571,7 +571,21 @@ const LiveApp = {
     buildLiveRoomHTML() {
         const container = document.createElement('div');
         container.className = 'live-room-content';
-        container.innerHTML = `<main class="live-room-main"><div id="live-room-player" class="live-room-player"></div><div id="live-room-primary-action"></div> <div id="live-room-countdown" class="live-room-countdown" style="display: none;"></div><div id="live-room-investigators-strip" class="live-room-investigators-strip"></div><div id="live-room-info" class="live-room-info"></div></main><aside class="live-room-side"><div id="chat-box"></div></aside>`;
+        container.innerHTML = `
+            <main class="live-room-main">
+                <div id="live-room-player" class="live-room-player"></div>
+                <div id="live-room-interaction-area"></div>
+                <div id="live-room-primary-action"></div> 
+                <div id="live-room-countdown" class="live-room-countdown" style="display: none;"></div>
+                <div id="live-room-info" class="live-room-info"></div>
+                <div id="live-room-investigators-strip" class="live-room-investigators-strip"></div>
+                
+                <div id="live-room-disclaimer" class="live-room-disclaimer"></div>
+                <div id="live-room-report" class="live-room-report"></div>
+                </main>
+            <aside class="live-room-side">
+                <div id="chat-box"></div>
+            </aside>`;
         return container;
     },
 
@@ -658,13 +672,68 @@ const LiveApp = {
                 if (avatar) this.openInvestigatorModal(avatar.dataset.userId);
             });
 
-        } else {
+        // --- INICIO: LÓGICA DE ADVERTENCIA Y REPORTE ---
+        // 1. Rellenamos la advertencia
+        const disclaimerContainer = document.getElementById('live-room-disclaimer');
+        if (disclaimerContainer) {
+            disclaimerContainer.innerHTML = `<p>El contenido de esta transmisión es responsabilidad exclusiva de su autor. Epistecnología no se hace responsable por las opiniones expresadas o posibles infracciones cometidas.</p>`;
+        }
+
+        // 2. Creamos el botón de reporte
+        const reportContainer = document.getElementById('live-room-report');
+        if (reportContainer) {
+            reportContainer.innerHTML = `<button class="report-button" data-action="report-session" data-session-id="${session.id}"><i class="fas fa-flag"></i> Reportar esta sesión</button>`;
+        }
+
+        // 3. Movemos el listener al contenedor principal para que capture todos los clics
+        const mainContainer = document.querySelector('.live-room-main');
+        mainContainer.addEventListener('click', (e) => {
+            const avatar = e.target.closest('.avatar[data-user-id]');
+            const reportButton = e.target.closest('button[data-action="report-session"]');
+
+            if (avatar) {
+                this.openInvestigatorModal(avatar.dataset.userId);
+            }
+            
+            if (reportButton) {
+                const sessionIdToReport = reportButton.dataset.sessionId;
+                const confirmed = confirm("¿Estás seguro de que quieres reportar esta sesión por contenido inapropiado? Se enviará una alerta a los administradores.");
+                
+                if (confirmed) {
+                    // --- INICIO DE LA MODIFICACIÓN ---
+                    // Reemplazamos la alerta con la llamada a la Edge Function
+                    this.supabase.functions.invoke('report-session', {
+                        body: { sessionId: sessionIdToReport }
+                    })
+                    .then(() => {
+                        alert(`Reporte para la sesión ${sessionIdToReport} enviado. Gracias por tu colaboración.`);
+                    })
+                    .catch(error => {
+                        alert('Hubo un error al enviar el reporte.');
+                        console.error('Error al invocar la función de reporte:', error);
+                    });
+                    // --- FIN DE LA MODIFICACIÓN ---
+                }
+            }
+        });
+        // --- FIN: LÓGICA DE ADVERTENCIA Y REPORTE ---
+
+        } else { // Si es un VIDEO On-Demand
             const video = item;
-            player.innerHTML = `<iframe src="https://www.youtube.com/embed/${video.youtube_video_id}?autoplay=1" allowfullscreen></iframe>`;
-            info.innerHTML = `<h3>${video.title}</h3>`;
+            
+            // Ocultamos los elementos que no aplican a los videos
             investigators.style.display = 'none';
             chat.style.display = 'none';
             countdown.style.display = 'none';
+            document.getElementById('live-room-disclaimer').style.display = 'none';
+            document.getElementById('live-room-report').style.display = 'none';
+            
+            // Mostramos el reproductor y la información del video
+            player.innerHTML = `<iframe src="https://www.youtube.com/embed/$${video.youtube_video_id}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
+            info.innerHTML = `
+                <h3>${video.title}</h3>
+                <p>${video.description || 'No hay descripción disponible para este video.'}</p>
+            `;
         }
     },
 
