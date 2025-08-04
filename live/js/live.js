@@ -526,36 +526,84 @@ const LiveApp = {
     },
 
     async openInvestigatorModal(userId) {
-        if (!userId) return;
-        const loadingModalHTML = `<div id="investigator-modal" class="investigator-modal-overlay"><div class="investigator-modal"><p>Cargando...</p></div></div>`;
-        this.elements.modalContainer.insertAdjacentHTML('beforeend', loadingModalHTML);
-        const modalElement = document.getElementById('investigator-modal');
-        setTimeout(() => modalElement.classList.add('is-visible'), 10);
+        if (!userId) {
+            console.error("ID de usuario no proporcionado.");
+            return;
+        }
+
+        // 1. Creamos el "marco" del modal y lo mostramos inmediatamente.
+        const modalShellHTML = `
+            <div id="investigator-modal" class="investigator-modal-overlay">
+                <div class="investigator-modal">
+                    <header class="investigator-modal-header">
+                        <button class="investigator-modal-close-btn">&times;</button>
+                    </header>
+                    <main id="investigator-modal-content" class="investigator-modal-content">
+                        <p>Cargando...</p>
+                    </main>
+                </div>
+            </div>`;
+        
+        // Vaciamos el contenedor y añadimos el nuevo marco
+        this.elements.modalContainer.innerHTML = modalShellHTML;
+
+        const modalOverlay = document.getElementById('investigator-modal');
+        const modalContent = document.getElementById('investigator-modal-content');
+
+        // Añadimos los listeners para cerrar el modal inmediatamente
+        modalOverlay.querySelector('.investigator-modal-close-btn').addEventListener('click', () => this.closeInvestigatorModal());
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) this.closeInvestigatorModal();
+        });
+
+        // Hacemos visible el modal con una pequeña transición
+        setTimeout(() => modalOverlay.classList.add('is-visible'), 10);
+
         try {
-            const [{ data: user, error: userError }, { data: projects, error: projectsError }] = await Promise.all([
-                this.supabase.from('profiles').select('*').eq('id', userId).single(),
-                this.supabase.from('projects').select('title').eq('user_id', userId).order('created_at', { ascending: false }).limit(3)
-            ]);
-            if (projectsError) console.error('Error al obtener proyectos:', projectsError);
-            if (userError) throw userError;
-            const socialLinksHTML = `${user.substack_url ? `<a href="${user.substack_url}" target="_blank" title="Substack"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="Substack--Streamline-Simple-Icons" height="24" width="24"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z" fill="#e65c17" stroke-width="1"></path></svg></a>` : ''}${user.website_url ? `<a href="${user.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}${user.youtube_url ? `<a href="${user.youtube_url}" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>` : ''}${user.x_url ? `<a href="${user.x_url}" target="_blank" title="Perfil de X"><i class="fab fa-twitter"></i></a>` : ''}${user.linkedin_url ? `<a href="${user.linkedin_url}" target="_blank" title="Perfil de LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}${user.instagram_url ? `<a href="${user.instagram_url}" target="_blank" title="Perfil de Instagram"><i class="fab fa-instagram"></i></a>` : ''}`;
+            // 2. Buscamos los datos del perfil y sus proyectos
+            const { data: user, error: userError } = await this.supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .single();
+
+            if (userError) throw userError; // Si falla, salta al bloque catch
+
+            const { data: projects } = await this.supabase
+                .from('projects')
+                .select('title')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(3);
+
+            // 3. Construimos el HTML del contenido final
+            const socialLinksHTML = `${user.substack_url ? `<a href="${user.substack_url}" target="_blank" title="Substack"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="Substack--Streamline-Simple-Icons" height="24" width="24"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z" fill="#e65c17" stroke-width="1"></path></svg></a>` : ''}${user.website_url ? `<a href="${user.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}${user.youtube_url ? `<a href="${user.youtube_url}" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>` : ''}${user.x_url ? `<a href="${user.x_url}" target="_blank" title="Perfil de X"><i class="fab fa-twitter"></i></a>` : ''}${user.linkedin_url ? `<a href="${user.linkedin_url}" target="_blank" title="Perfil de LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}${user.instagram_url ? `<a href="${user.instagram_url}" target="_blank" title="Perfil de Instagram"><i class="fab fa-instagram"></i></a>` : ''}`; // (Tu código de redes sociales aquí)
             const orcidHTML = user.orcid ? `<a href="${user.orcid}" target="_blank">${user.orcid.replace('https://orcid.org/','')}</a>` : 'No disponible';
+            
             let projectInfoHTML = '';
             if (projects && projects.length > 0) {
-                projectInfoHTML = `<div class="project-info"><h4>Últimos proyectos:</h4><ul>${projects.map(p => `<li>${p.title}</li>`).join('')}</ul></div>`;
+                const projectList = projects.map(p => `<li>${p.title}</li>`).join('');
+                projectInfoHTML = `<div class="project-info"><h4>Últimos proyectos:</h4><ul>${projectList}</ul></div>`;
             } else {
-                projectInfoHTML = `<div class="project-info"><p>No tiene proyectos publicados en la plataforma.</p></div>`;
+                projectInfoHTML = `<div class="project-info"><p>No tiene proyectos publicados.</p></div>`;
             }
-            const finalModalHTML = `<div class="investigator-modal"><header class="investigator-modal-header"><button class="investigator-modal-close-btn">×</button></header><main class="investigator-modal-content"><img src="${user.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="${user.display_name || ''}" class="avatar"><h3>${user.display_name || 'Nombre no disponible'}</h3><p><strong>ORCID:</strong> ${orcidHTML}</p><div class="profile-card__socials">${socialLinksHTML}</div><p class="investigator-bio">${user.bio || ''}</p>${projectInfoHTML}</main></div>`;
-            modalElement.innerHTML = finalModalHTML;
-            modalElement.querySelector('.investigator-modal-close-btn').addEventListener('click', () => this.closeInvestigatorModal());
-            modalElement.addEventListener('click', (e) => { if (e.target === modalElement) this.closeInvestigatorModal(); });
+
+            const finalContentHTML = `
+                <img src="${user.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="${user.display_name || ''}" class="avatar">
+                <h3>${user.display_name || 'Nombre no disponible'}</h3>
+                <p><strong>ORCID:</strong> ${orcidHTML}</p>
+                <div class="profile-card__socials">${socialLinksHTML}</div>
+                <p class="investigator-bio">${user.bio || ''}</p>
+                ${projectInfoHTML}`;
+
+            // 4. Reemplazamos el "Cargando..." con el contenido final
+            modalContent.innerHTML = finalContentHTML;
+
         } catch (error) {
-            console.error("Error al abrir modal de investigador:", error);
-            const modal = document.getElementById('investigator-modal');
-            if (modal) {
-                modal.innerHTML = `<div class="investigator-modal"><p>Error al cargar la información.</p><button class="investigator-modal-close-btn">×</button></div>`;
-                modal.querySelector('.investigator-modal-close-btn').addEventListener('click', () => this.closeInvestigatorModal());
+            console.error("Error al abrir el modal del investigador:", error);
+            // Si algo falla, mostramos un mensaje de error dentro del modal
+            if (modalContent) {
+                modalContent.innerHTML = "<p>No se pudo cargar la información del investigador. Por favor, intenta de nuevo más tarde.</p>";
             }
         }
     },

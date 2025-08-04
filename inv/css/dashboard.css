@@ -1004,3 +1004,13 @@ textarea[name="description"] {
     color: var(--color-secondary);
     word-break: break-all;
 }
+
+/* --- Estilo para los subtítulos en la rejilla de creación --- */
+.creation-grid-subtitle {
+    grid-column: 1 / -1; /* Ocupa todo el ancho de la rejilla */
+    margin: 1.5rem 0 0.5rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    font-size: 1rem;
+}
