@@ -700,14 +700,15 @@ const LiveApp = {
                 const confirmed = confirm("¿Estás seguro de que quieres reportar esta sesión por contenido inapropiado? Se enviará una alerta a los administradores.");
                 
                 if (confirmed) {
-                    // --- INICIO DE LA CORRECCIÓN ---
-                    // Somos más explícitos al definir la petición
+                    // --- INICIO: CAMBIO DE ESTRATEGIA A HEADERS ---
                     this.supabase.functions.invoke('report-session', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ sessionId: sessionIdToReport })
+                        headers: {
+                            'x-session-id': sessionIdToReport // Enviamos el ID en una cabecera
+                        }
+                        // Ya no hay 'body'
                     })
-                    // --- FIN DE LA CORRECCIÓN ---
+                    // --- FIN: CAMBIO DE ESTRATEGIA ---
                     .then(() => {
                         alert(`Reporte para la sesión ${sessionIdToReport} enviado. Gracias por tu colaboración.`);
                     })
