@@ -1,5 +1,27 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { Resend } from 'https://esm.sh/resend'
+
+console.log("Función 'report-session' inicializada.");
+
+const resend = new Resend(Deno.env.get('RESEND_API_KEY')!)
+
+// --- INICIO: CABECERAS DE CORS ---
+// Estas cabeceras le dan permiso a tu web para comunicarse con la función
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*', // O 'https://epistecnologia.com' para más seguridad
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+// --- FIN: CABECERAS DE CORS ---
+
 Deno.serve(async (req) => {
-  console.log("Petición recibida.");
+  // --- INICIO: MANEJO DE LA PETICIÓN PREFLIGHT (CORS) ---
+  // Si el navegador envía la petición de "permiso" (OPTIONS), respondemos afirmativamente.
+  if (req.method === 'OPTIONS') {
+    console.log("Petición OPTIONS recibida para CORS. Respondiendo...");
+    return new Response('ok', { headers: corsHeaders })
+  }
+  // --- FIN: MANEJO DE LA PETICIÓN PREFLIGHT ---
+
   try {
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -7,7 +29,9 @@ Deno.serve(async (req) => {
     )
 
     const { sessionId } = await req.json()
-    console.log(`Obteniendo datos de la sesión: ${sessionId}`);
+    if (!sessionId) throw new Error("Falta el ID de la sesión en la petición.");
+    
+    console.log(`Datos recibidos. Buscando sesión: ${sessionId}`);
 
     const { data: session, error } = await supabaseAdmin
       .from('sessions')
@@ -16,37 +40,28 @@ Deno.serve(async (req) => {
       .single()
 
     if (error) throw error
-    console.log(`Datos de la sesión obtenidos: ${session.session_title}`);
 
-    console.log("Intentando enviar email a hmarquez@epistecnologia.com...");
-    const { data: emailData, error: emailError } = await resend.emails.send({
-      from: 'alertas@notifications.epistecnologia.com', // <-- CAMBIO REALIZADO AQUÍ
+    console.log("Intentando enviar email...");
+    await resend.emails.send({
+      from: 'alertas@notifications.epistecnologia.com',
       to: 'hmarquez@epistecnologia.com',
       subject: `⚠️ Reporte de Sesión en Epistecnología`,
       html: `
         <h1>Alerta de Contenido Reportado</h1>
-        <p>Se ha reportado una sesión en la plataforma.</p>
-        <ul>
-          <li><strong>ID de Sesión:</strong> ${session.id}</li>
-          <li><strong>Título:</strong> ${session.session_title}</li>
-          <li><strong>Organizador:</strong> ${session.organizer.display_name} (ID: ${session.user_id})</li>
-        </ul>
-        <p>Por favor, revisa el contenido lo antes posible desde tu panel de control.</p>
+        <p>Se ha reportado la sesión: ${session.session_title} (ID: ${session.id})</p>
+        <p>Organizador: ${session.organizer.display_name} (ID: ${session.user_id})</p>
       `,
     })
-    
-    if (emailError) throw emailError;
-
-    console.log("Email enviado con éxito. ID del email:", emailData.id);
+    console.log("Email enviado con éxito.");
 
     return new Response(JSON.stringify({ message: "Reporte enviado con éxito." }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
   } catch (error) {
     console.error('Error detallado en la Edge Function:', error.message);
     return new Response(JSON.stringify({ error: error.message }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     })
   }

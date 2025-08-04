@@ -700,11 +700,14 @@ const LiveApp = {
                 const confirmed = confirm("¿Estás seguro de que quieres reportar esta sesión por contenido inapropiado? Se enviará una alerta a los administradores.");
                 
                 if (confirmed) {
-                    // --- INICIO DE LA MODIFICACIÓN ---
-                    // Reemplazamos la alerta con la llamada a la Edge Function
+                    // --- INICIO DE LA CORRECCIÓN ---
+                    // Somos más explícitos al definir la petición
                     this.supabase.functions.invoke('report-session', {
-                        body: { sessionId: sessionIdToReport }
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sessionId: sessionIdToReport })
                     })
+                    // --- FIN DE LA CORRECCIÓN ---
                     .then(() => {
                         alert(`Reporte para la sesión ${sessionIdToReport} enviado. Gracias por tu colaboración.`);
                     })
@@ -712,7 +715,6 @@ const LiveApp = {
                         alert('Hubo un error al enviar el reporte.');
                         console.error('Error al invocar la función de reporte:', error);
                     });
-                    // --- FIN DE LA MODIFICACIÓN ---
                 }
             }
         });
