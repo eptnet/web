@@ -1,0 +1,40 @@
+/* --- Estilos para la página del Editor --- */
+
+.editor-layout {
+    display: grid;
+    grid-template-columns: 1fr; /* Una columna por defecto para móvil */
+    gap: 1.5rem;
+}
+
+/* En escritorio, usamos dos columnas */
+@media (min-width: 1024px) {
+    .editor-layout {
+        grid-template-columns: 3fr 1fr;
+    }
+}
+
+.editor-main #post-title {
+    font-size: 2rem;
+    font-weight: 700;
+    border: none;
+    background: none;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 1rem;
+}
+.editor-main #post-title:focus {
+    outline: none;
+    border-bottom-color: var(--color-accent);
+}
+
+.editor-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.ai-actions, .publish-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
