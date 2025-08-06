@@ -11,25 +11,35 @@
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     
-    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+    <script src="https://cdn.tiny.cloud/1/TU_CLAVE_API_AQUÍ/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
 </head>
 <body>
     <div class="dashboard-container">
         <aside class="sidebar">
-             <div class="sidebar-header">
+            <div class="sidebar-header">
                 <a href="/" class="logo-link"><img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo" class="logo"></a>
             </div>
             <nav class="sidebar-nav">
-                <a href="/inv/dashboard.html" class="nav-link" title="Volver al Dashboard"><i class="fa-solid fa-arrow-left"></i></a>
-                </nav>
+                <a href="/inv/dashboard.html" class="nav-link active" data-section="home-section" title="Inicio"><i class="fa-solid fa-house"></i><span class="link-text">Inicio</span></a>
+                <a href="#" class="nav-link" data-section="studio-section" title="Estudio de Grabación"><i class="fa-solid fa-podcast"></i><span class="link-text">Estudio</span></a>
+                <a href="/inv/profile.html" class="nav-link" title="Mi Perfil"><i class="fa-solid fa-user-edit"></i><span class="link-text">Mi Perfil</span></a>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="logout-btn" class="nav-link" title="Cerrar Sesión"><i class="fa-solid fa-right-from-bracket"></i><span class="link-text">Cerrar Sesión</span></button>
+            </div>
         </aside>
-
         <main class="main-content">
             <header class="main-header">
                 <h1>Estudio de Creación de Contenido</h1>
             </header>
             
             <div class="editor-layout">
+                <div class="bento-box instructions-box">
+                    <h3><i class="fa-solid fa-circle-info"></i> ¿Cómo Empezar?</h3>
+                    <p>1. Escribe o pega tu texto base en el editor.</p>
+                    <p>2. Usa el <strong>Asistente IA</strong> para refinarlo, sugerir títulos o crear resúmenes.</p>
+                    <p>3. Guarda tu progreso con el botón <strong>"Guardar Borrador"</strong>.</p>
+                </div>
                 <div class="editor-main">
                     <div class="form-group">
                         <input type="text" id="post-title" placeholder="Escribe un título atractivo...">
@@ -38,9 +48,14 @@
                         <textarea id="rich-text-editor"></textarea>
                     </div>
                 </div>
+
                 <aside class="editor-sidebar">
                     <div class="bento-box">
                         <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Asistente IA</h3>
+                        <div class="form-group">
+                            <label for="ai-custom-prompt">Instrucciones para la IA (opcional):</label>
+                            <textarea id="ai-custom-prompt" rows="3" placeholder="Ej: Tono formal, 500 palabras..."></textarea>
+                        </div>
                         <div class="ai-actions">
                             <button class="btn-secondary" id="ai-suggest-titles-btn">Sugerir Títulos</button>
                             <button class="btn-secondary" id="ai-create-summary-btn">Crear Resumen</button>
@@ -50,8 +65,8 @@
                     <div class="bento-box">
                         <h3><i class="fa-solid fa-cogs"></i> Acciones</h3>
                         <div class="publish-actions">
-                           <button class="btn-secondary">Guardar Borrador</button>
-                           <button class="btn-primary">Publicar</button>
+                            <button id="save-draft-btn" class="btn-secondary">Guardar Borrador</button>
+                            <button class="btn-primary">Publicar</button>
                         </div>
                     </div>
                 </aside>

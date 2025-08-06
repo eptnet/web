@@ -54,7 +54,13 @@ const App = {
         if (!this.userProfile.projects || this.userProfile.projects.length === 0) {
             const homeSection = document.getElementById('home-section');
             if (homeSection) {
-                 homeSection.innerHTML = `<div class="workflow-step"><h2><span class="step-number">1</span> ¡Bienvenido! Añade tu primer proyecto</h2><p>Para crear contenido, necesitas un proyecto con DOI. Sincroniza con ORCID o crea uno en tu perfil.</p><a href="/inv/profile.html" class="btn btn-primary" style="margin-top: 1rem; width: auto; text-decoration: none;">Ir a mi Perfil</a></div>`;
+                 homeSection.innerHTML = `
+                    <div class="workflow-step">
+                        <h2><span class="step-number">1</span> 
+                            ¡Bienvenido! Añade tu primer proyecto</h2>
+                            <p>Para crear contenido, necesitas un proyecto con DOI. Sincroniza con ORCID o crea uno en tu perfil.</p>
+                            <a href="/inv/profile.html" class="btn btn-primary" style="margin-top: 1rem; width: auto; text-decoration: none;">Ir a mi Perfil</a>
+                    </div>`;
             }
         } else {
             const homeTemplate = document.getElementById('template-home-section');

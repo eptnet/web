@@ -18,6 +18,7 @@
             <nav class="sidebar-nav">
                 <a href="#" class="nav-link active" data-section="home-section" title="Inicio"><i class="fa-solid fa-house"></i><span class="link-text">Inicio</span></a>
                 <a href="#" class="nav-link" data-section="studio-section" title="Estudio de Grabación"><i class="fa-solid fa-podcast"></i><span class="link-text">Estudio</span></a>
+                <a href="#" class="nav-link" data-section="editor-section" title="Editor" style="display: none;"><i class="fa-solid fa-pen-to-square"></i><span class="link-text">Editor</span></a>
                 <a href="#" class="nav-link" data-section="content-section" title="Gestionar Contenido" style="display: none;"><i class="fas fa-photo-film"></i><span class="link-text">Gestionar Contenido</span></a>
                 <a href="/inv/profile.html" class="nav-link" title="Mi Perfil"><i class="fa-solid fa-user-edit"></i><span class="link-text">Mi Perfil</span></a>
             </nav>
@@ -50,31 +51,6 @@
             <p>Elige una herramienta para empezar (necesitas seleccionar un proyecto primero).</p>
             
             <div class="creation-grid">
-                <h4 class="creation-grid-subtitle">Crear con Asistencia de IA</h4>
-                
-                <div class="creation-card disabled" data-studio-action="text">
-                    <i class="fa-solid fa-file-lines icon"></i>
-                    <h3>Artículo / Post</h3>
-                    <p>Redacta publicaciones para tu blog, newsletter o prensa.</p>
-                </div>
-                
-                <div class="creation-card disabled" data-studio-action="social">
-                    <i class="fa-solid fa-hashtag icon"></i>
-                    <h3>Post para Redes</h3>
-                    <p>Genera textos cortos y efectivos para tus redes sociales.</p>
-                </div>
-
-                <div class="creation-card disabled" data-studio-action="script">
-                    <i class="fa-solid fa-scroll icon"></i>
-                    <h3>Crear Guion</h3>
-                    <p>Desarrolla guiones para videos, conferencias o podcasts.</p>
-                </div>
-
-                <div class="creation-card disabled" data-studio-action="image">
-                    <i class="fa-solid fa-image icon"></i>
-                    <h3>Generar Imagen</h3>
-                    <p>Crea imágenes únicas para tus publicaciones con IA.</p>
-                </div>
 
                 <h4 class="creation-grid-subtitle">Transmitir o Grabar</h4>
                 
@@ -100,6 +76,32 @@
                     <i class="fa-solid fa-users icon"></i>
                     <h3>Grabar Entrevista</h3>
                     <p>Una sala de video para conversar con invitados.</p>
+                </div>
+
+                <h4 class="creation-grid-subtitle">Crear con Asistencia de IA</h4>
+                
+                <div class="creation-card disabled" data-studio-action="text">
+                    <i class="fa-solid fa-file-lines icon"></i>
+                    <h3>Artículo / Post</h3>
+                    <p>Redacta publicaciones para tu blog, newsletter o prensa.</p>
+                </div>
+                
+                <div class="creation-card disabled" data-studio-action="social">
+                    <i class="fa-solid fa-hashtag icon"></i>
+                    <h3>Post para Redes</h3>
+                    <p>Genera textos cortos y efectivos para tus redes sociales.</p>
+                </div>
+
+                <div class="creation-card disabled" data-studio-action="script">
+                    <i class="fa-solid fa-scroll icon"></i>
+                    <h3>Crear Guion</h3>
+                    <p>Desarrolla guiones para videos, conferencias o podcasts.</p>
+                </div>
+
+                <div class="creation-card disabled" data-studio-action="image">
+                    <i class="fa-solid fa-image icon"></i>
+                    <h3>Generar Imagen</h3>
+                    <p>Crea imágenes únicas para tus publicaciones con IA.</p>
                 </div>
             </div>
         </div>
@@ -147,6 +149,51 @@
                 </form>
                 <div id="shorts-list-container" class="video-list"></div>
             </div>
+        </div>
+    </template>
+
+    <template id="template-editor-section">
+        <div class="page-header">
+            <h1><i class="fa-solid fa-pen-to-square"></i> Estudio de Creación de Contenido</h1>
+            <p>Utiliza el asistente de IA para redactar, resumir y mejorar tus publicaciones.</p>
+        </div>
+        
+        <div class="editor-layout">
+            <div class="editor-main">
+                <div class="form-group">
+                    <input type="text" id="post-title" placeholder="Escribe un título atractivo...">
+                </div>
+                <div class="form-group">
+                    <textarea id="rich-text-editor"></textarea>
+                </div>
+            </div>
+            <aside class="editor-sidebar">
+                <div class="bento-box instructions-box">
+                    <h3><i class="fa-solid fa-circle-info"></i> ¿Cómo Empezar?</h3>
+                    <p>1. Escribe o pega tu texto en el editor.</p>
+                    <p>2. Usa el <strong>Asistente IA</strong> para refinarlo, sugerir títulos o crear resúmenes.</p>
+                    <p>3. Guarda tu progreso con <strong>"Guardar Borrador"</strong>.</p>
+                </div>
+                <div class="bento-box">
+                    <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Asistente IA</h3>
+                    <div class="form-group">
+                        <label for="ai-custom-prompt">Instrucciones Adicionales (opcional):</label>
+                        <textarea id="ai-custom-prompt" rows="3" placeholder="Ej: Tono formal, 500 palabras..."></textarea>
+                    </div>
+                    <div class="ai-actions">
+                        <button id="ai-suggest-titles-btn" class="btn-secondary">Sugerir Títulos</button>
+                        <button id="ai-create-summary-btn" class="btn-secondary">Crear Resumen</button>
+                        <div id="ai-results"></div>
+                    </div>
+                </div>
+                <div class="bento-box">
+                    <h3><i class="fa-solid fa-cogs"></i> Acciones</h3>
+                    <div class="publish-actions">
+                    <button id="save-draft-btn" class="btn-secondary">Guardar Borrador</button>
+                    <button class="btn-primary">Publicar</button>
+                    </div>
+                </div>
+            </aside>
         </div>
     </template>
 
