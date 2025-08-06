@@ -93,6 +93,8 @@ const ProfileApp = {
         // --- LÍNEA AÑADIDA ---
         document.getElementById('avatar-update-form')?.addEventListener('submit', (e) => this.handleUpdateAvatar(e));
         document.getElementById('zenodo-form')?.addEventListener('submit', (e) => this.handleZenodoSubmit(e));
+        document.getElementById('bsky-connect-form')?.addEventListener('submit', (e) => this.handleBlueskyConnect(e));
+        document.getElementById('bsky-disconnect-btn')?.addEventListener('click', () => this.handleBlueskyDisconnect());
     },
     
     // --- INICIO DE LA CORRECCIÓN: Lógica Manual de ORCID ---
@@ -167,6 +169,18 @@ const ProfileApp = {
             .select('*')
             .eq('id', profileId)
             .single();
+
+            // --- BLOQUE AÑADIDO ---
+            // Hacemos una consulta adicional para ver si el usuario tiene credenciales de Bluesky
+            const { data: bskyCreds } = await this.supabase
+                .from('bsky_credentials')
+                .select('handle')
+                .eq('user_id', profile.id)
+                .single();
+
+            // Pasamos las credenciales (o null si no existen) a una nueva función que renderizará la sección
+            this.renderBlueskySection(bskyCreds);
+            // --- FIN BLOQUE AÑADIDO ---
 
             // --- INICIO DE LA MODIFICACIÓN ---
             // Quitamos la clase de carga DESPUÉS de tener una respuesta, sea cual sea.
@@ -539,6 +553,77 @@ const ProfileApp = {
         } else {
             alert('¡Avatar actualizado con éxito!');
             this.renderProfileData(); // Refrescamos los datos para que se vea la nueva imagen
+        }
+    },
+
+    // Renderiza la sección de Bluesky mostrando el estado correcto (conectado/desconectado)
+    renderBlueskySection(credentials) {
+        const connectedView = document.getElementById('bsky-connected-view');
+        const disconnectedView = document.getElementById('bsky-disconnected-view');
+        const bskyHandleEl = document.getElementById('connected-bsky-handle');
+
+        if (credentials) {
+            // Si hay credenciales, mostramos la vista de "conectado"
+            disconnectedView.style.display = 'none';
+            connectedView.style.display = 'block';
+            bskyHandleEl.textContent = credentials.handle;
+        } else {
+            // Si no, mostramos el formulario para conectar
+            disconnectedView.style.display = 'block';
+            connectedView.style.display = 'none';
+        }
+    },
+
+    // Se ejecuta al enviar el formulario de conexión
+    async handleBlueskyConnect(e) {
+        e.preventDefault();
+        const form = e.target;
+        const connectButton = form.querySelector('button[type="submit"]');
+        const handle = form.querySelector('#bsky-handle').value;
+        const appPassword = form.querySelector('#bsky-app-password').value;
+
+        connectButton.disabled = true;
+        connectButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Conectando...';
+
+        try {
+            // Llamamos a la Edge Function que creamos en el paso anterior
+            const { data, error } = await this.supabase.functions.invoke('bsky-auth', {
+                body: { handle, appPassword },
+            });
+
+            if (error) {
+                // Si la función devuelve un error, lo mostramos
+                throw new Error(error.message || 'Error desconocido.');
+            }
+
+            alert(data.message); // Muestra el mensaje de éxito: "¡Cuenta de Bluesky conectada...!"
+            this.renderProfileData(this.user.id); // Recargamos todo el perfil para reflejar el nuevo estado
+
+        } catch (error) {
+            // Muestra un mensaje de error más específico al usuario
+            const detail = error.message.includes('password') ? 'Verifica tu handle y contraseña de aplicación.' : error.message;
+            alert(`Error al conectar la cuenta: ${detail}`);
+        } finally {
+            connectButton.disabled = false;
+            connectButton.innerHTML = '<i class="fa-solid fa-link"></i> Conectar Cuenta';
+        }
+    },
+
+    // Se ejecuta al hacer clic en "Desconectar"
+    async handleBlueskyDisconnect() {
+        if (!confirm("¿Estás seguro de que quieres desconectar tu cuenta de Bluesky?")) return;
+
+        const { error } = await this.supabase
+            .from('bsky_credentials')
+            .delete()
+            .eq('user_id', this.user.id);
+
+        if (error) {
+            alert("Error al desconectar la cuenta.");
+            console.error(error);
+        } else {
+            alert("Cuenta de Bluesky desconectada.");
+            this.renderProfileData(this.user.id); // Recargamos para mostrar el formulario de conexión
         }
     },
 };

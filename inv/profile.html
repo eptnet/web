@@ -56,6 +56,7 @@
                 <nav class="profile-tabs">
                     <button class="profile-tab-link active" data-tab="tab-perfil"><i class="fa-solid fa-user-pen"></i> <span>Perfil</span></button>
                     <button class="profile-tab-link" data-tab="tab-identidad"><i class="fa-brands fa-orcid"></i> <span>ID ORCID</span></button>
+                    <button class="profile-tab-link" data-tab="tab-comunidad"><i class="fa-brands fa-bluesky"></i> <span>Comunidad</span></button>
                     <button class="profile-tab-link" data-tab="tab-proyectos"><i class="fa-solid fa-cloud-arrow-up"></i> <span>EPT DOI</span></button>
                 </nav>
 
@@ -151,6 +152,44 @@
                     </div>
 
                 </div>
+
+                <div id="tab-comunidad" class="profile-tab-content">
+                    <div class="bento-box">
+                        <h3><i class="fa-brands fa-bluesky"></i> Conexión con Bluesky</h3>
+                        
+                        <div id="bsky-disconnected-view">
+                            <p class="form-hint">Conecta tu cuenta de Bluesky para participar en la comunidad, publicar desde la plataforma y acceder a los chats en vivo.</p>
+                            <strong>¿Cómo conectar?</strong>
+                            <ol>
+                                <li>Ve a tu app de Bluesky: <strong>Configuración → Seguridad → Contraseñas de Aplicación</strong>.</li>
+                                <li>Crea una nueva contraseña de aplicación (dale un nombre como "Epistecnología").</li>
+                                <li>Copia la contraseña generada (formato: xxxx-xxxx-xxxx-xxxx) y pégala aquí junto a tu handle.</li>
+                            </ol>
+                            <hr>
+                            <form id="bsky-connect-form">
+                                <div class="form-group">
+                                    <label for="bsky-handle">Tu Handle de Bluesky</label>
+                                    <input type="text" id="bsky-handle" placeholder="tu-usuario.bsky.social" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="bsky-app-password">Contraseña de Aplicación</label>
+                                    <input type="password" id="bsky-app-password" placeholder="xxxx-xxxx-xxxx-xxxx" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-link"></i> Conectar Cuenta</button>
+                            </form>
+                        </div>
+
+                        <div id="bsky-connected-view" style="display: none;">
+                            <div class="status-badge connected">
+                                <i class="fa-solid fa-circle-check"></i>
+                                <span>Conectado como: <strong id="connected-bsky-handle"></strong></span>
+                            </div>
+                            <button id="bsky-disconnect-btn" class="btn btn-secondary" style="width: auto; margin-top: 1rem;">Desconectar</button>
+                        </div>
+
+                    </div>
+                </div>
+
             </main>
         </div>
     </div>
