@@ -73,7 +73,7 @@
 .instructions-box {
     grid-column: 1 / -1;
     background-color: var(--color-background); /* Un fondo sutilmente diferente */
-    border: 1px solid var(--color-border);
+    border: 0px solid var(--color-border);
 }
 .instructions-box p {
     font-size: 0.9rem;
@@ -82,4 +82,122 @@
 }
 .instructions-box p:last-child {
     margin-bottom: 0;
+}
+/* --- Estilos para la sección de Borradores --- */
+.drafts-section {
+    margin-bottom: 1.5rem;
+    padding: 1.5rem; /* Padding añadido para que se vea como una bento-box */
+}
+
+#drafts-list-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.draft-card {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    text-decoration: none;
+    color: var(--color-text-primary);
+    background-color: var(--color-background);
+    transition: all 0.2s ease-in-out;
+}
+
+.draft-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--color-accent);
+}
+
+.draft-card.active {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 10px rgba(183, 42, 30, 0.2);
+    background-color: var(--color-surface);
+}
+
+.draft-card .draft-title {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.draft-card .draft-date {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    margin-top: auto;
+}
+/* Estilos para el selector de Tareas IA */
+.ai-task-selector {
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap; /* Para que se adapte en pantallas pequeñas */
+}
+.ai-task-selector label {
+    font-weight: 600;
+    margin-bottom: 0;
+    flex-shrink: 0; /* Evita que la etiqueta se encoja */
+}
+.ai-task-selector select.form-control {
+    /* Estilo para un select genérico */
+    max-width: 300px;
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+    font-family: inherit;
+    font-size: 0.9rem;
+}
+
+/* Estilos para la sección de Borradores */
+.drafts-section {
+    margin-bottom: 1.5rem;
+    padding: 1.5rem;
+}
+#drafts-list-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+.draft-card {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    text-decoration: none;
+    color: var(--color-text-primary);
+    background-color: var(--color-background);
+    transition: all 0.2s ease-in-out;
+}
+.draft-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--color-accent);
+}
+.draft-card.active {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 10px rgba(183, 42, 30, 0.2);
+    background-color: var(--color-surface);
+    font-weight: bold;
+}
+.draft-card .draft-title {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.draft-card .draft-date {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    margin-top: auto;
 }

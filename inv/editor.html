@@ -20,7 +20,7 @@
                 <a href="/" class="logo-link"><img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo" class="logo"></a>
             </div>
             <nav class="sidebar-nav">
-                <a href="/inv/dashboard.html" class="nav-link active" data-section="home-section" title="Inicio"><i class="fa-solid fa-house"></i><span class="link-text">Inicio</span></a>
+                <a href="/inv/dashboard.html" class="nav-link" title="Dashboard"><i class="fa-solid fa-table-columns"></i><span class="link-text">Dashboard</span></a>
                 <a href="#" class="nav-link" data-section="studio-section" title="Estudio de Grabación"><i class="fa-solid fa-podcast"></i><span class="link-text">Estudio</span></a>
                 <a href="/inv/profile.html" class="nav-link" title="Mi Perfil"><i class="fa-solid fa-user-edit"></i><span class="link-text">Mi Perfil</span></a>
             </nav>
@@ -28,22 +28,42 @@
                 <button id="logout-btn" class="nav-link" title="Cerrar Sesión"><i class="fa-solid fa-right-from-bracket"></i><span class="link-text">Cerrar Sesión</span></button>
             </div>
         </aside>
+
         <main class="main-content">
             <header class="main-header">
                 <h1>Estudio de Creación de Contenido</h1>
             </header>
-            
-            <div class="editor-layout">
-                <div class="bento-box instructions-box">
-                    <h3><i class="fa-solid fa-circle-info"></i> ¿Cómo Empezar?</h3>
-                    <p>1. Escribe o pega tu texto base en el editor.</p>
-                    <p>2. Usa el <strong>Asistente IA</strong> para refinarlo, sugerir títulos o crear resúmenes.</p>
-                    <p>3. Guarda tu progreso con el botón <strong>"Guardar Borrador"</strong>.</p>
+
+            <section class="bento-box instructions-box">
+                <h3><i class="fa-solid fa-circle-info"></i> Flujo de Trabajo</h3>
+                <p>
+                    <strong>Punto de Partida:</strong> La página carga con la información de tu proyecto como base. Puedes empezar a escribir sobre ella o cargar un borrador guardado de la lista de abajo.
+                </p>
+                <p>
+                    <strong>Asistente IA:</strong> Selecciona una "Tarea para la IA" del menú desplegable para que el asistente se prepare. Luego, presiona "Generar Texto con IA".
+                </p>
+            </section>
+
+            <section class="bento-box drafts-section">
+                <h3><i class="fa-solid fa-folder-open"></i> Borradores Guardados del Proyecto</h3>
+                <div id="drafts-list-container">
+                    <p>Cargando borradores...</p>
                 </div>
+            </section>
+
+            <div class="editor-layout">
                 <div class="editor-main">
                     <div class="form-group">
                         <input type="text" id="post-title" placeholder="Escribe un título atractivo...">
                     </div>
+                    
+                    <div class="form-group ai-task-selector">
+                        <label for="ai-task-dropdown"><i class="fa-solid fa-person-chalkboard"></i> Tarea para la IA:</label>
+                        <select id="ai-task-dropdown" class="form-control">
+                            <option value="">Ninguna tarea seleccionada</option>
+                        </select>
+                    </div>
+
                     <div class="form-group">
                         <textarea id="rich-text-editor"></textarea>
                     </div>
@@ -53,17 +73,17 @@
                     <div class="bento-box">
                         <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Asistente IA</h3>
                         <div class="form-group">
-                            <label for="ai-custom-prompt">Instrucciones para la IA (opcional):</label>
-                            <textarea id="ai-custom-prompt" rows="3" placeholder="Ej: Tono formal, 500 palabras..."></textarea>
+                            <label for="ai-custom-prompt">Instrucciones para la IA:</label>
+                            <textarea id="ai-custom-prompt" rows="8" placeholder="Selecciona una Tarea para la IA o escribe tus propias instrucciones..."></textarea>
                         </div>
                         <div class="ai-actions">
+                            <button id="ai-generate-btn" class="btn-primary">Generar Texto con IA</button>
                             <button class="btn-secondary" id="ai-suggest-titles-btn">Sugerir Títulos</button>
-                            <button class="btn-secondary" id="ai-create-summary-btn">Crear Resumen</button>
                             <div id="ai-results"></div>
                         </div>
                     </div>
                     <div class="bento-box">
-                        <h3><i class="fa-solid fa-cogs"></i> Acciones</h3>
+                        <h3><i class="fa-solid fa-cogs"></i> Acciones del Post</h3>
                         <div class="publish-actions">
                             <button id="save-draft-btn" class="btn-secondary">Guardar Borrador</button>
                             <button class="btn-primary">Publicar</button>
