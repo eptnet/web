@@ -60,6 +60,14 @@ const ProfileApp = {
         navLinks.forEach(link => {
             link.addEventListener('click', () => {
                 const tabId = link.dataset.tab;
+
+                // --- INICIO DE LA MODIFICACIÓN ---
+                // Si el usuario hace clic en la pestaña "Comunidad", llamamos a la función para cargar el feed.
+                if (tabId === 'tab-comunidad') {
+                    this.renderCommunityFeed();
+                }
+                // --- FIN DE LA MODIFICACIÓN ---
+
                 navLinks.forEach(nav => nav.classList.remove('active'));
                 link.classList.add('active');
                 tabContents.forEach(content => {
@@ -161,16 +169,14 @@ const ProfileApp = {
         if (sidebarButtonsContainer) {
             sidebarButtonsContainer.innerHTML = `
                 ${profile.orcid ? `<a href="/inv/directorio.html" class="profile-card-nav__link"><i class="fa-solid fa-users"></i> Directorio</a>` : ''}
-                
+                <a href="/inv/dashboard.html" class="profile-card-nav__link"><i class="fa-solid fa-arrow-right"></i> Ir al Dashboard</a>
                 <button id="connect-community-btn" class="profile-card-nav__link btn btn-primary">
                     <i class="fa-solid fa-comments"></i> Conectar a Comunidad
                 </button>
-                
-                <a href="/inv/dashboard.html" class="profile-card-nav__link"><i class="fa-solid fa-arrow-right"></i> Ir al Dashboard</a>
             `;
         }
         const { data: bskyCreds } = await this.supabase.from('bsky_credentials').select('handle').eq('user_id', profile.id).single();
-        this.renderBlueskySection(bskyCreds);
+        this.renderBlueskySection(bskyCreds, isMyOwnProfile);
 
         if (isEditable) {
             document.getElementById('display-name').value = profile.display_name || '';
@@ -334,11 +340,23 @@ const ProfileApp = {
     },
 
     renderBlueskySection(credentials) {
-        const connectCardBtn = document.getElementById('connect-community-btn');
-        const isMyOwnProfile = this.currentUserProfile.id === (new URLSearchParams(window.location.search).get('id') || this.user.id);
+        const container = document.getElementById('bsky-status-container');
+        if (!container) return; // Si el contenedor no existe (ej. para rol 'user'), no hace nada.
 
-        if (connectCardBtn) {
-            connectCardBtn.style.display = (isMyOwnProfile && !credentials) ? 'flex' : 'none';
+        if (credentials) {
+            container.innerHTML = `
+                <div class="status-badge connected">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Conectado como: <strong>${credentials.handle}</strong></span>
+                </div>
+                <button id="bsky-disconnect-btn" class="btn btn-secondary" style="width: 100%; margin-top: 1rem;">Desconectar</button>
+            `;
+        } else {
+            const template = document.getElementById('bsky-connect-template');
+            if (template) {
+                container.innerHTML = ''; // Limpiamos por si acaso
+                container.appendChild(template.content.cloneNode(true));
+            }
         }
     },
 
@@ -372,7 +390,7 @@ const ProfileApp = {
     },
 
     openCommunityModal() {
-        const template = document.getElementById('bsky-connect-template');
+        const template = document.getElementById('community-info-template');
         if (!template) return;
         const modalContainer = document.getElementById('modal-container');
         if (!modalContainer) return;
@@ -382,7 +400,6 @@ const ProfileApp = {
         modalContent.appendChild(template.content.cloneNode(true));
         
         modalContainer.querySelector('.modal-close-btn').addEventListener('click', () => this.closeCommunityModal());
-        modalContainer.querySelector('#bsky-connect-form').addEventListener('submit', (e) => this.handleBlueskyConnect(e));
     },
 
     closeCommunityModal() {
@@ -408,7 +425,72 @@ const ProfileApp = {
         document.body.classList.toggle("dark-theme", theme === "dark");
         const themeIcon = document.querySelector('#theme-switcher-desktop i');
         if(themeIcon) themeIcon.className = `fa-solid ${theme === "dark" ? "fa-sun" : "fa-moon"}`;
-    }
+    },
+
+    async renderCommunityFeed() {
+        const container = document.getElementById('community-feed-container');
+        // Evita recargar el feed si ya ha sido cargado una vez
+        if (!container || container.dataset.loaded === 'true') return;
+
+        container.innerHTML = '<p>Cargando el feed de la comunidad...</p>';
+        container.dataset.loaded = 'true'; // Marcar como cargado
+
+        try {
+            const { data: feed, error } = await this.supabase.functions.invoke('bsky-get-community-feed');
+
+            if (error) throw error;
+
+            if (!feed || feed.length === 0) {
+                container.innerHTML = '<p>No hay publicaciones recientes en la comunidad.</p>';
+                return;
+            }
+
+            // "Pintamos" cada post en el contenedor
+            container.innerHTML = feed.map(item => {
+                const post = item.post;
+                const author = post.author;
+                const record = post.record;
+                
+                const postDate = new Date(post.indexedAt).toLocaleString('es-ES', { 
+                    day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit' 
+                });
+
+                // Manejo básico de imágenes en el post
+                let embedHtml = '';
+                if (post.embed && post.embed.images) {
+                    embedHtml = `<div class="post-embed-image"><img src="${post.embed.images[0].thumb}" alt="${post.embed.images[0].alt || 'Imagen adjunta'}" loading="lazy"></div>`;
+                }
+
+                return `
+                    <div class="feed-post">
+                        <div class="post-header">
+                            <img src="${author.avatar}" alt="Avatar de ${author.displayName}" class="post-avatar" loading="lazy">
+                            <div class="post-author">
+                                <strong>${author.displayName}</strong>
+                                <span class="post-handle">@${author.handle}</span>
+                            </div>
+                        </div>
+                        <div class="post-body">
+                            <p>${record.text.replace(/\n/g, '<br>')}</p>
+                            ${embedHtml}
+                        </div>
+                        <div class="post-footer">
+                            <span class="post-date">${postDate}</span>
+                            <div class="post-stats">
+                                <span><i class="fa-regular fa-comment"></i> ${post.replyCount || 0}</span>
+                                <span><i class="fa-solid fa-retweet"></i> ${post.repostCount || 0}</span>
+                                <span><i class="fa-regular fa-heart"></i> ${post.likeCount || 0}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+        } catch (error) {
+            container.innerHTML = '<p style="color: var(--color-accent);">Error al cargar el feed de la comunidad.</p>';
+            console.error("Error al invocar bsky-get-community-feed:", error);
+        }
+    },
 };
 
 ProfileApp.init();

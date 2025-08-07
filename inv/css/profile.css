@@ -329,3 +329,91 @@ body.loading-profile .main-content {
     color: var(--color-secondary);
     cursor: pointer;
 }
+
+/* --- Estilos para el Feed de la Comunidad --- */
+#community-feed-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.feed-post {
+    background-color: var(--color-background);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--color-border);
+}
+
+.post-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.post-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.post-author {
+    display: flex;
+    flex-direction: column;
+}
+
+.post-author strong {
+    font-size: 1.1rem;
+    color: var(--color-primary);
+}
+
+.post-handle {
+    font-size: 0.9rem;
+    color: var(--color-secondary);
+}
+
+.post-body p {
+    margin: 0;
+    line-height: 1.6;
+    word-wrap: break-word;
+}
+
+.post-embed-image {
+    margin-top: 1rem;
+}
+
+.post-embed-image img {
+    max-width: 100%;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--color-border);
+}
+
+.post-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+    font-size: 0.9rem;
+    color: var(--color-secondary);
+}
+
+.post-stats {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.post-stats span {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+/* --- Estilos para el Panel de Estado de Comunidad --- */
+.community-status-box {
+    text-align: center; /* Centra el contenido */
+}
+.community-status-box h3 {
+    text-align: left; /* Mantiene el título alineado a la izquierda */
+}

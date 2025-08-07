@@ -47,109 +47,127 @@
                     <p id="profile-card-bio"></p>
                     <div id="profile-card-socials" class="profile-card__socials"></div>
                     <hr>
-                    <div id="sidebar-buttons-container" class="profile-card-nav">
-                        </div>
+                    <div id="sidebar-buttons-container" class="profile-card-nav"></div>
                 </div>
+                
             </aside>
 
             <main class="main-content">
                 <nav class="profile-tabs">
                     <button class="profile-tab-link active" data-tab="tab-perfil"><i class="fa-solid fa-user-pen"></i> <span>Perfil</span></button>
-                    <button class="profile-tab-link" data-tab="tab-identidad"><i class="fa-brands fa-orcid"></i> <span>ID ORCID</span></button>
+                    <button class="profile-tab-link" data-tab="tab-identidad"><i class="fa-brands fa-orcid"></i> <span>ID Académico</span></button>
                     <button class="profile-tab-link" data-tab="tab-proyectos"><i class="fa-solid fa-cloud-arrow-up"></i> <span>EPT DOI</span></button>
                     <button class="profile-tab-link" data-tab="tab-comunidad"><i class="fa-solid fa-comments"></i> <span>Comunidad</span></button>
                 </nav>
 
                 <div id="tab-perfil" class="profile-tab-content active">
-                    <div class="bento-box">
-                        <h3><i class="fa-solid fa-user-pen"></i> Perfil Público</h3>
-                        <form id="profile-form">
-                            <div class="form-group"><label for="display-name">Nombre a Mostrar</label><input type="text" id="display-name" required></div>
-                            <div class="form-group"><label for="bio">Biografía Corta (250 caracteres)</label><textarea id="bio" rows="3" maxlength="250"></textarea></div>
-                            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Guardar Perfil</button>
-                            <p id="form-message" class="form-message"></p>
-                        </form>
+                    <div class="main-column">
+                        <div class="bento-box">
+                            <h3><i class="fa-solid fa-user-pen"></i> Perfil Público</h3>
+                            <form id="profile-form">
+                                <div class="form-group"><label for="display-name">Nombre a Mostrar</label><input type="text" id="display-name" required></div>
+                                <div class="form-group"><label for="bio">Biografía Corta (250 caracteres)</label><textarea id="bio" rows="3" maxlength="250"></textarea></div>
+                                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Guardar Perfil</button>
+                                <p id="form-message" class="form-message"></p>
+                            </form>
+                        </div>
+                        <div class="bento-box">
+                            <h3><i class="fa-solid fa-share-nodes"></i> Plataformas y Redes</h3>
+                            <form id="platforms-form">
+                                <h4>Plataformas Principales</h4>
+                                <div class="form-group"><label for="youtube-url">Canal de YouTube</label><input type="url" id="youtube-url" placeholder="https://youtube.com/c/..."></div>
+                                <div class="form-group"><label for="substack-url">Perfil de Substack</label><input type="url" id="substack-url" placeholder="https://tupublicacion.substack.com"></div>
+                                <hr>
+                                <h4>Otras Redes Sociales</h4>
+                                <div class="form-group"><label for="website-url">Sitio Web / Blog</label><input type="url" id="website-url" placeholder="https://..."></div>
+                                <div class="form-group"><label for="x-url">Perfil de X (Twitter)</label><input type="url" id="x-url" placeholder="https://x.com/usuario"></div>
+                                <div class="form-group"><label for="linkedin-url">Perfil de LinkedIn</label><input type="url" id="linkedin-url" placeholder="https://linkedin.com/in/usuario"></div>
+                                <div class="form-group"><label for="instagram-url">Perfil de Instagram</label><input type="url" id="instagram-url" placeholder="https://instagram.com/usuario"></div>
+                                <div class="form-group"><label for="facebook-url">Perfil de Facebook</label><input type="url" id="facebook-url" placeholder="https://facebook.com/usuario"></div>
+                                <div class="form-group"><label for="tiktok-url">Perfil de TikTok</label><input type="url" id="tiktok-url" placeholder="https://tiktok.com/@usuario"></div>
+                                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Guardar Plataformas</button>
+                            </form>
+                        </div>
                     </div>
-                    <div class="bento-box">
-                        <h3><i class="fa-brands fa-orcid"></i> Verificación de Investigador</h3>
-                        <p class="form-hint">Conecta tu cuenta de ORCID para ser verificado y desbloquear funcionalidades avanzadas.</p>
-                        <div id="orcid-section" style="margin-top: 1rem;"></div>
-                    </div>
-                    <div class="bento-box">
-                        <h3><i class="fa-solid fa-camera"></i> Avatar</h3>
-                        <p class="form-hint">Pega aquí el enlace directo (URL.jpg) de tu imagen de perfil. Puedes usar un servicio como <a href="https://imgbb.com/" target="_blank">imgbb.com</a>.</p>
-                        <form id="avatar-update-form">
-                            <div class="form-group"><label for="avatar-url">URL de la imagen del perfil</label><input type="url" id="avatar-url" placeholder="https://i.ibb.co/...tu-imagen.jpg" required></div>
-                            <button type="submit" class="btn btn-secondary"><i class="fa-solid fa-floppy-disk"></i> Guardar Avatar</button>
-                        </form>
-                    </div>
-                    <div class="bento-box">
-                        <h3><i class="fa-solid fa-share-nodes"></i> Plataformas y Redes</h3>
-                        <form id="platforms-form">
-                            <h4>Plataformas Principales</h4>
-                            <div class="form-group"><label for="youtube-url">Canal de YouTube</label><input type="url" id="youtube-url" placeholder="https://youtube.com/c/..."></div>
-                            <div class="form-group"><label for="substack-url">Perfil de Substack</label><input type="url" id="substack-url" placeholder="https://tupublicacion.substack.com"></div>
-                            <hr>
-                            <h4>Otras Redes Sociales</h4>
-                            <div class="form-group"><label for="website-url">Sitio Web / Blog</label><input type="url" id="website-url" placeholder="https://..."></div>
-                            <div class="form-group"><label for="x-url">Perfil de X (Twitter)</label><input type="url" id="x-url" placeholder="https://x.com/usuario"></div>
-                            <div class="form-group"><label for="linkedin-url">Perfil de LinkedIn</label><input type="url" id="linkedin-url" placeholder="https://linkedin.com/in/usuario"></div>
-                            <div class="form-group"><label for="instagram-url">Perfil de Instagram</label><input type="url" id="instagram-url" placeholder="https://instagram.com/usuario"></div>
-                            <div class="form-group"><label for="facebook-url">Perfil de Facebook</label><input type="url" id="facebook-url" placeholder="https://facebook.com/usuario"></div>
-                            <div class="form-group"><label for="tiktok-url">Perfil de TikTok</label><input type="url" id="tiktok-url" placeholder="https://tiktok.com/@usuario"></div>
-                            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Guardar Plataformas</button>
-                        </form>
+                    <div class="side-column">
+                        <div class="bento-box">
+                            <h3><i class="fa-brands fa-orcid"></i> Verificación de Investigador</h3>
+                            <p class="form-hint">Conecta tu cuenta de ORCID para ser verificado y desbloquear funcionalidades avanzadas, como la publicación de contenido.</p>
+                            <div id="orcid-section" style="margin-top: 1rem;"></div>
+                        </div>
+                        <div class="bento-box">
+                            <h3><i class="fa-solid fa-camera"></i> Avatar</h3>
+                            <p class="form-hint">Pega aquí el enlace directo (URL.jpg) de tu imagen de perfil. Puedes usar un servicio como <a href="https://imgbb.com/" target="_blank">imgbb.com</a>.</p>
+                            <form id="avatar-update-form">
+                                <div class="form-group"><label for="avatar-url">URL de la imagen del perfil</label><input type="url" id="avatar-url" placeholder="https://i.ibb.co/...tu-imagen.jpg" required></div>
+                                <button type="submit" class="btn btn-secondary"><i class="fa-solid fa-floppy-disk"></i> Guardar Avatar</button>
+                            </form>
+                        </div>
                     </div>
                 </div>
 
                 <div id="tab-identidad" class="profile-tab-content">
-                    <div class="bento-box">
-                        <h3><i class="fa-solid fa-book-bookmark"></i> Sincronizar Proyectos</h3>
-                         <div id="projects-section">
-                            <p class="form-hint">Una vez conectado a ORCID, podrás sincronizar tus trabajos.</p>
-                            <button id="sync-orcid-works-btn" class="btn btn-secondary" disabled>
-                                <i class="fa-solid fa-sync"></i> Sincronizar desde ORCID
-                            </button>
+                    <div class="main-column">
+                        <div class="bento-box">
+                            <h3><i class="fa-brands fa-orcid"></i> Publicaciones Sincronizadas</h3>
+                            <p class="form-hint">Aquí se encuentran listados tus proyectos (DOI) sincronizados desde tu ORCID y los que podrás sellecionar para la creación de contenidos.</p>
+                            <div id="projects-list" class="projects-list"></div>
                         </div>
                     </div>
-                    <div class="bento-box">
-                        <h3><i class="fa-brands fa-orcid"></i> Publicaciones Sincronizadas</h3>
-                        <div id="projects-list" class="projects-list"></div>
+                    <div class="side-column">
+                        <div class="bento-box">
+                            <h3><i class="fa-solid fa-book-bookmark"></i> Sincronizar Proyectos</h3>
+                            <div id="projects-section">
+                                <p class="form-hint">Una vez conectado a ORCID, podrás sincronizar tus trabajos.</p>
+                                <button id="sync-orcid-works-btn" class="btn btn-secondary" disabled>
+                                    <i class="fa-solid fa-sync"></i> Sincronizar desde ORCID
+                                </button>
+                            </div>
+                        </div>
+                        <div class="bento-box">
+                            <h3><i class="fa-solid fa-comments"></i> Publicar en la Comunidad</h3>
+                            <p class="form-hint">Como investigador verificado, puedes conectar tu cuenta para publicar directamente desde Epistecnología.</p>
+                            <div id="bsky-status-container" style="margin-top: 1rem;"></div>
+                        </div>
                     </div>
                 </div>
 
                 <div id="tab-proyectos" class="profile-tab-content">
-                    <div class="bento-box">
-                        <h3><i class="fa-solid fa-circle-info"></i> ¿Cómo Funciona?</h3>
-                        <div class="instructions-content">
-                            <p>Al publicar desde aquí, tu trabajo se sube a la comunidad oficial de Epistecnología en Zenodo, obteniendo un DOI citable a tu nombre.</p>
+                    <div class="main-column">
+                        <div class="bento-box">
+                            <h3><i class="fa-solid fa-cloud-arrow-up"></i> Obtener DOI en Zenodo EPT</h3>
+                            <form id="zenodo-form">
+                                <div class="form-group"><label for="zenodo-title">Título de la Publicación</label><input type="text" id="zenodo-title" required></div>
+                                <div class="form-group"><label for="zenodo-description">Descripción / Abstract</label><textarea id="zenodo-description" rows="4" required></textarea></div>
+                                <div class="form-group"><label for="zenodo-file">Archivo a Publicar (PDF, ZIP, etc.)</label><input type="file" id="zenodo-file" required></div>
+                                <button type="submit" class="btn btn-primary">Publicar y Obtener DOI</button>
+                                <div id="zenodo-message" class="form-message" style="margin-top: 1rem;"></div>
+                            </form>
                         </div>
                     </div>
-                    <div class="bento-box">
-                        <h3><i class="fa-solid fa-th-list"></i> Tus Publicaciones EPT DOI</h3>
-                        <div id="ept-doi-list">
-                            <p class="form-hint">Aquí aparecerán los proyectos que publiques a través de esta herramienta.</p>
+                    <div class="side-column">
+                        <div class="bento-box">
+                            <h3><i class="fa-solid fa-circle-info"></i> ¿Cómo Funciona?</h3>
+                            <div class="instructions-content">
+                                <p>Al publicar desde aquí, tu trabajo se sube a la comunidad oficial de Epistecnología en Zenodo, obteniendo un DOI citable a tu nombre.</p>
+                            </div>
                         </div>
-                    </div>
-                    <div class="bento-box">
-                        <h3><i class="fa-solid fa-cloud-arrow-up"></i> Obtener DOI en Zenodo EPT</h3>
-                        <form id="zenodo-form">
-                            <div class="form-group"><label for="zenodo-title">Título de la Publicación</label><input type="text" id="zenodo-title" required></div>
-                            <div class="form-group"><label for="zenodo-description">Descripción / Abstract</label><textarea id="zenodo-description" rows="4" required></textarea></div>
-                            <div class="form-group"><label for="zenodo-file">Archivo a Publicar (PDF, ZIP, etc.)</label><input type="file" id="zenodo-file" required></div>
-                            <button type="submit" class="btn btn-primary">Publicar y Obtener DOI</button>
-                            <div id="zenodo-message" class="form-message" style="margin-top: 1rem;"></div>
-                        </form>
+                        <div class="bento-box">
+                            <h3><i class="fa-solid fa-th-list"></i> Tus Publicaciones EPT DOI</h3>
+                            <div id="ept-doi-list">
+                                <p class="form-hint">Aquí aparecerán los proyectos que publiques a través de esta herramienta.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div id="tab-comunidad" class="profile-tab-content">
-                    <div class="bento-box">
-                        <h3><i class="fa-solid fa-comments"></i> Comunidad Epistecnología</h3>
-                        <div id="bsky-status-container">
+                    <div class="full-column">
+                        <div class="bento-box">
+                            <h3><i class="fa-solid fa-comments"></i> Comunidad Epistecnología</h3>
+                            <div id="community-feed-container" style="margin-top: 1rem;">
+                                <p>Próximamente: El feed de la comunidad aparecerá aquí...</p>
                             </div>
-                        <div id="community-feed-container" style="margin-top: 1rem;">
-                            <p>Próximamente: El feed de la comunidad aparecerá aquí...</p>
                         </div>
                     </div>
                 </div>
@@ -159,30 +177,17 @@
     
     <div id="modal-container"></div>
     
-    <template id="bsky-connect-template">
-        <div class="bento-box">
-            <h3><i class="fa-solid fa-comments"></i> Conectar a la Comunidad</h3>
-            <p class="form-hint">Conecta tu cuenta para participar en la comunidad, publicar desde la plataforma y acceder a los chats en vivo.</p>
-            <strong>¿Cómo conectar de forma segura?</strong>
-            <ol>
-                <li>Ve a tu app de Bluesky: <strong>Configuración → Seguridad → Contraseñas de Aplicación</strong>.</li>
-                <li>Crea una nueva contraseña de aplicación (puedes llamarla "Epistecnología").</li>
-                <li>Copia la contraseña generada (formato: xxxx-xxxx-xxxx-xxxx) y pégala aquí. <strong>Nunca te pediremos tu contraseña principal.</strong></li>
-            </ol>
-            <hr>
-            <form id="bsky-connect-form">
-                <div class="form-group">
-                    <label for="bsky-handle">Tu Handle de Bluesky</label>
-                    <input type="text" id="bsky-handle" placeholder="tu-usuario.bsky.social" required>
-                </div>
-                <div class="form-group">
-                    <label for="bsky-app-password">Contraseña de Aplicación</label>
-                    <input type="password" id="bsky-app-password" placeholder="xxxx-xxxx-xxxx-xxxx" required>
-                </div>
-                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-link"></i> Conectar Cuenta</button>
-            </form>
-        </div>
-    </template>
+    <template id="community-info-template">
+    <div class="bento-box" style="text-align: center;">
+        <h3><i class="fa-solid fa-comments"></i> ¡Únete a la Conversación!</h3>
+        <p>Nuestra comunidad en la red social te permite interactuar con otros investigadores, compartir ideas y participar en debates en tiempo real.</p>
+        <p>Para participar, necesitas una cuenta en la red de Bluesky. ¡Es gratis y fácil de crear!</p>
+        <a href="https://bsky.app" target="_blank" class="btn btn-primary" style="width:100%; text-decoration: none; margin-top: 1rem;">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Crear o Iniciar Sesión en Bluesky
+        </a>
+        <p class="form-hint" style="margin-top: 1rem;">Una vez que tengas tu cuenta, podrás conectar tus perfiles en la pestaña "ID ORCID" para publicar desde Epistecnología.</p>
+    </div>
+</template>
     
     <nav class="mobile-nav">
         <a href="/" class="mobile-nav__link active" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
