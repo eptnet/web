@@ -47,8 +47,8 @@
                     <p id="profile-card-bio"></p>
                     <div id="profile-card-socials" class="profile-card__socials"></div>
                     <hr>
-                    <div id="directory-button-container" class="profile-card-nav"></div>
-                    <a href="/inv/dashboard.html" id="dashboard-link-btn" class="btn btn-primary"><i class="fa-solid fa-arrow-right"></i> Ir al Dashboard</a>
+                    <div id="sidebar-buttons-container" class="profile-card-nav">
+                        </div>
                 </div>
             </aside>
 
@@ -56,8 +56,8 @@
                 <nav class="profile-tabs">
                     <button class="profile-tab-link active" data-tab="tab-perfil"><i class="fa-solid fa-user-pen"></i> <span>Perfil</span></button>
                     <button class="profile-tab-link" data-tab="tab-identidad"><i class="fa-brands fa-orcid"></i> <span>ID ORCID</span></button>
-                    <button class="profile-tab-link" data-tab="tab-comunidad"><i class="fa-brands fa-bluesky"></i> <span>Comunidad</span></button>
                     <button class="profile-tab-link" data-tab="tab-proyectos"><i class="fa-solid fa-cloud-arrow-up"></i> <span>EPT DOI</span></button>
+                    <button class="profile-tab-link" data-tab="tab-comunidad"><i class="fa-solid fa-comments"></i> <span>Comunidad</span></button>
                 </nav>
 
                 <div id="tab-perfil" class="profile-tab-content active">
@@ -70,76 +70,67 @@
                             <p id="form-message" class="form-message"></p>
                         </form>
                     </div>
-
+                    <div class="bento-box">
+                        <h3><i class="fa-brands fa-orcid"></i> Verificación de Investigador</h3>
+                        <p class="form-hint">Conecta tu cuenta de ORCID para ser verificado y desbloquear funcionalidades avanzadas.</p>
+                        <div id="orcid-section" style="margin-top: 1rem;"></div>
+                    </div>
                     <div class="bento-box">
                         <h3><i class="fa-solid fa-camera"></i> Avatar</h3>
-                        <p class="form-hint">Sube tu imagen a un servicio gratuito como <a href="https://imgbb.com/" target="_blank">imgbb.com</a>, copia el enlace directo (URL.jpg) y pégalo aquí.</p>
-                            <form id="avatar-update-form">
-                                <div class="form-group"><label for="avatar-url">URL de la imagen del perfil</label><input type="url" id="avatar-url" placeholder="https://i.ibb.co/...tu-imagen.jpg" required></div>
-                                <button type="submit" class="btn btn-secondary"><i class="fa-solid fa-floppy-disk"></i> Guardar Avatar</button>
-                            </form>
+                        <p class="form-hint">Pega aquí el enlace directo (URL.jpg) de tu imagen de perfil. Puedes usar un servicio como <a href="https://imgbb.com/" target="_blank">imgbb.com</a>.</p>
+                        <form id="avatar-update-form">
+                            <div class="form-group"><label for="avatar-url">URL de la imagen del perfil</label><input type="url" id="avatar-url" placeholder="https://i.ibb.co/...tu-imagen.jpg" required></div>
+                            <button type="submit" class="btn btn-secondary"><i class="fa-solid fa-floppy-disk"></i> Guardar Avatar</button>
+                        </form>
                     </div>
-
                     <div class="bento-box">
                         <h3><i class="fa-solid fa-share-nodes"></i> Plataformas y Redes</h3>
-                            <form id="platforms-form">
-                                <h4>Plataformas Principales</h4>
-                                <div class="form-group"><label for="youtube-url">Canal de YouTube</label><input type="url" id="youtube-url" placeholder="https://youtube.com/c/..."></div>
-                                <div class="form-group"><label for="substack-url">Perfil de Substack</label><input type="url" id="substack-url" placeholder="https://tupublicacion.substack.com"></div>
-                                <hr>
-                                <h4>Otras Redes Sociales</h4>
-                                <div class="form-group"><label for="website-url">Sitio Web / Blog</label><input type="url" id="website-url" placeholder="https://..."></div>
-                                <div class="form-group"><label for="x-url">Perfil de X (Twitter)</label><input type="url" id="x-url" placeholder="https://x.com/usuario"></div>
-                                <div class="form-group"><label for="linkedin-url">Perfil de LinkedIn</label><input type="url" id="linkedin-url" placeholder="https://linkedin.com/in/usuario"></div>
-                                <div class="form-group"><label for="instagram-url">Perfil de Instagram</label><input type="url" id="instagram-url" placeholder="https://instagram.com/usuario"></div>
-                                <div class="form-group"><label for="facebook-url">Perfil de Facebook</label><input type="url" id="facebook-url" placeholder="https://facebook.com/usuario"></div>
-                                <div class="form-group"><label for="tiktok-url">Perfil de TikTok</label><input type="url" id="tiktok-url" placeholder="https://tiktok.com/@usuario"></div>
-                                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Guardar Plataformas</button>
-                            </form>
+                        <form id="platforms-form">
+                            <h4>Plataformas Principales</h4>
+                            <div class="form-group"><label for="youtube-url">Canal de YouTube</label><input type="url" id="youtube-url" placeholder="https://youtube.com/c/..."></div>
+                            <div class="form-group"><label for="substack-url">Perfil de Substack</label><input type="url" id="substack-url" placeholder="https://tupublicacion.substack.com"></div>
+                            <hr>
+                            <h4>Otras Redes Sociales</h4>
+                            <div class="form-group"><label for="website-url">Sitio Web / Blog</label><input type="url" id="website-url" placeholder="https://..."></div>
+                            <div class="form-group"><label for="x-url">Perfil de X (Twitter)</label><input type="url" id="x-url" placeholder="https://x.com/usuario"></div>
+                            <div class="form-group"><label for="linkedin-url">Perfil de LinkedIn</label><input type="url" id="linkedin-url" placeholder="https://linkedin.com/in/usuario"></div>
+                            <div class="form-group"><label for="instagram-url">Perfil de Instagram</label><input type="url" id="instagram-url" placeholder="https://instagram.com/usuario"></div>
+                            <div class="form-group"><label for="facebook-url">Perfil de Facebook</label><input type="url" id="facebook-url" placeholder="https://facebook.com/usuario"></div>
+                            <div class="form-group"><label for="tiktok-url">Perfil de TikTok</label><input type="url" id="tiktok-url" placeholder="https://tiktok.com/@usuario"></div>
+                            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Guardar Plataformas</button>
+                        </form>
                     </div>
-
                 </div>
 
                 <div id="tab-identidad" class="profile-tab-content">
                     <div class="bento-box">
-                        <h3><i class="fa-brands fa-orcid"></i> Identidad Académica</h3>
-                        <div id="orcid-section"></div>
-                    </div>
-                    <div class="bento-box">
-                        <h3><i class="fa-solid fa-book-bookmark"></i> Proyectos Sincronizados</h3>
+                        <h3><i class="fa-solid fa-book-bookmark"></i> Sincronizar Proyectos</h3>
                          <div id="projects-section">
                             <p class="form-hint">Una vez conectado a ORCID, podrás sincronizar tus trabajos.</p>
-                            <button id="sync-orcid-works-btn" class="btn btn-secondary" disabled><i class="fa-solid fa-sync"></i> Sincronizar desde ORCID</button>
-                            
-                            <div id="projects-list" class="projects-list"></div>
+                            <button id="sync-orcid-works-btn" class="btn btn-secondary" disabled>
+                                <i class="fa-solid fa-sync"></i> Sincronizar desde ORCID
+                            </button>
                         </div>
+                    </div>
+                    <div class="bento-box">
+                        <h3><i class="fa-brands fa-orcid"></i> Publicaciones Sincronizadas</h3>
+                        <div id="projects-list" class="projects-list"></div>
                     </div>
                 </div>
 
                 <div id="tab-proyectos" class="profile-tab-content">
-                    
                     <div class="bento-box">
                         <h3><i class="fa-solid fa-circle-info"></i> ¿Cómo Funciona?</h3>
                         <div class="instructions-content">
                             <p>Al publicar desde aquí, tu trabajo se sube a la comunidad oficial de Epistecnología en Zenodo, obteniendo un DOI citable a tu nombre.</p>
-                            <strong>Beneficios:</strong>
-                            <ul>
-                                <li>✓ Obtienes un identificador persistente (DOI).</li>
-                                <li>✓ Aumentas la visibilidad y el impacto de tu trabajo.</li>
-                                <li>✓ Tu publicación queda asociada a tu perfil ORCID y a nuestra comunidad.</li>
-                            </ul>
-                            <strong>Importante:</strong>
-                            <p>Una vez publicado, no olvides añadir el nuevo DOI a tu perfil de ORCID y volver a sincronizar para que aparezca en tu lista de proyectos.</p>
                         </div>
                     </div>
-
                     <div class="bento-box">
                         <h3><i class="fa-solid fa-th-list"></i> Tus Publicaciones EPT DOI</h3>
                         <div id="ept-doi-list">
                             <p class="form-hint">Aquí aparecerán los proyectos que publiques a través de esta herramienta.</p>
                         </div>
                     </div>
-
                     <div class="bento-box">
                         <h3><i class="fa-solid fa-cloud-arrow-up"></i> Obtener DOI en Zenodo EPT</h3>
                         <form id="zenodo-form">
@@ -150,50 +141,49 @@
                             <div id="zenodo-message" class="form-message" style="margin-top: 1rem;"></div>
                         </form>
                     </div>
-
                 </div>
 
                 <div id="tab-comunidad" class="profile-tab-content">
                     <div class="bento-box">
-                        <h3><i class="fa-brands fa-bluesky"></i> Conexión con Bluesky</h3>
-                        
-                        <div id="bsky-disconnected-view">
-                            <p class="form-hint">Conecta tu cuenta de Bluesky para participar en la comunidad, publicar desde la plataforma y acceder a los chats en vivo.</p>
-                            <strong>¿Cómo conectar?</strong>
-                            <ol>
-                                <li>Ve a tu app de Bluesky: <strong>Configuración → Seguridad → Contraseñas de Aplicación</strong>.</li>
-                                <li>Crea una nueva contraseña de aplicación (dale un nombre como "Epistecnología").</li>
-                                <li>Copia la contraseña generada (formato: xxxx-xxxx-xxxx-xxxx) y pégala aquí junto a tu handle.</li>
-                            </ol>
-                            <hr>
-                            <form id="bsky-connect-form">
-                                <div class="form-group">
-                                    <label for="bsky-handle">Tu Handle de Bluesky</label>
-                                    <input type="text" id="bsky-handle" placeholder="tu-usuario.bsky.social" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="bsky-app-password">Contraseña de Aplicación</label>
-                                    <input type="password" id="bsky-app-password" placeholder="xxxx-xxxx-xxxx-xxxx" required>
-                                </div>
-                                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-link"></i> Conectar Cuenta</button>
-                            </form>
-                        </div>
-
-                        <div id="bsky-connected-view" style="display: none;">
-                            <div class="status-badge connected">
-                                <i class="fa-solid fa-circle-check"></i>
-                                <span>Conectado como: <strong id="connected-bsky-handle"></strong></span>
+                        <h3><i class="fa-solid fa-comments"></i> Comunidad Epistecnología</h3>
+                        <div id="bsky-status-container">
                             </div>
-                            <button id="bsky-disconnect-btn" class="btn btn-secondary" style="width: auto; margin-top: 1rem;">Desconectar</button>
+                        <div id="community-feed-container" style="margin-top: 1rem;">
+                            <p>Próximamente: El feed de la comunidad aparecerá aquí...</p>
                         </div>
-
                     </div>
                 </div>
-
             </main>
         </div>
     </div>
-
+    
+    <div id="modal-container"></div>
+    
+    <template id="bsky-connect-template">
+        <div class="bento-box">
+            <h3><i class="fa-solid fa-comments"></i> Conectar a la Comunidad</h3>
+            <p class="form-hint">Conecta tu cuenta para participar en la comunidad, publicar desde la plataforma y acceder a los chats en vivo.</p>
+            <strong>¿Cómo conectar de forma segura?</strong>
+            <ol>
+                <li>Ve a tu app de Bluesky: <strong>Configuración → Seguridad → Contraseñas de Aplicación</strong>.</li>
+                <li>Crea una nueva contraseña de aplicación (puedes llamarla "Epistecnología").</li>
+                <li>Copia la contraseña generada (formato: xxxx-xxxx-xxxx-xxxx) y pégala aquí. <strong>Nunca te pediremos tu contraseña principal.</strong></li>
+            </ol>
+            <hr>
+            <form id="bsky-connect-form">
+                <div class="form-group">
+                    <label for="bsky-handle">Tu Handle de Bluesky</label>
+                    <input type="text" id="bsky-handle" placeholder="tu-usuario.bsky.social" required>
+                </div>
+                <div class="form-group">
+                    <label for="bsky-app-password">Contraseña de Aplicación</label>
+                    <input type="password" id="bsky-app-password" placeholder="xxxx-xxxx-xxxx-xxxx" required>
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-link"></i> Conectar Cuenta</button>
+            </form>
+        </div>
+    </template>
+    
     <nav class="mobile-nav">
         <a href="/" class="mobile-nav__link active" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
         <a href="https://eptnews.substack.com/" class="mobile-nav__link" aria-label="Newsletter"><i class="fa-solid fa-newspaper"></i></a>
@@ -207,10 +197,10 @@
             <a href="#" data-provider="google" id="login-google-btn-mobile" class="mobile-more-menu__item login-provider-btn"><i class="fa-brands fa-google"></i><span>Iniciar con Google</span></a>
             <a href="#" data-provider="github" id="login-github-btn-mobile" class="mobile-more-menu__item login-provider-btn"><i class="fa-brands fa-github"></i><span>Iniciar con GitHub</span></a>
             <a href="#" class="mobile-more-menu__item is-disabled"><i class="fa-brands fa-orcid"></i><span>ORCID (Próximamente)</span></a>
-            <hr style="border: none; border-top: 1px solid var(--color-border); margin: 0.5rem 0;">
+            <hr>
             <a href="https://substack.com/chat/2867518" class="mobile-more-menu__item"><i class="fa-solid fa-message"></i><span>Comunidad</span></a>
             <a href="/live.html#seccion-eventos" class="mobile-more-menu__item"><i class="fa-solid fa-calendar-days"></i><span>Eventos</span></a>
-            <hr style="border: none; border-top: 1px solid var(--color-border); margin: 0.5rem 0;">
+            <hr>
             <button class="mobile-more-menu__item" id="theme-switcher-mobile"><i class="fa-solid fa-moon"></i><span>Cambiar Tema</span></button>
             <button class="mobile-more-menu__item" id="mobile-more-menu-close"><i class="fa-solid fa-xmark"></i><span>Cerrar</span></button>
         </div>
@@ -224,7 +214,6 @@
                 <p class="footer-logo-text">Epistecnología</p>
                 <p>&copy; 2025 Todos los derechos reservados.</p>
             </div>
-
             <div class="footer-column">
                 <h4 class="footer-heading">Propiedad Intelectual</h4>
                 <div class="footer-badges">
@@ -236,7 +225,6 @@
                     </a>
                 </div>
             </div>
-
             <div class="footer-column">
                 <h4 class="footer-heading">Contacto</h4>
                 <a href="mailto:hmarquez@epistecnologia.com" class="footer-link">
@@ -246,7 +234,6 @@
         </div>
     </footer>
     
-    <!--Start of Tawk.to Script-->
     <script type="text/javascript">
     var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
     (function(){
@@ -258,7 +245,6 @@
     s0.parentNode.insertBefore(s1,s0);
     })();
     </script>
-    <!--End of Tawk.to Script-->
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/js/main.js"></script>
