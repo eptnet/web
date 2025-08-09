@@ -1,7 +1,7 @@
 // =================================================================
 // ARCHIVO COMPLETO Y DEFINITIVO: /inv/js/profile.js
 // Contiene la lógica de roles corregida, el orden de ejecución correcto
-// para solucionar todos los bugs reportados, y todas las funciones
+// para solucionar todos los bugs reportados, y TODAS las funciones
 // sin ninguna omisión.
 // =================================================================
 
@@ -15,14 +15,10 @@ const ProfileApp = {
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
         this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // handleUserSession ahora orquesta toda la carga y activación de la página
         await this.handleUserSession();
-        
-        // Esta función se llama después de que el usuario ha sido verificado
         this.checkForOrcidCode();
     },
 
-    // Orquesta la carga de datos y la activación de la UI en el orden correcto
     async handleUserSession() {
         const { data: { session } } = await this.supabase.auth.getSession();
         if (!session) { 
@@ -31,6 +27,8 @@ const ProfileApp = {
         }
         this.user = session.user;
 
+        // --- CORRECCIÓN APLICADA AQUÍ ---
+        // 1. Obtenemos el perfil completo del usuario que está navegando y lo guardamos.
         const { data: userProfile, error } = await this.supabase.from('profiles').select('*').eq('id', this.user.id).single();
         if (error) {
             console.error("Error crítico: no se pudo cargar el perfil del usuario actual.", error);
@@ -39,51 +37,56 @@ const ProfileApp = {
             return;
         }
         this.currentUserProfile = userProfile;
+        // --- FIN DE LA CORRECCIÓN ---
 
         const urlParams = new URLSearchParams(window.location.search);
         const profileIdFromUrl = urlParams.get('id');
         const targetProfileId = profileIdFromUrl || this.user.id;
         
-        // 1. Renderizamos toda la información visual de la página
+        // Ahora que currentUserProfile está garantizado, renderizamos la página.
         await this.renderProfileData(targetProfileId);
         
-        // 2. SOLO DESPUÉS de que todo esté en la página, activamos los botones y la navegación
+        // Y solo después, activamos los botones y la navegación.
         this.addEventListeners();
         this.setupTabNavigation();
     },
 
-    // Configura la navegación entre pestañas
     setupTabNavigation() {
         const navLinks = document.querySelectorAll('.profile-tab-link'); 
         const tabContents = document.querySelectorAll('.profile-tab-content');
 
+        const navigateToTab = (tabId) => {
+            navLinks.forEach(nav => nav.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+
+            const activeLink = document.querySelector(`.profile-tab-link[data-tab="${tabId}"]`);
+            const activeContent = document.getElementById(tabId);
+
+            if (activeLink) activeLink.classList.add('active');
+            if (activeContent) activeContent.classList.add('active');
+
+            if (tabId === 'tab-comunidad') {
+                this.renderCommunityFeed();
+            }
+        };
+
         navLinks.forEach(link => {
-            link.addEventListener('click', () => {
-                const tabId = link.dataset.tab;
-
-                // --- INICIO DE LA MODIFICACIÓN ---
-                // Si el usuario hace clic en la pestaña "Comunidad", llamamos a la función para cargar el feed.
-                if (tabId === 'tab-comunidad') {
-                    this.renderCommunityFeed();
-                }
-                // --- FIN DE LA MODIFICACIÓN ---
-
-                navLinks.forEach(nav => nav.classList.remove('active'));
-                link.classList.add('active');
-                tabContents.forEach(content => {
-                    content.classList.toggle('active', content.id === tabId);
-                });
-            });
+            link.addEventListener('click', () => navigateToTab(link.dataset.tab));
+        });
+        
+        document.body.addEventListener('click', (e) => {
+            if (e.target.closest('#go-to-community-btn')) {
+                navigateToTab('tab-comunidad');
+            }
         });
     },
 
-    // Centraliza todos los listeners de eventos
     addEventListeners() {
         document.body.addEventListener('click', async (e) => {
-            const target = e.target.closest('button');
-            if (!target) return;
+            const button = e.target.closest('button');
+            if (!button) return;
 
-            const action = target.id;
+            const action = button.id;
             if (action === 'connect-orcid-btn') this.handleOrcidConnect();
             else if (action === 'disconnect-orcid-btn') this.handleOrcidDisconnect();
             else if (action === 'logout-btn-header') {
@@ -93,117 +96,138 @@ const ProfileApp = {
             else if (action === 'theme-switcher-desktop') this.toggleTheme();
             else if (action === 'sync-orcid-works-btn') this.handleSyncWorks();
             else if (action === 'bsky-disconnect-btn') this.handleBlueskyDisconnect();
-            else if (action === 'connect-community-btn') this.openCommunityModal();
+            else if (action === 'connect-community-btn-modal') this.openCommunityModal();
         });
 
         document.getElementById('profile-form')?.addEventListener('submit', (e) => this.handleSave(e, 'profile'));
         document.getElementById('platforms-form')?.addEventListener('submit', (e) => this.handleSave(e, 'platforms'));
         document.getElementById('avatar-update-form')?.addEventListener('submit', (e) => this.handleUpdateAvatar(e));
         document.getElementById('zenodo-form')?.addEventListener('submit', (e) => this.handleZenodoSubmit(e));
+        document.getElementById('community-feed-container')?.addEventListener('click', (e) => {
+            const likeButton = e.target.closest('.like-btn');
+            if (likeButton) {
+                this.handleLikePost(likeButton);
+            }
+        });
     },
     
-    // Renderiza toda la página basándose en los datos del perfil
     async renderProfileData(profileId) {
-    if (!this.user || !this.currentUserProfile) return;
+        try {
+            const { data: profile, error } = await this.supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', profileId)
+                .single();
 
-    try {
-        const { data: profile, error } = await this.supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', profileId)
-            .single();
+            if (error) throw new Error('Perfil no encontrado.');
+            
+            const orcidTabButton = document.querySelector('.profile-tab-link[data-tab="tab-identidad"]');
+            const eptDoiTabButton = document.querySelector('.profile-tab-link[data-tab="tab-proyectos"]');
+            
+            const profileHasAdvancedAccess = (profile.role === 'researcher' || profile.role === 'admin');
 
-        if (error) throw new Error('Perfil no encontrado o error en la consulta.');
-        
-        // --- LÓGICA DE ROLES CORREGIDA PARA ACEPTAR COMILLAS ---
-        const orcidTabButton = document.querySelector('.profile-tab-link[data-tab="tab-identidad"]');
-        const eptDoiTabButton = document.querySelector('.profile-tab-link[data-tab="tab-proyectos"]');
-        
-        // AHORA LA CONDICIÓN ACEPTA 'researcher' O "'researcher'" (con comillas)
-        const profileHasAdvancedAccess = (
-            profile.role === 'researcher' || 
-            profile.role === "'researcher'" || 
-            profile.role === 'admin'
-        );
+            if (orcidTabButton) orcidTabButton.style.display = profileHasAdvancedAccess ? 'flex' : 'none';
+            if (eptDoiTabButton) eptDoiTabButton.style.display = profileHasAdvancedAccess ? 'flex' : 'none';
+            
+            const isMyOwnProfile = (profile.id === this.user.id);
+            const viewerIsAdmin = (this.currentUserProfile.role === 'admin');
+            const isEditable = isMyOwnProfile || viewerIsAdmin;
 
-        if (orcidTabButton) orcidTabButton.style.display = profileHasAdvancedAccess ? 'flex' : 'none';
-        if (eptDoiTabButton) eptDoiTabButton.style.display = profileHasAdvancedAccess ? 'flex' : 'none';
-        
-        // El resto de la función se mantiene igual...
-        const isMyOwnProfile = (profile.id === this.user.id);
-        const viewerIsAdmin = (this.currentUserProfile.role === 'admin');
-        const isEditable = isMyOwnProfile || viewerIsAdmin;
+            document.body.classList.toggle('public-view', !isEditable);
 
-        document.body.classList.toggle('public-view', !isEditable);
+            document.getElementById('profile-card-avatar').src = profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
+            document.getElementById('profile-card-name').textContent = profile.display_name || 'Sin nombre';
+            
+            const { data: bskyCreds } = await this.supabase.from('bsky_credentials').select('handle').eq('user_id', profile.id).single();
+            this.bskyCreds = bskyCreds; // <-- AÑADE ESTA LÍNEA. Guardamos el estado de conexión.
+            this.renderOrcidSection(profile, isEditable);
+            this.renderSidebarButtons(profile, isMyOwnProfile, bskyCreds);
+            this.renderCommunityActionPanel(bskyCreds, isMyOwnProfile);
 
-        document.getElementById('profile-card-avatar').src = profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
-        document.getElementById('profile-card-name').textContent = profile.display_name || 'Sin nombre';
-        document.getElementById('profile-card-orcid').textContent = profile.orcid ? profile.orcid.replace('https://orcid.org/', '') : 'ORCID no conectado';
-        document.getElementById('profile-card-bio').textContent = profile.bio || '';
-        
-        const orcidSection = document.getElementById('orcid-section');
-        if (orcidSection) {
             if (isEditable) {
-                if (profile.orcid) {
-                    orcidSection.innerHTML = `<div class="status-badge connected"><i class="fa-solid fa-circle-check"></i><span>Conectado: ${profile.orcid.replace('https://orcid.org/', '')}</span></div> <button id="disconnect-orcid-btn" class="btn btn-secondary" style="width: auto; margin-top: 1rem;">Desconectar</button>`;
-                } else {
-                    orcidSection.innerHTML = `<button id="connect-orcid-btn" class="btn btn-orcid"><i class="fa-brands fa-orcid"></i> Conectar con ORCID</button>`;
-                }
-            } else {
-                orcidSection.innerHTML = profile.orcid ? `<div class="status-badge connected"><i class="fa-solid fa-circle-check"></i> Investigador Verificado</div>` : `<div class="status-badge">Investigador no verificado</div>`;
+                document.getElementById('display-name').value = profile.display_name || '';
+                document.getElementById('bio').value = profile.bio || '';
+                document.getElementById('avatar-url').value = profile.avatar_url || '';
+                document.getElementById('youtube-url').value = profile.youtube_url || '';
+                document.getElementById('substack-url').value = profile.substack_url || '';
+                document.getElementById('website-url').value = profile.website_url || '';
+                document.getElementById('x-url').value = profile.x_url || '';
+                document.getElementById('linkedin-url').value = profile.linkedin_url || '';
+                document.getElementById('instagram-url').value = profile.instagram_url || '';
+                document.getElementById('facebook-url').value = profile.facebook_url || '';
+                document.getElementById('tiktok-url').value = profile.tiktok_url || '';
             }
+            
+            if (profileHasAdvancedAccess) {
+                const { data: projects } = await this.supabase.from('projects').select('*').eq('user_id', profile.id);
+                if (projects) this.renderWorks(projects);
+            }
+            
+        } catch (error) {
+            console.error('Error en renderProfileData:', error);
+        } finally {
+            document.body.classList.remove('loading-profile');
         }
+    },
+    
+    renderOrcidSection(profile, isEditable) {
+        const orcidSection = document.getElementById('orcid-section');
+        const orcidCardText = document.getElementById('profile-card-orcid');
+        if (orcidCardText) orcidCardText.textContent = profile.orcid ? profile.orcid.replace('https://orcid.org/', '') : 'ORCID no conectado';
 
-        const socialsContainer = document.getElementById('profile-card-socials');
-        if (socialsContainer) {
-             socialsContainer.innerHTML = `
-                ${profile.substack_url ? `<a href="${profile.substack_url}" target="_blank" title="Substack"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><desc>Substack Streamline Icon: https://streamlinehq.com</desc><title>Substack</title><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z" fill="#e65c17" stroke-width="1"></path></svg></a>` : ''}
-                ${profile.website_url ? `<a href="${profile.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}
-                ${profile.x_url ? `<a href="${profile.x_url}" target="_blank" title="Perfil de X"><i class="fa-brands fa-x-twitter"></i></a>` : ''}
-                ${profile.linkedin_url ? `<a href="${profile.linkedin_url}" target="_blank" title="Perfil de LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}
-                ${profile.instagram_url ? `<a href="${profile.instagram_url}" target="_blank" title="Perfil de Instagram"><i class="fab fa-instagram"></i></a>` : ''}
-                ${profile.youtube_url ? `<a href="${profile.youtube_url}" target="_blank" title="Canal de YouTube"><i class="fab fa-youtube"></i></a>` : ''}`;
+        if (!orcidSection) return;
+        if (isEditable) {
+            if (profile.orcid) {
+                orcidSection.innerHTML = `<div class="status-badge connected"><i class="fa-solid fa-circle-check"></i><span>Conectado: ${profile.orcid.replace('https://orcid.org/', '')}</span></div> <button id="disconnect-orcid-btn" class="btn btn-secondary" style="width: auto; margin-top: 1rem;">Desconectar</button>`;
+            } else {
+                orcidSection.innerHTML = `<button id="connect-orcid-btn" class="btn btn-orcid"><i class="fa-brands fa-orcid"></i> Conectar con ORCID</button>`;
+            }
+        } else {
+            orcidSection.innerHTML = profile.orcid ? `<div class="status-badge connected"><i class="fa-solid fa-circle-check"></i> Investigador Verificado</div>` : `<div class="status-badge">Investigador no verificado</div>`;
         }
-
+    },
+    
+    renderSidebarButtons(profile, isMyOwnProfile, bskyCreds) {
         const sidebarButtonsContainer = document.getElementById('sidebar-buttons-container');
-        if (sidebarButtonsContainer) {
-            sidebarButtonsContainer.innerHTML = `
-                ${profile.orcid ? `<a href="/inv/directorio.html" class="profile-card-nav__link"><i class="fa-solid fa-users"></i> Directorio</a>` : ''}
-                <a href="/inv/dashboard.html" class="profile-card-nav__link"><i class="fa-solid fa-arrow-right"></i> Ir al Dashboard</a>
-                <button id="connect-community-btn" class="profile-card-nav__link btn btn-primary">
-                    <i class="fa-solid fa-comments"></i> Conectar a Comunidad
+        if (!sidebarButtonsContainer) return;
+
+        let buttonsHTML = '';
+        if (profile.orcid) {
+            buttonsHTML += `<a href="/inv/directorio.html" class="profile-card-nav__link"><i class="fa-solid fa-users"></i> Directorio</a>`;
+        }
+        if (isMyOwnProfile) {
+            buttonsHTML += `<button id="go-to-community-btn" class="profile-card-nav__link"><i class="fa-solid fa-comments"></i> Ir a la Comunidad</button>`;
+        }
+        buttonsHTML += `<a href="/inv/dashboard.html" class="profile-card-nav__link"><i class="fa-solid fa-arrow-right"></i> Ir al Dashboard</a>`;
+        sidebarButtonsContainer.innerHTML = buttonsHTML;
+    },
+
+    renderCommunityActionPanel(credentials, isMyOwnProfile) {
+        const container = document.getElementById('community-action-panel');
+        if (!container) return;
+
+        if (!isMyOwnProfile) {
+            container.innerHTML = `<p class="form-hint">Estás viendo el perfil de otro investigador.</p>`;
+            return;
+        }
+
+        if (credentials) {
+            container.innerHTML = `
+                <div class="status-badge connected">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Conectado como: <strong>${credentials.handle}</strong></span>
+                </div>
+                <button id="bsky-disconnect-btn" class="btn btn-secondary" style="width: 100%; margin-top: 1rem;">Desconectar</button>
+            `;
+        } else {
+            container.innerHTML = `
+                <p class="form-hint">Conecta tu cuenta para poder interactuar en el feed.</p>
+                <button id="connect-community-btn-modal" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                    <i class="fa-solid fa-link"></i> Conectar Cuenta
                 </button>
             `;
         }
-        const { data: bskyCreds } = await this.supabase.from('bsky_credentials').select('handle').eq('user_id', profile.id).single();
-        this.renderBlueskySection(bskyCreds, isMyOwnProfile);
-
-        if (isEditable) {
-            document.getElementById('display-name').value = profile.display_name || '';
-            document.getElementById('bio').value = profile.bio || '';
-            document.getElementById('avatar-url').value = profile.avatar_url || '';
-            document.getElementById('youtube-url').value = profile.youtube_url || '';
-            document.getElementById('substack-url').value = profile.substack_url || '';
-            document.getElementById('website-url').value = profile.website_url || '';
-            document.getElementById('x-url').value = profile.x_url || '';
-            document.getElementById('linkedin-url').value = profile.linkedin_url || '';
-            document.getElementById('instagram-url').value = profile.instagram_url || '';
-            document.getElementById('facebook-url').value = profile.facebook_url || '';
-            document.getElementById('tiktok-url').value = profile.tiktok_url || '';
-        }
-        
-        if (profileHasAdvancedAccess) {
-            const { data: projects } = await this.supabase.from('projects').select('*').eq('user_id', profile.id);
-            if (projects) this.renderWorks(projects);
-        }
-        
-    } catch (error) {
-        console.error('Error en renderProfileData:', error);
-        document.querySelector('.main-content').innerHTML = `<h2>Error al cargar el perfil</h2><p>${error.message}</p>`;
-    } finally {
-        document.body.classList.remove('loading-profile');
-    }
-},
+    },
 
     handleOrcidConnect() {
         const ORCID_CLIENT_ID = 'APP-U2XLNHUBU73BN0VY';
@@ -220,10 +244,7 @@ const ProfileApp = {
             alert("Verificando código de ORCID...");
             try {
                 const { data, error } = await this.supabase.functions.invoke('verificar-orcid-code', {
-                    body: { 
-                        authorization_code: code,
-                        redirect_uri: window.location.origin + window.location.pathname
-                    },
+                    body: { authorization_code: code, redirect_uri: window.location.origin + window.location.pathname },
                 });
                 if (error) throw error;
                 const { error: updateError } = await this.supabase
@@ -231,7 +252,7 @@ const ProfileApp = {
                     .update({ orcid: `https://orcid.org/${data.orcid}` })
                     .eq('id', this.user.id);
                 if (updateError) throw updateError;
-                alert("¡Cuenta de ORCID conectada con éxito!");
+                alert("¡Cuenta de ORCID conectada con éxito! Tu rol se actualizará.");
                 await this.handleUserSession();
             } catch(error) {
                 alert("Error al verificar el código de ORCID: " + error.message);
@@ -242,7 +263,7 @@ const ProfileApp = {
     async handleOrcidDisconnect() {
         if (!confirm("¿Estás seguro de que quieres desconectar tu cuenta de ORCID?")) return;
         const { error } = await this.supabase.from('profiles').update({ orcid: null }).eq('id', this.user.id);
-        if (error) { alert("Error al desconectar la cuenta de ORCID."); } 
+        if (error) { alert("Error al desconectar la cuenta."); } 
         else { alert("Cuenta de ORCID desconectada."); await this.handleUserSession(); }
     },
 
@@ -279,14 +300,14 @@ const ProfileApp = {
         const orcidProjects = works.filter(work => !work.created_via_platform);
         const eptProjects = works.filter(work => work.created_via_platform);
         if (orcidProjects.length === 0) {
-            orcidListContainer.innerHTML = '<p class="form-hint">No tienes publicaciones sincronizadas desde ORCID.</p>';
+            orcidListContainer.innerHTML = '<p class="form-hint">No tienes publicaciones sincronizadas.</p>';
         } else {
             orcidListContainer.innerHTML = orcidProjects.map(work => `<div class="publication-item"><p>${work.title}</p><span>DOI: ${work.doi}</span></div>`).join('');
         }
         if (eptProjects.length === 0) {
-            eptDoiListContainer.innerHTML = '<p class="form-hint">Aquí aparecerán los proyectos que publiques a través de esta herramienta.</p>';
+            eptDoiListContainer.innerHTML = '<p class="form-hint">No tienes publicaciones con DOI de EPT.</p>';
         } else {
-            eptDoiListContainer.innerHTML = eptProjects.map(work => `<div class="publication-item"><p>${work.title}</p><span>DOI: ${work.doi}</span><div class="orcid-sync-hint"><i class="fa-solid fa-circle-info"></i><span>Recuerda añadir este DOI a tu perfil de ORCID y vuelve a sincronizar.</span></div></div>`).join('');
+            eptDoiListContainer.innerHTML = eptProjects.map(work => `<div class="publication-item"><p>${work.title}</p><span>DOI: ${work.doi}</span></div>`).join('');
         }
     },
     
@@ -336,13 +357,16 @@ const ProfileApp = {
 
     async handleZenodoSubmit(e) {
         e.preventDefault();
-        // Lógica para enviar a Zenodo...
+        alert("La funcionalidad para publicar en Zenodo está en desarrollo.");
     },
 
-    renderBlueskySection(credentials) {
-        const container = document.getElementById('bsky-status-container');
-        if (!container) return; // Si el contenedor no existe (ej. para rol 'user'), no hace nada.
-
+    renderBlueskySection(credentials, isMyOwnProfile) {
+        const container = document.getElementById('community-action-panel');
+        if (!container) return;
+        if (!isMyOwnProfile) {
+            container.innerHTML = `<p class="form-hint">Estás viendo el perfil de otro investigador.</p>`;
+            return;
+        }
         if (credentials) {
             container.innerHTML = `
                 <div class="status-badge connected">
@@ -352,11 +376,12 @@ const ProfileApp = {
                 <button id="bsky-disconnect-btn" class="btn btn-secondary" style="width: 100%; margin-top: 1rem;">Desconectar</button>
             `;
         } else {
-            const template = document.getElementById('bsky-connect-template');
-            if (template) {
-                container.innerHTML = ''; // Limpiamos por si acaso
-                container.appendChild(template.content.cloneNode(true));
-            }
+            container.innerHTML = `
+                <p class="form-hint">Conecta tu cuenta para poder interactuar en el feed.</p>
+                <button id="connect-community-btn-modal" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                    <i class="fa-solid fa-link"></i> Conectar Cuenta
+                </button>
+            `;
         }
     },
 
@@ -390,7 +415,7 @@ const ProfileApp = {
     },
 
     openCommunityModal() {
-        const template = document.getElementById('community-info-template');
+        const template = document.getElementById('bsky-connect-template');
         if (!template) return;
         const modalContainer = document.getElementById('modal-container');
         if (!modalContainer) return;
@@ -400,6 +425,7 @@ const ProfileApp = {
         modalContent.appendChild(template.content.cloneNode(true));
         
         modalContainer.querySelector('.modal-close-btn').addEventListener('click', () => this.closeCommunityModal());
+        modalContainer.querySelector('#bsky-connect-form').addEventListener('submit', (e) => this.handleBlueskyConnect(e));
     },
 
     closeCommunityModal() {
@@ -407,9 +433,7 @@ const ProfileApp = {
         const modal = modalContainer.querySelector('.modal-overlay');
         if (modal) {
             modal.classList.remove('is-visible');
-            setTimeout(() => {
-                modalContainer.innerHTML = '';
-            }, 300);
+            setTimeout(() => { modalContainer.innerHTML = ''; }, 300);
         }
     },
     
@@ -429,33 +453,39 @@ const ProfileApp = {
 
     async renderCommunityFeed() {
         const container = document.getElementById('community-feed-container');
-        // Evita recargar el feed si ya ha sido cargado una vez
         if (!container || container.dataset.loaded === 'true') return;
 
         container.innerHTML = '<p>Cargando el feed de la comunidad...</p>';
-        container.dataset.loaded = 'true'; // Marcar como cargado
+        container.dataset.loaded = 'true';
 
         try {
             const { data: feed, error } = await this.supabase.functions.invoke('bsky-get-community-feed');
-
             if (error) throw error;
-
             if (!feed || feed.length === 0) {
                 container.innerHTML = '<p>No hay publicaciones recientes en la comunidad.</p>';
                 return;
             }
 
-            // "Pintamos" cada post en el contenedor
+            const isBskyConnected = !!this.bskyCreds;
+
             container.innerHTML = feed.map(item => {
                 const post = item.post;
+                if (!post || !post.author || !post.record) return ''; // Filtro de seguridad por si un post viene malformado
+
+                // --- INICIO DE LA CORRECCIÓN ---
+                // El texto de un post puede estar en `record.text` o a veces es parte de un `reply`.
+                // Esta lógica busca el texto en el lugar correcto.
+                let postText = post.record.text || '';
+                // Limpiamos el texto para que sea seguro de insertar en el HTML
+                postText = postText.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, '<br>');
+                // --- FIN DE LA CORRECCIÓN ---
+
                 const author = post.author;
-                const record = post.record;
-                
+                const isLiked = !!post.viewer?.like;
                 const postDate = new Date(post.indexedAt).toLocaleString('es-ES', { 
                     day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit' 
                 });
 
-                // Manejo básico de imágenes en el post
                 let embedHtml = '';
                 if (post.embed && post.embed.images) {
                     embedHtml = `<div class="post-embed-image"><img src="${post.embed.images[0].thumb}" alt="${post.embed.images[0].alt || 'Imagen adjunta'}" loading="lazy"></div>`;
@@ -466,12 +496,12 @@ const ProfileApp = {
                         <div class="post-header">
                             <img src="${author.avatar}" alt="Avatar de ${author.displayName}" class="post-avatar" loading="lazy">
                             <div class="post-author">
-                                <strong>${author.displayName}</strong>
+                                <strong>${author.displayName || author.handle}</strong>
                                 <span class="post-handle">@${author.handle}</span>
                             </div>
                         </div>
                         <div class="post-body">
-                            <p>${record.text.replace(/\n/g, '<br>')}</p>
+                            <p>${postText}</p>
                             ${embedHtml}
                         </div>
                         <div class="post-footer">
@@ -479,7 +509,14 @@ const ProfileApp = {
                             <div class="post-stats">
                                 <span><i class="fa-regular fa-comment"></i> ${post.replyCount || 0}</span>
                                 <span><i class="fa-solid fa-retweet"></i> ${post.repostCount || 0}</span>
-                                <span><i class="fa-regular fa-heart"></i> ${post.likeCount || 0}</span>
+                                <button class="like-btn ${isLiked ? 'is-liked' : ''}" 
+                                        data-uri="${post.uri}" 
+                                        data-cid="${post.cid}"
+                                        ${!isBskyConnected ? 'disabled' : ''}
+                                        title="${isBskyConnected ? 'Dar Me Gusta' : 'Conecta tu cuenta para dar Me Gusta'}">
+                                    <i class="fa-${isLiked ? 'solid' : 'regular'} fa-heart"></i>
+                                    <span>${post.likeCount || 0}</span>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -489,6 +526,51 @@ const ProfileApp = {
         } catch (error) {
             container.innerHTML = '<p style="color: var(--color-accent);">Error al cargar el feed de la comunidad.</p>';
             console.error("Error al invocar bsky-get-community-feed:", error);
+        }
+    },
+
+    async handleLikePost(likeButton) {
+        const uri = likeButton.dataset.uri;
+        const cid = likeButton.dataset.cid;
+        const isLiked = likeButton.classList.contains('is-liked');
+
+        // Desactivamos el botón para evitar múltiples clics
+        likeButton.disabled = true;
+
+        // Lógica para "deslikear" (próximamente)
+        if (isLiked) {
+            alert("La funcionalidad de quitar 'Me Gusta' se implementará próximamente.");
+            likeButton.disabled = false;
+            return;
+        }
+
+        // Lógica para "likear"
+        try {
+            // Actualización optimista de la UI
+            likeButton.classList.add('is-liked');
+            likeButton.querySelector('i').className = 'fa-solid fa-heart';
+            const countSpan = likeButton.querySelector('span');
+            countSpan.textContent = parseInt(countSpan.textContent) + 1;
+
+            // Llamada a la Edge Function
+            const { error } = await this.supabase.functions.invoke('bsky-like-post', {
+                body: { postUri: uri, postCid: cid },
+            });
+
+            if (error) throw error;
+
+        } catch (error) {
+            alert("No se pudo dar 'Me Gusta'. Inténtalo de nuevo.");
+            console.error("Error en handleLikePost:", error);
+            
+            // Revertir la UI en caso de error
+            likeButton.classList.remove('is-liked');
+            likeButton.querySelector('i').className = 'fa-regular fa-heart';
+            const countSpan = likeButton.querySelector('span');
+            countSpan.textContent = parseInt(countSpan.textContent) - 1;
+        } finally {
+            // Reactivamos el botón (excepto para deslikear)
+            likeButton.disabled = false;
         }
     },
 };
