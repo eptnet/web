@@ -105,10 +105,15 @@ const ProfileApp = {
         document.getElementById('zenodo-form')?.addEventListener('submit', (e) => this.handleZenodoSubmit(e));
         document.getElementById('community-feed-container')?.addEventListener('click', (e) => {
             const likeButton = e.target.closest('.like-btn');
+            const commentButton = e.target.closest('.comment-btn'); // <-- AÑADE ESTA LÍNEA
+
             if (likeButton) {
                 this.handleLikePost(likeButton);
+            } else if (commentButton) { // <-- AÑADE ESTE BLOQUE
+                this.handleCommentPost(commentButton);
             }
         });
+
     },
     
     async renderProfileData(profileId) {
@@ -470,24 +475,15 @@ const ProfileApp = {
 
             container.innerHTML = feed.map(item => {
                 const post = item.post;
-                if (!post || !post.author || !post.record) return ''; // Filtro de seguridad por si un post viene malformado
+                if (!post || !post.author || !post.record) return '';
 
-                // --- INICIO DE LA CORRECCIÓN ---
-                // El texto de un post puede estar en `record.text` o a veces es parte de un `reply`.
-                // Esta lógica busca el texto en el lugar correcto.
-                let postText = post.record.text || '';
-                // Limpiamos el texto para que sea seguro de insertar en el HTML
-                postText = postText.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, '<br>');
-                // --- FIN DE LA CORRECCIÓN ---
-
+                const postText = (post.record.text || '').replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, '<br>');
                 const author = post.author;
                 const isLiked = !!post.viewer?.like;
-                const postDate = new Date(post.indexedAt).toLocaleString('es-ES', { 
-                    day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit' 
-                });
+                const postDate = new Date(post.indexedAt).toLocaleString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
 
                 let embedHtml = '';
-                if (post.embed && post.embed.images) {
+                if (post.embed?.images) {
                     embedHtml = `<div class="post-embed-image"><img src="${post.embed.images[0].thumb}" alt="${post.embed.images[0].alt || 'Imagen adjunta'}" loading="lazy"></div>`;
                 }
 
@@ -507,7 +503,14 @@ const ProfileApp = {
                         <div class="post-footer">
                             <span class="post-date">${postDate}</span>
                             <div class="post-stats">
-                                <span><i class="fa-regular fa-comment"></i> ${post.replyCount || 0}</span>
+                                <button class="comment-btn" 
+                                        data-uri="${post.uri}" 
+                                        data-cid="${post.cid}"
+                                        ${!isBskyConnected ? 'disabled' : ''}
+                                        title="${isBskyConnected ? 'Comentar' : 'Conecta tu cuenta para comentar'}">
+                                    <i class="fa-regular fa-comment"></i>
+                                    <span>${post.replyCount || 0}</span>
+                                </button>
                                 <span><i class="fa-solid fa-retweet"></i> ${post.repostCount || 0}</span>
                                 <button class="like-btn ${isLiked ? 'is-liked' : ''}" 
                                         data-uri="${post.uri}" 
@@ -571,6 +574,44 @@ const ProfileApp = {
         } finally {
             // Reactivamos el botón (excepto para deslikear)
             likeButton.disabled = false;
+        }
+    },
+    
+    async handleCommentPost(commentButton) {
+        const postUri = commentButton.dataset.uri;
+        const postCid = commentButton.dataset.cid;
+
+        const replyText = prompt("Escribe tu comentario (máximo 300 caracteres):");
+
+        if (!replyText || replyText.trim() === '') {
+            return; // El usuario canceló o no escribió nada
+        }
+
+        if (replyText.length > 300) {
+            alert("Tu comentario excede el límite de 300 caracteres.");
+            return;
+        }
+
+        commentButton.disabled = true;
+
+        try {
+            const parentPost = { uri: postUri, cid: postCid };
+            const { error } = await this.supabase.functions.invoke('bsky-create-reply', {
+                body: { replyText, parentPost },
+            });
+
+            if (error) throw error;
+
+            alert("¡Comentario publicado con éxito!");
+            // Opcional: Actualizamos visualmente el contador de comentarios
+            const countSpan = commentButton.querySelector('span');
+            countSpan.textContent = parseInt(countSpan.textContent) + 1;
+
+        } catch (error) {
+            alert("No se pudo publicar el comentario. Inténtalo de nuevo.");
+            console.error("Error en handleCommentPost:", error);
+        } finally {
+            commentButton.disabled = false;
         }
     },
 };

@@ -31,50 +31,44 @@ serve(async (req) => {
       .single()
     if (credsError || !creds) throw new Error('El usuario no ha conectado su cuenta de Bluesky.')
 
-    // 3. RECIBIR DATOS DEL POST AL QUE SE DARÁ LIKE
-    const { postUri, postCid } = await req.json()
-    if (!postUri || !postCid) throw new Error('Faltan datos del post (URI y CID).')
+    // 3. RECIBIR DATOS DEL COMENTARIO
+    const { replyText, parentPost } = await req.json()
+    if (!replyText || !parentPost || !parentPost.uri || !parentPost.cid) {
+      throw new Error('Faltan datos para publicar el comentario (texto y referencia del post padre).')
+    }
 
-    // 4. CREAR AGENTE DE BLUESKY Y MANEJAR SESIÓN (INCLUYE AUTO-REFRESCO DE TOKEN)
+    // 4. CREAR AGENTE DE BLUESKY Y MANEJAR SESIÓN (CON AUTO-REFRESCO)
     const agent = new BskyAgent({
       service: BSKY_SERVICE_URL,
-      // Esta función es crucial: si el token de sesión expira, la librería lo refrescará
-      // automáticamente y nos avisará para que guardemos el nuevo token en la base de datos.
       async persistSession(evt: AtpSessionEvent, session?: AtpSessionData) {
         if (evt === 'update' && session) {
-          console.log('Refrescando token de sesión para el usuario:', user.id)
           await supabaseClient
             .from('bsky_credentials')
-            .update({
-              access_jwt: session.accessJwt,
-              refresh_jwt: session.refreshJwt,
-            })
+            .update({ access_jwt: session.accessJwt, refresh_jwt: session.refreshJwt })
             .eq('user_id', user.id)
         }
       },
     })
+    await agent.resumeSession({ ...creds })
 
-    // Reanudamos la sesión con los tokens que teníamos guardados
-    await agent.resumeSession({
-      accessJwt: creds.access_jwt,
-      refreshJwt: creds.refresh_jwt,
-      did: creds.did,
-      handle: creds.handle,
+    // 5. EJECUTAR LA ACCIÓN: PUBLICAR EL COMENTARIO (REPLY)
+    await agent.post({
+      text: replyText,
+      reply: {
+        root: { uri: parentPost.uri, cid: parentPost.cid }, // El post original del hilo
+        parent: { uri: parentPost.uri, cid: parentPost.cid } // El post al que respondemos directamente
+      }
     })
 
-    // 5. EJECUTAR LA ACCIÓN: DAR "ME GUSTA"
-    await agent.like(postUri, postCid)
-
     // 6. DEVOLVER RESPUESTA DE ÉXITO
-    return new Response(JSON.stringify({ success: true, message: 'Post likeado con éxito' }), {
+    return new Response(JSON.stringify({ success: true, message: 'Comentario publicado con éxito' }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       status: 200,
     })
 
   } catch (error) {
-    console.error("Error en la función bsky-like-post:", error);
+    console.error("Error en la función bsky-create-reply:", error);
     // --- INICIO DE LA MEJORA ---
-    // Si el error específico es por un token inválido, devolvemos un error 401 (No Autorizado)
     if (error.error === 'InvalidToken' || error.message === 'Token could not be verified') {
         return new Response(JSON.stringify({ 
             error: 'Tu sesión de Bluesky ha expirado. Por favor, desconecta y vuelve a conectar tu cuenta en tu perfil.' 
