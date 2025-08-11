@@ -125,29 +125,42 @@ const ProfileApp = {
                 .single();
 
             if (error) throw new Error('Perfil no encontrado.');
-            
-            const orcidTabButton = document.querySelector('.profile-tab-link[data-tab="tab-identidad"]');
-            const eptDoiTabButton = document.querySelector('.profile-tab-link[data-tab="tab-proyectos"]');
-            
+
             const profileHasAdvancedAccess = (profile.role === 'researcher' || profile.role === 'admin');
 
+            const orcidTabButton = document.querySelector('.profile-tab-link[data-tab="tab-identidad"]');
             if (orcidTabButton) orcidTabButton.style.display = profileHasAdvancedAccess ? 'flex' : 'none';
+            const eptDoiTabButton = document.querySelector('.profile-tab-link[data-tab="tab-proyectos"]');
             if (eptDoiTabButton) eptDoiTabButton.style.display = profileHasAdvancedAccess ? 'flex' : 'none';
-            
+
             const isMyOwnProfile = (profile.id === this.user.id);
             const viewerIsAdmin = (this.currentUserProfile.role === 'admin');
             const isEditable = isMyOwnProfile || viewerIsAdmin;
-
             document.body.classList.toggle('public-view', !isEditable);
 
             document.getElementById('profile-card-avatar').src = profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
             document.getElementById('profile-card-name').textContent = profile.display_name || 'Sin nombre';
             
-            const { data: bskyCreds } = await this.supabase.from('bsky_credentials').select('handle').eq('user_id', profile.id).single();
-            this.bskyCreds = bskyCreds; // <-- AÑADE ESTA LÍNEA. Guardamos el estado de conexión.
+            const socialsContainer = document.getElementById('profile-card-socials');
+            if (socialsContainer) {
+                socialsContainer.innerHTML = `
+                    ${profile.substack_url ? `<a href="${profile.substack_url}" target="_blank" title="Substack"><i class="fa-brands fa-substack"></i></a>` : ''}
+                    ${profile.website_url ? `<a href="${profile.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}
+                    ${profile.x_url ? `<a href="${profile.x_url}" target="_blank" title="Perfil de X"><i class="fa-brands fa-x-twitter"></i></a>` : ''}
+                    ${profile.linkedin_url ? `<a href="${profile.linkedin_url}" target="_blank" title="Perfil de LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}
+                    ${profile.instagram_url ? `<a href="${profile.instagram_url}" target="_blank" title="Perfil de Instagram"><i class="fab fa-instagram"></i></a>` : ''}
+                    ${profile.youtube_url ? `<a href="${profile.youtube_url}" target="_blank" title="Canal de YouTube"><i class="fab fa-youtube"></i></a>` : ''}`;
+            }
+
             this.renderOrcidSection(profile, isEditable);
-            this.renderSidebarButtons(profile, isMyOwnProfile, bskyCreds);
-            this.renderCommunityActionPanel(bskyCreds, isMyOwnProfile);
+            
+            const { data: bskyCreds } = await this.supabase.from('bsky_credentials').select('handle').eq('user_id', profile.id).single();
+            this.bskyCreds = bskyCreds;
+            this.renderSidebarButtons(profile, isMyOwnProfile);
+
+            if (isEditable && profileHasAdvancedAccess) {
+                this.renderCommunityActionPanel(bskyCreds);
+            }
 
             if (isEditable) {
                 document.getElementById('display-name').value = profile.display_name || '';
@@ -162,12 +175,12 @@ const ProfileApp = {
                 document.getElementById('facebook-url').value = profile.facebook_url || '';
                 document.getElementById('tiktok-url').value = profile.tiktok_url || '';
             }
-            
+
             if (profileHasAdvancedAccess) {
                 const { data: projects } = await this.supabase.from('projects').select('*').eq('user_id', profile.id);
                 if (projects) this.renderWorks(projects);
             }
-            
+
         } catch (error) {
             console.error('Error en renderProfileData:', error);
         } finally {
