@@ -7,8 +7,8 @@
     <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/inv/css/profile.css"> 
     <link rel="stylesheet" href="/inv/css/comunidad.css">
+    <link rel="stylesheet" href="/inv/css/profile.css">
 </head>
 <body>
 
@@ -16,19 +16,159 @@
         </header>
 
     <div class="page-container">
-        <main class="community-layout">
-            <div class="main-feed">
-                <div class="bento-box create-post-container">
-                    <h3>Crear Publicación</h3>
-                    <p>Próximamente...</p>
+        <div class="community-layout">
+
+            <aside class="left-column">
+                <div class="bento-box user-panel-box">
+                    <div id="user-panel-loading">Cargando tu perfil...</div>
+                    <div id="user-panel-content" style="display: none;">
+                        <img id="user-panel-avatar" src="" alt="Tu avatar" class="user-panel-avatar">
+                        <h3 id="user-panel-name"></h3>
+                        <a href="/inv/profile.html" class="btn btn-secondary">Ver mi Perfil</a>
+                        <hr style="margin: 1rem 0;">
+                        <div id="user-panel-bsky-status">
+                            <div id="community-action-panel">
+                                </div>
+                            </div>
+                    </div>
+                </div>
+            </br>
+                <div class="bento-box nav-panel-box">
+                    <nav class="community-nav">
+                        <a href="#" class="community-nav-link active"><i class="fa-solid fa-house"></i> Inicio</a>
+                        <a href="#" class="community-nav-link" id="notifications-bell-icon"><i class="fa-solid fa-bell"></i> Notificaciones</a>
+                        <a href="#" class="community-nav-link"><i class="fa-solid fa-bookmark"></i> Guardados</a>
+                        <a href="#" class="community-nav-link"><i class="fa-solid fa-circle-info"></i> Reglas</a>
+                    </nav>
+                </div>
+            </aside>
+
+            <main class="main-column-feed">
+                <div class="bento-box create-post-box">
+                    <h4>Comparte tu conocimiento</h4>
+                    <form id="create-post-form">
+                        <div class="textarea-container">
+                            <textarea id="post-text" name="post-text" placeholder="¿Qué estás investigando hoy?" maxlength="300" required></textarea>
+                            <span class="char-counter">300</span>
+                        </div>
+                        <div class="create-post-actions">
+                            <button type="submit" id="submit-post-btn" class="btn btn-primary">Publicar</button>
+                        </div>
+                    </form>
                 </div>
 
-                <div id="community-feed-full-container">
-                    <p>Cargando feed...</p>
+                <div class="feed-container" id="feed-container">
+                    <div class="bento-box feed-loader">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Cargando feed...
+                    </div>
+                </div>
+            </main>
+
+            <aside class="right-column">
+                <div class="bento-box suggestions-box">
+                    <h4>Investigadores Destacados</h4>
+                    <ul id="featured-members-list" class="members-list">
+                        </ul>
+                </div>
+            </aside>
+
+        </div>
+    </div>
+
+    <button id="fab-create-post" class="fab" title="Crear nuevo post">
+        <i class="fa-solid fa-feather-pointed"></i>
+    </button>
+
+    <div id="modal-container"></div>
+
+    <template id="post-form-template">
+        <div class="modal-overlay">
+            <div class="modal-content post-modal">
+                <div class="modal-header">
+                    <button class="modal-close-btn">&times;</button>
+                    <button type="submit" form="create-post-form-modal" class="btn btn-primary">Publicar</button>
+                </div>
+                <div class="modal-body">
+                    <form id="create-post-form-modal">
+                        <div class="textarea-container">
+                            <img id="modal-user-avatar" src="" alt="Tu avatar" class="post-avatar">
+                            <textarea name="post-text" placeholder="¿Qué hay de nuevo, investigador?" maxlength="300" required></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <div class="action-icons">
+                                <i class="fa-solid fa-image disabled-icon" title="Añadir imagen (próximamente)"></i>
+                                <i class="fa-solid fa-film disabled-icon" title="Añadir video (próximamente)"></i>
+                                <i class="fa-solid fa-square-poll-vertical disabled-icon" title="Crear encuesta (próximamente)"></i>
+                            </div>
+                            <span class="char-counter">300</span>
+                        </div>
+                    </form>
                 </div>
             </div>
-        </main>
-    </div>
+        </div>
+    </template>
+
+    <template id="bsky-connect-template">
+        <div class="bento-box">
+            <h3><i class="fa-solid fa-link"></i> Conectar Cuenta para Participar</h3>
+            
+            <div class="step">
+                <h4>Paso 1: Ten una cuenta de Bluesky</h4>
+                <p class="form-hint">Para interactuar necesitas una cuenta en la red social descentralizada Bluesky. Si no tienes una, ¡es gratis y fácil de crear!</p>
+                <a href="https://bsky.app" target="_blank" class="btn btn-secondary" style="width:100%; text-decoration: none;">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Crear o Iniciar Sesión en Bluesky
+                </a>
+            </div>
+            
+            <hr>
+
+            <div class="step">
+                <h4>Paso 2: Conecta de Forma Segura</h4>
+                <p class="form-hint">Genera una <strong>Contraseña de Aplicación</strong> (no tu contraseña principal) para darnos permiso de publicar en tu nombre.</p>
+                <form id="bsky-connect-form">
+                    <div class="form-group">
+                        <label for="bsky-handle">Tu Handle de Bluesky</label>
+                        <input type="text" id="bsky-handle" placeholder="tu-usuario.bsky.social" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="bsky-app-password">Contraseña de Aplicación</label>
+                        <input type="password" id="bsky-app-password" placeholder="xxxx-xxxx-xxxx-xxxx" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-link"></i> Conectar Cuenta</button>
+                </form>
+            </div>
+
+            <div class="troubleshooting-note">
+                <p><strong>¿Problemas para conectar?</strong> Si recibes un error de "credenciales inválidas" a pesar de que son correctas, te recomendamos seguir estos pasos en Bluesky: <strong>1. Reinicia tu contraseña principal. 2. Genera una nueva Contraseña de Aplicación.</strong> Esto suele solucionar el problema.</p>
+            </div>
+            </div>
+    </template>
+
+    <footer class="site-footer">
+        <div class="container footer-content">
+            <div class="footer-column">
+                <p class="footer-logo-text">Epistecnología</p>
+                <p>&copy; 2025 Todos los derechos reservados.</p>
+            </div>
+            <div class="footer-column">
+                <h4 class="footer-heading">Propiedad Intelectual</h4>
+                <div class="footer-badges">
+                    <a href="https://doi.org/10.5281/zenodo.16403615" target="_blank" rel="noopener noreferrer" title="DOI de la Plataforma">
+                        <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.16403615.svg" alt="DOI">
+                    </a>
+                    <a href="https://orcid.org/0009-0008-3022-5207" class="footer-link" target="_blank" rel="noopener noreferrer" title="Perfil ORCID">
+                        <i class="fa-brands fa-orcid"></i> 0009-0008-3022-5207
+                    </a>
+                </div>
+            </div>
+            <div class="footer-column">
+                <h4 class="footer-heading">Contacto</h4>
+                <a href="mailto:hmarquez@epistecnologia.com" class="footer-link">
+                    <i class="fa-solid fa-envelope"></i> hmarquez@epistecnologia.com
+                </a>
+            </div>
+        </div>
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/js/main.js"></script>

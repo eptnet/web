@@ -1,14 +1,17 @@
 // =================================================================
-// ARCHIVO COMPLETO Y DEFINITIVO: /inv/js/profile.js
-// Contiene la lógica de roles corregida, el orden de ejecución correcto
-// para solucionar todos los bugs reportados, y TODAS las funciones
-// sin ninguna omisión.
+// ARCHIVO ESTABILIZADO: /inv/js/profile.js
+// VERSIÓN: 2.0 (Feed de solo lectura)
+// CAMBIOS:
+// - Se eliminó la funcionalidad de comentar para estabilizar la página.
+// - La interacción de "Comentar" se movió a /inv/comunidad.html.
+// - El botón de "Me Gusta" se mantiene 100% funcional.
 // =================================================================
 
 const ProfileApp = {
     supabase: null,
     user: null,
     currentUserProfile: null,
+    bskyCreds: null, // Almacenamos las credenciales aquí para fácil acceso
 
     async init() {
         const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
@@ -17,6 +20,7 @@ const ProfileApp = {
 
         await this.handleUserSession();
         this.checkForOrcidCode();
+        this.applyTheme(); // Aplicar tema al inicio
     },
 
     async handleUserSession() {
@@ -27,8 +31,6 @@ const ProfileApp = {
         }
         this.user = session.user;
 
-        // --- CORRECCIÓN APLICADA AQUÍ ---
-        // 1. Obtenemos el perfil completo del usuario que está navegando y lo guardamos.
         const { data: userProfile, error } = await this.supabase.from('profiles').select('*').eq('id', this.user.id).single();
         if (error) {
             console.error("Error crítico: no se pudo cargar el perfil del usuario actual.", error);
@@ -37,16 +39,13 @@ const ProfileApp = {
             return;
         }
         this.currentUserProfile = userProfile;
-        // --- FIN DE LA CORRECCIÓN ---
-
+        
         const urlParams = new URLSearchParams(window.location.search);
         const profileIdFromUrl = urlParams.get('id');
         const targetProfileId = profileIdFromUrl || this.user.id;
         
-        // Ahora que currentUserProfile está garantizado, renderizamos la página.
         await this.renderProfileData(targetProfileId);
         
-        // Y solo después, activamos los botones y la navegación.
         this.addEventListeners();
         this.setupTabNavigation();
     },
@@ -65,13 +64,17 @@ const ProfileApp = {
             if (activeLink) activeLink.classList.add('active');
             if (activeContent) activeContent.classList.add('active');
 
-            if (tabId === 'tab-comunidad') {
+            // Solo renderizar el feed si la pestaña es la de comunidad Y no ha sido cargado antes
+            if (tabId === 'tab-comunidad' && document.getElementById('community-feed-container').dataset.loaded !== 'true') {
                 this.renderCommunityFeed();
             }
         };
 
         navLinks.forEach(link => {
-            link.addEventListener('click', () => navigateToTab(link.dataset.tab));
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                navigateToTab(link.dataset.tab);
+            });
         });
         
         document.body.addEventListener('click', (e) => {
@@ -103,20 +106,20 @@ const ProfileApp = {
         document.getElementById('platforms-form')?.addEventListener('submit', (e) => this.handleSave(e, 'platforms'));
         document.getElementById('avatar-update-form')?.addEventListener('submit', (e) => this.handleUpdateAvatar(e));
         document.getElementById('zenodo-form')?.addEventListener('submit', (e) => this.handleZenodoSubmit(e));
+
+        // --- AJUSTE #1: Event Listener Simplificado ---
+        // Se elimina la lógica para detectar clics en 'comment-btn'.
+        // Ahora este contenedor solo gestiona los "Me Gusta".
         document.getElementById('community-feed-container')?.addEventListener('click', (e) => {
             const likeButton = e.target.closest('.like-btn');
-            const commentButton = e.target.closest('.comment-btn'); // <-- AÑADE ESTA LÍNEA
-
             if (likeButton) {
                 this.handleLikePost(likeButton);
-            } else if (commentButton) { // <-- AÑADE ESTE BLOQUE
-                this.handleCommentPost(commentButton);
             }
         });
-
     },
     
     async renderProfileData(profileId) {
+        document.body.classList.add('loading-profile');
         try {
             const { data: profile, error } = await this.supabase
                 .from('profiles')
@@ -125,41 +128,40 @@ const ProfileApp = {
                 .single();
 
             if (error) throw new Error('Perfil no encontrado.');
-
-            const profileHasAdvancedAccess = (profile.role === 'researcher' || profile.role === 'admin');
-
-            const orcidTabButton = document.querySelector('.profile-tab-link[data-tab="tab-identidad"]');
-            if (orcidTabButton) orcidTabButton.style.display = profileHasAdvancedAccess ? 'flex' : 'none';
-            const eptDoiTabButton = document.querySelector('.profile-tab-link[data-tab="tab-proyectos"]');
-            if (eptDoiTabButton) eptDoiTabButton.style.display = profileHasAdvancedAccess ? 'flex' : 'none';
+            
+            const { data: bskyCreds } = await this.supabase.from('bsky_credentials').select('handle').eq('user_id', profile.id).single();
+            this.bskyCreds = bskyCreds;
 
             const isMyOwnProfile = (profile.id === this.user.id);
             const viewerIsAdmin = (this.currentUserProfile.role === 'admin');
             const isEditable = isMyOwnProfile || viewerIsAdmin;
+
             document.body.classList.toggle('public-view', !isEditable);
 
+            const profileHasAdvancedAccess = (profile.role === 'researcher' || profile.role === 'admin');
+            document.querySelector('.profile-tab-link[data-tab="tab-identidad"]').style.display = profileHasAdvancedAccess ? 'flex' : 'none';
+            document.querySelector('.profile-tab-link[data-tab="tab-proyectos"]').style.display = profileHasAdvancedAccess ? 'flex' : 'none';
+            
             document.getElementById('profile-card-avatar').src = profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
             document.getElementById('profile-card-name').textContent = profile.display_name || 'Sin nombre';
             
             const socialsContainer = document.getElementById('profile-card-socials');
-            if (socialsContainer) {
-                socialsContainer.innerHTML = `
-                    ${profile.substack_url ? `<a href="${profile.substack_url}" target="_blank" title="Substack"><i class="fa-brands fa-substack"></i></a>` : ''}
-                    ${profile.website_url ? `<a href="${profile.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}
-                    ${profile.x_url ? `<a href="${profile.x_url}" target="_blank" title="Perfil de X"><i class="fa-brands fa-x-twitter"></i></a>` : ''}
-                    ${profile.linkedin_url ? `<a href="${profile.linkedin_url}" target="_blank" title="Perfil de LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}
-                    ${profile.instagram_url ? `<a href="${profile.instagram_url}" target="_blank" title="Perfil de Instagram"><i class="fab fa-instagram"></i></a>` : ''}
-                    ${profile.youtube_url ? `<a href="${profile.youtube_url}" target="_blank" title="Canal de YouTube"><i class="fab fa-youtube"></i></a>` : ''}`;
-            }
+            socialsContainer.innerHTML = `
+                ${profile.substack_url ? `<a href="${profile.substack_url}" target="_blank" title="Substack"><i class="fa-brands fa-substack"></i></a>` : ''}
+                ${profile.website_url ? `<a href="${profile.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}
+                ${profile.x_url ? `<a href="${profile.x_url}" target="_blank" title="Perfil de X"><i class="fa-brands fa-x-twitter"></i></a>` : ''}
+                ${profile.linkedin_url ? `<a href="${profile.linkedin_url}" target="_blank" title="Perfil de LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}
+                ${profile.instagram_url ? `<a href="${profile.instagram_url}" target="_blank" title="Perfil de Instagram"><i class="fab fa-instagram"></i></a>` : ''}
+                ${profile.youtube_url ? `<a href="${profile.youtube_url}" target="_blank" title="Canal de YouTube"><i class="fab fa-youtube"></i></a>` : ''}
+            `;
 
             this.renderOrcidSection(profile, isEditable);
-            
-            const { data: bskyCreds } = await this.supabase.from('bsky_credentials').select('handle').eq('user_id', profile.id).single();
-            this.bskyCreds = bskyCreds;
             this.renderSidebarButtons(profile, isMyOwnProfile);
 
-            if (isEditable && profileHasAdvancedAccess) {
-                this.renderCommunityActionPanel(bskyCreds);
+            if (isMyOwnProfile) {
+                this.renderCommunityActionPanel(this.bskyCreds);
+            } else {
+                document.getElementById('community-action-panel').innerHTML = `<p class="form-hint">Viendo el perfil de otro investigador.</p>`;
             }
 
             if (isEditable) {
@@ -205,7 +207,7 @@ const ProfileApp = {
         }
     },
     
-    renderSidebarButtons(profile, isMyOwnProfile, bskyCreds) {
+    renderSidebarButtons(profile, isMyOwnProfile) {
         const sidebarButtonsContainer = document.getElementById('sidebar-buttons-container');
         if (!sidebarButtonsContainer) return;
 
@@ -214,20 +216,16 @@ const ProfileApp = {
             buttonsHTML += `<a href="/inv/directorio.html" class="profile-card-nav__link"><i class="fa-solid fa-users"></i> Directorio</a>`;
         }
         if (isMyOwnProfile) {
-            buttonsHTML += `<button id="go-to-community-btn" class="profile-card-nav__link"><i class="fa-solid fa-comments"></i> Ir a la Comunidad</button>`;
+            // Este botón ahora apunta a la nueva página de comunidad
+            buttonsHTML += `<a href="/inv/comunidad.html" class="profile-card-nav__link"><i class="fa-solid fa-comments"></i> Ir a la Comunidad</a>`;
         }
         buttonsHTML += `<a href="/inv/dashboard.html" class="profile-card-nav__link"><i class="fa-solid fa-arrow-right"></i> Ir al Dashboard</a>`;
         sidebarButtonsContainer.innerHTML = buttonsHTML;
     },
 
-    renderCommunityActionPanel(credentials, isMyOwnProfile) {
+    renderCommunityActionPanel(credentials) {
         const container = document.getElementById('community-action-panel');
         if (!container) return;
-
-        if (!isMyOwnProfile) {
-            container.innerHTML = `<p class="form-hint">Estás viendo el perfil de otro investigador.</p>`;
-            return;
-        }
 
         if (credentials) {
             container.innerHTML = `
@@ -271,7 +269,7 @@ const ProfileApp = {
                     .eq('id', this.user.id);
                 if (updateError) throw updateError;
                 alert("¡Cuenta de ORCID conectada con éxito! Tu rol se actualizará.");
-                await this.handleUserSession();
+                location.reload();
             } catch(error) {
                 alert("Error al verificar el código de ORCID: " + error.message);
             }
@@ -282,7 +280,7 @@ const ProfileApp = {
         if (!confirm("¿Estás seguro de que quieres desconectar tu cuenta de ORCID?")) return;
         const { error } = await this.supabase.from('profiles').update({ orcid: null }).eq('id', this.user.id);
         if (error) { alert("Error al desconectar la cuenta."); } 
-        else { alert("Cuenta de ORCID desconectada."); await this.handleUserSession(); }
+        else { alert("Cuenta de ORCID desconectada."); location.reload(); }
     },
 
     async handleSyncWorks() {
@@ -302,7 +300,7 @@ const ProfileApp = {
                 if (saveError) throw saveError;
             }
             alert(`Sincronización completada. Se encontraron y guardaron ${data.works.length} publicaciones.`);
-            await this.handleUserSession();
+            location.reload();
         } catch (error) {
             alert("Error al sincronizar las publicaciones: " + error.message);
         } finally {
@@ -317,16 +315,12 @@ const ProfileApp = {
         if (!orcidListContainer || !eptDoiListContainer) return;
         const orcidProjects = works.filter(work => !work.created_via_platform);
         const eptProjects = works.filter(work => work.created_via_platform);
-        if (orcidProjects.length === 0) {
-            orcidListContainer.innerHTML = '<p class="form-hint">No tienes publicaciones sincronizadas.</p>';
-        } else {
-            orcidListContainer.innerHTML = orcidProjects.map(work => `<div class="publication-item"><p>${work.title}</p><span>DOI: ${work.doi}</span></div>`).join('');
-        }
-        if (eptProjects.length === 0) {
-            eptDoiListContainer.innerHTML = '<p class="form-hint">No tienes publicaciones con DOI de EPT.</p>';
-        } else {
-            eptDoiListContainer.innerHTML = eptProjects.map(work => `<div class="publication-item"><p>${work.title}</p><span>DOI: ${work.doi}</span></div>`).join('');
-        }
+        orcidListContainer.innerHTML = orcidProjects.length > 0
+            ? orcidProjects.map(work => `<div class="publication-item"><p>${work.title}</p><span>DOI: ${work.doi}</span></div>`).join('')
+            : '<p class="form-hint">No tienes publicaciones sincronizadas.</p>';
+        eptDoiListContainer.innerHTML = eptProjects.length > 0
+            ? eptProjects.map(work => `<div class="publication-item"><p>${work.title}</p><span>DOI: ${work.doi}</span></div>`).join('')
+            : '<p class="form-hint">No tienes publicaciones con DOI de EPT.</p>';
     },
     
     async handleSave(e, formType) {
@@ -335,33 +329,19 @@ const ProfileApp = {
         const saveButton = form.querySelector('button[type="submit"]');
         saveButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
         saveButton.disabled = true;
+        
         let updates = { id: this.user.id, updated_at: new Date() };
-        if (formType === 'profile') {
-            updates.display_name = form.querySelector('#display-name').value;
-            updates.bio = form.querySelector('#bio').value;
-        } else if (formType === 'platforms') {
-            updates.youtube_url = form.querySelector('#youtube-url').value;
-            updates.substack_url = form.querySelector('#substack-url').value;
-            updates.website_url = form.querySelector('#website-url').value;
-            updates.x_url = form.querySelector('#x-url').value;
-            updates.linkedin_url = form.querySelector('#linkedin-url').value;
-            updates.instagram_url = form.querySelector('#instagram-url').value;
-            updates.facebook_url = form.querySelector('#facebook-url').value;
-            updates.tiktok_url = form.querySelector('#tiktok-url').value;
-        }
+        new FormData(form).forEach((value, key) => {
+            updates[key] = value;
+        });
+
         const { error } = await this.supabase.from('profiles').upsert(updates);
-        if (formType === 'profile') {
-            const messageEl = document.getElementById('form-message');
-            if (messageEl) {
-                messageEl.textContent = error ? `Error: ${error.message}` : '¡Perfil guardado!';
-                messageEl.className = `form-message ${error ? 'error' : 'success'}`;
-            }
-        } else {
-            alert(error ? `Error: ${error.message}` : '¡Plataformas guardadas!');
-        }
+        
+        alert(error ? `Error: ${error.message}` : `¡Datos de ${formType === 'profile' ? 'perfil' : 'plataformas'} guardados!`);
+
         saveButton.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Guardar';
         saveButton.disabled = false;
-        if (!error) await this.handleUserSession();
+        if (!error) location.reload();
     },
 
     async handleUpdateAvatar(e) {
@@ -370,37 +350,12 @@ const ProfileApp = {
         if (!newUrl) { alert("Por favor, pega una URL."); return; }
         const { error } = await this.supabase.from('profiles').update({ avatar_url: newUrl }).eq('id', this.user.id);
         if (error) { alert('Hubo un error al actualizar tu avatar.'); } 
-        else { alert('¡Avatar actualizado con éxito!'); await this.handleUserSession(); }
+        else { alert('¡Avatar actualizado con éxito!'); location.reload(); }
     },
 
     async handleZenodoSubmit(e) {
         e.preventDefault();
         alert("La funcionalidad para publicar en Zenodo está en desarrollo.");
-    },
-
-    renderBlueskySection(credentials, isMyOwnProfile) {
-        const container = document.getElementById('community-action-panel');
-        if (!container) return;
-        if (!isMyOwnProfile) {
-            container.innerHTML = `<p class="form-hint">Estás viendo el perfil de otro investigador.</p>`;
-            return;
-        }
-        if (credentials) {
-            container.innerHTML = `
-                <div class="status-badge connected">
-                    <i class="fa-solid fa-circle-check"></i>
-                    <span>Conectado como: <strong>${credentials.handle}</strong></span>
-                </div>
-                <button id="bsky-disconnect-btn" class="btn btn-secondary" style="width: 100%; margin-top: 1rem;">Desconectar</button>
-            `;
-        } else {
-            container.innerHTML = `
-                <p class="form-hint">Conecta tu cuenta para poder interactuar en el feed.</p>
-                <button id="connect-community-btn-modal" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
-                    <i class="fa-solid fa-link"></i> Conectar Cuenta
-                </button>
-            `;
-        }
     },
 
     async handleBlueskyConnect(e) {
@@ -416,10 +371,11 @@ const ProfileApp = {
             if (error) throw new Error(error.message || 'Error desconocido.');
             alert(data.message);
             this.closeCommunityModal();
-            await this.handleUserSession();
+            location.reload();
         } catch (error) {
             const detail = error.message.includes('password') ? 'Verifica tu handle y contraseña de aplicación.' : error.message;
             alert(`Error al conectar la cuenta: ${detail}`);
+        } finally {
             connectButton.disabled = false;
             connectButton.innerHTML = '<i class="fa-solid fa-link"></i> Conectar Cuenta';
         }
@@ -429,7 +385,7 @@ const ProfileApp = {
         if (!confirm("¿Estás seguro de que quieres desconectar tu cuenta de Bluesky?")) return;
         const { error } = await this.supabase.from('bsky_credentials').delete().eq('user_id', this.user.id);
         if (error) { alert("Error al desconectar la cuenta."); } 
-        else { alert("Cuenta de Bluesky desconectada."); await this.handleUserSession(); }
+        else { alert("Cuenta de Bluesky desconectada."); location.reload(); }
     },
 
     openCommunityModal() {
@@ -448,15 +404,18 @@ const ProfileApp = {
 
     closeCommunityModal() {
         const modalContainer = document.getElementById('modal-container');
+        if (!modalContainer) return;
         const modal = modalContainer.querySelector('.modal-overlay');
         if (modal) {
-            modal.classList.remove('is-visible');
-            setTimeout(() => { modalContainer.innerHTML = ''; }, 300);
+            modal.classList.add('fade-out');
+            modal.addEventListener('animationend', () => {
+                modalContainer.innerHTML = '';
+            }, { once: true });
         }
     },
     
     toggleTheme() {
-        const currentTheme = localStorage.getItem('theme') || 'light';
+        const currentTheme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
         const newTheme = currentTheme === 'light' ? 'dark' : 'light';
         localStorage.setItem('theme', newTheme);
         this.applyTheme();
@@ -465,8 +424,9 @@ const ProfileApp = {
     applyTheme() {
         const theme = localStorage.getItem('theme') || 'light';
         document.body.classList.toggle("dark-theme", theme === "dark");
-        const themeIcon = document.querySelector('#theme-switcher-desktop i');
-        if(themeIcon) themeIcon.className = `fa-solid ${theme === "dark" ? "fa-sun" : "fa-moon"}`;
+        document.querySelectorAll('.theme-switcher i, #theme-switcher-mobile i').forEach(icon => {
+            icon.className = `fa-solid ${theme === "dark" ? "fa-sun" : "fa-moon"}`;
+        });
     },
 
     async renderCommunityFeed() {
@@ -474,8 +434,7 @@ const ProfileApp = {
         if (!container || container.dataset.loaded === 'true') return;
 
         container.innerHTML = '<p>Cargando el feed de la comunidad...</p>';
-        container.dataset.loaded = 'true';
-
+        
         try {
             const { data: feed, error } = await this.supabase.functions.invoke('bsky-get-community-feed');
             if (error) throw error;
@@ -483,7 +442,8 @@ const ProfileApp = {
                 container.innerHTML = '<p>No hay publicaciones recientes en la comunidad.</p>';
                 return;
             }
-
+            container.dataset.loaded = 'true'; // Marcar como cargado solo si hay éxito
+            
             const isBskyConnected = !!this.bskyCreds;
 
             container.innerHTML = feed.map(item => {
@@ -493,7 +453,7 @@ const ProfileApp = {
                 const postText = (post.record.text || '').replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, '<br>');
                 const author = post.author;
                 const isLiked = !!post.viewer?.like;
-                const postDate = new Date(post.indexedAt).toLocaleString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+                const postDate = new Date(post.indexedAt).toLocaleString('es-ES', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
 
                 let embedHtml = '';
                 if (post.embed?.images) {
@@ -501,11 +461,11 @@ const ProfileApp = {
                 }
 
                 return `
-                    <div class="feed-post">
+                    <article class="feed-post" aria-labelledby="post-author-${post.cid}">
                         <div class="post-header">
-                            <img src="${author.avatar}" alt="Avatar de ${author.displayName}" class="post-avatar" loading="lazy">
+                            <img src="${author.avatar || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="Avatar de ${author.displayName}" class="post-avatar" loading="lazy">
                             <div class="post-author">
-                                <strong>${author.displayName || author.handle}</strong>
+                                <strong id="post-author-${post.cid}">${author.displayName || author.handle}</strong>
                                 <span class="post-handle">@${author.handle}</span>
                             </div>
                         </div>
@@ -516,26 +476,23 @@ const ProfileApp = {
                         <div class="post-footer">
                             <span class="post-date">${postDate}</span>
                             <div class="post-stats">
-                                <button class="comment-btn" 
-                                        data-uri="${post.uri}" 
-                                        data-cid="${post.cid}"
-                                        ${!isBskyConnected ? 'disabled' : ''}
-                                        title="${isBskyConnected ? 'Comentar' : 'Conecta tu cuenta para comentar'}">
+                                <span class="comment-stat" title="Para comentar, visita la página de la Comunidad">
                                     <i class="fa-regular fa-comment"></i>
                                     <span>${post.replyCount || 0}</span>
-                                </button>
+                                </span>
                                 <span><i class="fa-solid fa-retweet"></i> ${post.repostCount || 0}</span>
                                 <button class="like-btn ${isLiked ? 'is-liked' : ''}" 
                                         data-uri="${post.uri}" 
                                         data-cid="${post.cid}"
                                         ${!isBskyConnected ? 'disabled' : ''}
-                                        title="${isBskyConnected ? 'Dar Me Gusta' : 'Conecta tu cuenta para dar Me Gusta'}">
+                                        title="${isBskyConnected ? 'Dar Me Gusta' : 'Conecta tu cuenta para dar Me Gusta'}"
+                                        aria-pressed="${isLiked}">
                                     <i class="fa-${isLiked ? 'solid' : 'regular'} fa-heart"></i>
                                     <span>${post.likeCount || 0}</span>
                                 </button>
                             </div>
                         </div>
-                    </div>
+                    </article>
                 `;
             }).join('');
 
@@ -546,87 +503,58 @@ const ProfileApp = {
     },
 
     async handleLikePost(likeButton) {
+        if (likeButton.disabled) return;
         const uri = likeButton.dataset.uri;
         const cid = likeButton.dataset.cid;
         const isLiked = likeButton.classList.contains('is-liked');
 
-        // Desactivamos el botón para evitar múltiples clics
         likeButton.disabled = true;
 
-        // Lógica para "deslikear" (próximamente)
         if (isLiked) {
-            alert("La funcionalidad de quitar 'Me Gusta' se implementará próximamente.");
+            // La funcionalidad de "deslikear" no está implementada aún.
+            // Para mantener la estabilidad, simplemente informamos y reactivamos el botón.
+            alert("La funcionalidad de quitar 'Me Gusta' aún no está disponible aquí.");
             likeButton.disabled = false;
             return;
         }
 
-        // Lógica para "likear"
-        try {
-            // Actualización optimista de la UI
-            likeButton.classList.add('is-liked');
-            likeButton.querySelector('i').className = 'fa-solid fa-heart';
-            const countSpan = likeButton.querySelector('span');
-            countSpan.textContent = parseInt(countSpan.textContent) + 1;
+        // --- Lógica para "likear" ---
+        const countSpan = likeButton.querySelector('span');
+        const originalCount = parseInt(countSpan.textContent);
+        
+        // Actualización optimista de la UI
+        likeButton.classList.add('is-liked');
+        likeButton.querySelector('i').className = 'fa-solid fa-heart';
+        likeButton.setAttribute('aria-pressed', 'true');
+        countSpan.textContent = originalCount + 1;
 
-            // Llamada a la Edge Function
+        try {
             const { error } = await this.supabase.functions.invoke('bsky-like-post', {
                 body: { postUri: uri, postCid: cid },
             });
 
             if (error) throw error;
+            // Si la llamada es exitosa, la UI ya está actualizada. No hacemos nada.
 
         } catch (error) {
-            alert("No se pudo dar 'Me Gusta'. Inténtalo de nuevo.");
+            alert("No se pudo dar 'Me Gusta'. Por favor, inténtalo de nuevo.");
             console.error("Error en handleLikePost:", error);
             
             // Revertir la UI en caso de error
             likeButton.classList.remove('is-liked');
             likeButton.querySelector('i').className = 'fa-regular fa-heart';
-            const countSpan = likeButton.querySelector('span');
-            countSpan.textContent = parseInt(countSpan.textContent) - 1;
+            likeButton.setAttribute('aria-pressed', 'false');
+            countSpan.textContent = originalCount;
         } finally {
-            // Reactivamos el botón (excepto para deslikear)
             likeButton.disabled = false;
         }
     },
     
-    async handleCommentPost(commentButton) {
-        const postUri = commentButton.dataset.uri;
-        const postCid = commentButton.dataset.cid;
-
-        const replyText = prompt("Escribe tu comentario (máximo 300 caracteres):");
-
-        if (!replyText || replyText.trim() === '') {
-            return; // El usuario canceló o no escribió nada
-        }
-
-        if (replyText.length > 300) {
-            alert("Tu comentario excede el límite de 300 caracteres.");
-            return;
-        }
-
-        commentButton.disabled = true;
-
-        try {
-            const parentPost = { uri: postUri, cid: postCid };
-            const { error } = await this.supabase.functions.invoke('bsky-create-reply', {
-                body: { replyText, parentPost },
-            });
-
-            if (error) throw error;
-
-            alert("¡Comentario publicado con éxito!");
-            // Opcional: Actualizamos visualmente el contador de comentarios
-            const countSpan = commentButton.querySelector('span');
-            countSpan.textContent = parseInt(countSpan.textContent) + 1;
-
-        } catch (error) {
-            alert("No se pudo publicar el comentario. Inténtalo de nuevo.");
-            console.error("Error en handleCommentPost:", error);
-        } finally {
-            commentButton.disabled = false;
-        }
-    },
+    // --- AJUSTE #3: Función Eliminada ---
+    // La función async handleCommentPost(commentButton) { ... } ha sido removida por completo.
 };
 
-ProfileApp.init();
+// Inicializar la aplicación
+document.addEventListener('DOMContentLoaded', () => {
+    ProfileApp.init();
+});

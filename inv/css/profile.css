@@ -478,3 +478,12 @@ body.loading-profile .main-content {
     cursor: not-allowed;
     opacity: 0.6;
 }
+/* AJUSTE PARA ESTABILIZACIÓN DEL FEED */
+/* Estilo para el contador de comentarios (que ya no es un botón) */
+.comment-stat {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: help; /* Cambia el cursor para indicar que hay un tooltip informativo */
+    opacity: 0.7; /* Lo hace ligeramente menos prominente que los botones reales */
+}

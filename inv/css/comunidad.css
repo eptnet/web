@@ -1,0 +1,274 @@
+/* =================================================================
+ * ARCHIVO INICIAL: /inv/css/comunidad.css
+ * PROPÓSITO: Estilos para la nueva página de la comunidad.
+ * ================================================================= */
+
+/* --- VARIABLES Y TEMA (Consistente con el resto del sitio) --- */
+:root {
+    --color-background: #f0f2f5;
+    --color-surface: #ffffff;
+    --color-primary-text: #1c1e21;
+    --color-secondary-text: #65676b;
+    --color-accent: #b72a1e;
+    --color-border: #ddd;
+    --border-radius: 12px;
+}
+
+body.dark-theme {
+    --color-background: #18191a;
+    --color-surface: #242526;
+    --color-primary-text: #e4e6eb;
+    --color-secondary-text: #b0b3b8;
+    --color-border: #3a3b3c;
+}
+
+/* --- ESTILOS GENERALES Y LAYOUT PRINCIPAL --- */
+.page-container {
+    padding: 2rem 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.community-layout {
+    display: grid;
+    gap: 1.5rem;
+}
+
+/* Layout de 3 columnas para escritorio */
+@media (min-width: 1024px) {
+    .community-layout {
+        grid-template-columns: 300px 1fr 300px;
+    }
+    .left-column, .right-column {
+        position: sticky;
+        top: 2rem;
+        align-self: start;
+    }
+}
+
+.bento-box {
+    background-color: var(--color-surface);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--color-border);
+}
+
+/* --- COLUMNA IZQUIERDA: PANEL DE USUARIO Y NAVEGACIÓN --- */
+.user-panel-box {
+    text-align: center;
+}
+.user-panel-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 1rem;
+    border: 3px solid var(--color-accent);
+}
+.user-panel-box h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.2rem;
+    color: var(--color-primary-text);
+}
+
+.community-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.community-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--color-primary-text);
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+.community-nav-link:hover {
+    background-color: var(--color-background);
+}
+.community-nav-link.active {
+    color: var(--color-accent);
+    font-weight: 700;
+}
+.community-nav-link i {
+    width: 20px;
+    text-align: center;
+}
+
+/* --- COLUMNA CENTRAL: CREAR POST Y FEED --- */
+.create-post-box h4 {
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
+    color: var(--color-primary-text);
+}
+.textarea-container {
+    position: relative;
+    margin-bottom: 1rem;
+}
+#post-text {
+    width: 100%;
+    min-height: 80px;
+    padding: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background-color: var(--color-background);
+    color: var(--color-primary-text);
+    resize: vertical;
+    font-size: 1rem;
+}
+#char-counter {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    font-size: 0.8rem;
+    color: var(--color-secondary-text);
+}
+.create-post-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+.create-post-actions .btn {
+    width: auto;
+    padding: 0.6rem 1.5rem;
+}
+
+.feed-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+/* Estilos de los posts (similares a profile.css pero con ajustes) */
+.feed-post .post-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+.post-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+.post-author-info {
+    display: flex;
+    flex-direction: column;
+}
+.post-author-info strong { font-size: 1rem; color: var(--color-primary-text); }
+.post-handle { font-size: 0.9rem; color: var(--color-secondary-text); }
+
+.post-body p { margin: 0; line-height: 1.6; }
+.post-embed-image { margin-top: 1rem; }
+.post-embed-image img { max-width: 100%; border-radius: var(--border-radius); }
+
+.post-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+    color: var(--color-secondary-text);
+}
+.post-date { font-size: 0.85rem; }
+.post-actions { display: flex; gap: 1rem; }
+.post-action-btn {
+    background: none;
+    border: none;
+    color: var(--color-secondary-text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    padding: 0.25rem;
+}
+.post-action-btn:hover { color: var(--color-accent); }
+.post-action-btn.is-liked { color: #e0245e; font-weight: bold; }
+
+/* --- COLUMNA DERECHA: SUGERENCIAS --- */
+.suggestions-box h4 {
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
+    color: var(--color-primary-text);
+}
+.members-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+/* --- ESTILOS PARA CREACIÓN DE POST (FAB Y MODAL) --- */
+
+/* Botón de Acción Flotante (FAB) */
+.fab {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background-color: var(--color-accent);
+    color: white;
+    border: none;
+    font-size: 1.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    cursor: pointer;
+    z-index: 1000;
+    transition: transform 0.2s ease;
+}
+.fab:hover {
+    transform: scale(1.1);
+}
+
+/* Estilos del Modal (reutilizando y extendiendo los de profile.css) */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); display: flex;
+    justify-content: center; align-items: flex-start; /* Alinea arriba */
+    padding-top: 5vh; z-index: 2000;
+}
+.modal-content {
+    background: var(--color-surface); border-radius: var(--border-radius);
+    width: 90%; max-width: 600px;
+}
+.modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.75rem 1.5rem; border-bottom: 1px solid var(--color-border);
+}
+.modal-close-btn { background: none; border: none; font-size: 1.5rem; color: var(--color-secondary-text); cursor: pointer;}
+.modal-header .btn { width: auto; padding: 0.5rem 1.2rem; }
+.modal-body { padding: 1rem 1.5rem; }
+
+/* Estilos específicos para el formulario en el modal */
+.post-modal .textarea-container {
+    display: flex;
+    gap: 1rem;
+}
+.post-modal .post-avatar {
+    width: 48px; height: 48px;
+}
+.post-modal textarea {
+    border: none;
+    background: none;
+    padding: 0.5rem 0;
+    font-size: 1.2rem; /* Más grande */
+    min-height: 150px;
+    resize: none;
+}
+.post-modal .form-actions {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+}
+.post-modal .char-counter { font-weight: 500; }
+.action-icons { display: flex; gap: 1rem; font-size: 1.2rem; }
+.disabled-icon { color: var(--color-secondary-text); opacity: 0.5; cursor: not-allowed;}
