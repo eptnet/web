@@ -23,26 +23,31 @@ const ComunidadApp = {
     async handleUserSession() {
         const { data: { session } } = await this.supabase.auth.getSession();
         if (!session) {
-            window.location.href = '/'; // Redirigir si no hay sesión
+            window.location.href = '/';
             return;
         }
         this.user = session.user;
 
-        // Cargar perfil y credenciales de Bluesky en paralelo para más eficiencia
-        const [profileResponse, credsResponse] = await Promise.all([
-            this.supabase.from('profiles').select('*').eq('id', this.user.id).single(),
-            this.supabase.from('bsky_credentials').select('*').eq('user_id', this.user.id).single()
-        ]);
+        // 1. Obtenemos el perfil (crítico)
+        const { data: profileData, error: profileError } = await this.supabase
+            .from('profiles').select('*').eq('id', this.user.id).single();
 
-        if (profileResponse.error) {
-            console.error("Error crítico al cargar el perfil.", profileResponse.error);
+        if (profileError) {
+            console.error("Error crítico al cargar el perfil.", profileError);
             return;
         }
+        this.userProfile = profileData;
 
-        this.userProfile = profileResponse.data;
-        this.bskyCreds = credsResponse.data;
+        // 2. Obtenemos las credenciales (opcional, puede no existir)
+        const { data: credsData, error: credsError } = await this.supabase
+            .from('bsky_credentials').select('*').eq('user_id', this.user.id).single();
 
-        // Una vez que tenemos los datos, actualizamos la interfaz
+        if (credsError && credsError.code !== 'PGRST116') { // Ignoramos el error "fila no encontrada"
+            console.error("Error al buscar credenciales de Bsky:", credsError);
+        }
+        this.bskyCreds = credsData; // Será null si no se encuentra, lo cual es correcto
+
+        // 3. Renderizamos la UI
         this.renderUserPanel();
         this.renderBskyStatus();
         this.renderFeed();
@@ -102,34 +107,35 @@ const ComunidadApp = {
 
     // --- MANEJADORES DE EVENTOS (Versión Actualizada) ---
     addEventListeners() {
-        // Formulario en la página
+        // Formulario para crear un nuevo post
         document.getElementById('create-post-form')?.addEventListener('submit', (e) => {
             e.preventDefault();
             this.handleCreatePost(e.target);
         });
         
-        // Contador de caracteres
+        // Contador de caracteres para el textarea
         document.getElementById('post-text')?.addEventListener('input', this.updateCharCounter);
 
-        // Botón Flotante (FAB)
-        document.getElementById('fab-create-post')?.addEventListener('click', () => this.openPostModal());
-
-        // Delegación de eventos para el feed
-        document.getElementById('feed-container')?.addEventListener('click', (e) => {
-            const likeButton = e.target.closest('.like-btn');
-            const replyButton = e.target.closest('.reply-btn');
-            if (likeButton) this.handleLike(likeButton);
-            if (replyButton) this.handleReply(replyButton);
-        });
-
-        // Listener para el nuevo botón de conectar en el panel de usuario
+        // Delegación de eventos para clics en todo el cuerpo de la página
         document.body.addEventListener('click', (e) => {
+            // Botón Flotante para abrir el modal de post
+            if (e.target.closest('#fab-create-post')) {
+                this.openPostModal();
+            }
+            // Botón para conectar Bsky en el panel de usuario
             if (e.target.id === 'connect-bsky-btn') {
                 this.openBskyConnectModal();
             }
         });
 
-        // Delegación de eventos para el modal (se añade al abrirse)
+        // Delegación de eventos para el contenedor del feed (Likes, Comentarios, etc.)
+        document.getElementById('feed-container')?.addEventListener('click', (e) => {
+            const likeButton = e.target.closest('.like-btn');
+            const replyButton = e.target.closest('.reply-btn');
+
+            if (likeButton) this.handleLike(likeButton);
+            if (replyButton) this.handleReply(replyButton);
+        });
     },
 
     // --- LÓGICA DE INTERACCIÓN (Versión Actualizada) ---
@@ -211,8 +217,56 @@ const ComunidadApp = {
      * Maneja el evento de "Me Gusta" (funcionalidad futura).
      */
     async handleLike(button) {
-        alert("Funcionalidad de 'Me Gusta' en desarrollo.");
-        // TODO: Implementar la lógica de 'Me Gusta', similar a profile.js pero aquí podrá deshacer el like.
+        if (button.disabled) return;
+
+        const postElement = button.closest('.feed-post');
+        const postUri = postElement.dataset.uri;
+        const postCid = postElement.dataset.cid;
+        let likeUri = button.dataset.likeUri; // El URI del 'like' que ya existe, si lo hay.
+
+        const isLiked = button.classList.contains('is-liked');
+        const countSpan = button.querySelector('span');
+        const icon = button.querySelector('i');
+        const originalCount = parseInt(countSpan.textContent);
+
+        // 1. Actualización Optimista (cambiamos la UI al instante)
+        button.disabled = true;
+        button.classList.toggle('is-liked');
+        if (!isLiked) { // Si NO tenía like... ahora lo tiene
+            icon.className = 'fa-solid fa-heart';
+            countSpan.textContent = originalCount + 1;
+        } else { // Si SÍ tenía like... ahora se lo quitamos
+            icon.className = 'fa-regular fa-heart';
+            countSpan.textContent = originalCount - 1;
+        }
+
+        // 2. Llamada a la Edge Function
+        try {
+            const { data, error } = await this.supabase.functions.invoke('bsky-like-post', {
+                body: { 
+                    postUri: postUri, 
+                    postCid: postCid,
+                    likeUri: isLiked ? likeUri : undefined // Si tenía like, enviamos el likeUri para borrarlo
+                },
+            });
+
+            if (error) throw error;
+
+            // Si la acción fue un 'like', guardamos el nuevo likeUri para poder quitarlo después.
+            if (!isLiked && data.uri) {
+                button.dataset.likeUri = data.uri;
+            }
+
+        } catch (error) {
+            console.error("Error al procesar el Like:", error);
+            // 3. Reversión: Si algo falla, volvemos la UI a su estado original
+            button.classList.toggle('is-liked'); // Lo revierte
+            icon.className = isLiked ? 'fa-solid fa-heart' : 'fa-regular fa-heart';
+            countSpan.textContent = originalCount;
+            alert("No se pudo procesar la acción. Inténtalo de nuevo.");
+        } finally {
+            button.disabled = false;
+        }
     },
     
     /**
@@ -244,7 +298,7 @@ const ComunidadApp = {
         }
 
         return `
-            <div class="bento-box feed-post" data-uri="${post.uri}">
+            <div class="bento-box feed-post" data-uri="${post.uri}" data-cid="${post.cid}">
                 <div class="post-header">
                     <img src="${author.avatar || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="Avatar" class="post-avatar">
                     <div class="post-author-info">
@@ -264,10 +318,12 @@ const ComunidadApp = {
                             <span>${post.replyCount || 0}</span>
                         </button>
                         <button class="post-action-btn" title="Repostear">
-                             <i class="fa-solid fa-retweet"></i>
+                            <i class="fa-solid fa-retweet"></i>
                             <span>${post.repostCount || 0}</span>
                         </button>
-                        <button class="post-action-btn like-btn ${isLiked ? 'is-liked' : ''}" title="Me Gusta">
+                        <button class="post-action-btn like-btn ${isLiked ? 'is-liked' : ''}" 
+                                title="Me Gusta" 
+                                data-like-uri="${post.viewer?.like || ''}">
                             <i class="fa-${isLiked ? 'solid' : 'regular'} fa-heart"></i>
                             <span>${post.likeCount || 0}</span>
                         </button>
@@ -280,9 +336,14 @@ const ComunidadApp = {
     // --- FUNCIONES DEL MODAL (Nuevas) ---
 
     openPostModal() {
-        if (document.querySelector('.modal-overlay')) return; // Ya está abierto
+        if (document.querySelector('.modal-overlay')) return; // Evita abrir múltiples modales
 
         const template = document.getElementById('post-form-template');
+        if (!template) {
+            console.error("La plantilla #post-form-template no existe en el HTML.");
+            return;
+        }
+        
         const modalContainer = document.getElementById('modal-container');
         const modalNode = template.content.cloneNode(true);
         
@@ -297,14 +358,14 @@ const ComunidadApp = {
         });
 
         const textArea = modalNode.querySelector('textarea');
-        textArea.addEventListener('input', this.updateCharCounter);
+        textArea.addEventListener('input', (e) => this.updateCharCounter(e));
 
         modalContainer.appendChild(modalNode);
     },
 
     closePostModal() {
         const modalContainer = document.getElementById('modal-container');
-        modalContainer.innerHTML = ''; // La forma más simple de cerrar y limpiar
+        if (modalContainer) modalContainer.innerHTML = '';
     },
 
     updateCharCounter(e) {
