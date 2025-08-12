@@ -17,7 +17,7 @@
             <nav class="main-menu bento-box-nav">
                 <a href="/" class="nav-icon" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
                 <a href="https://eptnews.substack.com/" class="nav-icon" aria-label="Newsletter"><i class="fa-solid fa-newspaper"></i></a>
-                <a href="https://nas.io/es-mx/ept" class="nav-icon" aria-label="Comunidad"><i class="fa-solid fa-users"></i></a>
+                <a href="/inv/comunidad.html" class="nav-icon" aria-label="Comunidad"><i class="fa-solid fa-users"></i></a>
             </nav>
             <div class="live-channels bento-box-nav">
                 <a href="/live.html" class="nav-icon" id="nav-live-desktop" aria-label="En Vivo"><i class="fa-solid fa-satellite-dish"></i></a>
@@ -75,16 +75,43 @@
                             <h3><i class="fa-solid fa-share-nodes"></i> Plataformas y Redes</h3>
                             <form id="platforms-form">
                                 <h4>Plataformas Principales</h4>
-                                <div class="form-group"><label for="youtube-url">Canal de YouTube</label><input type="url" id="youtube-url" placeholder="https://youtube.com/c/..."></div>
-                                <div class="form-group"><label for="substack-url">Perfil de Substack</label><input type="url" id="substack-url" placeholder="https://tupublicacion.substack.com"></div>
+                                <div class="form-group">
+                                    <label for="youtube-url">Canal de YouTube</label>
+                                    <input type="url" id="youtube-url" name="youtube_url" placeholder="https://youtube.com/c/...">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="substack-url">Perfil de Substack</label>
+                                    <input type="url" id="substack-url" name="substack_url" placeholder="https://tupublicacion.substack.com">
+                                    <span id="substack-verification-status" class="form-hint" style="margin-top: 0.5rem; display: block;"></span>
+                                </div>
+                                
                                 <hr>
                                 <h4>Otras Redes Sociales</h4>
-                                <div class="form-group"><label for="website-url">Sitio Web / Blog</label><input type="url" id="website-url" placeholder="https://..."></div>
-                                <div class="form-group"><label for="x-url">Perfil de X (Twitter)</label><input type="url" id="x-url" placeholder="https://x.com/usuario"></div>
-                                <div class="form-group"><label for="linkedin-url">Perfil de LinkedIn</label><input type="url" id="linkedin-url" placeholder="https://linkedin.com/in/usuario"></div>
-                                <div class="form-group"><label for="instagram-url">Perfil de Instagram</label><input type="url" id="instagram-url" placeholder="https://instagram.com/usuario"></div>
-                                <div class="form-group"><label for="facebook-url">Perfil de Facebook</label><input type="url" id="facebook-url" placeholder="https://facebook.com/usuario"></div>
-                                <div class="form-group"><label for="tiktok-url">Perfil de TikTok</label><input type="url" id="tiktok-url" placeholder="https://tiktok.com/@usuario"></div>
+                                <div class="form-group">
+                                    <label for="website-url">Sitio Web / Blog</label>
+                                    <input type="url" id="website-url" name="website_url" placeholder="https://...">
+                                </div>
+                                <div class="form-group">
+                                    <label for="x-url">Perfil de X (Twitter)</label>
+                                    <input type="url" id="x-url" name="x_url" placeholder="https://x.com/usuario">
+                                </div>
+                                <div class="form-group">
+                                    <label for="linkedin-url">Perfil de LinkedIn</label>
+                                    <input type="url"id="linkedin-url" name="linkedin_url" placeholder="https://linkedin.com/in/usuario">
+                                </div>
+                                <div class="form-group">
+                                    <label for="instagram-url">Perfil de Instagram</label>
+                                    <input type="url" id="instagram-url" name="instagram_url" placeholder="https://instagram.com/usuario">
+                                </div>
+                                <div class="form-group">
+                                    <label for="facebook-url">Perfil de Facebook</label>
+                                    <input type="url" id="facebook-url" name="facebook_url" placeholder="https://facebook.com/usuario">
+                                </div>
+                                <div class="form-group">
+                                    <label for="tiktok-url">Perfil de TikTok</label>
+                                    <input type="url" id="tiktok-url" name="tiktok_url" placeholder="https://tiktok.com/@usuario">
+                                </div>
                                 <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Guardar Plataformas</button>
                             </form>
                         </div>

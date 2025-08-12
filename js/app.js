@@ -182,25 +182,42 @@ document.addEventListener('mainReady', () => {
     const podcastApiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fapi.substack.com%2Ffeed%2Fpodcast%2F2867518%2Fs%2F186951.rss';
     let allPostsData = [];
     
+    // Guardaremos los perfiles aquí para no tener que pedirlos de nuevo
+    let researcherProfiles = [];
+
     async function loadContent() {
         if (!bentoGrid) return;
         bentoGrid.innerHTML = '<div class="loading" style="grid-column: span 4; text-align: center; padding: 2rem;">Cargando...</div>';
+        
         try {
-            const [articleResponse, podcastResponse] = await Promise.all([
+            // --- INICIO DE LA LÓGICA MEJORADA ---
+            // 1. Hacemos las tres peticiones en paralelo para máxima eficiencia
+            const [articleResponse, podcastResponse, profilesResponse] = await Promise.all([
                 fetch(articlesApiUrl),
-                fetch(podcastApiUrl)
+                fetch(podcastApiUrl),
+                // Petición a nuestra base de datos para traer los perfiles
+                window.supabaseClient
+                    .from('profiles')
+                    .select('display_name, avatar_url, orcid, substack_author_name') // Traemos los campos que necesitamos
             ]);
             
+            // 2. Procesamos los datos de los perfiles
+            if (profilesResponse.error) throw profilesResponse.error;
+            researcherProfiles = profilesResponse.data || [];
+            console.log("Directorio de investigadores cargado:", researcherProfiles.length, "perfiles encontrados.");
+            // --- FIN DE LA LÓGICA MEJORADA ---
+
             const articleData = await articleResponse.json();
             const podcastData = await podcastResponse.json();
 
             if (articleData.status === 'ok' && articleData.items) {
-                // Filtramos para quitar los posts que son solo audio
                 allPostsData = articleData.items.filter(item => !item.enclosure?.link?.endsWith(".mp3"));
                 displayContent(allPostsData, podcastData.items);
-            } else { throw new Error("API de artículos no respondió correctamente."); }
+            } else { 
+                throw new Error("API de artículos no respondió correctamente."); 
+            }
         } catch (error) {
-            console.error("Falló la carga de contenido:", error);
+            console.error("Falló la carga de contenido o perfiles:", error);
             bentoGrid.innerHTML = '<div class="error" style="grid-column: span 4; text-align: center; padding: 2rem;">No se pudo cargar el contenido.</div>';
         }
     }
@@ -668,34 +685,71 @@ document.addEventListener('mainReady', () => {
             `;
             openModal(contentHTML, 'article', { link: 'https://zenodo.org/communities/epistecnologia' });
         }
-        // --- INICIO DE LA LÓGICA MODIFICADA PARA POSTS ---
+        // --- INICIO DE LA LÓGICA FINAL PARA POSTS ---
         else if (allPostsData.some(p => p.guid === dataId)) {
             const post = allPostsData.find(p => p.guid === dataId);
             
-            // 1. Obtenemos el CONTENIDO COMPLETO, ya no el extracto.
+            // DATOS BÁSICOS DEL POST
             const fullContent = sanitizeSubstackContent(post.content);
-            
-            // 2. Preparamos los datos
             const postDate = new Date(post.pubDate).toLocaleDateString("es-ES", { year: "numeric", month: "long", day: "numeric" });
             const thumbnail = post.thumbnail || extractFirstImageUrl(post.content);
             const imageHTML = thumbnail ? `<img src="${thumbnail}" alt="${post.title}" class="modal-post-image">` : '';
-            // Usamos una imagen por defecto para el avatar, ya que el feed no la provee.
-            const authorAvatar = 'https://i.ibb.co/61fJv24/default-avatar.png'; 
+
+            // --- BÚSQUEDA EN EL DIRECTORIO ---
+            // Buscamos un perfil cuyo 'substack_author_name' coincida con el autor del post
+            const profile = researcherProfiles.find(p => p.substack_author_name === post.author);
             
-            // 3. Creamos el nuevo HTML con la estructura de dos columnas
+            let authorAvatar, authorName, orcidHTML = '';
+            
+            if (profile) {
+                // ¡Coincidencia encontrada! Usamos los datos del perfil de Supabase
+                console.log("¡Perfil de investigador encontrado!", profile);
+                authorAvatar = profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
+                authorName = profile.display_name; // Usamos el nombre principal del perfil
+                // Si el perfil tiene ORCID, preparamos el HTML para mostrarlo
+                if (profile.orcid) {
+                    orcidHTML = `
+                        <a href="https://orcid.org/${profile.orcid}" target="_blank" class="orcid-link">
+                            <i class="fa-brands fa-orcid"></i> ${profile.orcid}
+                        </a>
+                    `;
+                }
+            } else {
+                // No hubo coincidencia, usamos los datos por defecto del post
+                authorAvatar = 'https://i.ibb.co/61fJv24/default-avatar.png';
+                authorName = post.author;
+            }
+
+            // --- BÚSQUEDA DE DOI EN EL CONTENIDO ---
+            let doiHTML = '';
+            const doiMatch = fullContent.match(/https?:\/\/doi\.org\/([^\s"<]+)/);
+            if (doiMatch) {
+                const doiLink = doiMatch[0];
+                const doiId = doiMatch[1];
+                doiHTML = `
+                    <a href="${doiLink}" target="_blank" class="doi-link">
+                        <img src="https://zenodo.org/badge/DOI/${doiId}.svg" alt="DOI Badge">
+                    </a>
+                `;
+            }
+            
+            // CONSTRUCCIÓN DEL HTML FINAL PARA EL MODAL
             const contentHTML = `
                 ${imageHTML}
                 <div class="modal-post-layout">
                     <aside class="modal-meta-column">
                         <div class="author-info">
-                            <img src="${authorAvatar}" alt="Avatar de ${post.author}" class="author-avatar">
+                            <img src="${authorAvatar}" alt="Avatar de ${authorName}" class="author-avatar">
                             <div>
-                                <div class="author-name">${post.author}</div>
+                                <div class="author-name">${authorName}</div>
                                 <div class="post-date">${postDate}</div>
                             </div>
                         </div>
+                        <div class="meta-badges">
+                            ${orcidHTML}
+                            ${doiHTML}
+                        </div>
                     </aside>
-
                     <article class="modal-body-column">
                         <h2>${post.title}</h2>
                         <div class="post-body">
@@ -708,10 +762,10 @@ document.addEventListener('mainReady', () => {
                     </article>
                 </div>
             `;
-            // --- FIN DE LA LÓGICA MODIFICADA ---
 
             openModal(contentHTML, 'article', { link: post.link, title: post.title });
         }
+        // --- FIN DE LA LÓGICA FINAL ---
     });
 
     // --- INICIO: LÓGICA PARA EL BOTÓN DEL MODAL DE ZENODO ---

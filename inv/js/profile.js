@@ -12,6 +12,7 @@ const ProfileApp = {
     user: null,
     currentUserProfile: null,
     bskyCreds: null, // Almacenamos las credenciales aquí para fácil acceso
+    verifiedSubstackName: null, // Guardaremos el nombre verificado aquí
 
     async init() {
         const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
@@ -116,6 +117,53 @@ const ProfileApp = {
                 this.handleLikePost(likeButton);
             }
         });
+
+        // --- INICIO DEL NUEVO CÓDIGO ---
+        // Listener para el campo de Substack
+        const substackInput = document.getElementById('substack-url');
+        if (substackInput) {
+            substackInput.addEventListener('input', (e) => {
+                this.verifySubstackUrl(e.target.value);
+            });
+            // Verificamos la URL inicial al cargar la página
+            this.verifySubstackUrl(substackInput.value);
+        }
+        // --- FIN DEL NUEVO CÓDIGO ---
+
+    },
+
+    async verifySubstackUrl(url) {
+        const statusEl = document.getElementById('substack-verification-status');
+        if (!statusEl) return;
+
+        // Limpiamos el estado anterior
+        this.verifiedSubstackName = null;
+        statusEl.textContent = '';
+
+        const match = url.match(/https?:\/\/([a-zA-Z0-9_-]+)\.substack\.com/);
+        if (!match) return; // No es una URL de Substack válida
+
+        const subdomain = match[1];
+        statusEl.textContent = 'Verificando...';
+        statusEl.style.color = 'var(--color-secondary)';
+
+        try {
+            const rssUrl = `https://api.rss2json.com/v1/api.json?rss_url=https://${subdomain}.substack.com/feed`;
+            const response = await fetch(rssUrl);
+            const data = await response.json();
+
+            if (data.status === 'ok' && data.feed.author) {
+                this.verifiedSubstackName = data.feed.author;
+                statusEl.textContent = `✅ Nombre de autor detectado: ${this.verifiedSubstackName}`;
+                statusEl.style.color = '#28a745'; // Verde
+            } else {
+                throw new Error('No se pudo encontrar el autor.');
+            }
+        } catch (error) {
+            console.error("Error de verificación de Substack:", error);
+            statusEl.textContent = '❌ No se pudo verificar la URL o el autor.';
+            statusEl.style.color = 'var(--color-accent)';
+        }
     },
     
     async renderProfileData(profileId) {
@@ -331,17 +379,37 @@ const ProfileApp = {
         saveButton.disabled = true;
         
         let updates = { id: this.user.id, updated_at: new Date() };
-        new FormData(form).forEach((value, key) => {
-            updates[key] = value;
+        
+        // --- CORRECCIÓN IMPORTANTE ---
+        // Usamos los IDs de los campos para construir el objeto de datos,
+        // ya que FormData con "name" es menos directo en este caso.
+        const inputs = form.querySelectorAll('input, textarea');
+        inputs.forEach(input => {
+            // Usamos el 'name' que añadimos al HTML, que coincide con el nombre de la columna
+            if (input.name) {
+                updates[input.name] = input.value;
+            }
         });
+        
+        // --- LÓGICA INTELIGENTE AÑADIDA ---
+        // Si estamos guardando el formulario de plataformas y hemos verificado un nombre de Substack,
+        // lo añadimos al objeto que se va a guardar.
+        if (formType === 'platforms' && this.verifiedSubstackName) {
+            updates.substack_author_name = this.verifiedSubstackName;
+        }
 
         const { error } = await this.supabase.from('profiles').upsert(updates);
         
-        alert(error ? `Error: ${error.message}` : `¡Datos de ${formType === 'profile' ? 'perfil' : 'plataformas'} guardados!`);
+        if(error) {
+            alert(`Error: ${error.message}`);
+        } else {
+            alert(`¡Datos de ${formType === 'profile' ? 'perfil' : 'plataformas'} guardados!`);
+            // Recargamos solo si no hay error para ver los cambios reflejados
+            location.reload();
+        }
 
         saveButton.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Guardar';
         saveButton.disabled = false;
-        if (!error) location.reload();
     },
 
     async handleUpdateAvatar(e) {

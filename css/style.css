@@ -366,6 +366,29 @@ body.dark-theme .desktop-nav { background-color: rgba(24, 25, 26, 0.8); } .deskt
     margin: 2rem 0;
 }
 
+/* Estilos para los badges de ORCID y DOI en el modal */
+.modal-meta-column .meta-badges {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.modal-meta-column .orcid-link {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    transition: color 0.2s;
+}
+
+.modal-meta-column .orcid-link:hover {
+    color: var(--color-accent);
+}
+
+.modal-meta-column .orcid-link i {
+    color: #a6ce39; /* Color oficial de ORCID */
+}
+
 /* 7. Ajuste para que los botones de CTA se vean bien */
 .modal-cta-container {
     margin-top: 3rem;
