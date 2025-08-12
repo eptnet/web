@@ -403,34 +403,40 @@ document.addEventListener('mainReady', () => {
     }
     
     function openModal(content, type = 'article', shareConfig = null) {
-    if (!modalOverlay || !modalContent) return;
+        if (!modalOverlay || !modalContent) return;
 
-    document.body.dataset.modalType = type;
-    modalContent.innerHTML = content;
+        document.body.dataset.modalType = type;
+        modalContent.innerHTML = content;
 
-    // --- INICIO DE LA CORRECCIÓN ---
-    // Movemos el reseteo del scroll aquí y lo envolvemos en un setTimeout.
-    // Esto asegura que el DOM se haya actualizado antes de ejecutar el comando.
-    setTimeout(() => {
-        modalContent.scrollTop = 0;
-    }, 0);
-    // --- FIN DE LA CORRECCIÓN ---
+        setTimeout(() => {
+            modalContent.scrollTop = 0;
+        }, 0);
 
-    if (type === 'stories') {
-        modalContainer.classList.add('modal-container--video');
-        modalShareFooter.style.display = 'none';
-    } else {
-        modalContainer.classList.remove('modal-container--video');
-        modalShareFooter.style.display = 'flex';
-        if (shareConfig) setupShareButtons(shareConfig);
+        if (type === 'stories') {
+            modalContainer.classList.add('modal-container--video');
+            modalShareFooter.style.display = 'none';
+        } else {
+            modalContainer.classList.remove('modal-container--video');
+            modalShareFooter.style.display = 'flex';
+            // --- INICIO DEL CAMBIO ---
+            // Ahora guardamos la información en el propio elemento del footer
+            if (shareConfig) {
+                modalShareFooter.dataset.shareLink = shareConfig.link;
+                modalShareFooter.dataset.shareTitle = shareConfig.title;
+            } else {
+                // Limpiamos por si el contenido no tiene nada que compartir
+                delete modalShareFooter.dataset.shareLink;
+                delete modalShareFooter.dataset.shareTitle;
+            }
+            // --- FIN DEL CAMBIO ---
+        }
+        modalOverlay.classList.add('is-visible');
+        document.body.style.overflow = 'hidden';
+
+        if (!history.state?.modalOpen) {
+            history.pushState({ modalOpen: true }, '');
+        }
     }
-    modalOverlay.classList.add('is-visible');
-    document.body.style.overflow = 'hidden';
-
-    if (!history.state?.modalOpen) {
-        history.pushState({ modalOpen: true }, '');
-    }
-}
 
     function closeModal() {
         if (!modalOverlay || !modalOverlay.classList.contains('is-visible')) return;
@@ -444,14 +450,50 @@ document.addEventListener('mainReady', () => {
         delete document.body.dataset.modalType;
     }
 
-    function setupShareButtons(config) {
-        const link = encodeURIComponent(config.link);
-        const title = encodeURIComponent(config.title || document.title);
-        modalShareFooter.querySelector("#share-fb")?.addEventListener('click', () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${link}`));
-        modalShareFooter.querySelector("#share-li")?.addEventListener('click', () => window.open(`https://www.linkedin.com/shareArticle?mini=true&url=${link}&title=${title}`));
-        modalShareFooter.querySelector("#share-wa")?.addEventListener('click', () => window.open(`https://api.whatsapp.com/send?text=${title}%20${link}`));
-        modalShareFooter.querySelector("#share-x")?.addEventListener('click', () => window.open(`https://twitter.com/intent/tweet?url=${link}&text=${title}`));
-    }
+    // Lógica centralizada para los botones de compartir
+    modalShareFooter?.addEventListener('click', (e) => {
+        const shareButton = e.target.closest('.share-btn');
+        if (!shareButton) return; // Si no se hizo clic en un botón, no hacemos nada
+
+        const service = shareButton.dataset.sharer;
+        const link = encodeURIComponent(modalShareFooter.dataset.shareLink || window.location.href);
+        const title = encodeURIComponent(modalShareFooter.dataset.shareTitle || document.title);
+        
+        let url;
+
+        switch (service) {
+            case 'facebook':
+                url = `https://www.facebook.com/sharer/sharer.php?u=${link}`;
+                break;
+            case 'linkedin':
+                url = `https://www.linkedin.com/shareArticle?mini=true&url=${link}&title=${title}`;
+                break;
+            case 'whatsapp':
+                url = `https://api.whatsapp.com/send?text=${title}%20${link}`;
+                break;
+            case 'x':
+                url = `https://twitter.com/intent/tweet?url=${link}&text=${title}`;
+                break;
+            case 'bluesky': // Lógica para el nuevo botón
+                url = `https://bsky.app/intent/compose?text=${title}%20${link}`;
+                break;
+        }
+
+        if (url) {
+            window.open(url, '_blank', 'noopener,noreferrer');
+        }
+        
+        // Lógica para el botón de copiar enlace
+        if (shareButton.id === 'copy-link') {
+            navigator.clipboard.writeText(decodeURIComponent(link)).then(() => {
+                const originalIcon = shareButton.innerHTML;
+                shareButton.innerHTML = `<i class="fa-solid fa-check"></i>`; // Ícono de "copiado"
+                setTimeout(() => {
+                    shareButton.innerHTML = originalIcon; // Volver al ícono original
+                }, 1500);
+            }).catch(err => console.error('Error al copiar enlace:', err));
+        }
+    });
 
     const audioPlayer = {
         playerElement: document.getElementById('persistent-audio-player'),
@@ -606,7 +648,6 @@ document.addEventListener('mainReady', () => {
         if (dataId === "static-launch-stories") {
             document.dispatchEvent(new CustomEvent('launch-stories'));
         } 
-        // --- AÑADE ESTE BLOQUE DE CÓDIGO ---
         else if (dataId === "static-zenodo") {
             const imageURL = 'https://i.ibb.co/x8JbV61H/a-futuristic-digital-artwork-depicting-a-k9-Jb0c-3-R0u8by-Ev-GGOrw-x-Ait-Jamg-RCat9-GLc-O810jg.jpg';
             const contentHTML = `
@@ -627,31 +668,44 @@ document.addEventListener('mainReady', () => {
             `;
             openModal(contentHTML, 'article', { link: 'https://zenodo.org/communities/epistecnologia' });
         }
+        // --- INICIO DE LA LÓGICA MODIFICADA PARA POSTS ---
         else if (allPostsData.some(p => p.guid === dataId)) {
             const post = allPostsData.find(p => p.guid === dataId);
             
-            // --- INICIO DE LA LÓGICA MODIFICADA ---
+            // 1. Obtenemos el CONTENIDO COMPLETO, ya no el extracto.
+            const fullContent = sanitizeSubstackContent(post.content);
+            
+            // 2. Preparamos los datos
             const postDate = new Date(post.pubDate).toLocaleDateString("es-ES", { year: "numeric", month: "long", day: "numeric" });
-            const excerpt = truncateText(post.content, 800);
-            
-            // Obtenemos la imagen del post
             const thumbnail = post.thumbnail || extractFirstImageUrl(post.content);
-            
-            // Creamos una variable para la imagen, solo si existe
             const imageHTML = thumbnail ? `<img src="${thumbnail}" alt="${post.title}" class="modal-post-image">` : '';
-
+            // Usamos una imagen por defecto para el avatar, ya que el feed no la provee.
+            const authorAvatar = 'https://i.ibb.co/61fJv24/default-avatar.png'; 
+            
+            // 3. Creamos el nuevo HTML con la estructura de dos columnas
             const contentHTML = `
-                ${imageHTML} 
-                <div class="modal-padded-content">
-                    <h2>${post.title}</h2>
-                    <div class="post-meta">Publicado por ${post.author} el ${postDate}</div>
-                    <div class="post-body">
-                        <p>${excerpt}</p>
-                    </div>
-                    <div class="modal-cta-container">
-                        <a href="${post.link}" target="_blank" class="modal-cta-button modal-cta-button--primary">Seguir en EPT News</a>
-                        <a href="https://eptnews.substack.com/" target="_blank" class="modal-cta-button">Suscribirse al Newsletter</a>
-                    </div>
+                ${imageHTML}
+                <div class="modal-post-layout">
+                    <aside class="modal-meta-column">
+                        <div class="author-info">
+                            <img src="${authorAvatar}" alt="Avatar de ${post.author}" class="author-avatar">
+                            <div>
+                                <div class="author-name">${post.author}</div>
+                                <div class="post-date">${postDate}</div>
+                            </div>
+                        </div>
+                    </aside>
+
+                    <article class="modal-body-column">
+                        <h2>${post.title}</h2>
+                        <div class="post-body">
+                            ${fullContent}
+                        </div>
+                        <div class="modal-cta-container">
+                            <a href="${post.link}" target="_blank" class="modal-cta-button modal-cta-button--primary">Seguir leyendo en EPT News</a>
+                            <a href="https://eptnews.substack.com/" target="_blank" class="modal-cta-button">Suscribirse al Newsletter</a>
+                        </div>
+                    </article>
                 </div>
             `;
             // --- FIN DE LA LÓGICA MODIFICADA ---

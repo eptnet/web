@@ -215,15 +215,28 @@ body.dark-theme .desktop-nav { background-color: rgba(24, 25, 26, 0.8); } .deskt
 /* 4.3 MODAL DE INMERSIÓN */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(18, 18, 18, 0.85); z-index: 2000; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
 .modal-overlay.is-visible { opacity: 1; visibility: visible; }
-.modal-container { background-color: var(--color-surface); width: 90%; height: 90%; max-width: 600px; max-height: 800px; border-radius: var(--border-radius); box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; flex-direction: column; position: relative; transform: scale(0.95); transition: transform 0.3s ease; }
+/* 1. Hacemos el contenedor del modal mucho más grande en escritorio */
+.modal-container {
+    background-color: var(--color-surface);
+    /* Aumentamos el ancho máximo a 1200px y usamos el 90% del ancho de la ventana */
+    max-width: 1200px; 
+    width: 90%;
+    height: 90%;
+    border-radius: var(--border-radius);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transform: scale(0.95);
+    transition: transform 0.3s ease;
+}
 .modal-overlay.is-visible .modal-container { transform: scale(1); }
 .modal-close-btn { position: absolute; top: -15px; right: -15px; width: 40px; height: 40px; background: white; color: black; border-radius: 50%; border: none; font-size: 1.5rem; line-height: 1; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 10; }
+/* 2. Reseteamos el padding del contenido principal para que la imagen y el grid ocupen todo */
 .modal-content { 
     flex-grow: 1; 
     overflow-y: auto; 
-    padding-left: 0px;
-    padding-right: 0px;
-    padding-top: 0px; 
+    padding: 0; /* Quitamos todo el padding de aquí */
 }
 .modal-container--video .modal-content { padding: 0; background: #000; overflow: hidden; }
 .modal-share-footer { flex-shrink: 0; padding: 1rem 2.5rem; border-top: 1px solid var(--color-border); display: flex; gap: 0.75rem; }
@@ -282,14 +295,114 @@ body.dark-theme .desktop-nav { background-color: rgba(24, 25, 26, 0.8); } .deskt
     color: white;
 }
 
-/* Estilos para la nueva imagen de cabecera en el modal */
+/* 3. La imagen de cabecera sigue igual, ocupando todo el ancho superior */
 .modal-post-image {
     display: block;
     width: 100%;
-    max-height: 300px; /* Altura máxima para que no sea demasiado grande */
-    object-fit: cover; /* Asegura que la imagen cubra el espacio sin deformarse */
-    border-top-left-radius: var(--border-radius); /* Redondea las esquinas superiores */
-    border-top-right-radius: var(--border-radius);
+    max-height: 350px; /* Un poco más de altura para el nuevo tamaño */
+    object-fit: cover;
+}
+
+/* 4. ¡LA MAGIA! Creamos el nuevo layout de dos columnas con CSS Grid */
+.modal-post-layout {
+    display: grid;
+    /* Columna izquierda fija de 240px, columna derecha flexible */
+    grid-template-columns: 240px 1fr; 
+    gap: 2.5rem; /* Espacio entre las columnas */
+    padding: 2rem 2.5rem; /* Padding general para el layout */
+    align-items: start; /* Alineamos los items al inicio */
+}
+
+/* 5. Estilos para la columna izquierda (metadatos) */
+.modal-meta-column {
+    position: sticky; /* ¡CLAVE! La columna se queda fija al hacer scroll */
+    top: 2rem; /* Espacio desde la parte superior del área de scroll */
+}
+
+.modal-meta-column .author-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.modal-meta-column .author-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 1rem;
+    border: 3px solid var(--color-border);
+}
+
+.modal-meta-column .author-name {
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.modal-meta-column .post-date {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}
+
+/* 6. Estilos para la columna principal (contenido) */
+.modal-body-column h2 {
+    font-size: 2.5rem; /* Título más grande */
+    line-height: 1.2;
+    margin-bottom: 2rem;
+}
+
+/* El cuerpo del post ya tiene estilos, pero nos aseguramos que funcionen bien aquí */
+.modal-body-column .post-body p {
+    margin-bottom: 1.5em;
+    font-size: 1.1rem; /* Texto un poco más grande para mejor lectura */
+    line-height: 1.8;
+}
+
+.modal-body-column .post-body img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--border-radius);
+    margin: 2rem 0;
+}
+
+/* 7. Ajuste para que los botones de CTA se vean bien */
+.modal-cta-container {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--color-border);
+}
+
+/* 8. Media Query para volver a una sola columna en pantallas pequeñas */
+@media (max-width: 992px) {
+    .modal-post-layout {
+        grid-template-columns: 1fr; /* Una sola columna */
+        padding: 1.5rem;
+        gap: 1.5rem;
+    }
+
+    .modal-meta-column {
+        position: static; /* Quitamos el sticky en móvil */
+        border-bottom: 1px solid var(--color-border);
+        padding-bottom: 1.5rem;
+    }
+
+    .modal-meta-column .author-info {
+        flex-direction: row; /* Ponemos avatar y texto en fila */
+        text-align: left;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .modal-meta-column .author-avatar {
+        width: 50px;
+        height: 50px;
+        margin-bottom: 0;
+    }
+
+    .modal-body-column h2 {
+        font-size: 1.8rem;
+    }
 }
 
 .modal-padded-content {
