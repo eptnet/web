@@ -1,19 +1,15 @@
-// ARCHIVO COMPLETO Y DEFINITIVO: /supabase/functions/bsky-create-reply/index.ts
+// Contenido COMPLETO Y CORREGIDO para: /supabase/functions/bsky-create-reply/index.ts
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { BskyAgent, AtpSessionEvent, AtpSessionData } from 'npm:@atproto/api'
+import { corsHeaders } from '../_shared/cors.ts'
 
 const BSKY_SERVICE_URL = 'https://bsky.social'
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: CORS_HEADERS })
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
@@ -28,14 +24,14 @@ serve(async (req) => {
 
     const { data: creds, error: credsError } = await supabaseClient
       .from('bsky_credentials')
-      .select('access_jwt, refresh_jwt, did, handle')
+      .select('did, handle, access_jwt, refresh_jwt')
       .eq('user_id', user.id)
       .single();
     if (credsError || !creds) throw new Error('El usuario no ha conectado su cuenta de Bluesky.');
 
     const { replyText, parentPost } = await req.json();
-    if (!replyText || !parentPost?.parent?.uri || !parentPost?.root?.uri) {
-      throw new Error('Faltan datos para publicar el comentario.');
+    if (!replyText || !parentPost?.uri || !parentPost?.cid) {
+      throw new Error('Faltan datos (texto, URI del post, CID del post) para publicar el comentario.');
     }
 
     const agent = new BskyAgent({
@@ -46,34 +42,32 @@ serve(async (req) => {
         }
       },
     });
-    await agent.resumeSession({ ...creds });
+    
+    // LA CORRECCIÓN CLAVE: Mapeamos los nombres de snake_case a camelCase
+    await agent.resumeSession({
+        accessJwt: creds.access_jwt,
+        refreshJwt: creds.refresh_jwt,
+        did: creds.did,
+        handle: creds.handle,
+    });
 
-    const replyObject = {
+    // Construimos el objeto de respuesta para Bluesky
+    await agent.post({
       text: replyText,
       reply: {
-        root: parentPost.root,
-        parent: parentPost.parent
+        root: { uri: parentPost.uri, cid: parentPost.cid }, // Para respuestas directas, root y parent son el mismo
+        parent: { uri: parentPost.uri, cid: parentPost.cid }
       }
-    };
-    console.log('Enviando a Bluesky el siguiente objeto de respuesta:', JSON.stringify(replyObject, null, 2));
+    });
 
-    await agent.post(replyObject);
-
-    return new Response(JSON.stringify({ success: true, message: 'Comentario publicado con éxito' }), {
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-      status: 200,
+    return new Response(JSON.stringify({ success: true, message: 'Comentario publicado' }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200
     });
 
   } catch (error) {
-    console.error("Error en la función bsky-create-reply:", error);
-    if (error.error === 'InvalidToken' || error.message.includes('Token could not be verified')) {
-        return new Response(JSON.stringify({ 
-            error: 'Tu sesión de Bluesky ha expirado. Por favor, desconecta y vuelve a conectar tu cuenta en tu perfil.' 
-        }), { status: 401, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
-    }
+    console.error("Error en bsky-create-reply:", error);
     return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500
     });
   }
 });

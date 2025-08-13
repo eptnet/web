@@ -1,3 +1,5 @@
+// Contenido COMPLETO para: /supabase/functions/bsky-like-post/index.ts
+
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { BskyAgent, AtpSessionEvent, AtpSessionData } from 'npm:@atproto/api'
@@ -58,6 +60,7 @@ serve(async (req) => {
       // Si no, damos 'Me Gusta' como antes
       if (!postUri || !postCid) throw new Error('Faltan datos del post (URI y CID).')
       const likeResult = await agent.like(postUri, postCid);
+      // Devolvemos el URI del nuevo like para que el frontend lo guarde
       return new Response(JSON.stringify({ success: true, message: 'Post likeado', uri: likeResult.uri }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200
       });

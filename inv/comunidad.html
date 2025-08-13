@@ -86,7 +86,6 @@
             <div class="modal-content post-modal">
                 <div class="modal-header">
                     <button class="modal-close-btn">&times;</button>
-                    <button type="submit" form="create-post-form-modal" class="btn btn-primary">Publicar</button>
                 </div>
                 <div class="modal-body">
                     <form id="create-post-form-modal">
@@ -100,7 +99,43 @@
                                 <i class="fa-solid fa-film disabled-icon" title="Añadir video (próximamente)"></i>
                                 <i class="fa-solid fa-square-poll-vertical disabled-icon" title="Crear encuesta (próximamente)"></i>
                             </div>
+                            <div class="form-submit-area">
+                                <span class="char-counter">300</span>
+                                <button type="submit" class="btn btn-primary">Publicar</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="reply-modal-template">
+        <div class="modal-overlay is-visible">
+            <div class="modal-content reply-modal">
+                <div class="modal-header">
+                    <button class="modal-close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="parent-post-preview">
+                        <div class="post-header">
+                            <img id="parent-post-avatar" src="" alt="Avatar" class="post-avatar">
+                            <div class="post-author-info">
+                                <strong id="parent-post-author"></strong>
+                            </div>
+                        </div>
+                        <div class="post-body">
+                            <p id="parent-post-text"></p>
+                        </div>
+                    </div>
+                    <form id="reply-form">
+                        <div class="textarea-container">
+                            <img id="reply-user-avatar" src="" alt="Tu avatar" class="post-avatar">
+                            <textarea name="reply-text" placeholder="Publica tu respuesta..." maxlength="300" required></textarea>
+                        </div>
+                        <div class="form-actions">
                             <span class="char-counter">300</span>
+                            <button type="submit" class="btn btn-primary">Responder</button>
                         </div>
                     </form>
                 </div>

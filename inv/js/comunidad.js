@@ -106,37 +106,45 @@ const ComunidadApp = {
 
 
     // --- MANEJADORES DE EVENTOS (Versión Actualizada) ---
-    addEventListeners() {
-        // Formulario para crear un nuevo post
-        document.getElementById('create-post-form')?.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.handleCreatePost(e.target);
-        });
-        
-        // Contador de caracteres para el textarea
-        document.getElementById('post-text')?.addEventListener('input', this.updateCharCounter);
+    // REEMPLAZA ESTA FUNCIÓN COMPLETA EN comunidad.js
 
-        // Delegación de eventos para clics en todo el cuerpo de la página
-        document.body.addEventListener('click', (e) => {
-            // Botón Flotante para abrir el modal de post
-            if (e.target.closest('#fab-create-post')) {
-                this.openPostModal();
-            }
-            // Botón para conectar Bsky en el panel de usuario
-            if (e.target.id === 'connect-bsky-btn') {
-                this.openBskyConnectModal();
-            }
-        });
+addEventListeners() {
+    // --- INICIO DE LA CORRECCIÓN ---
+    // Adjuntamos el listener directamente al botón flotante para máxima fiabilidad.
+    const fabButton = document.getElementById('fab-create-post');
+    if (fabButton) {
+        fabButton.addEventListener('click', () => this.openPostModal());
+    } else {
+        // Este mensaje nos avisaría si el botón no estuviera en el HTML.
+        console.warn("Asistente de Programación: El botón flotante #fab-create-post no se encontró.");
+    }
+    // --- FIN DE LA CORRECCIÓN ---
 
-        // Delegación de eventos para el contenedor del feed (Likes, Comentarios, etc.)
-        document.getElementById('feed-container')?.addEventListener('click', (e) => {
-            const likeButton = e.target.closest('.like-btn');
-            const replyButton = e.target.closest('.reply-btn');
+    // Listener para el formulario de la página (sin cambios)
+    document.getElementById('create-post-form')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.handleCreatePost(e.target);
+    });
+    
+    // Listener para el contador de caracteres (sin cambios)
+    document.getElementById('post-text')?.addEventListener('input', (e) => this.updateCharCounter(e));
 
-            if (likeButton) this.handleLike(likeButton);
-            if (replyButton) this.handleReply(replyButton);
-        });
-    },
+    // Listener para el botón de conectar en el panel izquierdo (sin cambios)
+    document.body.addEventListener('click', (e) => {
+        if (e.target.id === 'connect-bsky-btn') {
+            this.openBskyConnectModal();
+        }
+    });
+
+    // Listener para las acciones del feed (sin cambios)
+    document.getElementById('feed-container')?.addEventListener('click', (e) => {
+        const likeButton = e.target.closest('.like-btn');
+        const replyButton = e.target.closest('.reply-btn');
+
+        if (likeButton) this.handleLike(likeButton);
+        if (replyButton) this.handleReply(replyButton);
+    });
+},
 
     // --- LÓGICA DE INTERACCIÓN (Versión Actualizada) ---
 
@@ -217,19 +225,24 @@ const ComunidadApp = {
      * Maneja el evento de "Me Gusta" (funcionalidad futura).
      */
     async handleLike(button) {
+        // Si el usuario no está conectado a Bluesky, no hacemos nada.
+        if (!this.bskyCreds) {
+            alert("Necesitas conectar tu cuenta de Bluesky para poder interactuar.");
+            return;
+        }
         if (button.disabled) return;
 
         const postElement = button.closest('.feed-post');
         const postUri = postElement.dataset.uri;
         const postCid = postElement.dataset.cid;
-        let likeUri = button.dataset.likeUri; // El URI del 'like' que ya existe, si lo hay.
+        let likeUri = button.dataset.likeUri;
 
         const isLiked = button.classList.contains('is-liked');
         const countSpan = button.querySelector('span');
         const icon = button.querySelector('i');
         const originalCount = parseInt(countSpan.textContent);
 
-        // 1. Actualización Optimista (cambiamos la UI al instante)
+        // 1. Actualización Optimista: Cambiamos la UI al instante.
         button.disabled = true;
         button.classList.toggle('is-liked');
         if (!isLiked) { // Si NO tenía like... ahora lo tiene
@@ -246,21 +259,23 @@ const ComunidadApp = {
                 body: { 
                     postUri: postUri, 
                     postCid: postCid,
-                    likeUri: isLiked ? likeUri : undefined // Si tenía like, enviamos el likeUri para borrarlo
+                    likeUri: isLiked ? likeUri : undefined // Si ya tenía like, enviamos su URI para borrarlo
                 },
             });
 
             if (error) throw error;
 
-            // Si la acción fue un 'like', guardamos el nuevo likeUri para poder quitarlo después.
+            // Si la acción fue un 'like' exitoso, guardamos el nuevo likeUri que nos devuelve la función.
             if (!isLiked && data.uri) {
                 button.dataset.likeUri = data.uri;
+            } else if (isLiked) {
+                button.dataset.likeUri = ''; // Limpiamos el likeUri si lo quitamos
             }
 
         } catch (error) {
             console.error("Error al procesar el Like:", error);
-            // 3. Reversión: Si algo falla, volvemos la UI a su estado original
-            button.classList.toggle('is-liked'); // Lo revierte
+            // 3. Reversión: Si algo falla, devolvemos la UI a su estado original.
+            button.classList.toggle('is-liked');
             icon.className = isLiked ? 'fa-solid fa-heart' : 'fa-regular fa-heart';
             countSpan.textContent = originalCount;
             alert("No se pudo procesar la acción. Inténtalo de nuevo.");
@@ -270,11 +285,102 @@ const ComunidadApp = {
     },
     
     /**
-     * Maneja el evento de "Comentar" (funcionalidad futura).
+     * Maneja el evento de "Comentar".
      */
     async handleReply(button) {
-        alert("Funcionalidad de 'Comentar' en desarrollo.");
-        // TODO: Implementar la lógica para mostrar un cuadro de respuesta y publicar el comentario.
+        if (!this.bskyCreds) {
+            alert("Necesitas conectar tu cuenta de Bluesky para poder comentar.");
+            return;
+        }
+        
+        const postElement = button.closest('.feed-post');
+        const postData = {
+            uri: postElement.dataset.uri,
+            cid: postElement.dataset.cid,
+            text: postElement.querySelector('.post-body p').innerHTML, // Usamos innerHTML para conservar los <br>
+            author: {
+                displayName: postElement.querySelector('.post-author-info strong').textContent,
+                avatar: postElement.querySelector('.post-avatar').src,
+            }
+        };
+        
+        this.openReplyModal(postData);
+    },
+
+    openReplyModal(postData) {
+        const template = document.getElementById('reply-modal-template');
+        if (!template) return console.error("La plantilla de respuesta no existe.");
+
+        const modalContainer = document.getElementById('modal-container');
+        const modalNode = template.content.cloneNode(true);
+
+        // Rellenamos el modal con la información del post padre
+        modalNode.querySelector('#parent-post-avatar').src = postData.author.avatar;
+        modalNode.querySelector('#parent-post-author').textContent = postData.author.displayName;
+        modalNode.querySelector('#parent-post-text').innerHTML = postData.text;
+        modalNode.querySelector('#reply-user-avatar').src = this.userProfile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
+        
+        // Añadimos los listeners
+        modalNode.querySelector('.modal-close-btn').addEventListener('click', () => this.closePostModal());
+        const form = modalNode.querySelector('#reply-form');
+        const textArea = form.querySelector('textarea');
+        const charCounter = form.querySelector('.char-counter');
+
+        textArea.addEventListener('input', () => {
+            const remaining = 300 - textArea.value.length;
+            charCounter.textContent = remaining;
+        });
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.submitReply(textArea.value, postData, form);
+        });
+        
+        modalContainer.innerHTML = ''; // Limpiamos por si había otro modal
+        modalContainer.appendChild(modalNode);
+    },
+
+    async submitReply(replyText, parentPostData, form) {
+        const submitButton = form.querySelector('button[type="submit"]');
+        if (!replyText.trim()) return;
+
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+        try {
+            const { error } = await this.supabase.functions.invoke('bsky-create-reply', {
+                body: {
+                    replyText: replyText,
+                    // El objeto que espera nuestra Edge Function
+                    parentPost: {
+                        uri: parentPostData.uri,
+                        cid: parentPostData.cid
+                    }
+                },
+            });
+
+            if (error) throw error;
+            
+            // Actualización Optimista: incrementamos el contador de comentarios
+            const originalPostElement = document.querySelector(`.feed-post[data-uri="${parentPostData.uri}"]`);
+            if (originalPostElement) {
+                const countSpan = originalPostElement.querySelector('.reply-btn span');
+                countSpan.textContent = parseInt(countSpan.textContent) + 1;
+            }
+
+            this.closePostModal();
+            
+        } catch (error) {
+            alert(`Error al publicar el comentario: ${error.message}`);
+            submitButton.disabled = false;
+            submitButton.innerHTML = 'Responder';
+        }
+    },
+
+    // No olvides que esta función ya la tienes, solo asegúrate de que esté
+    closePostModal() {
+        const modalContainer = document.getElementById('modal-container');
+        if (modalContainer) modalContainer.innerHTML = '';
     },
 
     // --- HELPERS ---
@@ -297,6 +403,7 @@ const ComunidadApp = {
             embedHtml = `<div class="post-embed-image"><img src="${post.embed.images[0].thumb}" alt="${post.embed.images[0].alt || 'Imagen adjunta'}" loading="lazy"></div>`;
         }
 
+        // El cambio clave está en el botón de "like", que ahora incluye data-cid y data-like-uri
         return `
             <div class="bento-box feed-post" data-uri="${post.uri}" data-cid="${post.cid}">
                 <div class="post-header">
@@ -335,6 +442,8 @@ const ComunidadApp = {
 
     // --- FUNCIONES DEL MODAL (Nuevas) ---
 
+    // REEMPLAZA ESTAS DOS FUNCIONES en comunidad.js
+
     openPostModal() {
         if (document.querySelector('.modal-overlay')) return; // Evita abrir múltiples modales
 
@@ -346,6 +455,9 @@ const ComunidadApp = {
         
         const modalContainer = document.getElementById('modal-container');
         const modalNode = template.content.cloneNode(true);
+        
+        // Obtenemos una referencia al overlay que acabamos de clonar
+        const modalOverlay = modalNode.querySelector('.modal-overlay');
         
         // Personalizar y añadir listeners al clon del modal
         modalNode.querySelector('#modal-user-avatar').src = this.userProfile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
@@ -360,12 +472,29 @@ const ComunidadApp = {
         const textArea = modalNode.querySelector('textarea');
         textArea.addEventListener('input', (e) => this.updateCharCounter(e));
 
+        // Añadimos el modal (aún invisible) al DOM
         modalContainer.appendChild(modalNode);
+
+        // --- LA SOLUCIÓN MÁGICA ---
+        // Forzamos un pequeño reflow del navegador y luego añadimos la clase
+        // '.is-visible' para que la transición de CSS se active correctamente.
+        requestAnimationFrame(() => {
+            modalOverlay.classList.add('is-visible');
+        });
     },
 
     closePostModal() {
-        const modalContainer = document.getElementById('modal-container');
-        if (modalContainer) modalContainer.innerHTML = '';
+        const modalOverlay = document.querySelector('.modal-overlay.is-visible');
+        if (modalOverlay) {
+            // Quitamos la clase para iniciar la transición de salida
+            modalOverlay.classList.remove('is-visible');
+            
+            // Esperamos a que la transición CSS termine antes de borrar el HTML del DOM
+            modalOverlay.addEventListener('transitionend', () => {
+                const modalContainer = document.getElementById('modal-container');
+                if (modalContainer) modalContainer.innerHTML = '';
+            }, { once: true }); // 'once: true' se asegura de que el listener se auto-elimine
+        }
     },
 
     updateCharCounter(e) {
