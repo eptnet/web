@@ -448,8 +448,6 @@ export const Studio = {
         const formData = new FormData(e.target);
         const platform = formData.get('platform');
         
-        // --- INICIO DE LA MODIFICACIÓN ---
-        // Obtenemos el proyecto activo desde sessionStorage para asignarlo a la nueva sesión
         const activeProjectString = sessionStorage.getItem('activeProject');
         const activeProject = activeProjectString ? JSON.parse(activeProjectString) : null;
         const projectTitle = session ? session.project_title : activeProject?.title;
@@ -458,7 +456,6 @@ export const Studio = {
             alert("Error: No se pudo determinar el proyecto asociado. Por favor, selecciónalo de nuevo.");
             return;
         }
-        // --- FIN DE LA MODIFICACIÓN ---
 
         let sessionData = {
             project_title: projectTitle,
@@ -470,7 +467,7 @@ export const Studio = {
             description: formData.get('description'),
             thumbnail_url: formData.get('thumbnail_url'),
             more_info_url: formData.get('more_info_url'),
-            platform_id: formData.get('youtubeId') || formData.get('substackId') || null,
+            platform_id: formData.get('platformId') || formData.get('substackId') || null, // Corregido para tomar el platformId
             rtmp_url: formData.get('rtmp_url'),
             rtmp_key: formData.get('rtmp_key')
         };
@@ -507,19 +504,17 @@ export const Studio = {
             let guestParams = new URLSearchParams({ room: roomName });
             let viewerParams = new URLSearchParams({ scene: '0', showlabels: '0', room: roomName });
             
-            // --- INICIO DE LA CORRECCIÓN ---
-            // Reemplazamos 'EPTLive' con la variable `roomName` para crear una sala única
             if (formData.get('guestCount') > 4) {
                 const meshcastUrl = `https://cae1.meshcast.io/whep/${roomName}`;
                 directorParams.set('whepshare', meshcastUrl);
                 guestParams.set('whepshare', meshcastUrl);
-                viewerParams.set('meshcast', '1'); // meshcast=1 es el parámetro correcto
+                viewerParams.set('meshcast', '1');
             }
             sessionData.guest_url = `${vdoDomain}/?${guestParams.toString()}`;
             sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}&layout&whepshare=https://use1.meshcast.io/whep/${roomName}&cleanoutput`;
-            // --- FIN DE LA CORRECCIÓN ---
         }
 
+        // Guardamos la sesión en la base de datos
         const { data: savedSession, error } = session
             ? await App.supabase.from('sessions').update(sessionData).eq('id', session.id).select().single()
             : await App.supabase.from('sessions').insert(sessionData).select().single();
@@ -530,6 +525,33 @@ export const Studio = {
             return;
         }
 
+        // --- INICIO: LÓGICA DE CHAT BLUESKY ---
+        // Si la sesión es de VDO Ninja y es una sesión nueva, creamos el hilo de chat.
+        if (platform === 'vdo_ninja' && !session) {
+            try {
+                console.log("Creando hilo de chat en Bluesky...");
+                const { data: chatData, error: chatError } = await App.supabase.functions.invoke('bsky-create-anchor-post', {
+                    body: { sessionTitle: savedSession.session_title },
+                });
+
+                if (chatError) throw chatError;
+
+                // Si se crea con éxito, actualizamos la sesión en la base de datos con el URI del hilo.
+                await App.supabase
+                    .from('sessions')
+                    .update({ bsky_chat_thread_uri: chatData.uri })
+                    .eq('id', savedSession.id);
+                
+                console.log("Hilo de chat creado y enlazado a la sesión.");
+
+            } catch (err) {
+                alert(`La sesión se agendó, pero hubo un error al crear el hilo de chat en Bluesky: ${err.message}`);
+                console.error(err);
+            }
+        }
+        // --- FIN: LÓGICA DE CHAT BLUESKY ---
+
+        // Lógica para guardar participantes (sin cambios)
         await App.supabase.from('event_participants').delete().eq('session_id', savedSession.id);
         if (this.participants && this.participants.length > 0) {
             const participantsData = this.participants.map(p => ({ session_id: savedSession.id, user_id: p.id }));

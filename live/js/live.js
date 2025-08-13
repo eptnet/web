@@ -8,8 +8,15 @@ const LiveApp = {
     countdownInterval: null,
     currentChannel: null,
     viewerCount: 0,
+    currentItemInView: null, // <-- [NUEVO] Propiedad para guardar el evento actual en el modal
 
     init() {
+        // --- [MODIFICADO] Guardia de ejecución ---
+        if (!document.getElementById('schedule-list')) {
+            console.log("LiveApp: No se está en live.html, se detiene la ejecución.");
+            return;
+        }
+
         const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
         this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -115,25 +122,18 @@ const LiveApp = {
         }
     },
 
-    // AÑADE ESTA NUEVA FUNCIÓN
     handleDirectLink() {
         const params = new URLSearchParams(window.location.search);
         const sessionId = params.get('sesion');
 
-        // Si no hay un parámetro 'sesion', no hacemos nada.
         if (!sessionId) {
             return;
         }
 
-        // Buscamos el evento o video en nuestro mapa de contenido ya cargado.
         const item = this.allContentMap[sessionId] || this.allContentMap[`video-${sessionId}`];
 
         if (item) {
-            // Si lo encontramos, abrimos la sala correspondiente.
             this.openLiveRoom(sessionId);
-
-            // (Opcional, pero recomendado) Limpiamos la URL para que si el usuario
-            // recarga la página, no se vuelva a abrir el modal automáticamente.
             const newUrl = window.location.pathname;
             history.replaceState({}, '', newUrl);
         } else {
@@ -285,6 +285,21 @@ const LiveApp = {
         this.elements.ondemandListContainer.addEventListener('click', (e) => this.handleCardClick(e));
         this.elements.tabs.forEach(tab => tab.addEventListener('click', (e) => this.handleTabClick(e.currentTarget)));
         this.elements.searchInput?.addEventListener('input', (e) => this.filterCards(e.target.value));
+
+        // --- [NUEVO] Listener para el formulario del chat ---
+        this.elements.modalContainer.addEventListener('submit', (e) => {
+            if (e.target.id === 'chat-form') {
+                e.preventDefault();
+                const currentEvent = this.currentItemInView;
+                if (currentEvent && currentEvent.bsky_chat_thread_uri) {
+                    this.handleChatMessageSend(
+                        e.target,
+                        currentEvent.bsky_chat_thread_uri,
+                        currentEvent.bsky_chat_thread_cid
+                    );
+                }
+            }
+        });
     },
     
     async run() {
@@ -386,15 +401,12 @@ const LiveApp = {
         const track = this.elements.carouselSection.querySelector('.carousel-track');
         if (!track) return;
 
-        // Buscamos TODOS los iframes que puedan estar activos en el carrusel
         const iframes = track.querySelectorAll('iframe');
 
-        // Recorremos cada uno y lo reemplazamos por su miniatura
         iframes.forEach(iframe => {
             const playerContainer = iframe.parentElement;
             const slide = playerContainer.closest('.carousel-slide');
             
-            // Nos aseguramos de tener todo lo necesario antes de reemplazar
             if (playerContainer && slide && slide.dataset.thumbnailUrl) {
                 playerContainer.innerHTML = `<img src="${slide.dataset.thumbnailUrl}" loading="lazy">`;
             }
@@ -443,8 +455,12 @@ const LiveApp = {
             this.currentChannel = null;
         }
         if (this.updateCarouselView) this.stopCarouselPlayer();
+        
         const item = this.allContentMap[id];
         if (!item) return;
+
+        this.currentItemInView = item; // <-- [MODIFICADO] Guardar el evento actual
+
         this.viewerCount = 0;
         this.elements.modalContainer.innerHTML = '';
         const modalOverlay = document.createElement('div');
@@ -531,7 +547,6 @@ const LiveApp = {
             return;
         }
 
-        // 1. Creamos el "marco" del modal y lo mostramos inmediatamente.
         const modalShellHTML = `
             <div id="investigator-modal" class="investigator-modal-overlay">
                 <div class="investigator-modal">
@@ -544,30 +559,26 @@ const LiveApp = {
                 </div>
             </div>`;
         
-        // Vaciamos el contenedor y añadimos el nuevo marco
         this.elements.modalContainer.innerHTML = modalShellHTML;
 
         const modalOverlay = document.getElementById('investigator-modal');
         const modalContent = document.getElementById('investigator-modal-content');
 
-        // Añadimos los listeners para cerrar el modal inmediatamente
         modalOverlay.querySelector('.investigator-modal-close-btn').addEventListener('click', () => this.closeInvestigatorModal());
         modalOverlay.addEventListener('click', (e) => {
             if (e.target === modalOverlay) this.closeInvestigatorModal();
         });
 
-        // Hacemos visible el modal con una pequeña transición
         setTimeout(() => modalOverlay.classList.add('is-visible'), 10);
 
         try {
-            // 2. Buscamos los datos del perfil y sus proyectos
             const { data: user, error: userError } = await this.supabase
                 .from('profiles')
                 .select('*')
                 .eq('id', userId)
                 .single();
 
-            if (userError) throw userError; // Si falla, salta al bloque catch
+            if (userError) throw userError;
 
             const { data: projects } = await this.supabase
                 .from('projects')
@@ -576,8 +587,7 @@ const LiveApp = {
                 .order('created_at', { ascending: false })
                 .limit(3);
 
-            // 3. Construimos el HTML del contenido final
-            const socialLinksHTML = `${user.substack_url ? `<a href="${user.substack_url}" target="_blank" title="Substack"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="Substack--Streamline-Simple-Icons" height="24" width="24"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z" fill="#e65c17" stroke-width="1"></path></svg></a>` : ''}${user.website_url ? `<a href="${user.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}${user.youtube_url ? `<a href="${user.youtube_url}" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>` : ''}${user.x_url ? `<a href="${user.x_url}" target="_blank" title="Perfil de X"><i class="fab fa-twitter"></i></a>` : ''}${user.linkedin_url ? `<a href="${user.linkedin_url}" target="_blank" title="Perfil de LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}${user.instagram_url ? `<a href="${user.instagram_url}" target="_blank" title="Perfil de Instagram"><i class="fab fa-instagram"></i></a>` : ''}`; // (Tu código de redes sociales aquí)
+            const socialLinksHTML = `${user.substack_url ? `<a href="${user.substack_url}" target="_blank" title="Substack"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="Substack--Streamline-Simple-Icons" height="24" width="24"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z" fill="#e65c17" stroke-width="1"></path></svg></a>` : ''}${user.website_url ? `<a href="${user.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}${user.youtube_url ? `<a href="${user.youtube_url}" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>` : ''}${user.x_url ? `<a href="${user.x_url}" target="_blank" title="Perfil de X"><i class="fab fa-twitter"></i></a>` : ''}${user.linkedin_url ? `<a href="${user.linkedin_url}" target="_blank" title="Perfil de LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}${user.instagram_url ? `<a href="${user.instagram_url}" target="_blank" title="Perfil de Instagram"><i class="fab fa-instagram"></i></a>` : ''}`;
             const orcidHTML = user.orcid ? `<a href="${user.orcid}" target="_blank">${user.orcid.replace('https://orcid.org/','')}</a>` : 'No disponible';
             
             let projectInfoHTML = '';
@@ -596,12 +606,10 @@ const LiveApp = {
                 <p class="investigator-bio">${user.bio || ''}</p>
                 ${projectInfoHTML}`;
 
-            // 4. Reemplazamos el "Cargando..." con el contenido final
             modalContent.innerHTML = finalContentHTML;
 
         } catch (error) {
             console.error("Error al abrir el modal del investigador:", error);
-            // Si algo falla, mostramos un mensaje de error dentro del modal
             if (modalContent) {
                 modalContent.innerHTML = "<p>No se pudo cargar la información del investigador. Por favor, intenta de nuevo más tarde.</p>";
             }
@@ -663,27 +671,37 @@ const LiveApp = {
                 chat.innerHTML = `${chatTitle}<p>El chat para este evento está disponible directamente en Substack.</p>`;
             } else if (session.status === 'EN VIVO') {
                 const channel = session.platform_id || 'epistecnologia';
-                let chatContentHTML = '';
+                
                 if (session.platform === 'vdo_ninja') {
-                    // player.innerHTML = `<iframe src="${session.viewer_url}" allow="autoplay; fullscreen"></iframe>`;
                     player.innerHTML = `<iframe src="${session.viewer_url}" allow="autoplay; fullscreen; picture-in-picture"></iframe>`;
-                    chatContentHTML = `<p>El chat no está disponible para esta plataforma.</p>`;
+                    // --- [MODIFICADO] Lógica del chat para VDO Ninja ---
+                    if (session.bsky_chat_thread_uri) {
+                        chat.innerHTML = this.buildChatInterfaceHTML(session.status);
+                        setTimeout(() => this.loadAndDisplayChat(session.bsky_chat_thread_uri), 100);
+                    } else {
+                        chat.innerHTML = `<h4><i class="fas fa-comments"></i> Chat</h4><p>El chat no está activado para esta sesión.</p>`;
+                    }
                 } else if (session.platform === 'youtube') {
-                    // player.innerHTML = `<iframe src="https://www.youtube.com/embed/${session.platform_id}?autoplay=1" allowfullscreen></iframe>`;
                     player.innerHTML = `<iframe src="https://www.youtube.com/embed/${session.platform_id}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
-                    chatContentHTML = `<div id="chat-container"><iframe src="https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}"></iframe></div>`;
+                    chat.style.display = 'grid';
+                    chat.style.gridTemplateRows = 'auto 1fr';
+                    chat.style.gap = '1rem';
+                    chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}"></iframe></div>`;
                 } else { // Twitch
-                    // player.innerHTML = `<iframe src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=true" allowfullscreen></iframe>`;
                     player.innerHTML = `<iframe src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=true" allowfullscreen allow="picture-in-picture"></iframe>`;
-                    chatContentHTML = `<div id="chat-container"><iframe src="https://www.twitch.tv/embed/${channel}/chat?parent=${window.location.hostname}&darkpopout" style="width:100%; height:100%; border:none;"></iframe></div>`;
+                    chat.style.display = 'grid';
+                    chat.style.gridTemplateRows = 'auto 1fr';
+                    chat.style.gap = '1rem';
+                    chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.twitch.tv/embed/${channel}/chat?parent=${window.location.hostname}&darkpopout" style="width:100%; height:100%; border:none;"></iframe></div>`;
                 }
-                chat.style.display = 'grid';
-                chat.style.gridTemplateRows = 'auto 1fr';
-                chat.style.gap = '1rem';
-                chat.innerHTML = `${chatTitle}${chatContentHTML}`;
             } else {
                 player.innerHTML = `<img src="${session.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg'}" style="width:100%; height:100%; object-fit:cover;">`;
-                chat.innerHTML = `${chatTitle}<p>El chat aparecerá cuando el evento inicie.</p>`;
+                // --- [MODIFICADO] Lógica del chat para VDO Ninja (estado no EN VIVO) ---
+                if (session.platform === 'vdo_ninja' && session.bsky_chat_thread_uri) {
+                    chat.innerHTML = this.buildChatInterfaceHTML(session.status);
+                } else {
+                     chat.innerHTML = `${chatTitle}<p>El chat aparecerá cuando el evento inicie.</p>`;
+                }
             }
 
             if (session.status === 'PROGRAMADO' && eventDate > new Date()) {
@@ -720,25 +738,20 @@ const LiveApp = {
                 if (avatar) this.openInvestigatorModal(avatar.dataset.userId);
             });
 
-        // --- INICIO: LÓGICA DE ADVERTENCIA Y REPORTE ---
-        // 1. Rellenamos la advertencia
         const disclaimerContainer = document.getElementById('live-room-disclaimer');
         if (disclaimerContainer) {
             disclaimerContainer.innerHTML = `<p>El contenido de esta transmisión es responsabilidad exclusiva de su autor. Epistecnología no se hace responsable por las opiniones expresadas o posibles infracciones cometidas.</p>`;
         }
 
-        // 2. Creamos el botón de reporte
         const reportContainer = document.getElementById('live-room-report');
         if (reportContainer) {
             reportContainer.innerHTML = `<button class="report-button" data-action="report-session" data-session-id="${session.id}"><i class="fas fa-flag"></i> Reportar esta sesión</button>`;
         }
 
-        // 3. Movemos el listener al contenedor principal para que capture todos los clics
         const mainContainer = document.querySelector('.live-room-main');
-        // Añadimos una comprobación para no añadir múltiples listeners si la función se llama varias veces
         if (!mainContainer.dataset.listenerAttached) {
             mainContainer.dataset.listenerAttached = 'true';
-            mainContainer.addEventListener('click', async (e) => { // <-- Hacemos la función asíncrona
+            mainContainer.addEventListener('click', async (e) => {
                 const avatar = e.target.closest('.avatar[data-user-id]');
                 const reportButton = e.target.closest('button[data-action="report-session"]');
 
@@ -751,11 +764,8 @@ const LiveApp = {
                     const confirmed = confirm("¿Estás seguro de que quieres reportar esta sesión por contenido inapropiado? Se enviará una alerta a los administradores.");
                     
                     if (confirmed) {
-                        // --- INICIO DE LA CORRECCIÓN CRÍTICA ---
-                        // Obtenemos la sesión del usuario actual ANTES de llamar a la función
                         const { data: { session } } = await this.supabase.auth.getSession();
                         const reporterId = session?.user?.id || 'invitado_anónimo';
-                        // --- FIN DE LA CORRECCIÓN CRÍTICA ---
 
                         this.supabase.functions.invoke('report-session', {
                             method: 'POST',
@@ -775,25 +785,99 @@ const LiveApp = {
                 }
             });
         }
-        // --- FIN: LÓGICA DE ADVERTENCIA Y REPORTE ---
 
         } else { // Si es un VIDEO On-Demand
             const video = item;
             
-            // Ocultamos los elementos que no aplican a los videos
             investigators.style.display = 'none';
             chat.style.display = 'none';
             countdown.style.display = 'none';
             document.getElementById('live-room-disclaimer').style.display = 'none';
             document.getElementById('live-room-report').style.display = 'none';
             
-            // Mostramos el reproductor y la información del video
-            player.innerHTML = `<iframe src="https://www.youtube.com/embed/$${video.youtube_video_id}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
+            player.innerHTML = `<iframe src="https://www.youtube.com/embed/${video.youtube_video_id}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
             info.innerHTML = `
                 <h3>${video.title}</h3>
                 <p>${video.description || 'No hay descripción disponible para este video.'}</p>
             `;
         }
+    },
+
+    // --- [NUEVO] Funciones Auxiliares del Chat ---
+    buildChatInterfaceHTML(sessionStatus) {
+        const isLive = sessionStatus === 'EN VIVO';
+        const placeholder = isLive ? 'Escribe tu mensaje...' : 'El chat está cerrado.';
+        const isDisabled = !isLive;
+        return `
+            <div id="bsky-chat-container">
+                <h4><i class="fas fa-comments"></i> Chat del Evento</h4>
+                <div id="chat-messages" class="chat-messages-list"><p class="chat-system-message">Cargando...</p></div>
+                <form id="chat-form" class="chat-input-form">
+                    <textarea name="chat-message" placeholder="${placeholder}" ${isDisabled ? 'disabled' : ''} required></textarea>
+                    <button type="submit" class="send-btn" ${isDisabled ? 'disabled' : ''}><i class="fa-solid fa-paper-plane"></i></button>
+                </form>
+            </div>
+        `;
+    },
+    async loadAndDisplayChat(threadUri) {
+        const messagesContainer = document.getElementById('chat-messages');
+        if (!messagesContainer) return;
+        try {
+            const { data: chatData, error } = await this.supabase.functions.invoke('bsky-get-post-thread', { body: { postUri: threadUri } });
+            if (error) throw error;
+            messagesContainer.innerHTML = '';
+            if(chatData.anchorPost) this.appendChatMessage(chatData.anchorPost, true);
+            if(chatData.messages) chatData.messages.forEach(message => this.appendChatMessage(message));
+        } catch (error) {
+            messagesContainer.innerHTML = `<p class="chat-system-message error">No se pudo cargar el chat.</p>`;
+            console.error(error);
+        }
+    },
+    async handleChatMessageSend(form, threadUri, threadCid) {
+        const textArea = form.querySelector('textarea');
+        const button = form.querySelector('button');
+        const replyText = textArea.value.trim();
+        if (!replyText) return;
+        button.disabled = true;
+        
+        const { data: { session } } = await this.supabase.auth.getSession();
+        const { data: userProfile } = session ? await this.supabase.from('profiles').select('display_name, avatar_url').eq('id', session.user.id).single() : { data: null };
+        const { data: bskyCreds } = session ? await this.supabase.from('bsky_credentials').select('handle').eq('user_id', session.user.id).single() : { data: null };
+        
+        const optimisticMessage = {
+            author: {
+                avatar: userProfile?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png',
+                displayName: userProfile?.display_name || 'Tú',
+                handle: bskyCreds?.handle || '',
+            },
+            record: { text: replyText },
+        };
+        this.appendChatMessage(optimisticMessage);
+        textArea.value = '';
+
+        try {
+            await this.supabase.functions.invoke('bsky-create-reply', { body: { replyText, parentPost: { uri: threadUri, cid: threadCid } } });
+        } catch (error) {
+            alert("No se pudo enviar tu mensaje. Por favor, inténtalo de nuevo.");
+            console.error(error);
+        } finally {
+            button.disabled = false;
+        }
+    },
+    appendChatMessage(message, isAnchor = false) {
+        const messagesContainer = document.getElementById('chat-messages');
+        if (!messagesContainer || !message || !message.author || !message.record) return;
+        const messageDiv = document.createElement('div');
+        messageDiv.className = isAnchor ? 'chat-message anchor-post' : 'chat-message';
+        messageDiv.innerHTML = `
+            <img src="${message.author.avatar}" alt="avatar" class="chat-avatar">
+            <div class="chat-message-content">
+                <div class="chat-author"><strong>${message.author.displayName}</strong> <span class="chat-handle">@${message.author.handle}</span></div>
+                <p>${message.record.text.replace(/\n/g, '<br>')}</p>
+            </div>
+        `;
+        messagesContainer.appendChild(messageDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
     },
 
     listenForChanges() {
