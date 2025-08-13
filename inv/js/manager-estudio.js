@@ -536,13 +536,17 @@ export const Studio = {
 
                 if (chatError) throw chatError;
 
-                // Si se crea con éxito, actualizamos la sesión en la base de datos con el URI del hilo.
+                // --- LA CORRECCIÓN ESTÁ AQUÍ ---
+                // Ahora guardamos tanto el URI como el CID del hilo.
                 await App.supabase
                     .from('sessions')
-                    .update({ bsky_chat_thread_uri: chatData.uri })
+                    .update({ 
+                        bsky_chat_thread_uri: chatData.uri, 
+                        bsky_chat_thread_cid: chatData.cid // <-- ESTA ES LA LÍNEA QUE FALTABA
+                    })
                     .eq('id', savedSession.id);
                 
-                console.log("Hilo de chat creado y enlazado a la sesión.");
+                console.log("Hilo de chat creado y enlazado a la sesión con URI y CID.");
 
             } catch (err) {
                 alert(`La sesión se agendó, pero hubo un error al crear el hilo de chat en Bluesky: ${err.message}`);
