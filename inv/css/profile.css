@@ -487,3 +487,53 @@ body.loading-profile .main-content {
     cursor: help; /* Cambia el cursor para indicar que hay un tooltip informativo */
     opacity: 0.7; /* Lo hace ligeramente menos prominente que los botones reales */
 }
+/* AÑADE ESTO AL FINAL DE profile.css */
+
+.profile-view-group {
+    margin-bottom: 1.5rem;
+}
+
+.profile-view-group label {
+    display: block;
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--color-secondary);
+    margin-bottom: 0.25rem;
+}
+
+.profile-view-group p {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--color-primary);
+    line-height: 1.6;
+}
+/* AÑADE ESTO AL FINAL DE profile.css */
+
+.platforms-view-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.platform-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    color: var(--color-secondary);
+    font-size: 0.9rem;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.platform-link:hover {
+    background-color: var(--color-background);
+    color: var(--color-primary);
+}
+
+.platform-link i {
+    font-size: 1.5rem;
+    width: 24px;
+    text-align: center;
+}

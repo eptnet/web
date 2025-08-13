@@ -125,3 +125,154 @@ body.dark-theme .researcher-card:hover {
     font-size: 1.1rem;
     line-height: 1; /* <-- AÑADE ESTA LÍNEA */
 }
+/* ==========================================================================
+   4. ESTILOS PARA EL MODAL DE PERFIL DE INVESTIGADOR
+   ========================================================================== */
+
+/* --- El fondo oscuro --- */
+.profile-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    padding: 1rem;
+    
+    /* Animación de entrada */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.profile-modal-overlay.is-visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* --- El contenedor del contenido --- */
+.profile-modal-content {
+    background: var(--color-surface);
+    color: var(--color-primary);
+    border-radius: var(--border-radius);
+    width: 100%;
+    max-width: 550px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    position: relative;
+    
+    /* Animación de entrada */
+    transform: scale(0.95);
+    transition: transform 0.3s ease;
+}
+
+.profile-modal-overlay.is-visible .profile-modal-content {
+    transform: scale(1);
+}
+
+/* --- Botón de cerrar --- */
+.modal-close-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 40px;
+    height: 40px;
+    background: none;
+    border: none;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    color: var(--color-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+.modal-close-btn:hover {
+    background-color: var(--color-background);
+}
+
+/* --- Cabecera del Modal --- */
+.modal-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 2rem 2rem 1.5rem 2rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.modal-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--color-border);
+    flex-shrink: 0; /* Evita que la imagen se encoja */
+}
+
+.modal-header-info h2 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.8rem;
+}
+
+.modal-orcid {
+    font-size: 0.9rem;
+    color: var(--color-secondary);
+    text-decoration: none;
+}
+.modal-orcid:hover {
+    color: var(--color-accent);
+}
+.modal-orcid i {
+    color: #a6ce39;
+}
+
+/* --- Cuerpo y Redes Sociales del Modal --- */
+.modal-body {
+    padding: 1.5rem 2rem;
+    line-height: 1.6;
+}
+
+.modal-socials {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.modal-socials a {
+    color: var(--color-secondary);
+    transition: color 0.2s;
+}
+.modal-socials a:hover {
+    color: var(--color-primary);
+}
+
+/* --- Pie de página del Modal --- */
+.modal-footer {
+    padding: 1.5rem 2rem;
+    background-color: var(--color-background);
+    border-top: 1px solid var(--color-border);
+    border-bottom-left-radius: var(--border-radius);
+    border-bottom-right-radius: var(--border-radius);
+}
+
+.modal-footer .btn {
+    width: auto; /* El botón no ocupa todo el ancho */
+    display: inline-flex;
+    padding: 0.75rem 1.5rem;
+    text-decoration: none;
+}
+
+.modal-footer .btn-secondary {
+    background-color: var(--color-surface);
+}
+/* BORRAR CUANDO SE HABILITE EL BOTON */
+.btn.is-disabled {
+    cursor: not-allowed;
+    background-color: var(--color-background);
+    opacity: 0.6;
+}

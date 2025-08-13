@@ -1,34 +1,32 @@
 // =================================================================
-// ARCHIVO ESTABILIZADO: /inv/js/profile.js
-// VERSIÓN: 2.0 (Feed de solo lectura)
-// CAMBIOS:
-// - Se eliminó la funcionalidad de comentar para estabilizar la página.
-// - La interacción de "Comentar" se movió a /inv/comunidad.html.
-// - El botón de "Me Gusta" se mantiene 100% funcional.
+// ARCHIVO DEFINITIVO Y UNIFICADO: /inv/js/profile.js
+// VERSIÓN: 3.0 (Estable con todas las mejoras)
 // =================================================================
 
 const ProfileApp = {
     supabase: null,
     user: null,
     currentUserProfile: null,
-    bskyCreds: null, // Almacenamos las credenciales aquí para fácil acceso
-    verifiedSubstackName: null, // Guardaremos el nombre verificado aquí
+    bskyCreds: null,
 
     async init() {
-        const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
-        this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // --- CORRECCIÓN: Unifica el cliente de Supabase ---
+        this.supabase = window.supabaseClient || window.supabase.createClient(
+            'https://seyknzlheaxmwztkfxmk.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E'
+        );
 
         await this.handleUserSession();
+        // --- FUNCIÓN RESTAURADA ---
         this.checkForOrcidCode();
-        this.applyTheme(); // Aplicar tema al inicio
+        this.applyTheme();
     },
 
     async handleUserSession() {
         const { data: { session } } = await this.supabase.auth.getSession();
-        if (!session) { 
-            window.location.href = '/'; 
-            return; 
+        if (!session) {
+            window.location.href = '/';
+            return;
         }
         this.user = session.user;
 
@@ -58,14 +56,10 @@ const ProfileApp = {
         const navigateToTab = (tabId) => {
             navLinks.forEach(nav => nav.classList.remove('active'));
             tabContents.forEach(content => content.classList.remove('active'));
-
             const activeLink = document.querySelector(`.profile-tab-link[data-tab="${tabId}"]`);
             const activeContent = document.getElementById(tabId);
-
             if (activeLink) activeLink.classList.add('active');
             if (activeContent) activeContent.classList.add('active');
-
-            // Solo renderizar el feed si la pestaña es la de comunidad Y no ha sido cargado antes
             if (tabId === 'tab-comunidad' && document.getElementById('community-feed-container').dataset.loaded !== 'true') {
                 this.renderCommunityFeed();
             }
@@ -84,12 +78,21 @@ const ProfileApp = {
             }
         });
     },
-
+    
+    // --- FUNCIÓN FUSIONADA Y CORREGIDA ---
     addEventListeners() {
         document.body.addEventListener('click', async (e) => {
             const button = e.target.closest('button');
             if (!button) return;
 
+            // Lógica para el modo Ver/Editar
+            if (button.classList.contains('edit-btn')) {
+                const bentoBox = button.closest('.bento-box');
+                this.toggleEditMode(bentoBox, true);
+                return;
+            }
+
+            // Lógica para el resto de los botones
             const action = button.id;
             if (action === 'connect-orcid-btn') this.handleOrcidConnect();
             else if (action === 'disconnect-orcid-btn') this.handleOrcidDisconnect();
@@ -103,140 +106,174 @@ const ProfileApp = {
             else if (action === 'connect-community-btn-modal') this.openCommunityModal();
         });
 
+        // Listeners para los formularios
         document.getElementById('profile-form')?.addEventListener('submit', (e) => this.handleSave(e, 'profile'));
         document.getElementById('platforms-form')?.addEventListener('submit', (e) => this.handleSave(e, 'platforms'));
         document.getElementById('avatar-update-form')?.addEventListener('submit', (e) => this.handleUpdateAvatar(e));
         document.getElementById('zenodo-form')?.addEventListener('submit', (e) => this.handleZenodoSubmit(e));
 
-        // --- AJUSTE #1: Event Listener Simplificado ---
-        // Se elimina la lógica para detectar clics en 'comment-btn'.
-        // Ahora este contenedor solo gestiona los "Me Gusta".
+        // Listener para los "Me Gusta"
         document.getElementById('community-feed-container')?.addEventListener('click', (e) => {
             const likeButton = e.target.closest('.like-btn');
-            if (likeButton) {
-                this.handleLikePost(likeButton);
-            }
+            if (likeButton) this.handleLikePost(likeButton);
         });
-
-        // --- INICIO DEL NUEVO CÓDIGO ---
-        // Listener para el campo de Substack
-        const substackInput = document.getElementById('substack-url');
-        if (substackInput) {
-            substackInput.addEventListener('input', (e) => {
-                this.verifySubstackUrl(e.target.value);
-            });
-            // Verificamos la URL inicial al cargar la página
-            this.verifySubstackUrl(substackInput.value);
-        }
-        // --- FIN DEL NUEVO CÓDIGO ---
-
     },
 
-    async verifySubstackUrl(url) {
-        const statusEl = document.getElementById('substack-verification-status');
-        if (!statusEl) return;
+    // --- NUEVA FUNCIÓN ---
+    toggleEditMode(bentoBox, isEditing) {
+        const viewMode = bentoBox.querySelector('.view-mode');
+        const editMode = bentoBox.querySelector('.edit-mode');
 
-        // Limpiamos el estado anterior
-        this.verifiedSubstackName = null;
-        statusEl.textContent = '';
-
-        const match = url.match(/https?:\/\/([a-zA-Z0-9_-]+)\.substack\.com/);
-        if (!match) return; // No es una URL de Substack válida
-
-        const subdomain = match[1];
-        statusEl.textContent = 'Verificando...';
-        statusEl.style.color = 'var(--color-secondary)';
-
-        try {
-            const rssUrl = `https://api.rss2json.com/v1/api.json?rss_url=https://${subdomain}.substack.com/feed`;
-            const response = await fetch(rssUrl);
-            const data = await response.json();
-
-            if (data.status === 'ok' && data.feed.author) {
-                this.verifiedSubstackName = data.feed.author;
-                statusEl.textContent = `✅ Nombre de autor detectado: ${this.verifiedSubstackName}`;
-                statusEl.style.color = '#28a745'; // Verde
-            } else {
-                throw new Error('No se pudo encontrar el autor.');
-            }
-        } catch (error) {
-            console.error("Error de verificación de Substack:", error);
-            statusEl.textContent = '❌ No se pudo verificar la URL o el autor.';
-            statusEl.style.color = 'var(--color-accent)';
+        if (viewMode && editMode) {
+            viewMode.style.display = isEditing ? 'none' : 'block';
+            editMode.style.display = isEditing ? 'block' : 'none';
         }
     },
     
-    async renderProfileData(profileId) {
+    // --- FUNCIÓN FUSIONADA Y CORREGIDA ---
+    async renderProfileData(profileId, preloadedProfile = null) {
         document.body.classList.add('loading-profile');
         try {
-            const { data: profile, error } = await this.supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', profileId)
-                .single();
+            const profile = preloadedProfile || (await this.supabase.from('profiles').select('*').eq('id', profileId).single()).data;
+            if (!profile) throw new Error('Perfil no encontrado.');
 
-            if (error) throw new Error('Perfil no encontrado.');
-            
             const { data: bskyCreds } = await this.supabase.from('bsky_credentials').select('handle').eq('user_id', profile.id).single();
             this.bskyCreds = bskyCreds;
 
             const isMyOwnProfile = (profile.id === this.user.id);
-            const viewerIsAdmin = (this.currentUserProfile.role === 'admin');
-            const isEditable = isMyOwnProfile || viewerIsAdmin;
-
+            const isEditable = isMyOwnProfile;
             document.body.classList.toggle('public-view', !isEditable);
 
-            const profileHasAdvancedAccess = (profile.role === 'researcher' || profile.role === 'admin');
-            document.querySelector('.profile-tab-link[data-tab="tab-identidad"]').style.display = profileHasAdvancedAccess ? 'flex' : 'none';
-            document.querySelector('.profile-tab-link[data-tab="tab-proyectos"]').style.display = profileHasAdvancedAccess ? 'flex' : 'none';
-            
+            // Poblar tarjeta lateral (sidebar)
             document.getElementById('profile-card-avatar').src = profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
             document.getElementById('profile-card-name').textContent = profile.display_name || 'Sin nombre';
+            document.getElementById('profile-card-bio').textContent = profile.bio || '';
             
             const socialsContainer = document.getElementById('profile-card-socials');
+            const substackIconSVG = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 3.604H1V5.495H15V3.604ZM1 7.208V16L8 12.074L15 16V7.208H1ZM15 0H1V1.89H15V0Z" fill="currentColor"/></svg>`;
             socialsContainer.innerHTML = `
-                ${profile.substack_url ? `<a href="${profile.substack_url}" target="_blank" title="Substack"><i class="fa-brands fa-substack"></i></a>` : ''}
-                ${profile.website_url ? `<a href="${profile.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}
-                ${profile.x_url ? `<a href="${profile.x_url}" target="_blank" title="Perfil de X"><i class="fa-brands fa-x-twitter"></i></a>` : ''}
-                ${profile.linkedin_url ? `<a href="${profile.linkedin_url}" target="_blank" title="Perfil de LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}
-                ${profile.instagram_url ? `<a href="${profile.instagram_url}" target="_blank" title="Perfil de Instagram"><i class="fab fa-instagram"></i></a>` : ''}
-                ${profile.youtube_url ? `<a href="${profile.youtube_url}" target="_blank" title="Canal de YouTube"><i class="fab fa-youtube"></i></a>` : ''}
+                <div>
+                    ${profile.substack_url ? `<a href="${profile.substack_url}" target="_blank" title="Substack">${substackIconSVG}</a>` : ''}
+                    ${profile.bsky_url ? `<a href="${profile.bsky_url}" target="_blank" title="Bluesky"><i class="fa-brands fa-bluesky"></i></a>` : ''}
+                    ${profile.linkedin_url ? `<a href="${profile.linkedin_url}" target="_blank" title="Perfil de LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}               
+                </div>
+                
+                <div>
+                    ${profile.website_url ? `<a href="${profile.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}
+                    ${profile.youtube_url ? `<a href="${profile.youtube_url}" target="_blank" title="Canal de YouTube"><i class="fab fa-youtube"></i></a>` : ''}
+                    ${profile.x_url ? `<a href="${profile.x_url}" target="_blank" title="X"><i class="fa-brands fa-x-twitter"></i></a>` : ''}
+                    ${profile.instagram_url ? `<a href="${profile.instagram_url}" target="_blank" title="Perfil de Instagram"><i class="fab fa-instagram"></i></a>` : ''}
+                </div>
             `;
 
+            // --- FUNCIONES RESTAURADAS ---
             this.renderOrcidSection(profile, isEditable);
             this.renderSidebarButtons(profile, isMyOwnProfile);
 
             if (isMyOwnProfile) {
                 this.renderCommunityActionPanel(this.bskyCreds);
-            } else {
-                document.getElementById('community-action-panel').innerHTML = `<p class="form-hint">Viendo el perfil de otro investigador.</p>`;
             }
 
             if (isEditable) {
+                // Poblar MODO EDICIÓN (formularios)
                 document.getElementById('display-name').value = profile.display_name || '';
                 document.getElementById('bio').value = profile.bio || '';
+                document.getElementById('substack-author-name').value = profile.substack_author_name || '';
                 document.getElementById('avatar-url').value = profile.avatar_url || '';
                 document.getElementById('youtube-url').value = profile.youtube_url || '';
                 document.getElementById('substack-url').value = profile.substack_url || '';
+                document.getElementById('bsky-url').value = profile.bsky_url || '';
                 document.getElementById('website-url').value = profile.website_url || '';
                 document.getElementById('x-url').value = profile.x_url || '';
                 document.getElementById('linkedin-url').value = profile.linkedin_url || '';
                 document.getElementById('instagram-url').value = profile.instagram_url || '';
                 document.getElementById('facebook-url').value = profile.facebook_url || '';
                 document.getElementById('tiktok-url').value = profile.tiktok_url || '';
+
+                // Poblar MODO VISTA
+                document.getElementById('view-display-name').textContent = profile.display_name || 'No establecido';
+                document.getElementById('view-bio').textContent = profile.bio || 'No establecido';
+                document.getElementById('view-substack-author-name').textContent = profile.substack_author_name || 'No establecido';
+                
+                const platformsView = document.getElementById('view-platforms-list');
+                const platforms = [
+                    { url: profile.youtube_url, icon: 'fa-youtube', color: '#FF0000', name: 'YouTube' },
+                    { url: profile.substack_url, icon: 'fa-substack', color: '#FF6521', name: 'Substack', isSvg: true },
+                    { url: profile.bsky_url, icon: 'fa-bluesky', color: '#007dff', name: 'Bluesky' },
+                    { url: profile.website_url, icon: 'fa-globe', color: '#333333', name: 'Sitio Web' },
+                    { url: profile.x_url, icon: 'fa-x-twitter', color: '#000000', name: 'X' },
+                    { url: profile.linkedin_url, icon: 'fa-linkedin', color: '#0A66C2', name: 'LinkedIn' },
+                    { url: profile.instagram_url, icon: 'fa-instagram', color: '#E4405F', name: 'Instagram' },
+                    { url: profile.facebook_url, icon: 'fa-facebook', color: '#1877F2', name: 'Facebook' },
+                    { url: profile.tiktok_url, icon: 'fa-tiktok', color: '#000000', name: 'TikTok' }
+                ];
+
+                const activePlatformsHTML = platforms.filter(p => p.url).map(p => {
+                    const iconHTML = p.isSvg ? substackIconSVG : `<i class="${p.icon === 'fa-globe' ? 'fas' : 'fa-brands'} ${p.icon}" style="color: ${p.color};"></i>`;
+                    return `<a href="${p.url}" target="_blank" class="platform-link" title="${p.name}">${iconHTML}<span>${p.url.replace(/^(https?:\/\/)?(www\.)?/, '').replace(/\/$/, '')}</span></a>`;
+                }).join('');
+                platformsView.innerHTML = activePlatformsHTML || '<p class="form-hint">No hay plataformas configuradas.</p>';
+                
+                this.toggleEditMode(document.getElementById('profile-form').closest('.bento-box'), false);
+                this.toggleEditMode(document.getElementById('platforms-form').closest('.bento-box'), false);
             }
+
+            const profileHasAdvancedAccess = (profile.role === 'researcher' || profile.role === 'admin');
+            document.querySelector('.profile-tab-link[data-tab="tab-identidad"]').style.display = profileHasAdvancedAccess ? 'flex' : 'none';
+            document.querySelector('.profile-tab-link[data-tab="tab-proyectos"]').style.display = profileHasAdvancedAccess ? 'flex' : 'none';
 
             if (profileHasAdvancedAccess) {
                 const { data: projects } = await this.supabase.from('projects').select('*').eq('user_id', profile.id);
                 if (projects) this.renderWorks(projects);
             }
-
         } catch (error) {
             console.error('Error en renderProfileData:', error);
         } finally {
             document.body.classList.remove('loading-profile');
         }
     },
+    
+    // --- FUNCIÓN MEJORADA ---
+    async handleSave(e, formType) {
+        e.preventDefault();
+        const form = e.target;
+        const saveButton = form.querySelector('button[type="submit"]');
+        saveButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+        saveButton.disabled = true;
+
+        const updates = {};
+        const inputs = form.querySelectorAll('input, textarea');
+        inputs.forEach(input => {
+            if (input.name) {
+                updates[input.name] = input.value || null;
+            }
+        });
+
+        console.log('Enviando para actualizar:', updates);
+
+        const { data: updatedProfile, error } = await this.supabase
+            .from('profiles')
+            .update(updates)
+            .eq('id', this.user.id)
+            .select()
+            .single();
+
+        if (error) {
+            alert(`Error: ${error.message}`);
+            console.error("Error al guardar:", error);
+        } else {
+            alert(`¡Datos guardados con éxito!`);
+            this.currentUserProfile = updatedProfile;
+            this.renderProfileData(null, updatedProfile);
+            this.toggleEditMode(form.closest('.bento-box'), false);
+        }
+
+        saveButton.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Guardar';
+        saveButton.disabled = false;
+    },
+
+    // --- A PARTIR DE AQUÍ, SON LAS FUNCIONES DE TU ARCHIVO ESTABLE ---
+    // (Asegúrate de que estas funciones estén presentes en tu archivo)
     
     renderOrcidSection(profile, isEditable) {
         const orcidSection = document.getElementById('orcid-section');
@@ -264,7 +301,6 @@ const ProfileApp = {
             buttonsHTML += `<a href="/inv/directorio.html" class="profile-card-nav__link"><i class="fa-solid fa-users"></i> Directorio</a>`;
         }
         if (isMyOwnProfile) {
-            // Este botón ahora apunta a la nueva página de comunidad
             buttonsHTML += `<a href="/inv/comunidad.html" class="profile-card-nav__link"><i class="fa-solid fa-comments"></i> Ir a la Comunidad</a>`;
         }
         buttonsHTML += `<a href="/inv/dashboard.html" class="profile-card-nav__link"><i class="fa-solid fa-arrow-right"></i> Ir al Dashboard</a>`;
@@ -274,22 +310,10 @@ const ProfileApp = {
     renderCommunityActionPanel(credentials) {
         const container = document.getElementById('community-action-panel');
         if (!container) return;
-
         if (credentials) {
-            container.innerHTML = `
-                <div class="status-badge connected">
-                    <i class="fa-solid fa-circle-check"></i>
-                    <span>Conectado como: <strong>${credentials.handle}</strong></span>
-                </div>
-                <button id="bsky-disconnect-btn" class="btn btn-secondary" style="width: 100%; margin-top: 1rem;">Desconectar</button>
-            `;
+            container.innerHTML = `<div class="status-badge connected"><i class="fa-solid fa-circle-check"></i><span>Conectado como: <strong>${credentials.handle}</strong></span></div><button id="bsky-disconnect-btn" class="btn btn-secondary" style="width: 100%; margin-top: 1rem;">Desconectar</button>`;
         } else {
-            container.innerHTML = `
-                <p class="form-hint">Conecta tu cuenta para poder interactuar en el feed.</p>
-                <button id="connect-community-btn-modal" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
-                    <i class="fa-solid fa-link"></i> Conectar Cuenta
-                </button>
-            `;
+            container.innerHTML = `<p class="form-hint">Conecta tu cuenta para poder interactuar en el feed.</p><button id="connect-community-btn-modal" class="btn btn-primary" style="width: 100%; margin-top: 1rem;"><i class="fa-solid fa-link"></i> Conectar Cuenta</button>`;
         }
     },
 
@@ -311,10 +335,7 @@ const ProfileApp = {
                     body: { authorization_code: code, redirect_uri: window.location.origin + window.location.pathname },
                 });
                 if (error) throw error;
-                const { error: updateError } = await this.supabase
-                    .from('profiles')
-                    .update({ orcid: `https://orcid.org/${data.orcid}` })
-                    .eq('id', this.user.id);
+                const { error: updateError } = await this.supabase.from('profiles').update({ orcid: `https://orcid.org/${data.orcid}` }).eq('id', this.user.id);
                 if (updateError) throw updateError;
                 alert("¡Cuenta de ORCID conectada con éxito! Tu rol se actualizará.");
                 location.reload();
@@ -371,47 +392,6 @@ const ProfileApp = {
             : '<p class="form-hint">No tienes publicaciones con DOI de EPT.</p>';
     },
     
-    async handleSave(e, formType) {
-        e.preventDefault();
-        const form = e.target;
-        const saveButton = form.querySelector('button[type="submit"]');
-        saveButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
-        saveButton.disabled = true;
-        
-        let updates = { id: this.user.id, updated_at: new Date() };
-        
-        // --- CORRECCIÓN IMPORTANTE ---
-        // Usamos los IDs de los campos para construir el objeto de datos,
-        // ya que FormData con "name" es menos directo en este caso.
-        const inputs = form.querySelectorAll('input, textarea');
-        inputs.forEach(input => {
-            // Usamos el 'name' que añadimos al HTML, que coincide con el nombre de la columna
-            if (input.name) {
-                updates[input.name] = input.value;
-            }
-        });
-        
-        // --- LÓGICA INTELIGENTE AÑADIDA ---
-        // Si estamos guardando el formulario de plataformas y hemos verificado un nombre de Substack,
-        // lo añadimos al objeto que se va a guardar.
-        if (formType === 'platforms' && this.verifiedSubstackName) {
-            updates.substack_author_name = this.verifiedSubstackName;
-        }
-
-        const { error } = await this.supabase.from('profiles').upsert(updates);
-        
-        if(error) {
-            alert(`Error: ${error.message}`);
-        } else {
-            alert(`¡Datos de ${formType === 'profile' ? 'perfil' : 'plataformas'} guardados!`);
-            // Recargamos solo si no hay error para ver los cambios reflejados
-            location.reload();
-        }
-
-        saveButton.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Guardar';
-        saveButton.disabled = false;
-    },
-
     async handleUpdateAvatar(e) {
         e.preventDefault();
         const newUrl = document.getElementById('avatar-url').value.trim();
@@ -617,12 +597,8 @@ const ProfileApp = {
             likeButton.disabled = false;
         }
     },
-    
-    // --- AJUSTE #3: Función Eliminada ---
-    // La función async handleCommentPost(commentButton) { ... } ha sido removida por completo.
 };
 
-// Inicializar la aplicación
 document.addEventListener('DOMContentLoaded', () => {
     ProfileApp.init();
 });
