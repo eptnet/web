@@ -227,80 +227,53 @@ const LiveApp = {
         }
     },
 
-    addEventListeners() {
-        this.elements.themeSwitcherDesktop?.addEventListener("click", () => this.toggleTheme());
-        this.elements.themeSwitcherMobile?.addEventListener("click", () => this.toggleTheme());
-        this.elements.logoutBtnDesktop?.addEventListener('click', async () => { await this.supabase.auth.signOut(); });
-        
-        document.body.addEventListener('click', async (e) => {
-            if (e.target.closest('#logout-btn-mobile')) {
-                await this.supabase.auth.signOut();
-            }
-            const providerBtn = e.target.closest('.login-provider-btn');
-            if (providerBtn && providerBtn.dataset.provider) {
-                this.handleOAuthLogin(providerBtn.dataset.provider);
-            }
-        });
+    // --- REEMPLAZA ESTA FUNCIÓN ---
+// --- REEMPLAZA ESTA FUNCIÓN COMPLETA ---
+// --- REEMPLAZA ESTA FUNCIÓN COMPLETA ---
+addEventListeners() {
+    // Listeners para elementos estáticos de la página (fuera de los modales)
+    this.elements.scheduleList.addEventListener('click', (e) => this.handleCardClick(e));
+    this.elements.ondemandListContainer.addEventListener('click', (e) => this.handleCardClick(e));
+    this.elements.tabs.forEach(tab => tab.addEventListener('click', () => this.handleTabClick(tab)));
+    this.elements.searchInput?.addEventListener('input', (e) => this.filterCards(e.target.value));
+    
+    // (Aquí puedes mantener los listeners del header, menú móvil, etc., que ya tienes y funcionan)
 
-        this.elements.loginModalTriggerDesktop?.addEventListener('click', () => {
-            this.elements.loginModalOverlay?.classList.add('is-visible');
-        });
-        this.elements.loginModalCloseBtn?.addEventListener('click', () => {
-            this.elements.loginModalOverlay?.classList.remove('is-visible');
-        });
-        this.elements.loginModalOverlay?.addEventListener('click', (e) => {
-            if (e.target === this.elements.loginModalOverlay) {
-                this.elements.loginModalOverlay.classList.remove('is-visible');
-            }
-        });
-        
-        const openMobileMenu = () => {
-            this.elements.mobileMoreMenu?.classList.add('is-visible');
-            this.elements.overlay?.classList.add('is-visible');
-            document.body.style.overflow = 'hidden'; 
-        };
-        const closeMobileMenu = () => {
-            this.elements.mobileMoreMenu?.classList.remove('is-visible');
-            this.elements.overlay?.classList.remove('is-visible');
-            document.body.style.overflow = '';
-        };
-        this.elements.mobileMoreBtn?.addEventListener('click', openMobileMenu);
-        this.elements.mobileMoreMenuClose?.addEventListener('click', closeMobileMenu);
-        this.elements.overlay?.addEventListener('click', closeMobileMenu);
-        
-        const notificationsIcon = document.getElementById('notifications-bell-icon');
-        notificationsIcon?.addEventListener('click', (e) => {
+    // --- Listener de Clics UNIFICADO para el Contenedor Principal de Modales ---
+    // Gestiona todos los clics que ocurren dentro de la sala en vivo.
+    this.elements.modalContainer.addEventListener('click', (e) => {
+        const target = e.target;
+
+        // Clic en el botón "Conectar Ahora" para Bluesky
+        if (target.id === 'open-bsky-connect-modal') {
             e.preventDefault();
-            this.openNotificationsModal();
-        });
+            this.openBskyConnectModal();
+            return;
+        }
 
-        document.addEventListener('click', (e) => {
-            const notificationsModal = document.querySelector('.notifications-modal');
-            if (notificationsModal && !notificationsModal.contains(e.target) && !notificationsIcon?.contains(e.target)) {
-                notificationsModal.classList.remove('is-visible');
-            }
-        });
+        // Clic en el avatar de un investigador
+        const avatar = target.closest('.avatar[data-user-id]');
+        if (avatar) {
+            this.openInvestigatorModal(avatar.dataset.userId);
+            return;
+        }
 
-        this.elements.scheduleList.addEventListener('click', (e) => this.handleCardClick(e));
-        this.elements.ondemandListContainer.addEventListener('click', (e) => this.handleCardClick(e));
-        this.elements.tabs.forEach(tab => tab.addEventListener('click', (e) => this.handleTabClick(e.currentTarget)));
-        this.elements.searchInput?.addEventListener('input', (e) => this.filterCards(e.target.value));
+        // Clic en el botón de reportar sesión
+        const reportButton = target.closest('button[data-action="report-session"]');
+        if (reportButton) {
+            this.handleReportSession(reportButton.dataset.sessionId);
+            return;
+        }
+    });
 
-        // --- [NUEVO] Listener para el formulario del chat ---
-        this.elements.modalContainer.addEventListener('submit', (e) => {
-            if (e.target.id === 'chat-form') {
-                e.preventDefault();
-                const currentEvent = this.currentItemInView;
-                if (currentEvent && currentEvent.bsky_chat_thread_uri) {
-                    this.handleChatMessageSend(
-                        e.target,
-                        currentEvent.bsky_chat_thread_uri,
-                        currentEvent.bsky_chat_thread_cid
-                    );
-                }
-            }
-        });
-    },
+    // --- Listener de Formularios UNIFICADO (solo para el chat) ---
+    this.elements.modalContainer.addEventListener('submit', (e) => {
+        if (e.target.id === 'chat-form') {
+            e.preventDefault();
+            this.handleChatMessageSend(e.target, this.currentItemInView.bsky_chat_thread_uri, this.currentItemInView.bsky_chat_thread_cid);
+        }
+    });
+},
     
     async run() {
         const [{ data: sessions }, { data: videos }] = await Promise.all([
@@ -449,6 +422,7 @@ const LiveApp = {
         this.elements.ondemandListContainer.innerHTML = videos.map(v => `<div class="video-card" data-id="video-${v.id}"><img src="https://i.ytimg.com/vi/${v.youtube_video_id}/mqdefault.jpg" alt="${v.title}"><p class="video-title">${v.title}</p></div>`).join('');
     },
 
+    // --- REEMPLAZA ESTA FUNCIÓN ---
     async openLiveRoom(id) {
         if (this.currentChannel) {
             this.supabase.removeChannel(this.currentChannel);
@@ -459,7 +433,7 @@ const LiveApp = {
         const item = this.allContentMap[id];
         if (!item) return;
 
-        this.currentItemInView = item; // <-- [MODIFICADO] Guardar el evento actual
+        this.currentItemInView = item; 
 
         this.viewerCount = 0;
         this.elements.modalContainer.innerHTML = '';
@@ -475,23 +449,35 @@ const LiveApp = {
         modalOverlay.appendChild(closeButton);
         modalOverlay.appendChild(content);
         this.elements.modalContainer.appendChild(modalOverlay);
-        const channelName = `session-${id}`;
+
+        // --- [CORRECCIÓN] Suscripción al canal de chat y presencia ---
+        const channelName = item.type === 'EVENT' ? `session-${item.id}` : `video-${item.id}`;
+        const chatChannelName = `session-chat-${item.id}`; // Canal específico para el chat
+        
         this.currentChannel = this.supabase.channel(channelName);
-        this.currentChannel.on('presence', { event: 'sync' }, () => {
-            const presenceState = this.currentChannel.presenceState();
-            this.viewerCount = Object.keys(presenceState).length;
-            this.updateViewerCountUI();
-        });
-        this.currentChannel.subscribe(async (status) => {
-            if (status === 'SUBSCRIBED') {
-                const { data: { session } } = await this.supabase.auth.getSession();
-                const userId = session?.user?.id || 'invitado';
-                await this.currentChannel.track({ user_id: userId, online_at: new Date().toISOString() });
-                const currentPresenceState = this.currentChannel.presenceState();
-                this.viewerCount = Object.keys(currentPresenceState).length;
+
+        this.currentChannel
+            .on('presence', { event: 'sync' }, () => {
+                const presenceState = this.currentChannel.presenceState();
+                this.viewerCount = Object.keys(presenceState).length;
                 this.updateViewerCountUI();
-            }
-        });
+            })
+            .on('broadcast', { event: 'new_chat_message' }, ({ payload }) => {
+                console.log('Nuevo mensaje recibido por broadcast!', payload);
+                // Evitamos duplicar el mensaje para el autor que ya lo tiene por la vía optimista
+                const { data: { session } } = this.supabase.auth.getSession();
+                if (session?.user?.user_metadata?.handle !== payload.author.handle) {
+                    this.appendChatMessage(payload);
+                }
+            })
+            .subscribe(async (status) => {
+                if (status === 'SUBSCRIBED') {
+                    const { data: { session } } = await this.supabase.auth.getSession();
+                    const userId = session?.user?.id || 'invitado';
+                    await this.currentChannel.track({ user_id: userId, online_at: new Date().toISOString() });
+                }
+            });
+        
         await this.populateLiveRoom(item);
         setTimeout(() => modalOverlay.classList.add('is-visible'), 10);
     },
@@ -541,88 +527,132 @@ const LiveApp = {
         }
     },
 
-    async openInvestigatorModal(userId) {
-        if (!userId) {
-            console.error("ID de usuario no proporcionado.");
-            return;
+    // --- REEMPLAZA ESTA FUNCIÓN ---
+// --- REEMPLAZA ESTA FUNCIÓN COMPLETA ---
+async openInvestigatorModal(userId) {
+    if (!userId) {
+        console.error("ID de usuario no proporcionado.");
+        return;
+    }
+    this.closeInvestigatorModal(); // Cierra cualquier otro modal de investigador abierto
+
+    const modalOverlay = document.createElement('div');
+    modalOverlay.id = 'investigator-modal';
+    modalOverlay.className = 'investigator-modal-overlay';
+    modalOverlay.innerHTML = `
+        <div class="investigator-modal">
+            <header class="investigator-modal-header">
+                <button class="investigator-modal-close-btn">&times;</button>
+            </header>
+            <main id="investigator-modal-content" class="investigator-modal-content"><p>Cargando...</p></main>
+        </div>`;
+    
+    document.body.appendChild(modalOverlay);
+    document.body.style.overflow = 'hidden';
+
+    modalOverlay.querySelector('.investigator-modal-close-btn').addEventListener('click', () => this.closeInvestigatorModal());
+    modalOverlay.addEventListener('click', (e) => {
+        if (e.target.id === 'investigator-modal') {
+            this.closeInvestigatorModal();
         }
+    });
 
-        const modalShellHTML = `
-            <div id="investigator-modal" class="investigator-modal-overlay">
-                <div class="investigator-modal">
-                    <header class="investigator-modal-header">
-                        <button class="investigator-modal-close-btn">&times;</button>
-                    </header>
-                    <main id="investigator-modal-content" class="investigator-modal-content">
-                        <p>Cargando...</p>
-                    </main>
-                </div>
-            </div>`;
-        
-        this.elements.modalContainer.innerHTML = modalShellHTML;
+    setTimeout(() => modalOverlay.classList.add('is-visible'), 10);
 
-        const modalOverlay = document.getElementById('investigator-modal');
+    try {
+        const { data: user, error: userError } = await this.supabase.from('profiles').select('*').eq('id', userId).single();
+        if (userError) throw userError;
+        const { data: projects } = await this.supabase.from('projects').select('title').eq('user_id', userId).order('created_at', { ascending: false }).limit(3);
         const modalContent = document.getElementById('investigator-modal-content');
+        if (!modalContent) return;
 
-        modalOverlay.querySelector('.investigator-modal-close-btn').addEventListener('click', () => this.closeInvestigatorModal());
-        modalOverlay.addEventListener('click', (e) => {
-            if (e.target === modalOverlay) this.closeInvestigatorModal();
-        });
+        const socialLinksHTML = `${user.substack_url ? `<a href="${user.substack_url}" target="_blank" title="Substack"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" height="24" width="24"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z" fill="#e65c17" stroke-width="1"></path></svg></a>` : ''}${user.website_url ? `<a href="${user.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}${user.youtube_url ? `<a href="${user.youtube_url}" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>` : ''}${user.x_url ? `<a href="${user.x_url}" target="_blank" title="Perfil de X"><i class="fab fa-twitter"></i></a>` : ''}${user.linkedin_url ? `<a href="${user.linkedin_url}" target="_blank" title="Perfil de LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}${user.instagram_url ? `<a href="${user.instagram_url}" target="_blank" title="Perfil de Instagram"><i class="fab fa-instagram"></i></a>` : ''}`;
+        const orcidHTML = user.orcid ? `<a href="${user.orcid}" target="_blank">${user.orcid.replace('https://orcid.org/','')}</a>` : 'No disponible';
+        let projectInfoHTML = projects && projects.length > 0 ? `<div class="project-info"><h4>Últimos proyectos:</h4><ul>${projects.map(p => `<li>${p.title}</li>`).join('')}</ul></div>` : `<div class="project-info"><p>No tiene proyectos publicados.</p></div>`;
+        const finalContentHTML = `<img src="${user.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="${user.display_name || ''}" class="avatar"><h3>${user.display_name || 'Nombre no disponible'}</h3><p><strong>ORCID:</strong> ${orcidHTML}</p><div class="profile-card__socials">${socialLinksHTML}</div><p class="investigator-bio">${user.bio || ''}</p>${projectInfoHTML}`;
+        modalContent.innerHTML = finalContentHTML;
+    } catch (error) {
+        console.error("Error al abrir modal del investigador:", error);
+        const modalContent = document.getElementById('investigator-modal-content');
+        if (modalContent) { modalContent.innerHTML = "<p>No se pudo cargar la información del investigador.</p>"; }
+    }
+},
 
-        setTimeout(() => modalOverlay.classList.add('is-visible'), 10);
+// --- REEMPLAZA ESTA FUNCIÓN COMPLETA ---
+closeInvestigatorModal() {
+    const modal = document.getElementById('investigator-modal');
+    if (modal) {
+        modal.classList.remove('is-visible');
+        setTimeout(() => {
+            modal.remove();
+            // Solo restaura el scroll si no queda ningún otro modal abierto
+            if (!document.querySelector('.modal-overlay') && !document.getElementById('bsky-connect-modal')) {
+                document.body.style.overflow = '';
+            }
+        }, 300);
+    }
+},
+
+// --- AÑADE ESTA FUNCIÓN COMPLETA DENTRO DEL OBJETO LiveApp ---
+openBskyConnectModal() {
+    // Si ya existe un modal de conexión, no hagas nada para evitar duplicados.
+    if (document.getElementById('bsky-connect-modal')) return;
+
+    const template = document.getElementById('bsky-connect-template');
+    if (!template) {
+        console.error("El template 'bsky-connect-template' no se encuentra en el DOM.");
+        alert("Error: No se pudo cargar el componente de conexión. Por favor, recarga la página.");
+        return;
+    }
+
+    const modalContainer = document.createElement('div');
+    modalContainer.id = 'bsky-connect-modal';
+    
+    const bentoBoxContent = template.content.cloneNode(true);
+    const bentoBox = bentoBoxContent.querySelector('.bento-box');
+
+    if (bentoBox) {
+        const closeButton = document.createElement('button');
+        closeButton.className = 'bsky-modal-close-btn';
+        closeButton.innerHTML = '&times;';
+        closeButton.setAttribute('aria-label', 'Cerrar');
+        // Usamos onclick para una asignación directa y simple
+        closeButton.onclick = () => modalContainer.remove();
+        bentoBox.prepend(closeButton);
+    }
+    
+    modalContainer.appendChild(bentoBoxContent);
+    document.body.appendChild(modalContainer);
+
+    modalContainer.addEventListener('click', (e) => {
+        if (e.target.id === 'bsky-connect-modal') {
+            modalContainer.remove();
+        }
+    });
+
+    const form = modalContainer.querySelector('#bsky-connect-form');
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const handle = form.querySelector('#bsky-handle').value;
+        const appPassword = form.querySelector('#bsky-app-password').value;
+        const button = form.querySelector('button[type="submit"]');
+        button.disabled = true;
+        button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Conectando...';
 
         try {
-            const { data: user, error: userError } = await this.supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', userId)
-                .single();
-
-            if (userError) throw userError;
-
-            const { data: projects } = await this.supabase
-                .from('projects')
-                .select('title')
-                .eq('user_id', userId)
-                .order('created_at', { ascending: false })
-                .limit(3);
-
-            const socialLinksHTML = `${user.substack_url ? `<a href="${user.substack_url}" target="_blank" title="Substack"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="Substack--Streamline-Simple-Icons" height="24" width="24"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z" fill="#e65c17" stroke-width="1"></path></svg></a>` : ''}${user.website_url ? `<a href="${user.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}${user.youtube_url ? `<a href="${user.youtube_url}" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>` : ''}${user.x_url ? `<a href="${user.x_url}" target="_blank" title="Perfil de X"><i class="fab fa-twitter"></i></a>` : ''}${user.linkedin_url ? `<a href="${user.linkedin_url}" target="_blank" title="Perfil de LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}${user.instagram_url ? `<a href="${user.instagram_url}" target="_blank" title="Perfil de Instagram"><i class="fab fa-instagram"></i></a>` : ''}`;
-            const orcidHTML = user.orcid ? `<a href="${user.orcid}" target="_blank">${user.orcid.replace('https://orcid.org/','')}</a>` : 'No disponible';
-            
-            let projectInfoHTML = '';
-            if (projects && projects.length > 0) {
-                const projectList = projects.map(p => `<li>${p.title}</li>`).join('');
-                projectInfoHTML = `<div class="project-info"><h4>Últimos proyectos:</h4><ul>${projectList}</ul></div>`;
-            } else {
-                projectInfoHTML = `<div class="project-info"><p>No tiene proyectos publicados.</p></div>`;
-            }
-
-            const finalContentHTML = `
-                <img src="${user.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="${user.display_name || ''}" class="avatar">
-                <h3>${user.display_name || 'Nombre no disponible'}</h3>
-                <p><strong>ORCID:</strong> ${orcidHTML}</p>
-                <div class="profile-card__socials">${socialLinksHTML}</div>
-                <p class="investigator-bio">${user.bio || ''}</p>
-                ${projectInfoHTML}`;
-
-            modalContent.innerHTML = finalContentHTML;
-
-        } catch (error) {
-            console.error("Error al abrir el modal del investigador:", error);
-            if (modalContent) {
-                modalContent.innerHTML = "<p>No se pudo cargar la información del investigador. Por favor, intenta de nuevo más tarde.</p>";
-            }
+            const { error } = await this.supabase.functions.invoke('bsky-connect-user', { body: { handle, appPassword } });
+            if (error) throw error;
+            alert("¡Éxito! Tu cuenta de Bluesky ha sido conectada.");
+            modalContainer.remove();
+            this.populateLiveRoom(this.currentItemInView);
+        } catch (err) {
+            alert(`Error al conectar: ${err.message}`);
+        } finally {
+            button.disabled = false;
+            button.innerHTML = '<i class="fa-solid fa-link"></i> Conectar Cuenta';
         }
-    },
-
-    closeInvestigatorModal() {
-        const modal = document.getElementById('investigator-modal');
-        if (modal) {
-            modal.classList.remove('is-visible');
-            setTimeout(() => modal.remove(), 300);
-        }
-    },
+    });
+},
 
     buildLiveRoomHTML() {
         const container = document.createElement('div');
@@ -645,173 +675,107 @@ const LiveApp = {
         return container;
     },
 
-    async populateLiveRoom(item) {
-        const player = document.getElementById('live-room-player');
-        const info = document.getElementById('live-room-info');
-        const chat = document.getElementById('chat-box');
-        const investigators = document.getElementById('live-room-investigators-strip');
-        const countdown = document.getElementById('live-room-countdown');
-        const primaryAction = document.getElementById('live-room-primary-action');
+    // --- REEMPLAZA ESTA FUNCIÓN COMPLETA ---
+    // --- REEMPLAZA ESTA FUNCIÓN COMPLETA ---
+async populateLiveRoom(item) {
+    const player = document.getElementById('live-room-player');
+    const info = document.getElementById('live-room-info');
+    const chat = document.getElementById('chat-box');
+    const investigators = document.getElementById('live-room-investigators-strip');
+    const countdown = document.getElementById('live-room-countdown');
+    const primaryAction = document.getElementById('live-room-primary-action');
 
-        if (item.type === 'EVENT') {
-            const session = item;
-            const eventDate = new Date(session.scheduled_at);
-            const dateString = eventDate.toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'short' });
-            
-            primaryAction.innerHTML = '';
-            chat.style.display = 'block';
-            investigators.style.display = 'block';
-            countdown.style.display = 'none';
+    // Reseteamos la UI del modal
+    primaryAction.innerHTML = '';
+    chat.style.display = 'block';
+    investigators.style.display = 'block';
+    countdown.style.display = 'none';
 
-            let chatTitle = `<h4><i class="fas fa-comments"></i> Chat ${session.status === 'EN VIVO' ? `<span class="card-live-indicator">EN VIVO</span> <span id="live-viewer-count" class="viewer-count"><i class="fas fa-eye"></i> ${this.viewerCount}</span>` : ''}</h4>`;
+    if (item.type === 'VIDEO') {
+        const video = item;
+        investigators.style.display = 'none';
+        chat.style.display = 'none';
+        countdown.style.display = 'none';
+        document.getElementById('live-room-disclaimer').style.display = 'none';
+        document.getElementById('live-room-report').style.display = 'none';
+        player.innerHTML = `<iframe src="https://www.youtube.com/embed/${video.youtube_video_id}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
+        info.innerHTML = `<h3>${video.title}</h3><p>${video.description || 'No hay descripción disponible para este video.'}</p>`;
+        return;
+    }
 
-            if (session.platform === 'substack') {
-                player.innerHTML = `<img src="${session.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg'}" style="width:100%; height:100%; object-fit:cover;">`;
-                primaryAction.innerHTML = `<a href="https://open.substack.com/live-stream/${session.platform_id}" target="_blank" rel="noopener noreferrer" class="btn-substack" style="display:block; text-align:center;">Ir a la Sala en Substack</a>`;
-                chat.innerHTML = `${chatTitle}<p>El chat para este evento está disponible directamente en Substack.</p>`;
-            } else if (session.status === 'EN VIVO') {
-                const channel = session.platform_id || 'epistecnologia';
-                
-                if (session.platform === 'vdo_ninja') {
-                    player.innerHTML = `<iframe src="${session.viewer_url}" allow="autoplay; fullscreen; picture-in-picture"></iframe>`;
-                    // --- [MODIFICADO] Lógica del chat para VDO Ninja ---
-                    if (session.bsky_chat_thread_uri) {
-                        chat.innerHTML = this.buildChatInterfaceHTML(session.status);
-                        setTimeout(() => this.loadAndDisplayChat(session.bsky_chat_thread_uri), 100);
-                    } else {
-                        chat.innerHTML = `<h4><i class="fas fa-comments"></i> Chat</h4><p>El chat no está activado para esta sesión.</p>`;
-                    }
-                } else if (session.platform === 'youtube') {
-                    player.innerHTML = `<iframe src="https://www.youtube.com/embed/${session.platform_id}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
-                    chat.style.display = 'grid';
-                    chat.style.gridTemplateRows = 'auto 1fr';
-                    chat.style.gap = '1rem';
-                    chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}"></iframe></div>`;
-                } else { // Twitch
-                    player.innerHTML = `<iframe src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=true" allowfullscreen allow="picture-in-picture"></iframe>`;
-                    chat.style.display = 'grid';
-                    chat.style.gridTemplateRows = 'auto 1fr';
-                    chat.style.gap = '1rem';
-                    chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.twitch.tv/embed/${channel}/chat?parent=${window.location.hostname}&darkpopout" style="width:100%; height:100%; border:none;"></iframe></div>`;
-                }
-            } else {
-                player.innerHTML = `<img src="${session.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg'}" style="width:100%; height:100%; object-fit:cover;">`;
-                // --- [MODIFICADO] Lógica del chat para VDO Ninja (estado no EN VIVO) ---
-                if (session.platform === 'vdo_ninja' && session.bsky_chat_thread_uri) {
-                    chat.innerHTML = this.buildChatInterfaceHTML(session.status);
-                } else {
-                     chat.innerHTML = `${chatTitle}<p>El chat aparecerá cuando el evento inicie.</p>`;
-                }
-            }
+    // A partir de aquí, es solo para EVENTOS
+    const session = item;
+    const eventDate = new Date(session.scheduled_at);
+    const dateString = eventDate.toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'short' });
+    const chatTitle = `<h4><i class="fas fa-comments"></i> Chat ${session.status === 'EN VIVO' ? `<span class="card-live-indicator">EN VIVO</span> <span id="live-viewer-count" class="viewer-count"><i class="fas fa-eye"></i> ${this.viewerCount}</span>` : ''}</h4>`;
 
-            if (session.status === 'PROGRAMADO' && eventDate > new Date()) {
-                countdown.style.display = 'block';
-                countdown.innerHTML = '<div id="countdown-timer"></div>';
-                this.startCountdown(session.scheduled_at);
-            }
+    if (session.status === 'EN VIVO') {
+        const channel = session.platform_id || 'epistecnologia';
+        if (session.platform === 'vdo_ninja') player.innerHTML = `<iframe src="${session.viewer_url}" allow="autoplay; fullscreen; picture-in-picture"></iframe>`;
+        else if (session.platform === 'youtube') player.innerHTML = `<iframe src="https://www.youtube.com/embed/${channel}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
+        else if (session.platform === 'twitch') player.innerHTML = `<iframe src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=true" allowfullscreen allow="picture-in-picture"></iframe>`;
+    } else {
+        const thumbnailUrl = session.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg';
+        player.innerHTML = `<img src="${thumbnailUrl}" style="width:100%; height:100%; object-fit:cover;">`;
+    }
 
-            let project = null;
-            if (session.project_title && session.organizer?.id) {
-                const { data } = await this.supabase.from('projects').select('*').eq('user_id', session.organizer.id).eq('title', session.project_title).single();
-                project = data;
-            }
-
-            let projectHTML = '';
-            if (project) {
-                const uniqueAuthors = project.authors && Array.isArray(project.authors) ? [...new Set(project.authors)].join(', ') : 'No disponible';
-                const doiLink = project.doi ? `<a href="https://doi.org/${project.doi}" target="_blank" rel="noopener noreferrer" class="doi-badge">Ver Proyecto (DOI)</a>` : '';
-                projectHTML = `<h4>Proyecto</h4><h3 class="live-room-project-title">${project.title}</h3><p><strong>Autores:</strong> ${uniqueAuthors}</p><p>${project.description || 'Resumen no disponible.'}</p>${doiLink}`;
-            }
-
-            let actionButtonsHTML = '';
-            if (session.more_info_url) actionButtonsHTML += `<a href="${session.more_info_url}" target="_blank" rel="noopener noreferrer" class="btn-primary" style="display:block; text-align:center;">Saber Más</a>`;
-            if (session.recording_url) actionButtonsHTML += `<a href="${session.recording_url}" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="display:block; margin-top: 1rem; text-align:center;">Ver Grabación</a>`;
-
-            const organizer = session.organizer;
-            const organizerHTML = `<div class="organizer-info"><img src="${organizer?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="Avatar de ${organizer?.display_name || 'Anfitrión'}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;"><div class="organizer-name-block"><span>Anfitrión</span><strong>${organizer?.display_name || 'Nombre no disponible'}</strong></div></div>`;
-            info.innerHTML = `<h3>${session.session_title}</h3><p>${session.description || ''}</p>${organizerHTML}<p><strong>Fecha:</strong> ${dateString}</p><hr>${projectHTML}<div class="action-buttons-container" style="margin-top: 1rem; display:flex; flex-direction:column; gap:1rem;">${actionButtonsHTML}</div>`;
-
-            const allUsers = [organizer, ...(session.participants?.map(p => p.profiles) || [])].filter(Boolean);
-            investigators.innerHTML = allUsers.length > 0 ? `<h4>Investigadores</h4><div class="avatar-grid">${allUsers.map(u => u ? `<img src="${u.avatar_url}" title="${u.display_name}" class="avatar" data-user-id="${u.id}">` : '').join('')}</div>` : '';
-            investigators.addEventListener('click', (e) => {
-                const avatar = e.target.closest('.avatar[data-user-id]');
-                if (avatar) this.openInvestigatorModal(avatar.dataset.userId);
-            });
-
-        const disclaimerContainer = document.getElementById('live-room-disclaimer');
-        if (disclaimerContainer) {
-            disclaimerContainer.innerHTML = `<p>El contenido de esta transmisión es responsabilidad exclusiva de su autor. Epistecnología no se hace responsable por las opiniones expresadas o posibles infracciones cometidas.</p>`;
+    if (session.platform === 'vdo_ninja' && session.bsky_chat_thread_uri) this.renderVDONinjaChat(session);
+    else if (session.platform === 'substack') {
+        primaryAction.innerHTML = `<a href="https://open.substack.com/live-stream/${session.platform_id}" target="_blank" rel="noopener noreferrer" class="btn-substack">Ir a la Sala en Substack</a>`;
+        chat.innerHTML = `${chatTitle}<p>El chat para este evento está disponible directamente en Substack.</p>`;
+    } else if (session.platform === 'youtube' && session.status === 'EN VIVO') {
+        chat.style.cssText = 'display: grid; grid-template-rows: auto 1fr; gap: 1rem;';
+        chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}"></iframe></div>`;
+    } else if (session.platform === 'twitch' && session.status === 'EN VIVO') {
+        chat.style.cssText = 'display: grid; grid-template-rows: auto 1fr; gap: 1rem;';
+        chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.twitch.tv/embed/${session.platform_id}/chat?parent=${window.location.hostname}&darkpopout"></iframe></div>`;
+    } else {
+        chat.innerHTML = `${chatTitle}<p>El chat solo está disponible durante la transmisión en vivo.</p>`;
+    }
+    
+    if (session.status === 'PROGRAMADO' && eventDate > new Date()) {
+        countdown.style.display = 'block';
+        countdown.innerHTML = '<div id="countdown-timer"></div>';
+        this.startCountdown(session.scheduled_at);
+    }
+    
+    let projectHTML = '';
+    if (session.project_title && session.organizer?.id) {
+        const { data: project } = await this.supabase.from('projects').select('*').eq('user_id', session.organizer.id).eq('title', session.project_title).single();
+        if (project) {
+            const uniqueAuthors = project.authors && Array.isArray(project.authors) ? [...new Set(project.authors)].join(', ') : 'No disponible';
+            const doiLink = project.doi ? `<a href="https://doi.org/${project.doi}" target="_blank" rel="noopener noreferrer" class="doi-badge">Ver Proyecto (DOI)</a>` : '';
+            projectHTML = `<h4>Proyecto</h4><h3 class="live-room-project-title">${project.title}</h3><p><strong>Autores:</strong> ${uniqueAuthors}</p><p>${project.description || 'Resumen no disponible.'}</p>${doiLink}`;
         }
+    }
 
-        const reportContainer = document.getElementById('live-room-report');
-        if (reportContainer) {
-            reportContainer.innerHTML = `<button class="report-button" data-action="report-session" data-session-id="${session.id}"><i class="fas fa-flag"></i> Reportar esta sesión</button>`;
-        }
+    let actionButtonsHTML = '';
+    if (session.more_info_url) actionButtonsHTML += `<a href="${session.more_info_url}" target="_blank" rel="noopener noreferrer" class="btn-primary" style="display:block; text-align:center;">Saber Más</a>`;
+    if (session.recording_url) actionButtonsHTML += `<a href="${session.recording_url}" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="display:block; margin-top: 1rem; text-align:center;">Ver Grabación</a>`;
 
-        const mainContainer = document.querySelector('.live-room-main');
-        if (!mainContainer.dataset.listenerAttached) {
-            mainContainer.dataset.listenerAttached = 'true';
-            mainContainer.addEventListener('click', async (e) => {
-                const avatar = e.target.closest('.avatar[data-user-id]');
-                const reportButton = e.target.closest('button[data-action="report-session"]');
+    const organizer = session.organizer;
+    const organizerHTML = `<div class="organizer-info"><img src="${organizer?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="Avatar de ${organizer?.display_name || 'Anfitrión'}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;"><div class="organizer-name-block"><span>Organiza: </span><strong>${organizer?.display_name || 'Nombre no disponible'}</strong></div></div>`;
+    info.innerHTML = `<h3>${session.session_title}</h3><p>${session.description || ''}</p>${organizerHTML}<p><strong>Fecha:</strong> ${dateString}</p><hr>${projectHTML}<div class="action-buttons-container" style="margin-top: 1rem; display:flex; flex-direction:column; gap:1rem;">${actionButtonsHTML}</div>`;
 
-                if (avatar) {
-                    this.openInvestigatorModal(avatar.dataset.userId);
-                }
-                
-                if (reportButton) {
-                    const sessionIdToReport = reportButton.dataset.sessionId;
-                    const confirmed = confirm("¿Estás seguro de que quieres reportar esta sesión por contenido inapropiado? Se enviará una alerta a los administradores.");
-                    
-                    if (confirmed) {
-                        const { data: { session } } = await this.supabase.auth.getSession();
-                        const reporterId = session?.user?.id || 'invitado_anónimo';
-
-                        this.supabase.functions.invoke('report-session', {
-                            method: 'POST',
-                            headers: {
-                                'x-session-id': sessionIdToReport,
-                                'x-reporter-id': reporterId 
-                            }
-                        })
-                        .then(() => {
-                            alert(`Reporte para la sesión ${sessionIdToReport} enviado. Gracias por tu colaboración.`);
-                        })
-                        .catch(error => {
-                            alert('Hubo un error al enviar el reporte.');
-                            console.error('Error al invocar la función de reporte:', error);
-                        });
-                    }
-                }
-            });
-        }
-
-        } else { // Si es un VIDEO On-Demand
-            const video = item;
-            
-            investigators.style.display = 'none';
-            chat.style.display = 'none';
-            countdown.style.display = 'none';
-            document.getElementById('live-room-disclaimer').style.display = 'none';
-            document.getElementById('live-room-report').style.display = 'none';
-            
-            player.innerHTML = `<iframe src="https://www.youtube.com/embed/${video.youtube_video_id}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
-            info.innerHTML = `
-                <h3>${video.title}</h3>
-                <p>${video.description || 'No hay descripción disponible para este video.'}</p>
-            `;
-        }
-    },
+    const allUsers = [organizer, ...(session.participants?.map(p => p.profiles) || [])].filter(Boolean);
+    investigators.innerHTML = allUsers.length > 0 ? `<h4>Investigadores</h4><div class="avatar-grid">${allUsers.map(u => u ? `<img src="${u.avatar_url}" title="${u.display_name}" class="avatar" data-user-id="${u.id}">` : '').join('')}</div>` : '';
+    
+    document.getElementById('live-room-disclaimer').innerHTML = `<p>El contenido de esta transmisión es responsabilidad exclusiva de su autor...</p>`;
+    document.getElementById('live-room-report').innerHTML = `<button class="report-button" data-action="report-session" data-session-id="${session.id}"><i class="fas fa-flag"></i> Reportar esta sesión</button>`;
+},
 
     // --- [NUEVO] Funciones Auxiliares del Chat ---
-    buildChatInterfaceHTML(sessionStatus) {
-        const isLive = sessionStatus === 'EN VIVO';
-        const placeholder = isLive ? 'Escribe tu mensaje...' : 'El chat está cerrado.';
-        const isDisabled = !isLive;
+    buildChatInterfaceHTML({ status, canWrite = false, customPrompt = null }) {
+        const isLive = status === 'EN VIVO';
+        // El placeholder ahora depende de si puede escribir o no
+        const placeholder = isLive && canWrite ? 'Escribe tu mensaje...' : 'Inicia sesión y conecta tu cuenta para escribir.';
+        const isDisabled = !isLive || !canWrite;
+
         return `
             <div id="bsky-chat-container">
                 <h4><i class="fas fa-comments"></i> Chat del Evento</h4>
-                <div id="chat-messages" class="chat-messages-list"><p class="chat-system-message">Cargando...</p></div>
+                ${customPrompt || ''}
+                <div id="chat-messages" class="chat-messages-list"><p class="chat-system-message">Cargando mensajes...</p></div>
                 <form id="chat-form" class="chat-input-form">
                     <textarea name="chat-message" placeholder="${placeholder}" ${isDisabled ? 'disabled' : ''} required></textarea>
                     <button type="submit" class="send-btn" ${isDisabled ? 'disabled' : ''}><i class="fa-solid fa-paper-plane"></i></button>
@@ -819,6 +783,7 @@ const LiveApp = {
             </div>
         `;
     },
+
     async loadAndDisplayChat(threadUri) {
         const messagesContainer = document.getElementById('chat-messages');
         if (!messagesContainer) return;
@@ -879,6 +844,120 @@ const LiveApp = {
         messagesContainer.appendChild(messageDiv);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     },
+
+    // Esta función ahora contiene toda la lógica de roles para el chat
+    async renderVDONinjaChat(session) {
+        const chatContainer = document.getElementById('chat-box');
+        if (!chatContainer) return;
+
+        const { data: { session: authSession } } = await this.supabase.auth.getSession();
+
+        if (!authSession) {
+            // --- CASO 1: Visitante no registrado ---
+            chatContainer.innerHTML = `
+                <div class="chat-login-prompt">
+                    <h4><i class="fas fa-comments"></i> Chat del Evento</h4>
+                    <p>Inicia sesión o regístrate para ver y participar en el chat.</p>
+                    <div class="login-options">
+                        <a href="#" class="login-provider-btn" data-provider="google"><i class="fa-brands fa-google"></i><span>Continuar con Google</span></a>
+                        <a href="#" class="login-provider-btn" data-provider="github"><i class="fa-brands fa-github"></i><span>Continuar con GitHub</span></a>
+                    </div>
+                </div>
+            `;
+        } else {
+            // --- CASO 2 y 3: Usuario registrado ---
+            const { data: bskyCreds } = await this.supabase.from('bsky_credentials').select('handle').eq('user_id', authSession.user.id).single();
+            const hasBskyCreds = !!bskyCreds;
+
+            const connectPrompt = `
+                <div class="chat-action-prompt">
+                    <p>¡Conecta tu cuenta de Bluesky para chatear!</p>
+                    <button id="open-bsky-connect-modal" class="btn-secondary">Conectar Ahora</button>
+                </div>
+            `;
+            
+            chatContainer.innerHTML = this.buildChatInterfaceHTML({
+                status: session.status,
+                canWrite: hasBskyCreds, // Solo puede escribir si tiene credenciales
+                customPrompt: hasBskyCreds ? null : connectPrompt // Muestra el prompt si NO tiene credenciales
+            });
+
+            // El chat se carga para todos los usuarios registrados
+            this.loadAndDisplayChat(session.bsky_chat_thread_uri);
+
+            if (!hasBskyCreds) {
+                // Añadimos el listener para el botón "Conectar Ahora"
+                document.getElementById('open-bsky-connect-modal')?.addEventListener('click', () => {
+                    this.openBskyConnectModal();
+                });
+            }
+        }
+    },
+
+    // Abre el modal de conexión de Bluesky
+   // --- REEMPLAZA ESTA FUNCIÓN con la versión FINAL Y COMPLETA ---
+async openLiveRoom(id) {
+    if (this.currentChannel) {
+        this.supabase.removeChannel(this.currentChannel);
+        this.currentChannel = null;
+    }
+    if (this.updateCarouselView) this.stopCarouselPlayer();
+    
+    const item = this.allContentMap[id];
+    if (!item) return;
+
+    this.currentItemInView = item; 
+
+    this.viewerCount = 0;
+    this.elements.modalContainer.innerHTML = '';
+    const modalOverlay = document.createElement('div');
+    modalOverlay.id = 'live-room-modal';
+    modalOverlay.className = 'modal-overlay';
+    const closeButton = document.createElement('button');
+    closeButton.className = 'modal-close-btn';
+    closeButton.innerHTML = '×';
+    closeButton.setAttribute('aria-label', 'Cerrar');
+    closeButton.addEventListener('click', () => this.closeLiveRoom());
+    const content = this.buildLiveRoomHTML();
+    modalOverlay.appendChild(closeButton);
+    modalOverlay.appendChild(content);
+    this.elements.modalContainer.appendChild(modalOverlay);
+
+    // --- LÓGICA CORREGIDA Y FINAL PARA EL CANAL ---
+    // Se restaura la lógica que maneja tanto EVENTOS como VIDEOS correctamente.
+    const channelName = item.type === 'EVENT' ? `session-${item.id}` : `video-${item.id}`;
+    
+    this.currentChannel = this.supabase.channel(channelName);
+
+    this.currentChannel
+        .on('presence', { event: 'sync' }, () => {
+            const presenceState = this.currentChannel.presenceState();
+            this.viewerCount = Object.keys(presenceState).length;
+            this.updateViewerCountUI();
+        })
+        .on('broadcast', { event: 'new_chat_message' }, async ({ payload }) => {
+            console.log('Nuevo mensaje recibido por broadcast!', payload);
+            
+            // Usamos await para obtener la sesión correctamente.
+            const { data: { session } } = await this.supabase.auth.getSession();
+            const currentUserHandle = session?.user?.user_metadata?.handle;
+            
+            // Solo se añade el mensaje si no es del usuario actual.
+            if (currentUserHandle !== payload.author.handle) {
+                this.appendChatMessage(payload);
+            }
+        })
+        .subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                const { data: { session } } = await this.supabase.auth.getSession();
+                const userId = session?.user?.id || 'invitado';
+                await this.currentChannel.track({ user_id: userId, online_at: new Date().toISOString() });
+            }
+        });
+    
+    await this.populateLiveRoom(item);
+    setTimeout(() => modalOverlay.classList.add('is-visible'), 10);
+},
 
     listenForChanges() {
         this.supabase.channel('public-changes')

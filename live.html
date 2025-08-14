@@ -20,6 +20,7 @@
     <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <link rel="stylesheet" href="/live/css/live.css">
+    
 </head>
 <body>
     <header class="desktop-nav">
@@ -82,6 +83,42 @@
     </main>
     
     <div id="modal-container"></div>
+
+    <template id="bsky-connect-template">
+    <div class="bento-box">
+        <h3><i class="fa-solid fa-link"></i> Conectar Cuenta para Participar</h3>
+        
+        <div class="step">
+            <h4>Paso 1: Ten una cuenta de Bluesky</h4>
+            <p class="form-hint">Para interactuar necesitas una cuenta en la red social descentralizada Bluesky. Si no tienes una, ¡es gratis y fácil de crear!</p>
+            <a href="https://bsky.app" target="_blank" class="btn btn-secondary" style="width:100%; text-decoration: none;">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Crear o Iniciar Sesión en Bluesky
+            </a>
+        </div>
+        
+        <hr>
+
+        <div class="step">
+            <h4>Paso 2: Conecta de Forma Segura</h4>
+            <p class="form-hint">Genera una <strong>Contraseña de Aplicación</strong> (no tu contraseña principal) para darnos permiso de publicar en tu nombre.</p>
+            <form id="bsky-connect-form">
+                <div class="form-group">
+                    <label for="bsky-handle">Tu Handle de Bluesky</label>
+                    <input type="text" id="bsky-handle" placeholder="tu-usuario.bsky.social" required>
+                </div>
+                <div class="form-group">
+                    <label for="bsky-app-password">Contraseña de Aplicación</label>
+                    <input type="password" id="bsky-app-password" placeholder="xxxx-xxxx-xxxx-xxxx" required>
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-link"></i> Conectar Cuenta</button>
+            </form>
+        </div>
+
+        <div class="troubleshooting-note">
+            <p><strong>¿Problemas para conectar?</strong> Si recibes un error de "credenciales inválidas" a pesar de que son correctas, te recomendamos seguir estos pasos en Bluesky: <strong>1. Reinicia tu contraseña principal. 2. Genera una nueva Contraseña de Aplicación.</strong> Esto suele solucionar el problema.</p>
+        </div>
+    </div>
+</template>
 
     <div id="login-modal-overlay" class="login-modal-overlay">
         <div class="login-modal">

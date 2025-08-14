@@ -343,12 +343,19 @@ body { background-color: var(--color-background); color: var(--color-primary); f
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 4000;
     backdrop-filter: blur(5px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+.investigator-modal-overlay.is-visible {
+    opacity: 1;
+    visibility: visible;
 }
 .investigator-modal {
     background-color: var(--color-surface);
@@ -1245,5 +1252,137 @@ body {
     font-weight: 500;
     font-style: normal;
 }
+/* --- AÑADE ESTOS ESTILOS AL FINAL DE LIVE.CSS --- */
 
+/* Estilos para el prompt que pide al usuario iniciar sesión */
+.chat-login-prompt {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+    height: 100%;
+    padding: 1rem;
+}
+
+.chat-login-prompt h4 {
+    margin-bottom: 0;
+}
+
+.chat-login-prompt .login-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+    max-width: 280px;
+}
+
+/* Estilos para el prompt que pide conectar cuenta de Bluesky */
+.chat-action-prompt {
+    background-color: var(--color-background);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.chat-action-prompt p {
+    margin: 0;
+    font-weight: 500;
+}
+
+.chat-action-prompt .btn-secondary {
+    background-color: var(--color-accent);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    white-space: nowrap; /* Evita que el texto del botón se rompa */
+}
 /* --- FIN: ESTILOS PARA EL CHAT DE BLUESKY --- */
+/* --- AÑADE ESTOS ESTILOS AL FINAL DE LIVE.CSS --- */
+/* CSS DEFINITIVO PARA EL MODAL DE CONEXIÓN DE BSKY */
+#bsky-connect-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(18, 18, 18, 0.8); /* Fondo oscuro semitransparente */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5000;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+#bsky-connect-modal .bento-box {
+  background-color: var(--color-surface);
+  border-radius: var(--border-radius);
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 2rem;
+  position: relative;
+  color: var(--color-primary);
+  border: 1px solid var(--border-color);
+}
+
+.bsky-modal-close-btn {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 32px;
+  height: 32px;
+  background: var(--color-background);
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--color-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#bsky-connect-modal .btn {
+    width: 100%;
+    text-align: center;
+    padding: 0.8rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    border: none;
+}
+
+#bsky-connect-modal .btn-primary {
+    background-color: var(--color-accent);
+    color: white;
+}
+
+#bsky-connect-modal .btn-secondary {
+    background-color: var(--color-surface);
+    color: var(--color-primary);
+    border: 1px solid var(--border-color);
+    margin-bottom: 1rem;
+}
+
+/* El resto de los estilos del formulario que ya tenías */
+#bsky-connect-modal h3, #bsky-connect-modal h4 { margin-top: 0; }
+#bsky-connect-modal hr { border: none; border-top: 1px solid var(--border-color); margin: 1.5rem 0; }
+#bsky-connect-modal .form-group { margin-bottom: 1rem; }
+#bsky-connect-modal label { display: block; font-weight: 600; margin-bottom: 0.5rem; }
+#bsky-connect-modal input { width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border-color); background-color: var(--color-background); color: var(--color-primary); box-sizing: border-box; }
+#bsky-connect-modal .form-hint, #bsky-connect-modal .troubleshooting-note { font-size: 0.9rem; color: var(--color-secondary); }
