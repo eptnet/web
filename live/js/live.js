@@ -227,50 +227,55 @@ const LiveApp = {
         }
     },
 
-addEventListeners() {
-    // Listeners para elementos estáticos de la página (fuera de los modales)
-    this.elements.scheduleList.addEventListener('click', (e) => this.handleCardClick(e));
-    this.elements.ondemandListContainer.addEventListener('click', (e) => this.handleCardClick(e));
-    this.elements.tabs.forEach(tab => tab.addEventListener('click', () => this.handleTabClick(tab)));
-    this.elements.searchInput?.addEventListener('input', (e) => this.filterCards(e.target.value));
-    
-    // (Aquí puedes mantener los listeners del header, menú móvil, etc., que ya tienes y funcionan)
+    addEventListeners() {
+        // Listeners para elementos estáticos de la página (fuera de los modales)
+        this.elements.scheduleList.addEventListener('click', (e) => this.handleCardClick(e));
+        this.elements.ondemandListContainer.addEventListener('click', (e) => this.handleCardClick(e));
+        this.elements.tabs.forEach(tab => tab.addEventListener('click', () => this.handleTabClick(tab)));
+        this.elements.searchInput?.addEventListener('input', (e) => this.filterCards(e.target.value));
+        
+        // (Aquí puedes mantener los listeners del header, menú móvil, etc., que ya tienes y funcionan)
 
-    // --- Listener de Clics UNIFICADO para el Contenedor Principal de Modales ---
-    // Gestiona todos los clics que ocurren dentro de la sala en vivo.
-    this.elements.modalContainer.addEventListener('click', (e) => {
-        const target = e.target;
+        // --- Listener de Clics UNIFICADO para el Contenedor Principal de Modales ---
+        this.elements.modalContainer.addEventListener('click', (e) => {
+            const target = e.target.closest('button'); // Busca el botón más cercano al clic
+            if (!target) return;
 
-        // Clic en el botón "Conectar Ahora" para Bluesky
-        if (target.id === 'open-bsky-connect-modal') {
-            e.preventDefault();
-            this.openBskyConnectModal();
-            return;
-        }
+            // Clic en el botón para abrir el modal de emojis
+            if (target.id === 'open-emoji-modal-btn') {
+                this.openEmojiModal();
+            }
 
-        // Clic en el avatar de un investigador
-        const avatar = target.closest('.avatar[data-user-id]');
-        if (avatar) {
-            this.openInvestigatorModal(avatar.dataset.userId);
-            return;
-        }
+            // Clic en el botón "Conectar Ahora" para Bluesky
+            if (target.id === 'open-bsky-connect-modal') {
+                e.preventDefault();
+                this.openBskyConnectModal();
+                return;
+            }
 
-        // Clic en el botón de reportar sesión
-        const reportButton = target.closest('button[data-action="report-session"]');
-        if (reportButton) {
-            this.handleReportSession(reportButton.dataset.sessionId);
-            return;
-        }
-    });
+            // Clic en el avatar de un investigador
+            const avatar = target.closest('.avatar[data-user-id]');
+            if (avatar) {
+                this.openInvestigatorModal(avatar.dataset.userId);
+                return;
+            }
 
-    // --- Listener de Formularios UNIFICADO (solo para el chat) ---
-    this.elements.modalContainer.addEventListener('submit', (e) => {
-        if (e.target.id === 'chat-form') {
-            e.preventDefault();
-            this.handleChatMessageSend(e.target, this.currentItemInView.bsky_chat_thread_uri, this.currentItemInView.bsky_chat_thread_cid);
-        }
-    });
-},
+            // Clic en el botón de reportar sesión
+            const reportButton = target.closest('button[data-action="report-session"]');
+            if (reportButton) {
+                this.handleReportSession(reportButton.dataset.sessionId);
+                return;
+            }
+        });
+
+        // --- Listener de Formularios UNIFICADO (solo para el chat) ---
+        this.elements.modalContainer.addEventListener('submit', (e) => {
+            if (e.target.id === 'chat-form') {
+                e.preventDefault();
+                this.handleChatMessageSend(e.target, this.currentItemInView.bsky_chat_thread_uri, this.currentItemInView.bsky_chat_thread_cid);
+            }
+        });
+    },
     
     async run() {
         const [{ data: sessions }, { data: videos }] = await Promise.all([
@@ -647,6 +652,57 @@ addEventListeners() {
         });
     },
 
+    // --- REEMPLAZA ESTA FUNCIÓN CON LA VERSIÓN FINAL ---
+    openEmojiModal() {
+        if (document.getElementById('emoji-modal')) return;
+
+        const modalContainer = document.createElement('div');
+        modalContainer.id = 'emoji-modal';
+        modalContainer.innerHTML = `
+            <div class="emoji-modal-content">
+                <div class="emoji-modal-header">
+                    <h3>Seleccionar Emoji</h3>
+                    <button class="emoji-modal-close-btn">&times;</button>
+                </div>
+                <div id="emoji-picker-container"></div>
+            </div>
+        `;
+        document.body.appendChild(modalContainer);
+        document.body.style.overflow = 'hidden';
+
+        const closeModal = () => {
+            modalContainer.remove();
+            document.body.style.overflow = '';
+        };
+
+        modalContainer.querySelector('.emoji-modal-close-btn').addEventListener('click', closeModal);
+        modalContainer.addEventListener('click', (e) => {
+            if (e.target.id === 'emoji-modal') closeModal();
+        });
+
+        setTimeout(() => {
+            const pickerContainer = document.getElementById('emoji-picker-container');
+            if (!pickerContainer) return;
+            
+            // --- LA CORRECCIÓN ESTÁ AQUÍ ---
+            // Se ha eliminado la línea "renderer: new TwemojiRenderer()," para forzar el uso de emojis nativos.
+            const picker = picmo.createPicker({
+                rootElement: pickerContainer,
+                theme: document.body.classList.contains('dark-theme') ? 'dark' : 'light'
+            });
+            // --- FIN DE LA CORRECCIÓN ---
+
+            picker.addEventListener('emoji:select', (selection) => {
+                const textArea = document.querySelector('#chat-form textarea');
+                if (textArea) {
+                    textArea.value += selection.emoji;
+                    textArea.focus();
+                }
+                closeModal();
+            });
+        }, 50);
+    },
+
     buildLiveRoomHTML() {
         const container = document.createElement('div');
         container.className = 'live-room-content';
@@ -668,109 +724,100 @@ addEventListeners() {
         return container;
     },
 
-    // --- REEMPLAZA ESTA FUNCIÓN COMPLETA ---
-    // --- REEMPLAZA ESTA FUNCIÓN COMPLETA ---
-async populateLiveRoom(item) {
-    const player = document.getElementById('live-room-player');
-    const info = document.getElementById('live-room-info');
-    const chat = document.getElementById('chat-box');
-    const investigators = document.getElementById('live-room-investigators-strip');
-    const countdown = document.getElementById('live-room-countdown');
-    const primaryAction = document.getElementById('live-room-primary-action');
+    async populateLiveRoom(item) {
+        const player = document.getElementById('live-room-player');
+        const info = document.getElementById('live-room-info');
+        const chat = document.getElementById('chat-box');
+        const investigators = document.getElementById('live-room-investigators-strip');
+        const countdown = document.getElementById('live-room-countdown');
+        const primaryAction = document.getElementById('live-room-primary-action');
 
-    // Reseteamos la UI del modal
-    primaryAction.innerHTML = '';
-    chat.style.display = 'block';
-    investigators.style.display = 'block';
-    countdown.style.display = 'none';
-
-    if (item.type === 'VIDEO') {
-        const video = item;
-        investigators.style.display = 'none';
-        chat.style.display = 'none';
+        // Reseteamos la UI del modal
+        primaryAction.innerHTML = '';
+        chat.style.display = 'block';
+        investigators.style.display = 'block';
         countdown.style.display = 'none';
-        document.getElementById('live-room-disclaimer').style.display = 'none';
-        document.getElementById('live-room-report').style.display = 'none';
-        player.innerHTML = `<iframe src="https://www.youtube.com/embed/${video.youtube_video_id}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
-        info.innerHTML = `<h3>${video.title}</h3><p>${video.description || 'No hay descripción disponible para este video.'}</p>`;
-        return;
-    }
 
-    // A partir de aquí, es solo para EVENTOS
-    const session = item;
-    const eventDate = new Date(session.scheduled_at);
-    const dateString = eventDate.toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'short' });
-    const chatTitle = `<h4><i class="fas fa-comments"></i> Chat ${session.status === 'EN VIVO' ? `<span class="card-live-indicator">EN VIVO</span> <span id="live-viewer-count" class="viewer-count"><i class="fas fa-eye"></i> ${this.viewerCount}</span>` : ''}</h4>`;
-
-    if (session.status === 'EN VIVO') {
-        const channel = session.platform_id || 'epistecnologia';
-        if (session.platform === 'vdo_ninja') player.innerHTML = `<iframe src="${session.viewer_url}" allow="autoplay; fullscreen; picture-in-picture"></iframe>`;
-        else if (session.platform === 'youtube') player.innerHTML = `<iframe src="https://www.youtube.com/embed/${channel}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
-        else if (session.platform === 'twitch') player.innerHTML = `<iframe src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=true" allowfullscreen allow="picture-in-picture"></iframe>`;
-    } else {
-        const thumbnailUrl = session.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg';
-        player.innerHTML = `<img src="${thumbnailUrl}" style="width:100%; height:100%; object-fit:cover;">`;
-    }
-
-    if (session.platform === 'vdo_ninja' && session.bsky_chat_thread_uri) this.renderVDONinjaChat(session);
-    else if (session.platform === 'substack') {
-        primaryAction.innerHTML = `<a href="https://open.substack.com/live-stream/${session.platform_id}" target="_blank" rel="noopener noreferrer" class="btn-substack">Ir a la Sala en Substack</a>`;
-        chat.innerHTML = `${chatTitle}<p>El chat para este evento está disponible directamente en Substack.</p>`;
-    } else if (session.platform === 'youtube' && session.status === 'EN VIVO') {
-        chat.style.cssText = 'display: grid; grid-template-rows: auto 1fr; gap: 1rem;';
-        chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}"></iframe></div>`;
-    } else if (session.platform === 'twitch' && session.status === 'EN VIVO') {
-        chat.style.cssText = 'display: grid; grid-template-rows: auto 1fr; gap: 1rem;';
-        chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.twitch.tv/embed/${session.platform_id}/chat?parent=${window.location.hostname}&darkpopout"></iframe></div>`;
-    } else {
-        chat.innerHTML = `${chatTitle}<p>El chat solo está disponible durante la transmisión en vivo.</p>`;
-    }
-    
-    if (session.status === 'PROGRAMADO' && eventDate > new Date()) {
-        countdown.style.display = 'block';
-        countdown.innerHTML = '<div id="countdown-timer"></div>';
-        this.startCountdown(session.scheduled_at);
-    }
-    
-    let projectHTML = '';
-    if (session.project_title && session.organizer?.id) {
-        const { data: project } = await this.supabase.from('projects').select('*').eq('user_id', session.organizer.id).eq('title', session.project_title).single();
-        if (project) {
-            const uniqueAuthors = project.authors && Array.isArray(project.authors) ? [...new Set(project.authors)].join(', ') : 'No disponible';
-            const doiLink = project.doi ? `<a href="https://doi.org/${project.doi}" target="_blank" rel="noopener noreferrer" class="doi-badge">Ver Proyecto (DOI)</a>` : '';
-            projectHTML = `<h4>Proyecto</h4><h3 class="live-room-project-title">${project.title}</h3><p><strong>Autores:</strong> ${uniqueAuthors}</p><p>${project.description || 'Resumen no disponible.'}</p>${doiLink}`;
+        if (item.type === 'VIDEO') {
+            const video = item;
+            investigators.style.display = 'none';
+            chat.style.display = 'none';
+            countdown.style.display = 'none';
+            document.getElementById('live-room-disclaimer').style.display = 'none';
+            document.getElementById('live-room-report').style.display = 'none';
+            player.innerHTML = `<iframe src="https://www.youtube.com/embed/${video.youtube_video_id}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
+            info.innerHTML = `<h3>${video.title}</h3><p>${video.description || 'No hay descripción disponible para este video.'}</p>`;
+            return;
         }
-    }
 
-    let actionButtonsHTML = '';
-    if (session.more_info_url) actionButtonsHTML += `<a href="${session.more_info_url}" target="_blank" rel="noopener noreferrer" class="btn-primary" style="display:block; text-align:center;">Saber Más</a>`;
-    if (session.recording_url) actionButtonsHTML += `<a href="${session.recording_url}" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="display:block; margin-top: 1rem; text-align:center;">Ver Grabación</a>`;
+        // A partir de aquí, es solo para EVENTOS
+        const session = item;
+        const eventDate = new Date(session.scheduled_at);
+        const dateString = eventDate.toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'short' });
+        const chatTitle = `<h4><i class="fas fa-comments"></i> Chat ${session.status === 'EN VIVO' ? `<span class="card-live-indicator">EN VIVO</span> <span id="live-viewer-count" class="viewer-count"><i class="fas fa-eye"></i> ${this.viewerCount}</span>` : ''}</h4>`;
 
-    const organizer = session.organizer;
-    const organizerHTML = `<div class="organizer-info"><img src="${organizer?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="Avatar de ${organizer?.display_name || 'Anfitrión'}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;"><div class="organizer-name-block"><span>Organiza: </span><strong>${organizer?.display_name || 'Nombre no disponible'}</strong></div></div>`;
-    info.innerHTML = `<h3>${session.session_title}</h3><p>${session.description || ''}</p>${organizerHTML}<p><strong>Fecha:</strong> ${dateString}</p><hr>${projectHTML}<div class="action-buttons-container" style="margin-top: 1rem; display:flex; flex-direction:column; gap:1rem;">${actionButtonsHTML}</div>`;
+        if (session.status === 'EN VIVO') {
+            const channel = session.platform_id || 'epistecnologia';
+            if (session.platform === 'vdo_ninja') player.innerHTML = `<iframe src="${session.viewer_url}" allow="autoplay; fullscreen; picture-in-picture"></iframe>`;
+            else if (session.platform === 'youtube') player.innerHTML = `<iframe src="https://www.youtube.com/embed/${channel}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
+            else if (session.platform === 'twitch') player.innerHTML = `<iframe src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=true" allowfullscreen allow="picture-in-picture"></iframe>`;
+        } else {
+            const thumbnailUrl = session.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg';
+            player.innerHTML = `<img src="${thumbnailUrl}" style="width:100%; height:100%; object-fit:cover;">`;
+        }
 
-    const allUsers = [organizer, ...(session.participants?.map(p => p.profiles) || [])].filter(Boolean);
-    investigators.innerHTML = allUsers.length > 0 ? `<h4>Investigadores</h4><div class="avatar-grid">${allUsers.map(u => u ? `<img src="${u.avatar_url}" title="${u.display_name}" class="avatar" data-user-id="${u.id}">` : '').join('')}</div>` : '';
-    
-    document.getElementById('live-room-disclaimer').innerHTML = `<p>El contenido de esta transmisión es responsabilidad exclusiva de su autor...</p>`;
-    document.getElementById('live-room-report').innerHTML = `<button class="report-button" data-action="report-session" data-session-id="${session.id}"><i class="fas fa-flag"></i> Reportar esta sesión</button>`;
-},
+        if (session.platform === 'vdo_ninja' && session.bsky_chat_thread_uri) this.renderVDONinjaChat(session);
+        else if (session.platform === 'substack') {
+            primaryAction.innerHTML = `<a href="https://open.substack.com/live-stream/${session.platform_id}" target="_blank" rel="noopener noreferrer" class="btn-substack">Ir a la Sala en Substack</a>`;
+            chat.innerHTML = `${chatTitle}<p>El chat para este evento está disponible directamente en Substack.</p>`;
+        } else if (session.platform === 'youtube' && session.status === 'EN VIVO') {
+            chat.style.cssText = 'display: grid; grid-template-rows: auto 1fr; gap: 1rem;';
+            chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}"></iframe></div>`;
+        } else if (session.platform === 'twitch' && session.status === 'EN VIVO') {
+            chat.style.cssText = 'display: grid; grid-template-rows: auto 1fr; gap: 1rem;';
+            chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.twitch.tv/embed/${session.platform_id}/chat?parent=${window.location.hostname}&darkpopout"></iframe></div>`;
+        } else {
+            chat.innerHTML = `${chatTitle}<p>El chat solo está disponible durante la transmisión en vivo.</p>`;
+        }
+        
+        if (session.status === 'PROGRAMADO' && eventDate > new Date()) {
+            countdown.style.display = 'block';
+            countdown.innerHTML = '<div id="countdown-timer"></div>';
+            this.startCountdown(session.scheduled_at);
+        }
+        
+        let projectHTML = '';
+        if (session.project_title && session.organizer?.id) {
+            const { data: project } = await this.supabase.from('projects').select('*').eq('user_id', session.organizer.id).eq('title', session.project_title).single();
+            if (project) {
+                const uniqueAuthors = project.authors && Array.isArray(project.authors) ? [...new Set(project.authors)].join(', ') : 'No disponible';
+                const doiLink = project.doi ? `<a href="https://doi.org/${project.doi}" target="_blank" rel="noopener noreferrer" class="doi-badge">Ver Proyecto (DOI)</a>` : '';
+                projectHTML = `<h4>Proyecto</h4><h3 class="live-room-project-title">${project.title}</h3><p><strong>Autores:</strong> ${uniqueAuthors}</p><p>${project.description || 'Resumen no disponible.'}</p>${doiLink}`;
+            }
+        }
+
+        let actionButtonsHTML = '';
+        if (session.more_info_url) actionButtonsHTML += `<a href="${session.more_info_url}" target="_blank" rel="noopener noreferrer" class="btn-primary" style="display:block; text-align:center;">Saber Más</a>`;
+        if (session.recording_url) actionButtonsHTML += `<a href="${session.recording_url}" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="display:block; margin-top: 1rem; text-align:center;">Ver Grabación</a>`;
+
+        const organizer = session.organizer;
+        const organizerHTML = `<div class="organizer-info"><img src="${organizer?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="Avatar de ${organizer?.display_name || 'Anfitrión'}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;"><div class="organizer-name-block"><span>Organiza: </span><strong>${organizer?.display_name || 'Nombre no disponible'}</strong></div></div>`;
+        info.innerHTML = `<h3>${session.session_title}</h3><p>${session.description || ''}</p>${organizerHTML}<p><strong>Fecha:</strong> ${dateString}</p><hr>${projectHTML}<div class="action-buttons-container" style="margin-top: 1rem; display:flex; flex-direction:column; gap:1rem;">${actionButtonsHTML}</div>`;
+
+        const allUsers = [organizer, ...(session.participants?.map(p => p.profiles) || [])].filter(Boolean);
+        investigators.innerHTML = allUsers.length > 0 ? `<h4>Investigadores</h4><div class="avatar-grid">${allUsers.map(u => u ? `<img src="${u.avatar_url}" title="${u.display_name}" class="avatar" data-user-id="${u.id}">` : '').join('')}</div>` : '';
+        
+        document.getElementById('live-room-disclaimer').innerHTML = `<p>El contenido de esta transmisión es responsabilidad exclusiva de su autor...</p>`;
+        document.getElementById('live-room-report').innerHTML = `<button class="report-button" data-action="report-session" data-session-id="${session.id}"><i class="fas fa-flag"></i> Reportar esta sesión</button>`;
+    },
 
     // --- [NUEVO] Funciones Auxiliares del Chat ---
     buildChatInterfaceHTML({ status, canWrite = false, customPrompt = null }) {
         const isLive = status === 'EN VIVO';
         let placeholder = '';
-
-        // Lógica mejorada para el texto del placeholder
-        if (!isLive) {
-            placeholder = 'El chat solo está disponible durante la transmisión en vivo.';
-        } else if (!canWrite) {
-            placeholder = 'Conecta tu cuenta de Bluesky para poder escribir.';
-        } else {
-            placeholder = 'Escribe tu mensaje...';
-        }
-
+        if (!isLive) placeholder = 'El chat solo está disponible durante la transmisión en vivo.';
+        else if (!canWrite) placeholder = 'Conecta tu cuenta de Bluesky para poder escribir.';
+        else placeholder = 'Escribe tu mensaje...';
         const isDisabled = !isLive || !canWrite;
 
         return `
@@ -779,6 +826,7 @@ async populateLiveRoom(item) {
                 ${customPrompt || ''}
                 <div id="chat-messages" class="chat-messages-list"><p class="chat-system-message">Cargando mensajes...</p></div>
                 <form id="chat-form" class="chat-input-form">
+                    ${canWrite && isLive ? '<button type="button" id="open-emoji-modal-btn" class="emoji-btn"><i class="fa-regular fa-face-smile"></i></button>' : ''}
                     <textarea name="chat-message" placeholder="${placeholder}" ${isDisabled ? 'disabled' : ''} required></textarea>
                     <button type="submit" class="send-btn" ${isDisabled ? 'disabled' : ''}><i class="fa-solid fa-paper-plane"></i></button>
                 </form>
@@ -800,6 +848,7 @@ async populateLiveRoom(item) {
             console.error(error);
         }
     },
+
     async handleChatMessageSend(form, threadUri, threadCid) {
         const textArea = form.querySelector('textarea');
         const button = form.querySelector('button');
@@ -831,6 +880,7 @@ async populateLiveRoom(item) {
             button.disabled = false;
         }
     },
+
     appendChatMessage(message, isAnchor = false) {
         const messagesContainer = document.getElementById('chat-messages');
         if (!messagesContainer || !message || !message.author || !message.record) return;
