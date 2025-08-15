@@ -455,20 +455,21 @@ const LiveApp = {
         this.presenceChannel = this.supabase.channel(presenceChannelName);
 
         this.presenceChannel.on('presence', { event: 'sync' }, () => {
-            this.viewerCount = Object.keys(this.presenceChannel.presenceState()).length;
-            this.updateViewerCountUI();
+        // 1. Calculamos el nuevo conteo PRIMERO.
+        const newCount = Object.keys(this.presenceChannel.presenceState()).length;
 
-            // --- LÍNEA AÑADIDA ---
+        this.viewerCount = newCount;            
+        this.updateViewerCountUI();
+
             // Notificamos al servidor del nuevo recuento de espectadores.
             // Lo envolvemos en un try/catch para que no bloquee la UI si falla.
-            try {
-                this.supabase.functions.invoke('update-viewer-count', {
-                    body: { sessionId: item.id, viewerCount: newCount }
-                });
-            } catch (error) {
-                console.error("Error al notificar el recuento de espectadores:", error);
-            }
-            // --- FIN DE LA LÍNEA AÑADIDA ---
+            this.supabase.functions.invoke('update-viewer-count', {
+                body: { sessionId: item.id, viewerCount: newCount }
+            }).catch(error => {
+                // Este mensaje aparecerá en la consola del NAVEGADOR si la llamada falla.
+                console.error('Error al invocar la función update-viewer-count:', error);
+            });
+
 
         }).subscribe(async (status) => {
             if (status === 'SUBSCRIBED') {
