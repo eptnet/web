@@ -238,12 +238,17 @@ const LiveApp = {
 
         // --- Listener de Clics UNIFICADO para el Contenedor Principal de Modales ---
         this.elements.modalContainer.addEventListener('click', (e) => {
-            const target = e.target.closest('button'); // Busca el botón más cercano al clic
+            const target = e.target;
             if (!target) return;
 
-            // Clic en el botón para abrir el modal de emojis
-            if (target.id === 'open-emoji-modal-btn') {
-                this.openEmojiModal();
+            if (target.matches('.emoji-char')) {
+                e.preventDefault();
+                const textArea = this.elements.modalContainer.querySelector('#chat-form textarea');
+                if (textArea && !textArea.disabled) {
+                    textArea.value += target.textContent;
+                    textArea.focus();
+                }
+                return;
             }
 
             // Clic en el botón "Conectar Ahora" para Bluesky
@@ -431,7 +436,6 @@ const LiveApp = {
 
         const item = this.allContentMap[id];
         if (!item) return;
-
         this.currentItemInView = item;
         this.viewerCount = 0;
         this.elements.modalContainer.innerHTML = '';
@@ -439,47 +443,58 @@ const LiveApp = {
         const modalOverlay = document.createElement('div');
         modalOverlay.id = 'live-room-modal';
         modalOverlay.className = 'modal-overlay';
-        
         const closeButton = document.createElement('button');
         closeButton.className = 'modal-close-btn';
         closeButton.innerHTML = '×';
         closeButton.onclick = () => this.closeLiveRoom();
-        
         modalOverlay.appendChild(closeButton);
         modalOverlay.appendChild(this.buildLiveRoomHTML());
         this.elements.modalContainer.appendChild(modalOverlay);
 
-        // Canal de Presencia (espectadores)
         const presenceChannelName = `session-${item.id}`;
         this.presenceChannel = this.supabase.channel(presenceChannelName);
-        this.presenceChannel
-            .on('presence', { event: 'sync' }, () => {
-                const presenceState = this.presenceChannel.presenceState();
-                this.viewerCount = Object.keys(presenceState).length;
-                this.updateViewerCountUI();
-            })
-            .subscribe(async (status) => {
-                if (status === 'SUBSCRIBED') {
-                    const { data: { session } } = await this.supabase.auth.getSession();
-                    await this.presenceChannel.track({ user_id: session?.user?.id || 'invitado' });
-                }
-            });
 
-        // Canal de Chat (mensajes) - Solo para eventos que lo usan
+        this.presenceChannel.on('presence', { event: 'sync' }, () => {
+            this.viewerCount = Object.keys(this.presenceChannel.presenceState()).length;
+            this.updateViewerCountUI();
+
+            // --- LÍNEA AÑADIDA ---
+            // Notificamos al servidor del nuevo recuento de espectadores.
+            // Lo envolvemos en un try/catch para que no bloquee la UI si falla.
+            try {
+                this.supabase.functions.invoke('update-viewer-count', {
+                    body: { sessionId: item.id, viewerCount: newCount }
+                });
+            } catch (error) {
+                console.error("Error al notificar el recuento de espectadores:", error);
+            }
+            // --- FIN DE LA LÍNEA AÑADIDA ---
+
+        }).subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                const { data: { session } } = await this.supabase.auth.getSession();
+                await this.presenceChannel.track({ user_id: session?.user?.id || 'invitado' });
+            }
+        });
+
         if (item.type === 'EVENT' && item.platform === 'vdo_ninja' && item.bsky_chat_thread_uri) {
             const chatChannelName = `session-chat-${item.id}`;
             this.chatChannel = this.supabase.channel(chatChannelName);
-            this.chatChannel
-                .on('broadcast', { event: 'new_chat_message' }, ({ payload }) => {
-                    this.appendChatMessage(payload); // Simplificado para producción
-                })
-                .subscribe((status) => {
-                    if (status === 'SUBSCRIBED') {
-                        console.log(`Conectado al canal de chat: ${chatChannelName}`);
-                    }
-                });
-        }
+            this.chatChannel.on('broadcast', { event: 'new_chat_message' }, async ({ payload }) => {
+                // **CORRECCIÓN PARA MENSAJE DUPLICADO**
+                const { data: { session } } = await this.supabase.auth.getSession();
+                // Obtenemos el handle del usuario actual desde bsky_credentials para una comparación precisa
+                const { data: bskyCreds } = session ? await this.supabase.from('bsky_credentials').select('handle').eq('user_id', session.user.id).single() : { data: null };
+                const currentUserHandle = bskyCreds?.handle;
 
+                // Solo añade el mensaje si no es del usuario actual
+                if (currentUserHandle !== payload.author.handle) {
+                    this.appendChatMessage(payload);
+                }
+            }).subscribe(status => {
+                if (status === 'SUBSCRIBED') console.log(`Conectado al canal de chat: ${chatChannelName}`);
+            });
+        }
         await this.populateLiveRoom(item);
         setTimeout(() => modalOverlay.classList.add('is-visible'), 10);
     },
@@ -813,25 +828,19 @@ const LiveApp = {
 
     // --- [NUEVO] Funciones Auxiliares del Chat ---
     buildChatInterfaceHTML({ status, canWrite = false, customPrompt = null }) {
+        // **CORRECCIÓN PARA RESTAURAR CONTADOR Y LIVE**
         const isLive = status === 'EN VIVO';
+        const liveIndicatorHTML = isLive ? `<span class="card-live-indicator">EN VIVO</span> <span id="live-viewer-count" class="viewer-count"><i class="fas fa-eye"></i> ${this.viewerCount}</span>` : '';
+        const title = `<h4><i class="fas fa-comments"></i> Chat ${liveIndicatorHTML}</h4>`;
+
         let placeholder = '';
         if (!isLive) placeholder = 'El chat solo está disponible durante la transmisión en vivo.';
         else if (!canWrite) placeholder = 'Conecta tu cuenta de Bluesky para poder escribir.';
         else placeholder = 'Escribe tu mensaje...';
         const isDisabled = !isLive || !canWrite;
 
-        return `
-            <div id="bsky-chat-container">
-                <h4><i class="fas fa-comments"></i> Chat del Evento</h4>
-                ${customPrompt || ''}
-                <div id="chat-messages" class="chat-messages-list"><p class="chat-system-message">Cargando mensajes...</p></div>
-                <form id="chat-form" class="chat-input-form">
-                    ${canWrite && isLive ? '<button type="button" id="open-emoji-modal-btn" class="emoji-btn"><i class="fa-regular fa-face-smile"></i></button>' : ''}
-                    <textarea name="chat-message" placeholder="${placeholder}" ${isDisabled ? 'disabled' : ''} required></textarea>
-                    <button type="submit" class="send-btn" ${isDisabled ? 'disabled' : ''}><i class="fa-solid fa-paper-plane"></i></button>
-                </form>
-            </div>
-        `;
+        const emojiBar = `<div id="emoji-bar" class="emoji-bar"> <span class="emoji-char">👍</span><span class="emoji-char">❤️</span><span class="emoji-char">😂</span><span class="emoji-char">👏</span><span class="emoji-char">😮</span><span class="emoji-char">😢</span><span class="emoji-char">🤔</span><span class="emoji-char">🔥</span> </div>`;
+        return `<div id="bsky-chat-container">${title}${customPrompt || ''}<div id="chat-messages" class="chat-messages-list"><p class="chat-system-message">Cargando...</p></div>${canWrite && isLive ? emojiBar : ''}<form id="chat-form" class="chat-input-form"><textarea name="chat-message" placeholder="${placeholder}" ${isDisabled ? 'disabled' : ''} required></textarea><button type="submit" class="send-btn" ${isDisabled ? 'disabled' : ''}><i class="fa-solid fa-paper-plane"></i></button></form></div>`;
     },
 
     async loadAndDisplayChat(threadUri) {

@@ -1484,3 +1484,27 @@ body {
 #emoji-picker-container {
     height: 400px; /* Altura fija para el selector */
 }
+/* --- AÑADE ESTO AL FINAL DE LIVE.CSS --- */
+
+/* Estilos para la Barra de Emojis Inline */
+.emoji-bar {
+  display: flex;
+  justify-content: space-around;
+  padding: 8px;
+  background-color: var(--color-background);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.emoji-char {
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: transform 0.1s ease, background-color 0.2s;
+}
+
+.emoji-char:hover {
+  background-color: var(--color-surface);
+  transform: scale(1.2);
+}
