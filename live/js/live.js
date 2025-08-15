@@ -227,9 +227,6 @@ const LiveApp = {
         }
     },
 
-    // --- REEMPLAZA ESTA FUNCIÓN ---
-// --- REEMPLAZA ESTA FUNCIÓN COMPLETA ---
-// --- REEMPLAZA ESTA FUNCIÓN COMPLETA ---
 addEventListeners() {
     // Listeners para elementos estáticos de la página (fuera de los modales)
     this.elements.scheduleList.addEventListener('click', (e) => this.handleCardClick(e));
@@ -422,62 +419,62 @@ addEventListeners() {
         this.elements.ondemandListContainer.innerHTML = videos.map(v => `<div class="video-card" data-id="video-${v.id}"><img src="https://i.ytimg.com/vi/${v.youtube_video_id}/mqdefault.jpg" alt="${v.title}"><p class="video-title">${v.title}</p></div>`).join('');
     },
 
-    // --- REEMPLAZA ESTA FUNCIÓN ---
+    // --- VERSIÓN FINAL Y LIMPIA PARA PRODUCCIÓN ---
     async openLiveRoom(id) {
-        if (this.currentChannel) {
-            this.supabase.removeChannel(this.currentChannel);
-            this.currentChannel = null;
-        }
-        if (this.updateCarouselView) this.stopCarouselPlayer();
-        
+        if (this.presenceChannel) this.supabase.removeChannel(this.presenceChannel);
+        if (this.chatChannel) this.supabase.removeChannel(this.chatChannel);
+
         const item = this.allContentMap[id];
         if (!item) return;
 
-        this.currentItemInView = item; 
-
+        this.currentItemInView = item;
         this.viewerCount = 0;
         this.elements.modalContainer.innerHTML = '';
+
         const modalOverlay = document.createElement('div');
         modalOverlay.id = 'live-room-modal';
         modalOverlay.className = 'modal-overlay';
+        
         const closeButton = document.createElement('button');
         closeButton.className = 'modal-close-btn';
         closeButton.innerHTML = '×';
-        closeButton.setAttribute('aria-label', 'Cerrar');
-        closeButton.addEventListener('click', () => this.closeLiveRoom());
-        const content = this.buildLiveRoomHTML();
+        closeButton.onclick = () => this.closeLiveRoom();
+        
         modalOverlay.appendChild(closeButton);
-        modalOverlay.appendChild(content);
+        modalOverlay.appendChild(this.buildLiveRoomHTML());
         this.elements.modalContainer.appendChild(modalOverlay);
 
-        // --- [CORRECCIÓN] Suscripción al canal de chat y presencia ---
-        const channelName = item.type === 'EVENT' ? `session-${item.id}` : `video-${item.id}`;
-        const chatChannelName = `session-chat-${item.id}`; // Canal específico para el chat
-        
-        this.currentChannel = this.supabase.channel(channelName);
-
-        this.currentChannel
+        // Canal de Presencia (espectadores)
+        const presenceChannelName = `session-${item.id}`;
+        this.presenceChannel = this.supabase.channel(presenceChannelName);
+        this.presenceChannel
             .on('presence', { event: 'sync' }, () => {
-                const presenceState = this.currentChannel.presenceState();
+                const presenceState = this.presenceChannel.presenceState();
                 this.viewerCount = Object.keys(presenceState).length;
                 this.updateViewerCountUI();
-            })
-            .on('broadcast', { event: 'new_chat_message' }, ({ payload }) => {
-                console.log('Nuevo mensaje recibido por broadcast!', payload);
-                // Evitamos duplicar el mensaje para el autor que ya lo tiene por la vía optimista
-                const { data: { session } } = this.supabase.auth.getSession();
-                if (session?.user?.user_metadata?.handle !== payload.author.handle) {
-                    this.appendChatMessage(payload);
-                }
             })
             .subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') {
                     const { data: { session } } = await this.supabase.auth.getSession();
-                    const userId = session?.user?.id || 'invitado';
-                    await this.currentChannel.track({ user_id: userId, online_at: new Date().toISOString() });
+                    await this.presenceChannel.track({ user_id: session?.user?.id || 'invitado' });
                 }
             });
-        
+
+        // Canal de Chat (mensajes) - Solo para eventos que lo usan
+        if (item.type === 'EVENT' && item.platform === 'vdo_ninja' && item.bsky_chat_thread_uri) {
+            const chatChannelName = `session-chat-${item.id}`;
+            this.chatChannel = this.supabase.channel(chatChannelName);
+            this.chatChannel
+                .on('broadcast', { event: 'new_chat_message' }, ({ payload }) => {
+                    this.appendChatMessage(payload); // Simplificado para producción
+                })
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                        console.log(`Conectado al canal de chat: ${chatChannelName}`);
+                    }
+                });
+        }
+
         await this.populateLiveRoom(item);
         setTimeout(() => modalOverlay.classList.add('is-visible'), 10);
     },
@@ -527,132 +524,128 @@ addEventListeners() {
         }
     },
 
-    // --- REEMPLAZA ESTA FUNCIÓN ---
-// --- REEMPLAZA ESTA FUNCIÓN COMPLETA ---
-async openInvestigatorModal(userId) {
-    if (!userId) {
-        console.error("ID de usuario no proporcionado.");
-        return;
-    }
-    this.closeInvestigatorModal(); // Cierra cualquier otro modal de investigador abierto
-
-    const modalOverlay = document.createElement('div');
-    modalOverlay.id = 'investigator-modal';
-    modalOverlay.className = 'investigator-modal-overlay';
-    modalOverlay.innerHTML = `
-        <div class="investigator-modal">
-            <header class="investigator-modal-header">
-                <button class="investigator-modal-close-btn">&times;</button>
-            </header>
-            <main id="investigator-modal-content" class="investigator-modal-content"><p>Cargando...</p></main>
-        </div>`;
-    
-    document.body.appendChild(modalOverlay);
-    document.body.style.overflow = 'hidden';
-
-    modalOverlay.querySelector('.investigator-modal-close-btn').addEventListener('click', () => this.closeInvestigatorModal());
-    modalOverlay.addEventListener('click', (e) => {
-        if (e.target.id === 'investigator-modal') {
-            this.closeInvestigatorModal();
+    async openInvestigatorModal(userId) {
+        if (!userId) {
+            console.error("ID de usuario no proporcionado.");
+            return;
         }
-    });
+        this.closeInvestigatorModal(); // Cierra cualquier otro modal de investigador abierto
 
-    setTimeout(() => modalOverlay.classList.add('is-visible'), 10);
+        const modalOverlay = document.createElement('div');
+        modalOverlay.id = 'investigator-modal';
+        modalOverlay.className = 'investigator-modal-overlay';
+        modalOverlay.innerHTML = `
+            <div class="investigator-modal">
+                <header class="investigator-modal-header">
+                    <button class="investigator-modal-close-btn">&times;</button>
+                </header>
+                <main id="investigator-modal-content" class="investigator-modal-content"><p>Cargando...</p></main>
+            </div>`;
+        
+        document.body.appendChild(modalOverlay);
+        document.body.style.overflow = 'hidden';
 
-    try {
-        const { data: user, error: userError } = await this.supabase.from('profiles').select('*').eq('id', userId).single();
-        if (userError) throw userError;
-        const { data: projects } = await this.supabase.from('projects').select('title').eq('user_id', userId).order('created_at', { ascending: false }).limit(3);
-        const modalContent = document.getElementById('investigator-modal-content');
-        if (!modalContent) return;
-
-        const socialLinksHTML = `${user.substack_url ? `<a href="${user.substack_url}" target="_blank" title="Substack"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" height="24" width="24"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z" fill="#e65c17" stroke-width="1"></path></svg></a>` : ''}${user.website_url ? `<a href="${user.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}${user.youtube_url ? `<a href="${user.youtube_url}" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>` : ''}${user.x_url ? `<a href="${user.x_url}" target="_blank" title="Perfil de X"><i class="fab fa-twitter"></i></a>` : ''}${user.linkedin_url ? `<a href="${user.linkedin_url}" target="_blank" title="Perfil de LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}${user.instagram_url ? `<a href="${user.instagram_url}" target="_blank" title="Perfil de Instagram"><i class="fab fa-instagram"></i></a>` : ''}`;
-        const orcidHTML = user.orcid ? `<a href="${user.orcid}" target="_blank">${user.orcid.replace('https://orcid.org/','')}</a>` : 'No disponible';
-        let projectInfoHTML = projects && projects.length > 0 ? `<div class="project-info"><h4>Últimos proyectos:</h4><ul>${projects.map(p => `<li>${p.title}</li>`).join('')}</ul></div>` : `<div class="project-info"><p>No tiene proyectos publicados.</p></div>`;
-        const finalContentHTML = `<img src="${user.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="${user.display_name || ''}" class="avatar"><h3>${user.display_name || 'Nombre no disponible'}</h3><p><strong>ORCID:</strong> ${orcidHTML}</p><div class="profile-card__socials">${socialLinksHTML}</div><p class="investigator-bio">${user.bio || ''}</p>${projectInfoHTML}`;
-        modalContent.innerHTML = finalContentHTML;
-    } catch (error) {
-        console.error("Error al abrir modal del investigador:", error);
-        const modalContent = document.getElementById('investigator-modal-content');
-        if (modalContent) { modalContent.innerHTML = "<p>No se pudo cargar la información del investigador.</p>"; }
-    }
-},
-
-// --- REEMPLAZA ESTA FUNCIÓN COMPLETA ---
-closeInvestigatorModal() {
-    const modal = document.getElementById('investigator-modal');
-    if (modal) {
-        modal.classList.remove('is-visible');
-        setTimeout(() => {
-            modal.remove();
-            // Solo restaura el scroll si no queda ningún otro modal abierto
-            if (!document.querySelector('.modal-overlay') && !document.getElementById('bsky-connect-modal')) {
-                document.body.style.overflow = '';
+        modalOverlay.querySelector('.investigator-modal-close-btn').addEventListener('click', () => this.closeInvestigatorModal());
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target.id === 'investigator-modal') {
+                this.closeInvestigatorModal();
             }
-        }, 300);
-    }
-},
+        });
 
-// --- AÑADE ESTA FUNCIÓN COMPLETA DENTRO DEL OBJETO LiveApp ---
-openBskyConnectModal() {
-    // Si ya existe un modal de conexión, no hagas nada para evitar duplicados.
-    if (document.getElementById('bsky-connect-modal')) return;
-
-    const template = document.getElementById('bsky-connect-template');
-    if (!template) {
-        console.error("El template 'bsky-connect-template' no se encuentra en el DOM.");
-        alert("Error: No se pudo cargar el componente de conexión. Por favor, recarga la página.");
-        return;
-    }
-
-    const modalContainer = document.createElement('div');
-    modalContainer.id = 'bsky-connect-modal';
-    
-    const bentoBoxContent = template.content.cloneNode(true);
-    const bentoBox = bentoBoxContent.querySelector('.bento-box');
-
-    if (bentoBox) {
-        const closeButton = document.createElement('button');
-        closeButton.className = 'bsky-modal-close-btn';
-        closeButton.innerHTML = '&times;';
-        closeButton.setAttribute('aria-label', 'Cerrar');
-        // Usamos onclick para una asignación directa y simple
-        closeButton.onclick = () => modalContainer.remove();
-        bentoBox.prepend(closeButton);
-    }
-    
-    modalContainer.appendChild(bentoBoxContent);
-    document.body.appendChild(modalContainer);
-
-    modalContainer.addEventListener('click', (e) => {
-        if (e.target.id === 'bsky-connect-modal') {
-            modalContainer.remove();
-        }
-    });
-
-    const form = modalContainer.querySelector('#bsky-connect-form');
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const handle = form.querySelector('#bsky-handle').value;
-        const appPassword = form.querySelector('#bsky-app-password').value;
-        const button = form.querySelector('button[type="submit"]');
-        button.disabled = true;
-        button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Conectando...';
+        setTimeout(() => modalOverlay.classList.add('is-visible'), 10);
 
         try {
-            const { error } = await this.supabase.functions.invoke('bsky-connect-user', { body: { handle, appPassword } });
-            if (error) throw error;
-            alert("¡Éxito! Tu cuenta de Bluesky ha sido conectada.");
-            modalContainer.remove();
-            this.populateLiveRoom(this.currentItemInView);
-        } catch (err) {
-            alert(`Error al conectar: ${err.message}`);
-        } finally {
-            button.disabled = false;
-            button.innerHTML = '<i class="fa-solid fa-link"></i> Conectar Cuenta';
+            const { data: user, error: userError } = await this.supabase.from('profiles').select('*').eq('id', userId).single();
+            if (userError) throw userError;
+            const { data: projects } = await this.supabase.from('projects').select('title').eq('user_id', userId).order('created_at', { ascending: false }).limit(3);
+            const modalContent = document.getElementById('investigator-modal-content');
+            if (!modalContent) return;
+
+            const socialLinksHTML = `${user.substack_url ? `<a href="${user.substack_url}" target="_blank" title="Substack"><svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" height="24" width="24"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z" fill="#e65c17" stroke-width="1"></path></svg></a>` : ''}${user.website_url ? `<a href="${user.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}${user.youtube_url ? `<a href="${user.youtube_url}" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>` : ''}${user.x_url ? `<a href="${user.x_url}" target="_blank" title="Perfil de X"><i class="fab fa-twitter"></i></a>` : ''}${user.linkedin_url ? `<a href="${user.linkedin_url}" target="_blank" title="Perfil de LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}${user.instagram_url ? `<a href="${user.instagram_url}" target="_blank" title="Perfil de Instagram"><i class="fab fa-instagram"></i></a>` : ''}`;
+            const orcidHTML = user.orcid ? `<a href="${user.orcid}" target="_blank">${user.orcid.replace('https://orcid.org/','')}</a>` : 'No disponible';
+            let projectInfoHTML = projects && projects.length > 0 ? `<div class="project-info"><h4>Últimos proyectos:</h4><ul>${projects.map(p => `<li>${p.title}</li>`).join('')}</ul></div>` : `<div class="project-info"><p>No tiene proyectos publicados.</p></div>`;
+            const finalContentHTML = `<img src="${user.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="${user.display_name || ''}" class="avatar"><h3>${user.display_name || 'Nombre no disponible'}</h3><p><strong>ORCID:</strong> ${orcidHTML}</p><div class="profile-card__socials">${socialLinksHTML}</div><p class="investigator-bio">${user.bio || ''}</p>${projectInfoHTML}`;
+            modalContent.innerHTML = finalContentHTML;
+        } catch (error) {
+            console.error("Error al abrir modal del investigador:", error);
+            const modalContent = document.getElementById('investigator-modal-content');
+            if (modalContent) { modalContent.innerHTML = "<p>No se pudo cargar la información del investigador.</p>"; }
         }
-    });
-},
+    },
+
+    closeInvestigatorModal() {
+        const modal = document.getElementById('investigator-modal');
+        if (modal) {
+            modal.classList.remove('is-visible');
+            setTimeout(() => {
+                modal.remove();
+                // Solo restaura el scroll si no queda ningún otro modal abierto
+                if (!document.querySelector('.modal-overlay') && !document.getElementById('bsky-connect-modal')) {
+                    document.body.style.overflow = '';
+                }
+            }, 300);
+        }
+    },
+
+    openBskyConnectModal() {
+        // Si ya existe un modal de conexión, no hagas nada para evitar duplicados.
+        if (document.getElementById('bsky-connect-modal')) return;
+
+        const template = document.getElementById('bsky-connect-template');
+        if (!template) {
+            console.error("El template 'bsky-connect-template' no se encuentra en el DOM.");
+            alert("Error: No se pudo cargar el componente de conexión. Por favor, recarga la página.");
+            return;
+        }
+
+        const modalContainer = document.createElement('div');
+        modalContainer.id = 'bsky-connect-modal';
+        
+        const bentoBoxContent = template.content.cloneNode(true);
+        const bentoBox = bentoBoxContent.querySelector('.bento-box');
+
+        if (bentoBox) {
+            const closeButton = document.createElement('button');
+            closeButton.className = 'bsky-modal-close-btn';
+            closeButton.innerHTML = '&times;';
+            closeButton.setAttribute('aria-label', 'Cerrar');
+            // Usamos onclick para una asignación directa y simple
+            closeButton.onclick = () => modalContainer.remove();
+            bentoBox.prepend(closeButton);
+        }
+        
+        modalContainer.appendChild(bentoBoxContent);
+        document.body.appendChild(modalContainer);
+
+        modalContainer.addEventListener('click', (e) => {
+            if (e.target.id === 'bsky-connect-modal') {
+                modalContainer.remove();
+            }
+        });
+
+        const form = modalContainer.querySelector('#bsky-connect-form');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const handle = form.querySelector('#bsky-handle').value;
+            const appPassword = form.querySelector('#bsky-app-password').value;
+            const button = form.querySelector('button[type="submit"]');
+            button.disabled = true;
+            button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Conectando...';
+
+            try {
+                const { error } = await this.supabase.functions.invoke('bsky-connect-user', { body: { handle, appPassword } });
+                if (error) throw error;
+                alert("¡Éxito! Tu cuenta de Bluesky ha sido conectada.");
+                modalContainer.remove();
+                this.populateLiveRoom(this.currentItemInView);
+            } catch (err) {
+                alert(`Error al conectar: ${err.message}`);
+            } finally {
+                button.disabled = false;
+                button.innerHTML = '<i class="fa-solid fa-link"></i> Conectar Cuenta';
+            }
+        });
+    },
 
     buildLiveRoomHTML() {
         const container = document.createElement('div');
@@ -767,8 +760,17 @@ async populateLiveRoom(item) {
     // --- [NUEVO] Funciones Auxiliares del Chat ---
     buildChatInterfaceHTML({ status, canWrite = false, customPrompt = null }) {
         const isLive = status === 'EN VIVO';
-        // El placeholder ahora depende de si puede escribir o no
-        const placeholder = isLive && canWrite ? 'Escribe tu mensaje...' : 'Inicia sesión y conecta tu cuenta para escribir.';
+        let placeholder = '';
+
+        // Lógica mejorada para el texto del placeholder
+        if (!isLive) {
+            placeholder = 'El chat solo está disponible durante la transmisión en vivo.';
+        } else if (!canWrite) {
+            placeholder = 'Conecta tu cuenta de Bluesky para poder escribir.';
+        } else {
+            placeholder = 'Escribe tu mensaje...';
+        }
+
         const isDisabled = !isLive || !canWrite;
 
         return `
@@ -853,7 +855,7 @@ async populateLiveRoom(item) {
         const { data: { session: authSession } } = await this.supabase.auth.getSession();
 
         if (!authSession) {
-            // --- CASO 1: Visitante no registrado ---
+            // Caso 1: Visitante
             chatContainer.innerHTML = `
                 <div class="chat-login-prompt">
                     <h4><i class="fas fa-comments"></i> Chat del Evento</h4>
@@ -865,99 +867,35 @@ async populateLiveRoom(item) {
                 </div>
             `;
         } else {
-            // --- CASO 2 y 3: Usuario registrado ---
-            const { data: bskyCreds } = await this.supabase.from('bsky_credentials').select('handle').eq('user_id', authSession.user.id).single();
+            // Caso 2 y 3: Usuario registrado
+            const { data: bskyCreds } = await this.supabase
+                .from('bsky_credentials')
+                .select('handle')
+                .eq('user_id', authSession.user.id)
+                .single();
+
             const hasBskyCreds = !!bskyCreds;
 
-            const connectPrompt = `
-                <div class="chat-action-prompt">
-                    <p>¡Conecta tu cuenta de Bluesky para chatear!</p>
-                    <button id="open-bsky-connect-modal" class="btn-secondary">Conectar Ahora</button>
-                </div>
-            `;
-            
-            chatContainer.innerHTML = this.buildChatInterfaceHTML({
-                status: session.status,
-                canWrite: hasBskyCreds, // Solo puede escribir si tiene credenciales
-                customPrompt: hasBskyCreds ? null : connectPrompt // Muestra el prompt si NO tiene credenciales
-            });
-
-            // El chat se carga para todos los usuarios registrados
-            this.loadAndDisplayChat(session.bsky_chat_thread_uri);
-
-            if (!hasBskyCreds) {
-                // Añadimos el listener para el botón "Conectar Ahora"
-                document.getElementById('open-bsky-connect-modal')?.addEventListener('click', () => {
-                    this.openBskyConnectModal();
+            if (hasBskyCreds) {
+                // Caso 3: Registrado y con Bluesky conectado
+                chatContainer.innerHTML = this.buildChatInterfaceHTML({
+                    status: session.status,
+                    canWrite: true
                 });
+                this.loadAndDisplayChat(session.bsky_chat_thread_uri);
+            } else {
+                // Caso 2: Registrado pero sin Bluesky conectado
+                const connectPrompt = `<div class="chat-action-prompt"><p>¡Conecta tu cuenta de Bluesky para chatear!</p><button id="open-bsky-connect-modal" class="btn-secondary">Conectar Ahora</button></div>`;
+                chatContainer.innerHTML = this.buildChatInterfaceHTML({
+                    status: session.status,
+                    canWrite: false,
+                    customPrompt: connectPrompt
+                });
+                // Volvemos a cargar los mensajes para el modo de solo lectura.
+                this.loadAndDisplayChat(session.bsky_chat_thread_uri);
             }
         }
     },
-
-    // Abre el modal de conexión de Bluesky
-   // --- REEMPLAZA ESTA FUNCIÓN con la versión FINAL Y COMPLETA ---
-async openLiveRoom(id) {
-    if (this.currentChannel) {
-        this.supabase.removeChannel(this.currentChannel);
-        this.currentChannel = null;
-    }
-    if (this.updateCarouselView) this.stopCarouselPlayer();
-    
-    const item = this.allContentMap[id];
-    if (!item) return;
-
-    this.currentItemInView = item; 
-
-    this.viewerCount = 0;
-    this.elements.modalContainer.innerHTML = '';
-    const modalOverlay = document.createElement('div');
-    modalOverlay.id = 'live-room-modal';
-    modalOverlay.className = 'modal-overlay';
-    const closeButton = document.createElement('button');
-    closeButton.className = 'modal-close-btn';
-    closeButton.innerHTML = '×';
-    closeButton.setAttribute('aria-label', 'Cerrar');
-    closeButton.addEventListener('click', () => this.closeLiveRoom());
-    const content = this.buildLiveRoomHTML();
-    modalOverlay.appendChild(closeButton);
-    modalOverlay.appendChild(content);
-    this.elements.modalContainer.appendChild(modalOverlay);
-
-    // --- LÓGICA CORREGIDA Y FINAL PARA EL CANAL ---
-    // Se restaura la lógica que maneja tanto EVENTOS como VIDEOS correctamente.
-    const channelName = item.type === 'EVENT' ? `session-${item.id}` : `video-${item.id}`;
-    
-    this.currentChannel = this.supabase.channel(channelName);
-
-    this.currentChannel
-        .on('presence', { event: 'sync' }, () => {
-            const presenceState = this.currentChannel.presenceState();
-            this.viewerCount = Object.keys(presenceState).length;
-            this.updateViewerCountUI();
-        })
-        .on('broadcast', { event: 'new_chat_message' }, async ({ payload }) => {
-            console.log('Nuevo mensaje recibido por broadcast!', payload);
-            
-            // Usamos await para obtener la sesión correctamente.
-            const { data: { session } } = await this.supabase.auth.getSession();
-            const currentUserHandle = session?.user?.user_metadata?.handle;
-            
-            // Solo se añade el mensaje si no es del usuario actual.
-            if (currentUserHandle !== payload.author.handle) {
-                this.appendChatMessage(payload);
-            }
-        })
-        .subscribe(async (status) => {
-            if (status === 'SUBSCRIBED') {
-                const { data: { session } } = await this.supabase.auth.getSession();
-                const userId = session?.user?.id || 'invitado';
-                await this.currentChannel.track({ user_id: userId, online_at: new Date().toISOString() });
-            }
-        });
-    
-    await this.populateLiveRoom(item);
-    setTimeout(() => modalOverlay.classList.add('is-visible'), 10);
-},
 
     listenForChanges() {
         this.supabase.channel('public-changes')

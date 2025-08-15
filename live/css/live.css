@@ -1386,3 +1386,23 @@ body {
 #bsky-connect-modal label { display: block; font-weight: 600; margin-bottom: 0.5rem; }
 #bsky-connect-modal input { width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border-color); background-color: var(--color-background); color: var(--color-primary); box-sizing: border-box; }
 #bsky-connect-modal .form-hint, #bsky-connect-modal .troubleshooting-note { font-size: 0.9rem; color: var(--color-secondary); }
+/* AÑADE ESTO AL FINAL DE LIVE.CSS */
+
+/* Estilo para mensajes que se están enviando */
+.chat-message.pending {
+    opacity: 0.7;
+}
+
+/* Transición suave para cuando se confirma */
+.chat-message.confirmed {
+    transition: opacity 0.5s;
+    opacity: 1;
+}
+
+/* Estilo para mensajes que fallaron al enviar */
+.chat-message.failed {
+    opacity: 0.5;
+    background-color: rgba(255, 0, 0, 0.1);
+    border-left: 3px solid var(--color-accent);
+    padding-left: 10px;
+}
