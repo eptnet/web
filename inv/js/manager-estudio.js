@@ -285,7 +285,13 @@ export const Studio = {
             const formattedEndTime = endTime ? endTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '';
             const organizer = session.profiles?.display_name || 'Investigador';
             const platformIcon = session.platform === 'youtube' ? 'fab fa-youtube' : (session.platform === 'substack' ? 'fas fa-bookmark' : 'fas fa-satellite-dish');
-
+            const platformNames = {
+                'vdo_ninja': 'EPT Live',
+                'youtube': 'YouTube',
+                'twitch': 'Twitch',
+                'substack': 'Substack'
+            };
+            const displayName = platformNames[session.platform] || session.platform;
             return `
             <div class="global-event-card ${session.status === 'EN VIVO' ? 'is-live' : ''}">
                 <h5>${session.session_title}</h5>
@@ -296,8 +302,6 @@ export const Studio = {
             </div>`;
         }).join('');
     },
-
-    // En /inv/js/manager-estudio.js
 
     openModal(session = null) { // Simplificamos el parámetro
         const isEditing = !!session;
@@ -343,7 +347,7 @@ export const Studio = {
                             <div class="form-group">
                                 <label>Plataforma de Transmisión</label>
                                 <div class="platform-selector">
-                                    <div class="platform-option" data-platform="vdo_ninja"><i class="fas fa-users"></i><span>EPT Live</span></div>    
+                                    <div class="platform-option" data-platform="vdo_ninja"><i class="fas fa-satellite-dish"></i><span>EPT Live</span></div>    
                                     <div class="platform-option" data-platform="twitch"><i class="fab fa-twitch"></i><span>Twitch</span></div>
                                     <div class="platform-option" data-platform="youtube"><i class="fab fa-youtube"></i><span>YouTube</span></div>
                                     <div class="platform-option" data-platform="substack"><i class="fas fa-bookmark"></i><span>Substack</span></div>
@@ -530,8 +534,18 @@ export const Studio = {
         if (platform === 'vdo_ninja' && !session) {
             try {
                 console.log("Creando hilo de chat en Bluesky...");
+                const directLink = `https://epistecnologia.com/live.html?sesion=${savedSession.id}`;
+        
+                // Obtenemos la zona horaria del navegador del investigador
+                const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
                 const { data: chatData, error: chatError } = await App.supabase.functions.invoke('bsky-create-anchor-post', {
-                    body: { sessionTitle: savedSession.session_title },
+                    body: { 
+                        sessionTitle: savedSession.session_title,
+                        scheduledAt: savedSession.scheduled_at,
+                        directLink: directLink,
+                        timezone: timezone
+                    },
                 });
 
                 if (chatError) throw chatError;
@@ -546,7 +560,7 @@ export const Studio = {
                     })
                     .eq('id', savedSession.id);
                 
-                console.log("Hilo de chat creado y enlazado a la sesión con URI y CID.");
+                console.log("Hilo de chat creado y enlazado a la sesión");
 
             } catch (err) {
                 alert(`La sesión se agendó, pero hubo un error al crear el hilo de chat en Bluesky: ${err.message}`);

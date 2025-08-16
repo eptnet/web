@@ -140,9 +140,11 @@ addEventListeners() {
     document.getElementById('feed-container')?.addEventListener('click', (e) => {
         const likeButton = e.target.closest('.like-btn');
         const replyButton = e.target.closest('.reply-btn');
+        const shareButton = e.target.closest('.share-btn');
 
         if (likeButton) this.handleLike(likeButton);
         if (replyButton) this.handleReply(replyButton);
+        if (shareButton) this.handleShare(shareButton);
     });
 },
 
@@ -288,23 +290,15 @@ addEventListeners() {
      * Maneja el evento de "Comentar".
      */
     async handleReply(button) {
-        if (!this.bskyCreds) {
-            alert("Necesitas conectar tu cuenta de Bluesky para poder comentar.");
-            return;
-        }
-        
         const postElement = button.closest('.feed-post');
-        const postData = {
-            uri: postElement.dataset.uri,
-            cid: postElement.dataset.cid,
-            text: postElement.querySelector('.post-body p').innerHTML, // Usamos innerHTML para conservar los <br>
-            author: {
-                displayName: postElement.querySelector('.post-author-info strong').textContent,
-                avatar: postElement.querySelector('.post-avatar').src,
-            }
-        };
+        const handle = postElement.querySelector('.post-handle').textContent.substring(1);
+        const postUri = postElement.dataset.uri;
+        const rkey = postUri.split('/').pop();
         
-        this.openReplyModal(postData);
+        const webUrl = `https://bsky.app/profile/${handle}/post/${rkey}`;
+        
+        // Abre el post en una nueva pestaña para que la conversación continúe en Bluesky
+        window.open(webUrl, '_blank');
     },
 
     openReplyModal(postData) {
@@ -398,12 +392,29 @@ addEventListeners() {
         const isLiked = !!post.viewer?.like;
         const postDate = new Date(post.indexedAt).toLocaleString('es-ES', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
 
+        // --- INICIO DE LA MODIFICACIÓN ---
         let embedHtml = '';
-        if (post.embed?.images) {
-            embedHtml = `<div class="post-embed-image"><img src="${post.embed.images[0].thumb}" alt="${post.embed.images[0].alt || 'Imagen adjunta'}" loading="lazy"></div>`;
+            const embed = post.embed;
+            if (embed) {
+            if (embed.$type === 'app.bsky.embed.images' && embed.images) {
+                embedHtml = `<div class="post-embed-image"><img src="${embed.images[0].thumb}" alt="${embed.images[0].alt || 'Imagen adjunta'}" loading="lazy"></div>`;
+            } else if (embed.$type === 'app.bsky.embed.external' && embed.external) {
+                const external = embed.external;
+                embedHtml = `
+                    <a href="${external.uri}" target="_blank" rel="noopener noreferrer" class="link-preview-card">
+                    ${external.thumb ? `<img src="${external.thumb}" alt="Vista previa del enlace" class="link-preview-image">` : ''}
+                    <div class="link-preview-info">
+                        <p class="link-preview-title">${external.title}</p>
+                        <p class="link-preview-description">${external.description}</p>
+                        <p class="link-preview-uri">${new URL(external.uri).hostname}</p>
+                    </div>
+                    </a>
+                `;
+            }
         }
+        // --- FIN DE LA MODIFICACIÓN ---
 
-        // El cambio clave está en el botón de "like", que ahora incluye data-cid y data-like-uri
+        // El cambio clave está en el botón de la mitad, ahora es un 'fa-share-nodes'
         return `
             <div class="bento-box feed-post" data-uri="${post.uri}" data-cid="${post.cid}">
                 <div class="post-header">
@@ -420,13 +431,12 @@ addEventListeners() {
                 <div class="post-footer">
                     <span class="post-date">${postDate}</span>
                     <div class="post-actions">
+                        <button class="post-action-btn share-btn" title="Copiar y compartir enlace">
+                            <i class="fa-solid fa-copy"></i>
+                        </button>
                         <button class="post-action-btn reply-btn" title="Comentar">
                             <i class="fa-regular fa-comment"></i>
                             <span>${post.replyCount || 0}</span>
-                        </button>
-                        <button class="post-action-btn" title="Repostear">
-                            <i class="fa-solid fa-retweet"></i>
-                            <span>${post.repostCount || 0}</span>
                         </button>
                         <button class="post-action-btn like-btn ${isLiked ? 'is-liked' : ''}" 
                                 title="Me Gusta" 
@@ -438,6 +448,25 @@ addEventListeners() {
                 </div>
             </div>
         `;
+    },
+
+    handleShare(button) {
+        const postElement = button.closest('.feed-post');
+        const postUri = postElement.dataset.uri; // at://did:plc:user/app.bsky.feed.post/rkey
+
+        // Extraemos el handle y el rkey del URI para construir una URL web
+        const parts = postUri.split('/');
+        const handle = postElement.querySelector('.post-handle').textContent.substring(1); // quitamos el @
+        const rkey = parts[parts.length - 1];
+        
+        const webUrl = `https://bsky.app/profile/${handle}/post/${rkey}`;
+
+        navigator.clipboard.writeText(webUrl).then(() => {
+            alert('¡Enlace al post copiado al portapapeles!');
+        }).catch(err => {
+            console.error('Error al copiar el enlace:', err);
+            alert('No se pudo copiar el enlace.');
+        });
     },
 
     // --- FUNCIONES DEL MODAL (Nuevas) ---
@@ -514,15 +543,12 @@ addEventListeners() {
         if (!container) return;
 
         if (this.bskyCreds) {
-            // Si las credenciales existen, las mostramos
+            // Si las credenciales existen, las mostramos <p style="font-size: 0.75rem; word-break: break-all; color: var(--color-secondary-text); margin-top: 0.5rem;">DID: ${this.bskyCreds.did}</p>
             container.innerHTML = `
                 <div class="status-badge connected">
                     <i class="fa-solid fa-circle-check"></i>
                     <span>Conectado como <strong>@${this.bskyCreds.handle}</strong></span>
                 </div>
-                <p style="font-size: 0.75rem; word-break: break-all; color: var(--color-secondary-text); margin-top: 0.5rem;">
-                    DID: ${this.bskyCreds.did}
-                </p>
             `;
         } else {
             // Si no, mostramos un botón para conectar

@@ -1,70 +1,100 @@
-// Contenido COMPLETO para: /supabase/functions/bsky-create-anchor-post/index.ts
+// ARCHIVO FINAL Y CORREGIDO: /supabase/functions/bsky-create-anchor-post/index.ts
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { BskyAgent, AtpSessionEvent, AtpSessionData } from 'npm:@atproto/api'
+import { BskyAgent } from 'npm:@atproto/api'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
-const BSKY_SERVICE_URL = 'https://bsky.social'
+async function getLinkPreview(url: string) {
+    try {
+        const response = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+        if (!response.ok) return null;
+        const text = await response.text();
+        const titleMatch = text.match(/<meta\s+property="og:title"\s+content="([^"]*)"/);
+        const descriptionMatch = text.match(/<meta\s+property="og:description"\s+content="([^"]*)"/);
+        const imageMatch = text.match(/<meta\s+property="og:image"\s+content="([^"]*)"/);
+        return {
+            title: titleMatch ? titleMatch[1] : 'Título no disponible',
+            description: descriptionMatch ? descriptionMatch[1] : 'Descripción no disponible',
+            thumb: imageMatch ? imageMatch[1] : undefined,
+        };
+    } catch (error) {
+        console.error(`Error al hacer unfurl del link ${url}:`, error);
+        return null;
+    }
+}
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+    if (req.method === 'OPTIONS') { return new Response('ok', { headers: corsHeaders }) }
+    try {
+        const supabaseClient = createClient(
+            Deno.env.get('SUPABASE_URL') ?? '',
+            Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+            { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+        )
+        const { data: { user } } = await supabaseClient.auth.getUser()
+        if (!user) throw new Error('Usuario no autenticado.')
 
-  try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
-    )
-    const { data: { user } } = await supabaseClient.auth.getUser()
-    if (!user) throw new Error('Usuario no autenticado.')
+        const { data: creds, error: credsError } = await supabaseClient.from('bsky_credentials').select('did, handle, access_jwt, refresh_jwt').eq('user_id', user.id).single()
+        if (credsError || !creds) throw new Error('El investigador no ha conectado su cuenta de Bluesky.')
 
-    const { data: creds, error: credsError } = await supabaseClient
-      .from('bsky_credentials')
-      .select('did, handle, access_jwt, refresh_jwt')
-      .eq('user_id', user.id)
-      .single()
-    if (credsError || !creds) throw new Error('El investigador no ha conectado su cuenta de Bluesky.')
-
-    const { sessionTitle } = await req.json()
-    if (!sessionTitle) throw new Error('El título de la sesión es requerido.')
-
-    const agent = new BskyAgent({
-      service: BSKY_SERVICE_URL,
-      async persistSession(evt: AtpSessionEvent, session?: AtpSessionData) {
-        if (evt === 'update' && session) {
-          await supabaseClient.from('bsky_credentials').update({ access_jwt: session.accessJwt, refresh_jwt: session.refreshJwt }).eq('user_id', user.id)
+        const { sessionTitle, scheduledAt, directLink, timezone } = await req.json()
+        if (!sessionTitle || !scheduledAt || !timezone || !directLink) {
+            throw new Error('Faltan datos de la sesión.')
         }
-      },
-    })
 
-    await agent.resumeSession({
-        accessJwt: creds.access_jwt,
-        refreshJwt: creds.refresh_jwt,
-        did: creds.did,
-        handle: creds.handle,
-    });
-    
-    // Creamos el post ancla para el chat
-    const postRecord = {
-      text: `🔴 ¡EN VIVO AHORA!\n\n"${sessionTitle}"\n\nÚnete a la conversación en el chat de la transmisión en Epistecnología. #EPTLive`,
-      createdAt: new Date().toISOString(),
-    };
-    
-    const postResult = await agent.post(postRecord);
+        const agent = new BskyAgent({ service: 'https://bsky.social' })
+        await agent.resumeSession({ accessJwt: creds.access_jwt, refreshJwt: creds.refresh_jwt, did: creds.did, handle: creds.handle });
+        
+        const eventDate = new Date(scheduledAt);
+        const formattedDate = eventDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', timeZone: timezone });
+        const formattedTime = eventDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: timezone, timeZoneName: 'short' });
 
-    return new Response(JSON.stringify({ uri: postResult.uri, cid: postResult.cid }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    })
+        const previewData = await getLinkPreview(directLink);
+        let imageBlob = null;
 
-  } catch (error) {
-    console.error('Error en bsky-create-anchor-post:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    })
-  }
+        if (previewData && previewData.thumb) {
+            try {
+                const imageResponse = await fetch(previewData.thumb);
+                if (imageResponse.ok) {
+                    const imageData = await imageResponse.arrayBuffer();
+                    const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+                    
+                    const uploadResult = await agent.uploadBlob(new Uint8Array(imageData), {
+                        encoding: contentType
+                    });
+                    
+                    // --- LA CORRECCIÓN DEFINITIVA ESTÁ AQUÍ ---
+                    // Extraemos el objeto 'blob' del interior de la respuesta 'data'
+                    imageBlob = uploadResult.data.blob;
+                }
+            } catch (imgError) {
+                console.error("No se pudo procesar la imagen de la miniatura, se publicará sin ella:", imgError.message);
+            }
+        }
+
+        const postRecord = {
+            text: `📢 ¡Evento programado!\n"${sessionTitle}"\n\n🗓️ ${formattedDate}\n⏰ ${formattedTime}\n\nÚnete a la transmisión y al chat en vivo aquí:\n${directLink}`,
+            createdAt: new Date().toISOString(),
+            langs: ["es"],
+            embed: previewData ? {
+                $type: 'app.bsky.embed.external',
+                external: {
+                    uri: directLink,
+                    title: previewData.title,
+                    description: previewData.description,
+                    thumb: imageBlob || undefined
+                }
+            } : undefined
+        };
+        
+        const postResult = await agent.post(postRecord);
+
+        return new Response(JSON.stringify({ uri: postResult.uri, cid: postResult.cid }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200
+        })
+    } catch (error) {
+        console.error('Error en bsky-create-anchor-post:', error)
+        return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    }
 })
