@@ -7,6 +7,9 @@
     <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <link rel="stylesheet" href="/inv/css/stream.css">
+
+    <script src="https://source.zoom.us/videosdk/zoom-video-1.10.8.min.js"></script>
+
 </head>
 <body>
     <div id="loading-overlay" class="loading-overlay is-visible">
@@ -39,7 +42,6 @@
                 <div class="control-section">
                     <h4>Transmisión</h4>
                     <button id="start-stream-btn" class="control-btn btn-primary"><i class="fas fa-tower-broadcast"></i><span>Iniciar Stream</span></button>
-                    <button id="stop-stream-btn" class="control-btn btn-danger hidden"><i class="fas fa-stop-circle"></i><span>Detener Stream</span></button>
                     <div id="stream-status" class="stream-status"><span>Desconectado</span></div>
                 </div>
             </div>
@@ -47,6 +49,5 @@
     </main>
 
     <script type="module" src="/inv/js/stream.js"></script>
-    
 </body>
 </html>

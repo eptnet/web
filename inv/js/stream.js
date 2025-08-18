@@ -1,19 +1,14 @@
-import ZoomVideo from '/inv/lib/zoom-sdk/main.js';
+// YA NO NECESITAMOS ESTA LÍNEA DE IMPORTACIÓN
+// import ZoomVideo from '/inv/lib/zoom-sdk/main.js';
 
 const EPTStream = {
     client: null,
     stream: null,
-    
-    // --- Estado de la Producción ---
     participants: [],
     activeLayout: 'grid',
     pinnedParticipantId: null,
-
-    // --- Configuración ---
     sessionName: null,
     role: null,
-    
-    // --- Elementos del DOM ---
     elements: {},
 
     async init() {
@@ -27,23 +22,32 @@ const EPTStream = {
             return;
         }
 
+        // --- INICIO DE LA CORRECCIÓN CLAVE ---
+        // El SDK ahora está disponible en el objeto 'window'. Lo definimos aquí.
+        const ZoomVideo = window.WebVideoSDK.default;
+        if (!ZoomVideo) {
+            this.showError("El SDK de Zoom no se ha podido cargar.");
+            return;
+        }
+        // --- FIN DE LA CORRECCIÓN CLAVE ---
+
         try {
             this.updateLoadingText('Obteniendo credenciales seguras...');
             const signature = await this.getZoomSignature();
 
             this.updateLoadingText('Iniciando cliente de video...');
             this.client = ZoomVideo.createClient();
-            await this.client.init('en-US', 'Global', { libPath: '/inv/lib/zoom-sdk/av' });
+
+            // Ya no necesitamos 'libPath' porque el CDN lo maneja internamente
+            await this.client.init('en-US', 'Global');
 
             this.updateLoadingText('Conectando a la sesión...');
-            // Por ahora, el nombre de usuario es genérico. Se puede mejorar para obtener el del perfil.
             const userName = `User-${Math.floor(Math.random() * 1000)}`;
             this.stream = this.client.join(this.sessionName, signature, userName, '');
 
             this.setupUI();
             this.setupSDKListeners();
 
-            // Añadimos al usuario actual a la lista de participantes
             this.participants.push({
                 userId: this.client.getCurrentUserInfo().userId,
                 displayName: this.client.getCurrentUserInfo().displayName,
@@ -59,6 +63,9 @@ const EPTStream = {
         }
     },
 
+    // El resto del código (cacheDOMElements, getZoomSignature, setupUI, etc.)
+    // permanece exactamente igual que en el mensaje anterior.
+    
     cacheDOMElements() {
         this.elements = {
             loadingOverlay: document.getElementById('loading-overlay'),
@@ -94,28 +101,26 @@ const EPTStream = {
                     this.renderCanvasLayout();
                 }
             });
-            // Habilitar la cámara por defecto al unirse
-            this.stream.startVideo();
+            
+            // Inicia el video del anfitrión automáticamente
+            setTimeout(() => {
+                this.stream.startVideo();
+            }, 1000); // Pequeño retraso para asegurar que el stream esté listo
         }
     },
 
     setupSDKListeners() {
-        // Cuando un nuevo usuario se une
         this.client.on('user-added', (payload) => {
             this.participants = payload;
             this.renderParticipantList();
             this.renderCanvasLayout();
         });
-
-        // Cuando un usuario se va
         this.client.on('user-removed', (payload) => {
             this.participants = payload;
             this.renderParticipantList();
             this.renderCanvasLayout();
         });
-
-        // Cuando un usuario enciende o apaga su video
-        this.client.on('peer-video-state-change', async (payload) => {
+        this.client.on('peer-video-state-change', (payload) => {
             const participant = this.participants.find(p => p.userId === payload.userId);
             if (participant) {
                 participant.videoOn = payload.action === 'Start';
@@ -123,9 +128,7 @@ const EPTStream = {
                 this.renderCanvasLayout();
             }
         });
-        
-        // Cuando nuestro propio estado de video cambia
-        this.client.on('video-active-change', async (payload) => {
+        this.client.on('video-active-change', (payload) => {
              const participant = this.participants.find(p => p.userId === payload.userId);
              if (participant) {
                 participant.videoOn = payload.state === 'Active';
@@ -149,11 +152,10 @@ const EPTStream = {
     },
 
     async renderCanvasLayout() {
-        // Limpiamos todo lo que se estaba renderizando antes
+        if (!this.stream) return;
         await this.stream.stopRenderVideo(this.elements.canvas);
-
         const videoParticipants = this.participants.filter(p => p.videoOn);
-        if (videoParticipants.length === 0) return; // No hay nada que dibujar
+        if (videoParticipants.length === 0) return;
 
         const canvasWidth = this.elements.canvas.width;
         const canvasHeight = this.elements.canvas.height;
@@ -172,8 +174,6 @@ const EPTStream = {
                 await this.stream.renderVideo(this.elements.canvas, user.userId, itemWidth, itemHeight, x, y, 2);
             }
         } else if (this.activeLayout === 'speaker') {
-            // Lógica para el layout de ponente (se implementará a continuación)
-            // Por ahora, solo muestra al primer participante en pantalla completa
             const speaker = videoParticipants[0];
             await this.stream.renderVideo(this.elements.canvas, speaker.userId, canvasWidth, canvasHeight, 0, 0, 2);
         }
@@ -181,7 +181,9 @@ const EPTStream = {
     
     showError(message) {
         this.elements.loadingText.textContent = message;
-        this.elements.loadingOverlay.querySelector('.spinner').style.display = 'none';
+        if(this.elements.loadingOverlay.querySelector('.spinner')) {
+           this.elements.loadingOverlay.querySelector('.spinner').style.display = 'none';
+        }
     }
 };
 
