@@ -336,3 +336,47 @@ body.dark-theme {
     margin: 0;
     text-transform: uppercase;
 }
+/* --- Estilos para la Subida de Imagen --- */
+.create-post-actions .action-icons {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.post-action-icon {
+    background: none;
+    border: none;
+    color: var(--color-secondary-text);
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 0.5rem;
+    border-radius: 50%;
+}
+.post-action-icon:hover {
+    background-color: var(--color-background);
+}
+.image-preview-container {
+    position: relative;
+    margin-top: 1rem;
+    max-width: 200px;
+}
+#image-preview {
+    width: 100%;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--color-border);
+}
+.remove-image-btn {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

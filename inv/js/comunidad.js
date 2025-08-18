@@ -8,6 +8,7 @@ const ComunidadApp = {
     user: null,
     userProfile: null,
     bskyCreds: null,
+    selectedImageFile: null,
 
     // --- INICIALIZACIÓN DE LA APLICACIÓN ---
     async init() {
@@ -22,34 +23,38 @@ const ComunidadApp = {
     // --- GESTIÓN DE LA SESIÓN DEL USUARIO ---
     async handleUserSession() {
         const { data: { session } } = await this.supabase.auth.getSession();
-        if (!session) {
-            window.location.href = '/';
-            return;
+
+        if (!session) { 
+            // Si no hay sesión, en lugar de redirigir, abrimos el modal de login.
+            // Asumimos que el modal de login de tu main.js/live.js está disponible en el HTML.
+            const loginModal = document.getElementById('login-modal-overlay');
+            if (loginModal) {
+                loginModal.classList.add('is-visible');
+            }
+            // Detenemos la carga del resto del contenido.
+            document.getElementById('feed-container').innerHTML = ''; 
+            return; 
         }
         this.user = session.user;
 
-        // 1. Obtenemos el perfil (crítico)
-        const { data: profileData, error: profileError } = await this.supabase
-            .from('profiles').select('*').eq('id', this.user.id).single();
+        // Cargar perfil y credenciales en paralelo
+        const [profileResponse, credsResponse] = await Promise.all([
+            this.supabase.from('profiles').select('*').eq('id', this.user.id).single(),
+            this.supabase.from('bsky_credentials').select('*').eq('user_id', this.user.id).single()
+        ]);
 
-        if (profileError) {
-            console.error("Error crítico al cargar el perfil.", profileError);
+        if (profileResponse.error) {
+            console.error("Error crítico al cargar el perfil.", profileResponse.error);
             return;
         }
-        this.userProfile = profileData;
 
-        // 2. Obtenemos las credenciales (opcional, puede no existir)
-        const { data: credsData, error: credsError } = await this.supabase
-            .from('bsky_credentials').select('*').eq('user_id', this.user.id).single();
+        this.userProfile = profileResponse.data;
+        this.bskyCreds = credsResponse.data; // Será null si no hay credenciales
 
-        if (credsError && credsError.code !== 'PGRST116') { // Ignoramos el error "fila no encontrada"
-            console.error("Error al buscar credenciales de Bsky:", credsError);
-        }
-        this.bskyCreds = credsData; // Será null si no se encuentra, lo cual es correcto
-
-        // 3. Renderizamos la UI
+        // Renderizamos la UI con la información actualizada
         this.renderUserPanel();
         this.renderBskyStatus();
+        this.toggleCreatePostBox(); // <-- [NUEVA LLAMADA] Esto activará la nueva lógica
         this.renderFeed();
         this.renderFeaturedMembers();
     },
@@ -106,47 +111,156 @@ const ComunidadApp = {
 
 
     // --- MANEJADORES DE EVENTOS (Versión Actualizada) ---
-    // REEMPLAZA ESTA FUNCIÓN COMPLETA EN comunidad.js
+    addEventListeners() {
+        // --- INICIO: LÓGICA DE EVENTOS CENTRALIZADA Y CORREGIDA ---
 
-addEventListeners() {
-    // --- INICIO DE LA CORRECCIÓN ---
-    // Adjuntamos el listener directamente al botón flotante para máxima fiabilidad.
-    const fabButton = document.getElementById('fab-create-post');
-    if (fabButton) {
-        fabButton.addEventListener('click', () => this.openPostModal());
-    } else {
-        // Este mensaje nos avisaría si el botón no estuviera en el HTML.
-        console.warn("Asistente de Programación: El botón flotante #fab-create-post no se encontró.");
-    }
-    // --- FIN DE LA CORRECCIÓN ---
+        // Listener único para todos los formularios de la página
+        document.body.addEventListener('submit', (e) => {
+            // Si el formulario es el de crear post (ya sea el principal o el del modal)
+            if (e.target.id === 'create-post-form' || e.target.id === 'create-post-form-modal') {
+                e.preventDefault();
+                this.handleCreatePost(e.target);
+            }
+            // Si el formulario es el de conectar bsky
+            if (e.target.id === 'bsky-connect-form') {
+                e.preventDefault();
+                this.handleBlueskyConnect(e);
+            }
+        });
 
-    // Listener para el formulario de la página (sin cambios)
-    document.getElementById('create-post-form')?.addEventListener('submit', (e) => {
-        e.preventDefault();
-        this.handleCreatePost(e.target);
-    });
-    
-    // Listener para el contador de caracteres (sin cambios)
-    document.getElementById('post-text')?.addEventListener('input', (e) => this.updateCharCounter(e));
+        // Listener único para todos los CLICS de la página
+        document.body.addEventListener('click', (e) => {
+            const target = e.target;
+            const button = target.closest('button');
 
-    // Listener para el botón de conectar en el panel izquierdo (sin cambios)
-    document.body.addEventListener('click', (e) => {
-        if (e.target.id === 'connect-bsky-btn') {
-            this.openBskyConnectModal();
+            // Botón para conectar Bsky (en panel izquierdo o en cuadro de crear post)
+            if (button && (button.id === 'connect-bsky-btn' || button.id === 'connect-bsky-in-creator-btn')) {
+                this.openBskyConnectModal();
+            }
+            
+            // Botón flotante para abrir el modal de post
+            if (button && button.id === 'fab-create-post') {
+                this.openPostModal();
+            }
+        });
+
+        // Listener para el contenedor del feed (Likes, Comentarios, etc.)
+        document.getElementById('feed-container')?.addEventListener('click', (e) => {
+            const likeButton = e.target.closest('.like-btn');
+            const replyButton = e.target.closest('.reply-btn');
+            const shareButton = e.target.closest('.share-btn');
+
+            if (likeButton) this.handleLike(likeButton);
+            if (replyButton) this.handleReply(replyButton);
+            if (shareButton) this.handleShare(shareButton);
+        });
+
+        // Listener para el contador de caracteres (se adjunta dinámicamente)
+        // Ya no es necesario ponerlo aquí, porque `toggleCreatePostBox` y `openPostModal`
+        // lo asignan cuando crean el textarea.
+
+        // --- FIN: LÓGICA DE EVENTOS CENTRALIZADA Y CORREGIDA ---
+    },
+
+    addFormEventListeners(container) {
+        // El listener para 'submit' ha sido ELIMINADO de aquí para evitar duplicados.
+        // La gestión del 'submit' ahora se hace de forma centralizada y única en `addEventListeners`.
+
+        // Mantenemos los listeners para los elementos internos del formulario que no son 'submit'.
+        container.querySelector('#post-text')?.addEventListener('input', (e) => this.updateCharCounter(e));
+
+        const imageUploadBtn = container.querySelector('#image-upload-btn');
+        const imageUploadInput = container.querySelector('#image-upload-input');
+        const removeImageBtn = container.querySelector('.remove-image-btn');
+
+        imageUploadBtn?.addEventListener('click', () => imageUploadInput.click());
+        imageUploadInput?.addEventListener('change', (e) => this.handleImageSelection(e));
+        removeImageBtn?.addEventListener('click', () => this.removeSelectedImage());
+    },
+
+    toggleCreatePostBox() {
+        const container = document.querySelector('.create-post-box');
+        if (!container) return;
+
+        if (this.bskyCreds && (this.userProfile.role === 'researcher' || this.userProfile.role === 'admin')) {
+            // Si es investigador y está conectado, mostramos el formulario completo.
+            container.innerHTML = `
+                <h4>Comparte tu conocimiento</h4>
+                <form id="create-post-form">
+                    <div class="textarea-container">
+                        <textarea id="post-text" name="post-text" placeholder="¿Qué estás investigando hoy?" maxlength="300" required></textarea>
+                    </div>
+
+                    <div id="image-preview-container" class="image-preview-container" style="display: none;">
+                        <button type="button" class="remove-image-btn">&times;</button>
+                        <img id="image-preview" src="#" alt="Vista previa de la imagen">
+                    </div>
+
+                    <div class="create-post-actions">
+                        <div class="action-icons">
+                            <input type="file" id="image-upload-input" accept="image/jpeg, image/png" style="display: none;">
+                            <button type="button" id="image-upload-btn" class="post-action-icon" title="Añadir imagen">
+                                <i class="fa-solid fa-image"></i>
+                            </button>
+                        </div>
+                        <div class="form-submit-area">
+                            <span class="char-counter">300</span>
+                            <button type="submit" id="submit-post-btn" class="btn btn-primary">Publicar</button>
+                        </div>
+                    </div>
+                </form>
+            `;
+            // Re-adjuntamos listeners para el nuevo contenido
+            this.addFormEventListeners(container);
+
+        } else if (this.bskyCreds) {
+            // Usuario normal conectado
+            container.innerHTML = `<h4>¡Ya eres parte de la conversación!</h4><p class="form-hint">Tu cuenta está conectada. Ahora puedes interactuar. La creación de posts está reservada para investigadores.</p>`;
+        } else {
+            // Usuario no conectado a Bsky
+            container.innerHTML = `<h4>Participa en la Conversación</h4><p class="form-hint">Para interactuar, necesitas conectar tu cuenta de Bluesky ¡es gratis y fácil de crear!</p><button id="connect-bsky-in-creator-btn" class="btn btn-primary" style="width:100%;"><i class="fa-solid fa-link"></i> Conectar Cuenta de Bluesky</button>`;
         }
-    });
+    },
 
-    // Listener para las acciones del feed (sin cambios)
-    document.getElementById('feed-container')?.addEventListener('click', (e) => {
-        const likeButton = e.target.closest('.like-btn');
-        const replyButton = e.target.closest('.reply-btn');
-        const shareButton = e.target.closest('.share-btn');
+    handleImageSelection(event) {
+        const file = event.target.files[0];
+        const previewContainer = document.getElementById('image-preview-container');
+        const previewImage = document.getElementById('image-preview');
 
-        if (likeButton) this.handleLike(likeButton);
-        if (replyButton) this.handleReply(replyButton);
-        if (shareButton) this.handleShare(shareButton);
-    });
-},
+        if (!file) {
+            this.selectedImageFile = null;
+            previewContainer.style.display = 'none';
+            return;
+        }
+
+        // Validación básica de la imagen
+        if (file.size > 1000000) { // Límite de 1MB (límite de Bluesky para blobs)
+            alert("La imagen es demasiado grande. El máximo es 1MB.");
+            event.target.value = ''; // Limpiamos el selector de archivos
+            return;
+        }
+        if (!['image/jpeg', 'image/png'].includes(file.type)) {
+            alert("Formato de imagen no válido. Solo se permiten JPG y PNG.");
+            event.target.value = '';
+            return;
+        }
+
+        this.selectedImageFile = file;
+
+        // Usamos FileReader para mostrar la vista previa
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            previewImage.src = e.target.result;
+            previewContainer.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    },
+
+    removeSelectedImage() {
+        this.selectedImageFile = null;
+        document.getElementById('image-upload-input').value = '';
+        document.getElementById('image-preview-container').style.display = 'none';
+    },
 
     // --- LÓGICA DE INTERACCIÓN (Versión Actualizada) ---
 
@@ -159,35 +273,57 @@ addEventListeners() {
         const textArea = form.querySelector('textarea[name="post-text"]');
         const postText = textArea.value.trim();
 
-        if (!postText) {
-            alert("El post no puede estar vacío.");
+        if (!postText && !this.selectedImageFile) {
+            alert("El post debe contener texto o una imagen.");
             return;
         }
 
         submitButton.disabled = true;
         submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Publicando...';
 
+        let body = { postText };
+
+        // Si hay una imagen seleccionada, la convertimos a Base64 y la añadimos al body
+        if (this.selectedImageFile) {
+            try {
+                const base64Image = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(this.selectedImageFile);
+                    reader.onload = () => resolve(reader.result.split(',')[1]); // Quitamos el prefijo "data:image/jpeg;base64,"
+                    reader.onerror = error => reject(error);
+                });
+                
+                body.base64Image = base64Image;
+                body.imageMimeType = this.selectedImageFile.type;
+                
+            } catch (error) {
+                console.error("Error al leer la imagen:", error);
+                alert("No se pudo procesar la imagen seleccionada.");
+                submitButton.disabled = false;
+                submitButton.textContent = 'Publicar';
+                return;
+            }
+        }
+
+        // Llamamos a la Edge Function con el texto y opcionalmente la imagen
         try {
             const { error } = await this.supabase.functions.invoke('bsky-create-post', {
-                body: { postText: postText },
+                body: body,
             });
-
             if (error) throw error;
 
-            // --- INICIO DE LA ACTUALIZACIÓN OPTIMISTA ---
-            // En lugar de recargar toda la página, creamos y añadimos el post a la vista.
-            this.prependNewPost(postText);
-            textArea.value = ''; // Limpiar textarea
-            this.updateCharCounter({ target: textArea }); // Actualizar contador
-            this.closePostModal(); // Cierra el modal si estaba abierto
-            // --- FIN DE LA ACTUALIZACIÓN OPTIMISTA ---
+            this.prependNewPost(postText, this.selectedImageFile);
+            textArea.value = '';
+            this.removeSelectedImage(); // Limpiamos la imagen seleccionada
+            this.updateCharCounter({ target: textArea });
+            this.closePostModal();
 
         } catch (error) {
             console.error("Error al publicar:", error);
             alert(`No se pudo publicar el post: ${error.message}`);
         } finally {
             submitButton.disabled = false;
-            submitButton.textContent = 'Publicar'; 
+            submitButton.textContent = 'Publicar';
         }
     },
 
@@ -195,27 +331,32 @@ addEventListeners() {
      * Crea el HTML para un nuevo post y lo añade al principio del feed.
      * @param {string} postText - El contenido del post.
      */
-    prependNewPost(postText) {
+    prependNewPost(postText, imageFile = null) {
         const container = document.getElementById('feed-container');
         if (!container) return;
 
-        // Usamos los datos del usuario que ya tenemos cargados
         const author = {
             avatar: this.userProfile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png',
             displayName: this.userProfile.display_name,
             handle: this.bskyCreds.handle
         };
 
-        const postDate = new Date().toLocaleString('es-ES', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
-
-        // Creamos un objeto 'post' falso para pasarlo a nuestra función createPostHtml
+        let embed = undefined;
+        if (imageFile) {
+            // Creamos una URL local para la vista previa optimista
+            const localImageUrl = URL.createObjectURL(imageFile);
+            embed = {
+                $type: 'app.bsky.embed.images',
+                images: [{ thumb: localImageUrl, alt: 'Imagen recién publicada' }]
+            };
+        }
+        
         const fakePost = {
             author: author,
             record: { text: postText },
+            embed: embed,
             indexedAt: new Date().toISOString(),
-            replyCount: 0,
-            repostCount: 0,
-            likeCount: 0,
+            replyCount: 0, repostCount: 0, likeCount: 0,
             viewer: {}
         };
         
@@ -493,10 +634,10 @@ addEventListeners() {
         modalNode.querySelector('.modal-close-btn').addEventListener('click', () => this.closePostModal());
         
         const form = modalNode.querySelector('form');
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.handleCreatePost(e.target);
-        });
+        // form.addEventListener('submit', (e) => {
+        //    e.preventDefault();
+       //     this.handleCreatePost(e.target);
+        // });
 
         const textArea = modalNode.querySelector('textarea');
         textArea.addEventListener('input', (e) => this.updateCharCounter(e));

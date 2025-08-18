@@ -1,9 +1,11 @@
-// Contenido FINAL Y DE DEPURACIÓN para: supabase/functions/bsky-create-post/index.ts
+// Contenido FINAL Y COMPLETO para: supabase/functions/bsky-create-post/index.ts
+// Integra la lógica de subida de imágenes en tu versión de depuración.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { BskyAgent, AtpSessionEvent, AtpSessionData } from 'npm:@atproto/api'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { Buffer } from "https://deno.land/std@0.170.0/node/buffer.ts"; // Necesario para decodificar la imagen
 
 const BSKY_SERVICE_URL = 'https://bsky.social'
 
@@ -31,25 +33,23 @@ serve(async (req) => {
       .single()
     if (credsError || !creds) throw new Error("Credenciales de Bluesky no encontradas para este usuario.")
     console.log(`Paso 2: Credenciales encontradas para el handle: @${creds.handle}`);
-
-    // =================================================================
-    // =========== INICIO: LÓGICA DE community_members CORREGIDA =======
-    // =================================================================
-    console.log(`Paso 3: Verificando membresía para el DID: ${creds.did}`);
+    
     const { count: memberCount, error: memberError } = await supabaseClient
       .from('community_members')
       .select('did', { count: 'exact', head: true })
-      .eq('did', creds.did) // <-- Usando 'did' como es correcto.
+      .eq('did', creds.did)
     if (memberError) throw memberError
     if (memberCount === 0) throw new Error("El usuario no tiene permisos para publicar.")
-    console.log(`Paso 4: Verificación de membresía exitosa. (Count: ${memberCount})`);
-    // =================================================================
-    // ============ FIN: LÓGICA DE community_members CORREGIDA =========
-    // =================================================================
+    console.log(`Paso 4: Verificación de membresía exitosa.`);
 
-    const { postText } = await req.json()
-    if (!postText) throw new Error("El texto del post no puede estar vacío.")
-    console.log("Paso 5: Texto del post recibido.");
+    // --- INICIO DE LA MODIFICACIÓN 1 ---
+    // Ahora aceptamos también los datos de la imagen desde el frontend.
+    const { postText, base64Image, imageMimeType } = await req.json()
+    if (!postText && !base64Image) {
+        throw new Error("El post debe contener texto o una imagen.")
+    }
+    console.log("Paso 5: Texto y/o datos de imagen recibidos.");
+    // --- FIN DE LA MODIFICACIÓN 1 ---
 
     const agent = new BskyAgent({
       service: BSKY_SERVICE_URL,
@@ -72,8 +72,34 @@ serve(async (req) => {
     });
     console.log("Paso 7: Sesión reanudada con éxito.");
     
+    let imageEmbed = undefined;
+    // --- INICIO DE LA MODIFICACIÓN 2: LÓGICA PARA SUBIR LA IMAGEN ---
+    if (base64Image && imageMimeType) {
+        console.log("Paso 7.1: Procesando imagen...");
+        const imageBuffer = Buffer.from(base64Image, 'base64');
+
+        const uploadResult = await agent.uploadBlob(imageBuffer, {
+            encoding: imageMimeType
+        });
+        
+        imageEmbed = {
+            $type: 'app.bsky.embed.images',
+            images: [{
+                image: uploadResult.data.blob,
+                alt: 'Imagen publicada desde Epistecnología'
+            }]
+        };
+        console.log("Paso 7.2: Imagen procesada y lista para adjuntar.");
+    }
+    // --- FIN DE LA MODIFICACIÓN 2 ---
+
     console.log("Paso 8: Intentando publicar el post...");
-    await agent.post({ text: postText })
+    await agent.post({ 
+        text: postText,
+        embed: imageEmbed, // <-- Adjuntamos la imagen (si existe)
+        createdAt: new Date().toISOString(),
+        langs: ["es"]
+    })
     console.log("Paso 9: ¡Post publicado con éxito!");
 
     return new Response(JSON.stringify({ message: "Post publicado con éxito" }), {

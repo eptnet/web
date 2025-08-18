@@ -170,6 +170,22 @@ const ProfileApp = {
             this.renderOrcidSection(profile, isEditable);
             this.renderSidebarButtons(profile, isMyOwnProfile);
 
+            // Lógica para habilitar/deshabilitar el botón de sincronización
+            const syncButton = document.getElementById('sync-orcid-works-btn');
+            const syncHint = document.getElementById('sync-hint');
+
+            if (syncButton && syncHint) {
+                if (profile.orcid) {
+                    // Si el perfil SÍ tiene ORCID, el botón está habilitado y el mensaje oculto.
+                    syncButton.disabled = false;
+                    syncHint.style.display = 'none';
+                } else {
+                    // Si el perfil NO tiene ORCID, el botón está deshabilitado y se muestra el mensaje.
+                    syncButton.disabled = true;
+                    syncHint.style.display = 'block';
+                }
+            }
+
             if (isMyOwnProfile) {
                 this.renderCommunityActionPanel(this.bskyCreds);
             }
@@ -335,10 +351,23 @@ const ProfileApp = {
                     body: { authorization_code: code, redirect_uri: window.location.origin + window.location.pathname },
                 });
                 if (error) throw error;
-                const { error: updateError } = await this.supabase.from('profiles').update({ orcid: `https://orcid.org/${data.orcid}` }).eq('id', this.user.id);
+
+                // --- AQUÍ ESTÁ LA CORRECCIÓN ---
+                // Añadimos 'role: 'researcher'' al objeto que se actualiza en la base de datos.
+                const { error: updateError } = await this.supabase
+                    .from('profiles')
+                    .update({ 
+                        orcid: `https://orcid.org/${data.orcid}`,
+                        role: 'researcher' // <-- LÍNEA AÑADIDA
+                    })
+                    .eq('id', this.user.id);
+                // --- FIN DE LA CORRECCIÓN ---
+
                 if (updateError) throw updateError;
-                alert("¡Cuenta de ORCID conectada con éxito! Tu rol se actualizará.");
+                
+                alert("¡Cuenta de ORCID conectada con éxito! Tu rol ha sido actualizado a Investigador.");
                 location.reload();
+                
             } catch(error) {
                 alert("Error al verificar el código de ORCID: " + error.message);
             }

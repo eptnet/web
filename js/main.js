@@ -259,6 +259,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
         })();
 
+        // --- INICIO: Lógica para el botón de Comunidad ---
+        const handleCommunityClick = async (event) => {
+            event.preventDefault(); // Prevenimos la navegación del enlace
+            
+            // Obtenemos la URL de destino desde el atributo data-url
+            const communityUrl = event.currentTarget.dataset.url;
+            
+            // Verificamos la sesión actual del usuario con Supabase
+            const { data: { session } } = await window.supabaseClient.auth.getSession();
+
+            if (session) {
+                // Si el usuario TIENE sesión, lo llevamos a la comunidad en una nueva pestaña
+                window.open(communityUrl, '_blank');
+            } else {
+                // Si el usuario NO TIENE sesión, abrimos el modal de login
+                document.getElementById('login-modal-trigger')?.click();
+            }
+        };
+
+        // Asignamos la nueva lógica a ambos botones
+        document.getElementById('community-btn-desktop')?.addEventListener('click', handleCommunityClick);
+        document.getElementById('community-btn-mobile')?.addEventListener('click', handleCommunityClick);
+        // --- FIN: Lógica para el botón de Comunidad ---
+
         document.dispatchEvent(new CustomEvent('mainReady'));
         console.log("main.js: Evento 'mainReady' disparado. Base unificada y lista.");
     };

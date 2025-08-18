@@ -5,7 +5,7 @@
 const agentPrompts = {
     'text': {
         label: 'Redactar Artículo de Divulgación',
-        prompt: 'Actúa como un experto en comunicación científica. Usando el texto base proporcionado, redacta un artículo de entre 500 y 800 palabras. El tono debe ser de divulgación: accesible para un público general pero manteniendo el rigor científico. Estructura el contenido con un título atractivo, una introducción, subtítulos claros para los apartados y un párrafo de conclusión.'
+        prompt: 'Actúa como un experto en comunicación científica. Usando el texto base proporcionado, redacta un artículo de entre 500 y 800 palabras. El tono debe ser de divulgación: accesible para un público general pero manteniendo el rigor científico. Estructura el contenido siguiendo la estructura de un articulo de opinión y la piramide invertida.'
     },
     'social': {
         label: 'Crear Hilo para Redes Sociales',
@@ -36,39 +36,42 @@ const EditorApp = {
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
         this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        // --- INICIO DE LA CORRECCIÓN ---
+        // 1. Verificamos la sesión y obtenemos el ID de usuario.
         const { data: { session } } = await this.supabase.auth.getSession();
         if (!session) { window.location.href = '/'; return; }
         this.userId = session.user.id;
         
+        // 2. Cargamos el perfil completo del usuario y sus credenciales de Bluesky.
+        const { data: profile } = await this.supabase.from('profiles').select('*').eq('id', this.userId).single();
+        this.currentUserProfile = profile;
+
+        const { data: creds } = await this.supabase.from('bsky_credentials').select('*').eq('user_id', this.userId).single();
+        this.bskyCreds = creds;
+        // --- FIN DE LA CORRECCIÓN ---
+
         const urlParams = new URLSearchParams(window.location.search);
         const projectId = urlParams.get('projectId');
         const postId = urlParams.get('postId');
-        const agent = urlParams.get('agent');
 
         if (!projectId && !postId) {
-            document.querySelector('.main-content').innerHTML = '<h2>Error de Contexto</h2><p>No se ha especificado un proyecto o borrador. Vuelve al dashboard.</p>';
+            document.querySelector('.main-content').innerHTML = '<h2>Error de Contexto</h2><p>No se ha especificado un proyecto o borrador.</p>';
             return;
         }
 
         await this.initializeEditor();
         this.populateAgentDropdown();
+        // Movemos los listeners aquí para que se adjunten después de crear la UI básica.
         this.addEventListeners();
 
         if (postId) {
             await this.loadPost(postId);
         } else if (projectId) {
-            this.currentPost.projectId = projectId;
             await this.loadProjectData(projectId);
-            await this.loadDraftsList(projectId);
         }
-
-        if (agent && agentPrompts[agent]) {
-            const dropdown = document.getElementById('ai-task-dropdown');
-            const promptTextarea = document.getElementById('ai-custom-prompt');
-            
-            dropdown.value = agent; // Seleccionamos la opción en el menú
-            promptTextarea.value = agentPrompts[agent].prompt; // Rellenamos el prompt
-        }
+        
+        const agent = urlParams.get('agent');
+        if (agent) this.setupAIAgent(agent);
     },
 
     async loadDraftsList(projectId) {
@@ -154,6 +157,7 @@ const EditorApp = {
         document.getElementById('ai-generate-btn')?.addEventListener('click', () => this.callAI('generate_from_instructions'));
         document.getElementById('ai-suggest-titles-btn')?.addEventListener('click', () => this.callAI('suggest_titles'));
         document.getElementById('save-draft-btn')?.addEventListener('click', () => this.saveDraft());
+         document.getElementById('publish-btn')?.addEventListener('click', () => this.handlePublish());
     },
 
     async loadPost(postId) {
@@ -167,38 +171,69 @@ const EditorApp = {
     },
 
     async loadProjectData(projectId) {
+        this.currentPost.projectId = projectId;
         const { data, error } = await this.supabase.from('projects').select('title, description').eq('id', projectId).single();
-        if (error) { alert('No se pudieron cargar los datos del proyecto.'); console.error(error); return; }
+        if (error) { 
+            alert('No se pudieron cargar los datos del proyecto.'); 
+            console.error(error); 
+            return; 
+        }
         document.getElementById('post-title').value = `Borrador basado en: ${data.title}`;
         this.editorInstance.setContent(data.description || '');
+
+        // --- LÍNEA CLAVE AÑADIDA ---
+        // Refrescamos la lista de borradores para que se muestre correctamente al iniciar desde un proyecto.
+        await this.loadDraftsList(projectId);
     },
 
     async saveDraft() {
-        if (!this.editorInstance || !this.userId || !this.currentPost.projectId) { alert('Error: Falta información de proyecto.'); return; }
+        if (!this.editorInstance || !this.userId || !this.currentPost.projectId) { 
+            alert('Error: Falta información de proyecto. No se puede guardar.'); 
+            return; 
+        }
         const saveButton = document.getElementById('save-draft-btn');
         saveButton.disabled = true;
         saveButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
 
         try {
+            // 1. Creamos el objeto de datos base SIN el 'id'.
             const postData = {
-                id: this.currentPost.id, 
                 project_id: this.currentPost.projectId,
                 user_id: this.userId,
                 title: document.getElementById('post-title').value,
                 content: this.editorInstance.getContent(),
                 status: 'draft'
             };
-            const { data, error } = await this.supabase.from('posts').upsert(postData).select().single();
+
+            // --- INICIO DE LA CORRECCIÓN ---
+            // 2. Solo añadimos la propiedad 'id' si estamos ACTUALIZANDO un borrador que ya existe.
+            if (this.currentPost.id) {
+                postData.id = this.currentPost.id;
+            }
+            // --- FIN DE LA CORRECCIÓN ---
+
+            // 3. Enviamos el objeto a Supabase. 'upsert' sabrá si debe crear o actualizar.
+            const { data, error } = await this.supabase
+                .from('posts')
+                .upsert(postData)
+                .select()
+                .single();
+                
             if (error) throw error;
             
             alert('¡Borrador guardado con éxito!');
+
             if (!this.currentPost.id) {
-                window.location.href = `/inv/editor.html?postId=${data.id}`;
+                this.currentPost.id = data.id;
+                const newUrl = `${window.location.pathname}?postId=${data.id}`;
+                history.pushState({ path: newUrl }, '', newUrl);
+                this.loadDraftsList(this.currentPost.projectId);
             } else {
                 this.loadDraftsList(this.currentPost.projectId);
             }
+
         } catch (error) {
-            alert('No se pudo guardar el borrador.');
+            alert('No se pudo guardar el borrador. Revisa la consola para más detalles.');
             console.error('Error al guardar:', error);
         } finally {
             saveButton.disabled = false;
@@ -253,7 +288,85 @@ const EditorApp = {
             const loadingIndicator = document.querySelector('.ai-loading-indicator');
             if (loadingIndicator) loadingIndicator.remove();
         }
-    }
+    },
+
+    async handlePublish() {
+        if (!confirm("¿Estás seguro de que quieres publicar este contenido en la comunidad?")) return;
+
+        const publishButton = document.getElementById('publish-btn');
+        publishButton.disabled = true;
+        publishButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Publicando...';
+
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const agent = urlParams.get('agent') || 'social';
+            const content = this.editorInstance.getContent({ format: 'text' }).trim();
+            let textForCommunity = '';
+
+            if (agent === 'social') {
+                if (content.length > 300) {
+                    alert('El contenido para un post social no puede exceder los 300 caracteres.');
+                    throw new Error("Contenido demasiado largo.");
+                }
+                textForCommunity = content;
+            } else {
+                publishButton.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Creando resumen...';
+                
+                // --- INICIO DE LA CORRECCIÓN 1: Instrucciones más estrictas para la IA ---
+                const customPromptForSocial = "Crea un resumen muy corto y atractivo para redes sociales, de no más de 40 palabras, que genere curiosidad e invite a hacer clic en un enlace.";
+                const { data: summaryData, error: summaryError } = await this.supabase.functions.invoke('generate-text', {
+                    body: { textContent: content, promptType: 'create_summary', customPrompt: customPromptForSocial }
+                });
+                if (summaryError) throw summaryError;
+                
+                const finalUrl = `https://epistecnologia.com/proyectos/${this.currentPost.projectId}/posts/${this.currentPost.id}`;
+                let summaryWithLink = `${summaryData.result}\n\nLee el artículo completo aquí: ${finalUrl}`;
+
+                // --- INICIO DE LA CORRECCIÓN 2: Recorte de seguridad ---
+                // Dejamos un margen de ~50 caracteres para la atribución que añade el bot.
+                if (summaryWithLink.length > 250) {
+                    console.warn("El resumen + enlace de la IA era demasiado largo. Se ha truncado.");
+                    summaryWithLink = summaryWithLink.substring(0, 247) + "...";
+                }
+                textForCommunity = summaryWithLink;
+                // --- FIN DE LAS CORRECCIONES ---
+            }
+
+            if (this.bskyCreds) {
+                console.log("Invocando bsky-create-post para el usuario...");
+                const { error } = await this.supabase.functions.invoke('bsky-create-post', {
+                    body: { postText: textForCommunity },
+                });
+                if (error) throw error;
+            } else {
+                console.log("Invocando bot-create-post...");
+                const authorInfo = {
+                    displayName: this.currentUserProfile.display_name,
+                    handle: this.bskyCreds?.handle || null,
+                    orcid: this.currentUserProfile.orcid
+                };
+                const { error: botError } = await this.supabase.functions.invoke('bot-create-post', {
+                    body: { postText: textForCommunity, authorInfo },
+                });
+                if (botError) throw botError;
+            }
+
+            await this.supabase
+                .from('posts')
+                .update({ status: 'published', published_at: new Date().toISOString() })
+                .eq('id', this.currentPost.id);
+            
+            alert("¡Publicado con éxito en la comunidad!");
+            console.log("Próximo paso: Activar interfaz de multiposting.");
+            
+        } catch (error) {
+            console.error("Error final en el proceso de publicación:", error);
+            alert(`No se pudo completar la publicación: ${error.message}`);
+        } finally {
+            publishButton.disabled = false;
+            publishButton.innerHTML = 'Publicar';
+        }
+    },
 };
 
 document.addEventListener('DOMContentLoaded', () => {
