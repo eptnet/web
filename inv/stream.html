@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EPTstream - Sala de Producción</title>
+    <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="/inv/css/stream.css">
+</head>
+<body>
+    <div id="loading-overlay" class="loading-overlay is-visible">
+        <div class="spinner"></div>
+        <p id="loading-text">Iniciando EPTstream...</p>
+    </div>
+
+    <main class="stream-layout">
+        <div class="video-container">
+            <canvas id="video-canvas"></canvas>
+        </div>
+        
+        <aside class="sidebar">
+            <div class="bento-box sidebar-box">
+                <h3 class="box-title"><i class="fas fa-users"></i> Participantes</h3>
+                <div id="participants-list" class="participants-list"></div>
+            </div>
+
+            <div id="host-controls" class="bento-box sidebar-box hidden">
+                <h3 class="box-title"><i class="fas fa-sliders-h"></i> Controles de Producción</h3>
+                
+                <div class="control-section">
+                    <h4>Layouts</h4>
+                    <div class="control-grid layout-controls">
+                        <button data-layout="grid" class="control-btn active"><i class="fas fa-th-large"></i><span>Grid</span></button>
+                        <button data-layout="speaker" class="control-btn"><i class="fas fa-user"></i><span>Ponente</span></button>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h4>Transmisión</h4>
+                    <button id="start-stream-btn" class="control-btn btn-primary"><i class="fas fa-tower-broadcast"></i><span>Iniciar Stream</span></button>
+                    <button id="stop-stream-btn" class="control-btn btn-danger hidden"><i class="fas fa-stop-circle"></i><span>Detener Stream</span></button>
+                    <div id="stream-status" class="stream-status"><span>Desconectado</span></div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <script type="module" src="/inv/js/stream.js"></script>
+    
+</body>
+</html>

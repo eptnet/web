@@ -347,6 +347,7 @@ export const Studio = {
                             <div class="form-group">
                                 <label>Plataforma de Transmisión</label>
                                 <div class="platform-selector">
+                                    <div class="platform-option" data-platform="eptstream"><i class="fa-solid fa-wand-magic-sparkles"></i><span>EPTstream</span></div>
                                     <div class="platform-option" data-platform="vdo_ninja"><i class="fas fa-satellite-dish"></i><span>EPT Live</span></div>    
                                     <div class="platform-option" data-platform="twitch"><i class="fab fa-twitch"></i><span>Twitch</span></div>
                                     <div class="platform-option" data-platform="youtube"><i class="fab fa-youtube"></i><span>YouTube</span></div>
@@ -400,8 +401,8 @@ export const Studio = {
             platformInput.value = platform;
             
             let fieldHTML = '';
-            // Ahora este bloque se activa para YouTube y Twitch
-        if (platform === 'youtube' || platform === 'twitch') {
+            // Ahora este bloque se activa para YouTube, Twitch y EPTstream
+        if (platform === 'youtube' || platform === 'twitch' || platform === 'eptstream') {
             const platformName = platform === 'youtube' ? 'Video de YouTube' : 'Canal de Twitch';
             fieldHTML = `<div class="form-group"><label for="platform-id">ID del ${platformName}</label><input id="platform-id" name="platformId" type="text" value="${session?.platform_id || ''}" placeholder="El ID de tu canal o video"></div>`;
         } 
@@ -413,8 +414,8 @@ export const Studio = {
 
             const rtmpsFields = modalContainer.querySelector('.rtmps-fields');
             if (rtmpsFields) {
-                // Tu lógica aquí ya incluía 'twitch', ¡lo cual es perfecto!
-                rtmpsFields.style.display = (platform === 'youtube' || platform === 'twitch') ? 'block' : 'none';
+                // Tu lógica RTMP
+                rtmpsFields.style.display = (platform === 'youtube' || platform === 'twitch' || platform === 'eptstream') ? 'block' : 'none';
             }
         };
 
@@ -479,43 +480,58 @@ export const Studio = {
         if (!session) {
             sessionData.user_id = App.userId;
             sessionData.is_archived = false;
-            
-            const stableId = self.crypto.randomUUID().slice(0, 8);
-            const roomName = `ept_2_${App.userProfile.orcid.slice(-4)}_${stableId}`; 
-            const directorKey = `dir_${App.userProfile.orcid.slice(-4)}`;
-            const vdoDomain = 'https://vdo.ninja/alpha';
-            
-            let directorParams = new URLSearchParams({ room: roomName, director: directorKey, record: 'auto' });
-            
-            const rtmpUrl = formData.get('rtmp_url');
-            const rtmpKey = formData.get('rtmp_key');
-            
-            if (rtmpUrl && rtmpKey) {
-                const broadcastUrl = rtmpUrl.replace(/^rtmps?:\/\//, '');
-                directorParams.set('broadcast', `${rtmpKey}@${broadcastUrl}`);
-            }
 
-            sessionData.director_url = `${vdoDomain}/mixer?${directorParams.toString()}&meshcast`;
-            
-            const recordingParams = new URLSearchParams({
-                scene: '0', layout: '', remote: '', clean: '', chroma: '000', ssar: 'landscape',
-                nosettings: '', prefercurrenttab: '', selfbrowsersurface: 'include',
-                displaysurface: 'browser', np: '', nopush: '', publish: '', record: '',
-                screenshareaspectratio: '1.7777777777777777', locked: '1.7777777777777777', room: roomName
-            });
-            sessionData.recording_source_url = `${vdoDomain}/?${recordingParams.toString()}`;
-            
-            let guestParams = new URLSearchParams({ room: roomName });
-            let viewerParams = new URLSearchParams({ scene: '0', showlabels: '0', room: roomName });
-            
-            if (formData.get('guestCount') > 4) {
-                const meshcastUrl = `https://cae1.meshcast.io/whep/${roomName}`;
-                directorParams.set('whepshare', meshcastUrl);
-                guestParams.set('whepshare', meshcastUrl);
-                viewerParams.set('meshcast', '1');
+            // --- INICIO: LÓGICA CONDICIONAL PARA LA PLATAFORMA ---
+            if (platform === 'eptstream') {
+                // Generamos un nombre de sesión único para Zoom.
+                const sessionName = self.crypto.randomUUID();
+                
+                // Creamos las URLs que apuntarán a nuestra nueva sala de control web.
+                sessionData.director_url = `/inv/stream.html?session=${sessionName}&role=host`;
+                sessionData.guest_url = `/inv/stream.html?session=${sessionName}&role=guest`;
+                
+                // La URL del espectador será la de la plataforma de destino (ej. YouTube).
+                const platformId = formData.get('platformId');
+                if (platformId) {
+                    sessionData.viewer_url = `https://www.youtube.com/live/${platformId}`;
+                }
+            } else {
+                // Esta es tu lógica existente para VDO.Ninja. La mantenemos intacta.
+                const stableId = self.crypto.randomUUID().slice(0, 8);
+                const roomName = `ept_2_${App.userProfile.orcid.slice(-4)}_${stableId}`; 
+                const directorKey = `dir_${App.userProfile.orcid.slice(-4)}`;
+                const vdoDomain = 'https://vdo.ninja/alpha';
+                let directorParams = new URLSearchParams({ room: roomName, director: directorKey, record: 'auto' });
+                
+                const rtmpUrl = formData.get('rtmp_url');
+                const rtmpKey = formData.get('rtmp_key');
+                if (rtmpUrl && rtmpKey) {
+                    const broadcastUrl = rtmpUrl.replace(/^rtmps?:\/\//, '');
+                    directorParams.set('broadcast', `${rtmpKey}@${broadcastUrl}`);
+                }
+                sessionData.director_url = `${vdoDomain}/mixer?${directorParams.toString()}&meshcast`;
+                
+                const recordingParams = new URLSearchParams({
+                    scene: '0', layout: '', remote: '', clean: '', chroma: '000', ssar: 'landscape',
+                    nosettings: '', prefercurrenttab: '', selfbrowsersurface: 'include',
+                    displaysurface: 'browser', np: '', nopush: '', publish: '', record: '',
+                    screenshareaspectratio: '1.7777777777777777', locked: '1.7777777777777777', room: roomName
+                });
+                sessionData.recording_source_url = `${vdoDomain}/?${recordingParams.toString()}`;
+                
+                let guestParams = new URLSearchParams({ room: roomName });
+                let viewerParams = new URLSearchParams({ scene: '0', showlabels: '0', room: roomName });
+                
+                if (formData.get('guestCount') > 4) {
+                    const meshcastUrl = `https://cae1.meshcast.io/whep/${roomName}`;
+                    directorParams.set('whepshare', meshcastUrl);
+                    guestParams.set('whepshare', meshcastUrl);
+                    viewerParams.set('meshcast', '1');
+                }
+                sessionData.guest_url = `${vdoDomain}/?${guestParams.toString()}`;
+                sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}&layout&whepshare=https://use1.meshcast.io/whep/${roomName}&cleanoutput`;
             }
-            sessionData.guest_url = `${vdoDomain}/?${guestParams.toString()}`;
-            sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}&layout&whepshare=https://use1.meshcast.io/whep/${roomName}&cleanoutput`;
+            // --- FIN: LÓGICA CONDICIONAL ---
         }
 
         // Guardamos la sesión en la base de datos
@@ -669,11 +685,17 @@ export const Studio = {
 
     openSession(sessionData) {
         const session = JSON.parse(decodeURIComponent(sessionData));
+        
+        // Si no hay una URL de director, mostramos un error.
         if (!session.director_url) {
-            alert("Esta sesión no tiene una sala de control.");
+            alert("Esta sesión no tiene una sala de control definida.");
             return;
         }
-        window.open(`/inv/sala-de-control.html?id=${session.id}`, '_blank');
+
+        // ¡ESTA ES LA CORRECCIÓN CLAVE!
+        // Ahora simplemente abrimos la URL que está guardada en la base de datos,
+        // sea la de VDO.Ninja o la de nuestro nuevo EPTstream.
+        window.open(session.director_url, '_blank');
     },
 
     async savePlatformId(sessionId) {
