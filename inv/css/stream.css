@@ -1,70 +1,20 @@
-:root {
-    --color-background: #121212; --color-surface: #1e1e1e; --color-primary-text: #ffffff;
-    --color-secondary-text: #b3b3b3; --color-accent: #b72a1e; --color-primary-cta: #1877f2;
-    --color-danger: #e02424; --color-border: #333; --border-radius: 12px;
-    --font-family: 'Inter', sans-serif;
-}
 body {
-    font-family: var(--font-family); margin: 0; background-color: var(--color-background);
-    color: var(--color-primary-text); overflow: hidden;
+    background-color: #121212;
+    color: white;
+    font-family: sans-serif;
+    padding: 20px;
 }
-.stream-layout {
-    display: grid; grid-template-columns: 1fr 320px; height: 100vh;
-    gap: 1.5rem; padding: 1.5rem; box-sizing: border-box;
+
+#video-container {
+    margin-top: 20px;
+    width: 640px;
+    height: 360px;
+    background-color: #000;
+    border: 2px solid #333;
 }
-.video-container {
-    background-color: #000; border-radius: var(--border-radius); overflow: hidden;
-    display: flex; align-items: center; justify-content: center;
+
+/* El SDK crea este elemento personalizado */
+video-player {
+    width: 100%;
+    height: 100%;
 }
-#video-canvas { width: 100%; height: 100%; }
-.sidebar { display: flex; flex-direction: column; gap: 1.5rem; }
-.bento-box {
-    background-color: var(--color-surface); border: 1px solid var(--color-border);
-    border-radius: var(--border-radius); padding: 1.5rem;
-}
-.sidebar-box { display: flex; flex-direction: column; }
-.box-title {
-    margin: 0 0 1rem 0; font-size: 1.1rem; display: flex; align-items: center;
-    gap: 0.5rem; color: var(--color-secondary-text); padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--color-border);
-}
-.control-section { margin-top: 1rem; }
-.control-section h4 {
-    margin: 0 0 0.75rem 0; font-size: 0.9rem; color: var(--color-secondary-text);
-}
-.control-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 0.75rem; }
-.control-btn {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 0.5rem; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--color-border);
-    background-color: rgba(255, 255, 255, 0.05); color: var(--color-secondary-text);
-    font-weight: 600; cursor: pointer; transition: background-color 0.2s, color 0.2s;
-    font-size: 0.8rem;
-}
-.control-btn:hover { background-color: var(--color-border); color: var(--color-primary-text); }
-.control-btn.active { background-color: var(--color-primary-cta); color: white; border-color: var(--color-primary-cta); }
-.control-btn i { font-size: 1.5rem; }
-.btn-primary, .btn-danger { grid-column: 1 / -1; flex-direction: row; }
-.btn-primary { background-color: var(--color-primary-cta); color: white; border-color: var(--color-primary-cta); }
-.btn-danger { background-color: var(--color-danger); color: white; border-color: var(--color-danger); }
-.participants-list { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; }
-.participant-item {
-    display: flex; align-items: center; gap: 0.75rem; font-weight: 500;
-    padding: 0.5rem; border-radius: 6px; cursor: pointer; transition: background-color 0.2s;
-}
-.participant-item:hover { background-color: var(--color-border); }
-.participant-item.pinned { background-color: var(--color-primary-cta); }
-.participant-item i { color: var(--color-secondary-text); width: 20px; text-align: center; }
-.participant-item.pinned i, .participant-item i.is-muted { color: white; }
-.loading-overlay {
-    position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.8); z-index: 100;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 1rem; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s;
-}
-.loading-overlay.is-visible { opacity: 1; visibility: visible; }
-.spinner {
-    width: 50px; height: 50px; border: 5px solid var(--color-border);
-    border-top-color: var(--color-primary-cta); border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-.hidden { display: none !important; }
-@keyframes spin { to { transform: rotate(360deg); } }

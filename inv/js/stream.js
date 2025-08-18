@@ -1,190 +1,90 @@
-// YA NO NECESITAMOS ESTA LÍNEA DE IMPORTACIÓN
-// import ZoomVideo from '/inv/lib/zoom-sdk/main.js';
-
-const EPTStream = {
+// Objeto principal para la prueba
+const StreamTest = {
     client: null,
     stream: null,
-    participants: [],
-    activeLayout: 'grid',
-    pinnedParticipantId: null,
-    sessionName: null,
-    role: null,
-    elements: {},
 
     async init() {
-        this.cacheDOMElements();
-        const params = new URLSearchParams(window.location.search);
-        this.sessionName = params.get('session');
-        this.role = params.get('role');
-
-        if (!this.sessionName || !this.role) {
-            this.showError("Faltan parámetros en la URL.");
-            return;
-        }
-
-        // --- INICIO DE LA CORRECCIÓN CLAVE ---
-        // El SDK ahora está disponible en el objeto 'window'. Lo definimos aquí.
-        const ZoomVideo = window.WebVideoSDK.default;
-        if (!ZoomVideo) {
-            this.showError("El SDK de Zoom no se ha podido cargar.");
-            return;
-        }
-        // --- FIN DE LA CORRECCIÓN CLAVE ---
+        console.log("--- Iniciando Prueba de EPTstream ---");
+        const statusEl = document.getElementById('status');
 
         try {
-            this.updateLoadingText('Obteniendo credenciales seguras...');
-            const signature = await this.getZoomSignature();
+            // 1. Obtener parámetros de la URL
+            statusEl.textContent = "Obteniendo parámetros de la URL...";
+            const params = new URLSearchParams(window.location.search);
+            const sessionName = params.get('session');
+            const role = params.get('role');
+            if (!sessionName || !role) throw new Error("Faltan 'session' o 'role' en la URL.");
+            console.log(`Sesión: ${sessionName}, Rol: ${role}`);
 
-            this.updateLoadingText('Iniciando cliente de video...');
+            // 2. Cargar el SDK
+            statusEl.textContent = "Cargando SDK de Zoom...";
+            const ZoomVideo = window.WebVideoSDK.default;
+            if (!ZoomVideo) throw new Error("El SDK de Zoom no se ha podido cargar.");
+            console.log("SDK de Zoom cargado.");
+
+            // 3. Inicializar el cliente
+            statusEl.textContent = "Inicializando cliente...";
             this.client = ZoomVideo.createClient();
-
-            // Ya no necesitamos 'libPath' porque el CDN lo maneja internamente
             await this.client.init('en-US', 'Global');
+            console.log("Cliente inicializado.");
 
-            this.updateLoadingText('Conectando a la sesión...');
-            const userName = `User-${Math.floor(Math.random() * 1000)}`;
-            this.stream = this.client.join(this.sessionName, signature, userName, '');
-
-            this.setupUI();
-            this.setupSDKListeners();
-
-            this.participants.push({
-                userId: this.client.getCurrentUserInfo().userId,
-                displayName: this.client.getCurrentUserInfo().displayName,
-                videoOn: false
+            // 4. Obtener la firma JWT
+            statusEl.textContent = "Obteniendo firma de seguridad...";
+            const functionUrl = `https://seyknzlheaxmwztkfxmk.supabase.co/functions/v1/zoom-signature`;
+            const response = await fetch(functionUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionName, role }),
             });
-            this.renderParticipantList();
-            
-            this.elements.loadingOverlay.classList.remove('is-visible');
+            if (!response.ok) throw new Error('No se pudo obtener la firma desde Supabase.');
+            const { signature } = await response.json();
+            console.log("Firma obtenida con éxito.");
 
-        } catch (error) {
-            console.error(error);
-            this.showError(`Error al iniciar: ${error.message || 'Revise la consola.'}`);
-        }
-    },
+            // 5. Unirse a la sesión
+            statusEl.textContent = "Uniéndose a la sesión...";
+            const userName = `User-${Math.floor(Math.random() * 1000)}`;
+            this.stream = this.client.join(sessionName, signature, userName, '');
+            console.log("Llamada a join() completada. Esperando conexión...");
 
-    // El resto del código (cacheDOMElements, getZoomSignature, setupUI, etc.)
-    // permanece exactamente igual que en el mensaje anterior.
-    
-    cacheDOMElements() {
-        this.elements = {
-            loadingOverlay: document.getElementById('loading-overlay'),
-            loadingText: document.getElementById('loading-text'),
-            canvas: document.getElementById('video-canvas'),
-            participantsList: document.getElementById('participants-list'),
-            hostControls: document.getElementById('host-controls'),
-            layoutControls: document.querySelector('.layout-controls'),
-        };
-    },
+            // 6. Escuchar el evento de conexión
+            this.client.on('connection-change', async (payload) => {
+                console.log(`Estado de la conexión: ${payload.state}`);
+                statusEl.textContent = `Estado de la conexión: ${payload.state}`;
 
-    async getZoomSignature() {
-        const functionUrl = `https://seyknzlheaxmwztkfxmk.supabase.co/functions/v1/zoom-signature`;
-        const response = await fetch(functionUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionName: this.sessionName, role: this.role }),
-        });
-        if (!response.ok) throw new Error('No se pudo obtener la firma desde Supabase.');
-        const { signature } = await response.json();
-        return signature;
-    },
+                if (payload.state === 'Connected') {
+                    try {
+                        statusEl.textContent = "Conectado. Pidiendo acceso a la cámara...";
+                        
+                        // 7. Iniciar el video (esto pide permiso al navegador)
+                        await this.stream.startVideo();
+                        console.log("Permiso de cámara concedido y video iniciado.");
 
-    setupUI() {
-        if (this.role === 'host') {
-            this.elements.hostControls.classList.remove('hidden');
-            this.elements.layoutControls.addEventListener('click', (e) => {
-                const button = e.target.closest('.control-btn');
-                if (button && button.dataset.layout) {
-                    this.elements.layoutControls.querySelector('.active').classList.remove('active');
-                    button.classList.add('active');
-                    this.activeLayout = button.dataset.layout;
-                    this.renderCanvasLayout();
+                        // 8. Adjuntar el video al DOM
+                        statusEl.textContent = "Adjuntando video...";
+                        const videoContainer = document.getElementById('video-container');
+                        const videoElement = await this.stream.attachVideo(this.client.getCurrentUserInfo().userId, 3);
+                        videoContainer.appendChild(videoElement);
+                        console.log("¡Video adjuntado con éxito!");
+                        statusEl.textContent = "¡Video funcionando!";
+
+                    } catch (videoError) {
+                        console.error("--- ERROR AL INICIAR/ADJUNTAR VIDEO ---", videoError);
+                        statusEl.textContent = `Error de video: ${videoError.message}`;
+                    }
                 }
             });
-            
-            // Inicia el video del anfitrión automáticamente
-            setTimeout(() => {
-                this.stream.startVideo();
-            }, 1000); // Pequeño retraso para asegurar que el stream esté listo
-        }
-    },
 
-    setupSDKListeners() {
-        this.client.on('user-added', (payload) => {
-            this.participants = payload;
-            this.renderParticipantList();
-            this.renderCanvasLayout();
-        });
-        this.client.on('user-removed', (payload) => {
-            this.participants = payload;
-            this.renderParticipantList();
-            this.renderCanvasLayout();
-        });
-        this.client.on('peer-video-state-change', (payload) => {
-            const participant = this.participants.find(p => p.userId === payload.userId);
-            if (participant) {
-                participant.videoOn = payload.action === 'Start';
-                this.renderParticipantList();
-                this.renderCanvasLayout();
-            }
-        });
-        this.client.on('video-active-change', (payload) => {
-             const participant = this.participants.find(p => p.userId === payload.userId);
-             if (participant) {
-                participant.videoOn = payload.state === 'Active';
-                this.renderParticipantList();
-                this.renderCanvasLayout();
-             }
-        });
-    },
+            this.client.on('error', (error) => {
+                console.error("--- ERROR DEL SDK ---", error);
+                statusEl.textContent = `Error del SDK: ${error.reason}`;
+            });
 
-    renderParticipantList() {
-        let html = '';
-        this.participants.forEach(p => {
-            const icon = p.videoOn ? 'fa-video' : 'fa-video-slash';
-            const isSelf = p.userId === this.client.getCurrentUserInfo().userId;
-            html += `<div class="participant-item" data-user-id="${p.userId}">
-                        <i class="fas ${icon}"></i>
-                        <span>${p.displayName} ${isSelf ? '(Tú)' : ''}</span>
-                     </div>`;
-        });
-        this.elements.participantsList.innerHTML = html;
-    },
-
-    async renderCanvasLayout() {
-        if (!this.stream) return;
-        await this.stream.stopRenderVideo(this.elements.canvas);
-        const videoParticipants = this.participants.filter(p => p.videoOn);
-        if (videoParticipants.length === 0) return;
-
-        const canvasWidth = this.elements.canvas.width;
-        const canvasHeight = this.elements.canvas.height;
-
-        if (this.activeLayout === 'grid') {
-            const count = videoParticipants.length;
-            const cols = Math.ceil(Math.sqrt(count));
-            const rows = Math.ceil(count / cols);
-            const itemWidth = canvasWidth / cols;
-            const itemHeight = canvasHeight / rows;
-            
-            for (let i = 0; i < videoParticipants.length; i++) {
-                const user = videoParticipants[i];
-                const x = (i % cols) * itemWidth;
-                const y = Math.floor(i / cols) * itemHeight;
-                await this.stream.renderVideo(this.elements.canvas, user.userId, itemWidth, itemHeight, x, y, 2);
-            }
-        } else if (this.activeLayout === 'speaker') {
-            const speaker = videoParticipants[0];
-            await this.stream.renderVideo(this.elements.canvas, speaker.userId, canvasWidth, canvasHeight, 0, 0, 2);
-        }
-    },
-    
-    showError(message) {
-        this.elements.loadingText.textContent = message;
-        if(this.elements.loadingOverlay.querySelector('.spinner')) {
-           this.elements.loadingOverlay.querySelector('.spinner').style.display = 'none';
+        } catch (error) {
+            console.error("--- ERROR EN LA INICIALIZACIÓN ---", error);
+            statusEl.textContent = `Error: ${error.message}`;
         }
     }
 };
 
-EPTStream.init();
+// Iniciar la prueba
+StreamTest.init();
