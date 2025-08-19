@@ -1,4 +1,3 @@
-// Objeto principal para la prueba
 const StreamTest = {
     client: null,
     stream: null,
@@ -28,7 +27,7 @@ const StreamTest = {
             await this.client.init('en-US', 'Global');
             console.log("Cliente inicializado.");
 
-            // 4. Obtener la firma JWT
+            // 4. Obtener la firma JWT desde nuestra Edge Function
             statusEl.textContent = "Obteniendo firma de seguridad...";
             const functionUrl = `https://seyknzlheaxmwztkfxmk.supabase.co/functions/v1/zoom-signature`;
             const response = await fetch(functionUrl, {
@@ -54,7 +53,7 @@ const StreamTest = {
                 if (payload.state === 'Connected') {
                     try {
                         statusEl.textContent = "Conectado. Pidiendo acceso a la cámara...";
-                        
+
                         // 7. Iniciar el video (esto pide permiso al navegador)
                         await this.stream.startVideo();
                         console.log("Permiso de cámara concedido y video iniciado.");

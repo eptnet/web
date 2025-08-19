@@ -1,13 +1,18 @@
-// VERSIÓN FINAL Y CORREGIDA para supabase/functions/zoom-signature/index.ts
-
 import { create } from 'https://deno.land/x/djwt@v2.7/mod.ts';
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { corsHeaders } from '../_shared/cors.ts';
 
+// Cabeceras CORS para permitir peticiones desde cualquier origen
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+// Obtenemos las credenciales de los secrets de Supabase
 const ZOOM_SDK_KEY = Deno.env.get('ZOOM_SDK_KEY');
 const ZOOM_SDK_SECRET = Deno.env.get('ZOOM_SDK_SECRET');
 
 serve(async (req) => {
+  // Manejo de la petición OPTIONS (pre-vuelo de CORS)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -19,21 +24,18 @@ serve(async (req) => {
       throw new Error('sessionName y role son requeridos.');
     }
     
-    // --- INICIO DE LA CORRECCIÓN ---
-    // La librería 'djwt' requiere que la clave secreta sea un objeto CryptoKey, no un string.
-    // Convertimos el SDK Secret de string a un formato que el algoritmo HMAC pueda usar.
+    // Convertimos el SDK Secret al formato CryptoKey que la librería espera
     const key = await crypto.subtle.importKey(
-      "raw", // El formato de nuestra clave es texto plano (raw)
-      new TextEncoder().encode(ZOOM_SDK_SECRET), // Convertimos el string a un buffer de bytes
-      { name: "HMAC", hash: "SHA-256" }, // El algoritmo que usaremos
-      false, // La clave no será extraíble
-      ["sign", "verify"] // El propósito de la clave es firmar y verificar
+      "raw",
+      new TextEncoder().encode(ZOOM_SDK_SECRET),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign", "verify"]
     );
-    // --- FIN DE LA CORRECCIÓN ---
 
     const roleType = role === 'host' ? 1 : 0;
     const iat = Math.floor(Date.now() / 1000);
-    const exp = iat + 60 * 60 * 2; 
+    const exp = iat + 60 * 60 * 2; // Válido por 2 horas
 
     const payload = {
       app_key: ZOOM_SDK_KEY,
@@ -48,7 +50,7 @@ serve(async (req) => {
     const signature = await create(
       { alg: 'HS256', typ: 'JWT' },
       payload,
-      key // Usamos la clave ya convertida en lugar del string
+      key
     );
 
     return new Response(
