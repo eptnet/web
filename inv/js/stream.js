@@ -3,31 +3,29 @@ const StreamTest = {
     stream: null,
 
     async init() {
-        console.log("--- Iniciando Prueba de EPTstream ---");
+        console.log("--- Iniciando Conexión Definitiva ---");
         const statusEl = document.getElementById('status');
 
         try {
-            // 1. Obtener parámetros de la URL
-            statusEl.textContent = "Obteniendo parámetros de la URL...";
+            // 1. Obtener parámetros (sin cambios)
+            statusEl.textContent = "Obteniendo parámetros...";
             const params = new URLSearchParams(window.location.search);
             const sessionName = params.get('session');
             const role = params.get('role');
             if (!sessionName || !role) throw new Error("Faltan 'session' o 'role' en la URL.");
-            console.log(`Sesión: ${sessionName}, Rol: ${role}`);
 
-            // 2. Cargar el SDK
-            statusEl.textContent = "Cargando SDK de Zoom...";
+            // 2. Cargar SDK (sin cambios)
+            statusEl.textContent = "Cargando SDK...";
             const ZoomVideo = window.WebVideoSDK.default;
             if (!ZoomVideo) throw new Error("El SDK de Zoom no se ha podido cargar.");
-            console.log("SDK de Zoom cargado.");
 
-            // 3. Inicializar el cliente
+            // 3. Inicializar cliente (Añadimos la opción recomendada 'patchJsMedia')
             statusEl.textContent = "Inicializando cliente...";
             this.client = ZoomVideo.createClient();
-            await this.client.init('en-US', 'Global');
-            console.log("Cliente inicializado.");
+            await this.client.init('en-US', 'Global', { patchJsMedia: true });
+            console.log("Cliente inicializado con éxito.");
 
-            // 4. Obtener la firma JWT desde nuestra Edge Function
+            // 4. Obtener firma (sin cambios)
             statusEl.textContent = "Obteniendo firma de seguridad...";
             const functionUrl = `https://seyknzlheaxmwztkfxmk.supabase.co/functions/v1/zoom-signature`;
             const response = await fetch(functionUrl, {
@@ -42,48 +40,37 @@ const StreamTest = {
             // 5. Unirse a la sesión
             statusEl.textContent = "Uniéndose a la sesión...";
             const userName = `User-${Math.floor(Math.random() * 1000)}`;
-            this.stream = this.client.join(sessionName, signature, userName, '');
-            console.log("Llamada a join() completada. Esperando conexión...");
+            await this.client.join(sessionName, signature, userName, '');
+            console.log("Llamada a join() completada.");
 
-            // 6. Escuchar el evento de conexión
-            this.client.on('connection-change', async (payload) => {
-                console.log(`Estado de la conexión: ${payload.state}`);
-                statusEl.textContent = `Estado de la conexión: ${payload.state}`;
+            // ==========================================================
+            // ===               LA CORRECCIÓN CLAVE                  ===
+            // ==========================================================
+            // 6. OBTENER EL STREAM DE MEDIOS
+            statusEl.textContent = "Obteniendo control de medios (cámara/mic)...";
+            this.stream = this.client.getMediaStream();
+            console.log("¡Objeto 'stream' obtenido con éxito!");
+            // ==========================================================
 
-                if (payload.state === 'Connected') {
-                    try {
-                        statusEl.textContent = "Conectado. Pidiendo acceso a la cámara...";
+            // 7. Iniciar y adjuntar el video
+            statusEl.textContent = "Pidiendo permiso de cámara...";
+            await this.stream.startVideo();
+            console.log("Permiso de cámara concedido.");
 
-                        // 7. Iniciar el video (esto pide permiso al navegador)
-                        await this.stream.startVideo();
-                        console.log("Permiso de cámara concedido y video iniciado.");
-
-                        // 8. Adjuntar el video al DOM
-                        statusEl.textContent = "Adjuntando video...";
-                        const videoContainer = document.getElementById('video-container');
-                        const videoElement = await this.stream.attachVideo(this.client.getCurrentUserInfo().userId, 3);
-                        videoContainer.appendChild(videoElement);
-                        console.log("¡Video adjuntado con éxito!");
-                        statusEl.textContent = "¡Video funcionando!";
-
-                    } catch (videoError) {
-                        console.error("--- ERROR AL INICIAR/ADJUNTAR VIDEO ---", videoError);
-                        statusEl.textContent = `Error de video: ${videoError.message}`;
-                    }
-                }
-            });
-
-            this.client.on('error', (error) => {
-                console.error("--- ERROR DEL SDK ---", error);
-                statusEl.textContent = `Error del SDK: ${error.reason}`;
-            });
+            statusEl.textContent = "Adjuntando video...";
+            const videoContainer = document.getElementById('video-container');
+            const videoElement = await this.stream.attachVideo(this.client.getCurrentUserInfo().userId, 3);
+            videoContainer.appendChild(videoElement);
+            
+            console.log("¡TODO CORRECTO! Video funcionando.");
+            statusEl.textContent = "¡Video funcionando!";
 
         } catch (error) {
-            console.error("--- ERROR EN LA INICIALIZACIÓN ---", error);
+            console.error("--- ERROR EN EL PROCESO ---", error);
             statusEl.textContent = `Error: ${error.message}`;
         }
     }
 };
 
-// Iniciar la prueba
+// Iniciar
 StreamTest.init();
