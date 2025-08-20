@@ -1,126 +1,137 @@
-// inv/js/stream.js - VERSIÓN FINAL CON MANEJO DE EVENTO 'user-added'
+// inv/js/stream.js - VERSIÓN DE DIAGNÓSTICO FINAL
 
 document.addEventListener('DOMContentLoaded', () => {
-
     const SIGNATURE_ENDPOINT = 'https://seyknzlheaxmwztkfxmk.supabase.co/functions/v1/zoom-signature'; 
     const SESSION_NAME = 'eptstream-production-room'; 
     
-    // Dejaremos que el usuario ingrese su nombre en el futuro, por ahora uno aleatorio
-    let userName = 'Productor-' + Math.floor(Math.random() * 1000);
-
+    // Elementos del DOM
     const lobbyView = document.getElementById('lobby');
     const productionView = document.getElementById('production-room');
     const joinButton = document.getElementById('join-button');
     const videoPreview = document.getElementById('video-preview');
-    const cameraSelect = document.getElementById('camera-select');
     const statusDiv = document.getElementById('status');
     const videoMainContainer = document.getElementById('video-main-container');
+    
+    // Nuevos elementos de control
+    const startVideoBtn = document.getElementById('start-video-btn');
+    const stopVideoBtn = document.getElementById('stop-video-btn');
+    const startAudioBtn = document.getElementById('start-audio-btn');
+    const stopAudioBtn = document.getElementById('stop-audio-btn');
+    const guestLinkInput = document.getElementById('guest-link');
+    const productionStatus = document.getElementById('production-status');
 
     const ZoomVideo = window.WebVideoSDK.default; 
     const client = ZoomVideo.createClient();
     let stream;
     let localPreviewStream;
-    let selectedCameraId = '';
 
+    // --- LOBBY (Sin cambios) ---
     async function setupLobby() {
-        statusDiv.textContent = 'Estado: Pidiendo permisos...';
         try {
             localPreviewStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             videoPreview.srcObject = localPreviewStream;
-
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const videoDevices = devices.filter(device => device.kind === 'videoinput');
-            
-            cameraSelect.innerHTML = '';
-            videoDevices.forEach(device => {
-                const option = document.createElement('option');
-                option.value = device.deviceId;
-                option.textContent = device.label || `Cámara ${cameraSelect.length + 1}`;
-                cameraSelect.appendChild(option);
-            });
-            
-            selectedCameraId = cameraSelect.value;
-            statusDiv.textContent = 'Estado: ¡Listo para unirte!';
             joinButton.disabled = false;
-
         } catch (error) {
-            console.error('Error en el lobby:', error);
             statusDiv.textContent = 'Error: No se pudo acceder a la cámara.';
         }
     }
 
-    cameraSelect.addEventListener('change', async () => {
-        selectedCameraId = cameraSelect.value;
-        localPreviewStream.getTracks().forEach(track => track.stop());
-        localPreviewStream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: selectedCameraId } } });
-        videoPreview.srcObject = localPreviewStream;
-    });
-
+    // --- UNIRSE A LA SESIÓN (Lógica de roles añadida) ---
     async function joinSession() {
         joinButton.disabled = true;
-        statusDiv.textContent = 'Estado: Inicializando SDK...';
-        
         await client.init('en-US', 'Global');
-        
         localPreviewStream.getTracks().forEach(track => track.stop());
 
-        statusDiv.textContent = 'Estado: Obteniendo firma...';
+        // Verificamos si la URL indica que somos un invitado
+        const urlParams = new URLSearchParams(window.location.search);
+        const isGuest = urlParams.get('role') === 'guest';
+        
+        const userName = isGuest ? 'Invitado-' + Math.floor(Math.random() * 1000) : 'Productor';
+        const role_type = isGuest ? 0 : 1; // 0 para invitado, 1 para anfitrión
+
         try {
             const response = await fetch(SIGNATURE_ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionName: SESSION_NAME, role_type: 1 }),
+                body: JSON.stringify({ sessionName: SESSION_NAME, role_type: role_type }),
             });
-            if (!response.ok) throw new Error(`Servidor respondió con: ${response.status}`);
             const { signature } = await response.json();
-            if (!signature) throw new Error('Servidor no incluyó una firma.');
-            
-            statusDiv.textContent = 'Estado: Uniéndose a la sesión...';
-            // Pasamos el nombre de usuario que definimos al inicio
             await client.join(SESSION_NAME, signature, userName);
-
         } catch (error) {
             console.error('Error al unirse:', error);
             statusDiv.textContent = 'Error: No se pudo unir a la sesión.';
-            joinButton.disabled = false;
         }
     }
 
-    // --- MANEJO DE EVENTOS DEL SDK REESTRUCTURADO ---
+    // --- MANEJO DE EVENTOS ---
 
     client.on('connection-change', (payload) => {
         if (payload.state === 'Connected') {
-            statusDiv.textContent = 'Estado: ¡Conectado! Esperando usuario...';
             lobbyView.style.display = 'none';
             productionView.style.display = 'block';
             stream = client.getMediaStream();
-        } else if (payload.state === 'Closed') {
-            console.log("Sesión cerrada.");
-            // Aquí podrías redirigir al lobby o mostrar un mensaje
+
+            // Generar y mostrar el enlace de invitado
+            const guestUrl = `${window.location.origin}${window.location.pathname}?role=guest`;
+            guestLinkInput.value = guestUrl;
         }
     });
 
+    // Evento para renderizar a CUALQUIER usuario que se une (incluidos nosotros)
     client.on('user-added', async (payload) => {
-        // Este evento se dispara para CADA usuario que se une, incluyéndonos.
-        // 'self' es una propiedad especial que nos dice si el usuario añadido somos nosotros.
-        const currentUser = payload.find(user => user.isSelf);
-        
-        if (currentUser) {
-            statusDiv.textContent = '¡Estás en vivo!';
-            try {
-                // Ahora que sabemos con certeza quiénes somos, iniciamos el video.
-                await stream.startVideo({ cameraId: selectedCameraId });
-                const videoElement = await stream.attachVideo(currentUser.userId, 3);
-                videoMainContainer.innerHTML = '';
-                videoMainContainer.appendChild(videoElement);
-            } catch (error) {
-                console.error("Error al iniciar el video:", error);
-                videoMainContainer.innerHTML = '<p style="color:red;">No se pudo iniciar el video.</p>';
-            }
+        // Esta es una mejor manera de manejar múltiples usuarios
+    });
+
+    // --- LÓGICA DE LOS BOTONES DE DIAGNÓSTICO ---
+
+    startVideoBtn.addEventListener('click', async () => {
+        try {
+            await stream.startVideo();
+            const self = client.getCurrentUserInfo();
+            const videoElement = await stream.attachVideo(self.userId, 3);
+            videoMainContainer.innerHTML = '';
+            videoMainContainer.appendChild(videoElement);
+            productionStatus.textContent = "Tu video debería estar visible.";
+        } catch (error) {
+            console.error("Error al INICIAR VIDEO:", error);
+            productionStatus.textContent = "Error al iniciar video. Revisa la consola.";
         }
     });
 
-    // --- INICIO DE LA APLICACIÓN ---
+    stopVideoBtn.addEventListener('click', async () => {
+        try {
+            await stream.stopVideo();
+            const self = client.getCurrentUserInfo();
+            await stream.detachVideo(self.userId);
+            videoMainContainer.innerHTML = ''; // Limpia el contenedor
+            productionStatus.textContent = "Video detenido.";
+        } catch (error) {
+            console.error("Error al DETENER VIDEO:", error);
+            productionStatus.textContent = "Error al detener video.";
+        }
+    });
+
+    startAudioBtn.addEventListener('click', async () => {
+        try {
+            await stream.startAudio();
+            productionStatus.textContent = "Audio iniciado. Deberías ver el permiso del micrófono.";
+        } catch (error) {
+            console.error("Error al INICIAR AUDIO:", error);
+            productionStatus.textContent = "Error al iniciar audio.";
+        }
+    });
+
+    stopAudioBtn.addEventListener('click', async () => {
+        try {
+            await stream.stopAudio();
+            productionStatus.textContent = "Audio detenido.";
+        } catch (error) {
+            console.error("Error al DETENER AUDIO:", error);
+            productionStatus.textContent = "Error al detener audio.";
+        }
+    });
+
+    // --- INICIO ---
     setupLobby();
     joinButton.addEventListener('click', joinSession);
 });

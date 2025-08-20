@@ -30,7 +30,19 @@
         <h2>Sala de Producción</h2>
         <video-player-container id="video-main-container" class="video-container">
             </video-player-container>
-        <p>¡Estás en vivo!</p>
+        <p id="production-status">¡Estás en vivo!</p>
+
+        <div class="controls-produccion">
+            <button id="start-video-btn">Iniciar Video</button>
+            <button id="stop-video-btn">Detener Video</button>
+            <button id="start-audio-btn">Iniciar Audio</button>
+            <button id="stop-audio-btn">Detener Audio</button>
+        </div>
+
+        <div id="guest-link-container" style="margin-top: 20px;">
+            <p><strong>Enlace para Invitado:</strong></p>
+            <input type="text" id="guest-link" readonly style="width: 80%; padding: 8px;">
+        </div>
     </div>
 
     <script src="https://source.zoom.us/videosdk/zoom-video-2.2.5.min.js"></script>
