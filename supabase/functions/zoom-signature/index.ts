@@ -42,9 +42,9 @@ serve(async (req) => {
       {
         app_key: sdkKey,
         sdkKey: sdkKey,
-        // --- LA CORRECCIÓN FINAL ESTÁ AQUÍ ---
-        tpc: sessionName, // Cambiado de 'mn' a 'tpc'
-        role: role,
+        tpc: sessionName,
+        // --- LA CORRECCIÓN FINAL Y DEFINITIVA ---
+        role_type: role, // Cambiado de 'role' a 'role_type'
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + 7200,
         tokenExp: Math.floor(Date.now() / 1000) + 7200,
