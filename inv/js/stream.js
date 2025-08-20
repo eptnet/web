@@ -1,45 +1,33 @@
-// inv/js/stream.js - VERSIÓN FINAL DE PRODUCCIÓN
+// inv/js/stream.js - VERSIÓN FINAL CON RELEVO DIRECTO
 
 document.addEventListener('DOMContentLoaded', () => {
     const SIGNATURE_ENDPOINT = 'https://seyknzlheaxmwztkfxmk.supabase.co/functions/v1/zoom-signature'; 
     const SESSION_NAME = 'eptstream-production-room'; 
 
-    // Elementos del DOM
     const lobbyView = document.getElementById('lobby');
     const productionView = document.getElementById('production-room');
     const joinButton = document.getElementById('join-button');
     const videoPreview = document.getElementById('video-preview');
     const cameraSelect = document.getElementById('camera-select');
-    const micSelect = document.getElementById('mic-select'); // Nuevo
+    const micSelect = document.getElementById('mic-select');
     const statusDiv = document.getElementById('status');
     const videoMainContainer = document.getElementById('video-main-container');
-    const muteBtn = document.getElementById('mute-btn'); // Nuevo
+    const muteBtn = document.getElementById('mute-btn');
 
     const ZoomVideo = window.WebVideoSDK.default; 
     const client = ZoomVideo.createClient();
     let stream;
-    let localPreviewStream;
-    let selectedCameraId = '';
-    let selectedMicId = ''; // Nuevo
-    let isMuted = false; // Nuevo
+    let localPreviewStream; // Este stream del lobby se lo pasaremos al SDK
+    let isMuted = false;
 
-    // FASE 1: LOBBY
     async function setupLobby() {
         statusDiv.textContent = 'Estado: Pidiendo permisos...';
         try {
             localPreviewStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             videoPreview.srcObject = localPreviewStream;
-
             const devices = await navigator.mediaDevices.enumerateDevices();
-            const videoDevices = devices.filter(d => d.kind === 'videoinput');
-            const audioDevices = devices.filter(d => d.kind === 'audioinput');
-            
-            populateSelect(cameraSelect, videoDevices);
-            populateSelect(micSelect, audioDevices);
-            
-            selectedCameraId = cameraSelect.value;
-            selectedMicId = micSelect.value;
-            
+            populateSelect(cameraSelect, devices.filter(d => d.kind === 'videoinput'));
+            populateSelect(micSelect, devices.filter(d => d.kind === 'audioinput'));
             statusDiv.textContent = 'Estado: ¡Listo para unirte!';
             joinButton.disabled = false;
         } catch (error) {
@@ -48,36 +36,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    function populateSelect(selectElement, devices) {
-        selectElement.innerHTML = '';
+    function populateSelect(select, devices) {
         devices.forEach(device => {
             const option = document.createElement('option');
             option.value = device.deviceId;
-            option.textContent = device.label || `${selectElement.id === 'camera-select' ? 'Cámara' : 'Micrófono'} ${selectElement.length + 1}`;
-            selectElement.appendChild(option);
+            option.textContent = device.label || `${select.id === 'camera-select' ? 'Cámara' : 'Micrófono'} ${select.length + 1}`;
+            select.appendChild(option);
         });
     }
 
-    cameraSelect.addEventListener('change', async () => {
-        selectedCameraId = cameraSelect.value;
-        const audioTrack = localPreviewStream.getAudioTracks()[0];
-        localPreviewStream.getVideoTracks().forEach(track => track.stop());
-        
-        const newVideoStream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: selectedCameraId } } });
-        localPreviewStream = new MediaStream([ ...newVideoStream.getVideoTracks(), audioTrack ]);
-        videoPreview.srcObject = localPreviewStream;
-    });
-
-    micSelect.addEventListener('change', () => {
-        selectedMicId = micSelect.value;
-    });
-
-    // FASE 2: CONEXIÓN
     async function joinSession() {
         joinButton.disabled = true;
         statusDiv.textContent = 'Estado: Inicializando SDK...';
         await client.init('en-US', 'Global');
-        localPreviewStream.getTracks().forEach(track => track.stop());
 
         const isGuest = new URLSearchParams(window.location.search).get('role') === 'guest';
         const userName = isGuest ? `Invitado-${Math.floor(Math.random() * 1000)}` : 'Productor';
@@ -90,9 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sessionName: SESSION_NAME, role_type }),
             });
-            if (!response.ok) throw new Error(`Servidor respondió con: ${response.status}`);
             const { signature } = await response.json();
-            
             await client.join(SESSION_NAME, signature, userName);
         } catch (error) {
             console.error('Error al unirse:', error);
@@ -100,7 +69,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // FASE 3: DENTRO DE LA SESIÓN
     client.on('connection-change', (payload) => {
         if (payload.state === 'Connected') {
             lobbyView.style.display = 'none';
@@ -113,9 +81,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentUser = payload.find(user => user.isSelf);
         if (currentUser) {
             try {
-                // Iniciar audio y video con los dispositivos seleccionados
-                await stream.startAudio({ audioId: selectedMicId });
-                await stream.startVideo({ cameraId: selectedCameraId });
+                // --- INICIO DEL RELEVO DIRECTO ---
+                // 1. Obtenemos las pistas de audio y video del stream del lobby
+                const audioTrack = localPreviewStream.getAudioTracks()[0];
+                const videoTrack = localPreviewStream.getVideoTracks()[0];
+
+                // 2. Le pasamos las pistas directamente al SDK
+                await stream.startAudio({ mediaStreamTrack: audioTrack });
+                await stream.startVideo({ mediaStreamTrack: videoTrack });
+                // --- FIN DEL RELEVO DIRECTO ---
             } catch (error) {
                 console.error("Error al iniciar medios locales:", error);
             }
@@ -125,24 +99,15 @@ document.addEventListener('DOMContentLoaded', () => {
     client.on('peer-video-state-change', async (payload) => {
         const { action, userId } = payload;
         const existingTile = document.getElementById(`video-tile-${userId}`);
-
         if (action === 'Start' && !existingTile) {
             const videoTile = document.createElement('div');
             videoTile.className = 'video-tile';
             videoTile.id = `video-tile-${userId}`;
-            
-            const nameTag = document.createElement('p');
-            // 'user' puede no estar inmediatamente disponible, así que lo buscamos
-            const user = client.getUser(userId);
-            nameTag.textContent = user ? user.displayName : `Usuario ${userId}`;
-            nameTag.className = 'participant-name';
-            
             videoMainContainer.appendChild(videoTile);
             const videoElement = await stream.attachVideo(userId, 3);
             videoTile.appendChild(videoElement);
         } else if (action === 'Stop' && existingTile) {
             existingTile.remove();
-            await stream.detachVideo(userId);
         }
     });
     
@@ -153,21 +118,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- LÓGICA DEL BOTÓN DE MUTE ---
     muteBtn.addEventListener('click', async () => {
+        const icon = muteBtn.querySelector('i');
+        const text = muteBtn.querySelector('span');
         if (isMuted) {
             await stream.unmuteAudio();
-            muteBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+            icon.className = 'fa-solid fa-microphone';
+            text.textContent = 'Silenciar';
             muteBtn.classList.remove('is-muted');
         } else {
             await stream.muteAudio();
-            muteBtn.innerHTML = '<i class="fa-solid fa-microphone-slash"></i>';
+            icon.className = 'fa-solid fa-microphone-slash';
+            text.textContent = 'Reactivar';
             muteBtn.classList.add('is-muted');
         }
         isMuted = !isMuted;
     });
 
-    // --- INICIO ---
     setupLobby();
     joinButton.addEventListener('click', joinSession);
 });
