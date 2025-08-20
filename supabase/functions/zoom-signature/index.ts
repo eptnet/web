@@ -22,17 +22,21 @@ serve(async (req) => {
   }
 
   try {
-    const { sessionName, role } = await req.json()
+    // --- INICIO DE LA CORRECCIÓN ---
+    // Le decimos al servidor que espere 'role_type' en lugar de 'role'
+    const { sessionName, role_type } = await req.json()
 
-    if (!sessionName || role === undefined) {
-      throw new Error('sessionName y role son requeridos.')
+    // Actualizamos la validación para que compruebe 'role_type'
+    if (!sessionName || role_type === undefined) {
+      throw new Error('sessionName y role_type son requeridos.')
     }
+    // --- FIN DE LA CORRECCIÓN ---
 
     const sdkKey = Deno.env.get('ZOOM_SDK_KEY')
     const sdkSecret = Deno.env.get('ZOOM_SDK_SECRET')
 
     if (!sdkKey || !sdkSecret) {
-      throw new Error('Las credenciales del SDK de Zoom no están configuradas en las variables de entorno.')
+      throw new Error('Las credenciales del SDK de Zoom no están configuradas.')
     }
 
     const preparedKey = await prepareSecretKey(sdkSecret);
@@ -43,8 +47,7 @@ serve(async (req) => {
         app_key: sdkKey,
         sdkKey: sdkKey,
         tpc: sessionName,
-        // --- LA CORRECCIÓN FINAL Y DEFINITIVA ---
-        role_type: role, // Cambiado de 'role' a 'role_type'
+        role_type: role_type, // Pasamos el valor correcto
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + 7200,
         tokenExp: Math.floor(Date.now() / 1000) + 7200,
