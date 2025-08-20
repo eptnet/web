@@ -1,48 +1,51 @@
-// supabase/functions/image-proxy/index.ts - VERSIÓN DEFINITIVA Y SIMPLIFICADA
+// supabase/functions/image-proxy/index.ts - VERSIÓN FINAL Y CORRECTA
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
 serve(async (req) => {
-  // Manejo de la petición OPTIONS para CORS
+  // Define las cabeceras CORS que se usarán en todas las respuestas
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+
+  // Responde inmediatamente a las peticiones "pre-vuelo" de CORS
   if (req.method === 'OPTIONS') {
-    return new Response('ok', {
-      headers: { 
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'content-type, authorization'
-      }
-    });
-  }
-
-  const url = new URL(req.url);
-  const imageUrl = url.searchParams.get('url');
-
-  if (!imageUrl) {
-    return new Response('Falta el parámetro URL de la imagen.', { status: 400 });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
+    const url = new URL(req.url);
+    const imageUrl = url.searchParams.get('url');
+
+    if (!imageUrl) {
+      return new Response('Falta el parámetro URL de la imagen.', { status: 400, headers: corsHeaders });
+    }
+
     const imageResponse = await fetch(imageUrl);
 
     if (!imageResponse.ok) {
-      return new Response(`No se pudo obtener la imagen. Estado: ${imageResponse.status}`, { status: imageResponse.status });
+      return new Response(`No se pudo obtener la imagen. Estado: ${imageResponse.status}`, { status: imageResponse.status, headers: corsHeaders });
     }
     
-    // Creamos nuevas cabeceras para nuestra respuesta
-    const headers = new Headers();
+    // Crea nuevas cabeceras para la respuesta final
+    const headers = new Headers(corsHeaders);
     
-    // Copiamos la cabecera 'Content-Type' original (ej. 'image/jpeg')
+    // Copia cabeceras importantes de la imagen original, como el tipo de contenido
     if (imageResponse.headers.has('content-type')) {
       headers.set('Content-Type', imageResponse.headers.get('content-type')!);
     }
+    if (imageResponse.headers.has('content-length')) {
+      headers.set('Content-Length', imageResponse.headers.get('content-length')!);
+    }
     
-    // Añadimos las dos cabeceras de seguridad requeridas
-    headers.set('Access-Control-Allow-Origin', '*');
+    // Añade la cabecera clave que permite que el recurso se incruste
     headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
 
-    // Devolvemos el cuerpo de la imagen con nuestras cabeceras personalizadas
+    // Devuelve la imagen con todas las cabeceras correctas
     return new Response(imageResponse.body, { headers });
 
   } catch (error) {
-    return new Response(`Error al procesar la imagen: ${error.message}`, { status: 500 });
+    return new Response(`Error al procesar la imagen: ${error.message}`, { status: 500, headers: corsHeaders });
   }
 });
