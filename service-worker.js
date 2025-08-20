@@ -1,14 +1,14 @@
-// service-worker.js (Versión con Diagnóstico)
+// service-worker.js (Version with Substack Domain)
 
 console.log('Service Worker: Archivo cargado.');
 
 const EXTERNAL_IMAGE_HOSTS = [
   'i.ibb.co',
-  'substack-cdn.com',
+  'substack-cdn.com', // <-- This was missing
   'substack-post-media.s3.amazonaws.com',
-  'placehold.co', // Añadido para imágenes de prueba
-  'googleusercontent.com', // Añadido para avatares de Google
-  'zenodo.org' // Añadido para los badges de DOI
+  'placehold.co',
+  'googleusercontent.com',
+  'zenodo.org'
 ];
 
 const PROXY_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co/functions/v1/image-proxy';
