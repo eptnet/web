@@ -1,73 +1,60 @@
-import { create } from 'https://deno.land/x/djwt@v2.7/mod.ts';
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+// supabase/functions/zoom-signature/index.ts
 
-// Cabeceras CORS para permitir peticiones desde cualquier origen
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-// Obtenemos las credenciales de los secrets de Supabase
-const ZOOM_SDK_KEY = Deno.env.get('ZOOM_SDK_KEY');
-const ZOOM_SDK_SECRET = Deno.env.get('ZOOM_SDK_SECRET');
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+// CORRECCIÓN 1: Se usa la URL de importación correcta y completa.
+import { create } from "https://deno.land/x/djwt@v2.9.1/mod.ts";
+import { corsHeaders } from '../_shared/cors.ts'
 
 serve(async (req) => {
-  // Manejo de la petición OPTIONS (pre-vuelo de CORS)
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { sessionName, role } = await req.json();
+    const { sessionName, role } = await req.json()
 
     if (!sessionName || role === undefined) {
-      throw new Error('sessionName y role son requeridos.');
+      throw new Error('sessionName y role son requeridos.')
     }
-    
-    // Convertimos el SDK Secret al formato CryptoKey que la librería espera
-    const key = await crypto.subtle.importKey(
-      "raw",
-      new TextEncoder().encode(ZOOM_SDK_SECRET),
-      { name: "HMAC", hash: "SHA-256" },
-      false,
-      ["sign", "verify"]
-    );
 
-    const roleType = role === 'host' ? 1 : 0;
-    const iat = Math.floor(Date.now() / 1000);
-    const exp = iat + 60 * 60 * 2; // Válido por 2 horas
+    // CORRECCIÓN 2: Usamos los nombres de tus variables de entorno.
+    const sdkKey = Deno.env.get('ZOOM_SDK_KEY')
+    const sdkSecret = Deno.env.get('ZOOM_SDK_SECRET')
 
-    const payload = {
-      app_key: ZOOM_SDK_KEY,
-      sdkKey: ZOOM_SDK_KEY,
-      mn: sessionName,
-      role: roleType,
-      iat: iat,
-      exp: exp,
-      tokenExp: exp,
-    };
+    if (!sdkKey || !sdkSecret) {
+      throw new Error('Las credenciales del SDK de Zoom no están configuradas en las variables de entorno.')
+    }
 
+    // CORRECCIÓN 1 (continuación): Usamos la función 'create' importada.
     const signature = await create(
       { alg: 'HS256', typ: 'JWT' },
-      payload,
-      key
-    );
+      {
+        app_key: sdkKey,
+        sdkKey: sdkKey,
+        mn: sessionName,
+        role: role,
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 7200,
+        tokenExp: Math.floor(Date.now() / 1000) + 7200,
+      },
+      sdkSecret
+    )
 
     return new Response(
-      JSON.stringify({ signature }),
+      JSON.stringify({ signature: signature }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       }
-    );
-
-  } catch (err) {
+    )
+  } catch (error) {
+    console.error('Error generando la firma:', error)
     return new Response(
-      JSON.stringify({ error: `Error en la función: ${err.message}` }),
+      JSON.stringify({ error: error.message }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
+        status: 500,
       }
-    );
+    )
   }
-});
+})
