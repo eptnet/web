@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EPTstream - Estudio de Producción</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="css/stream.css">
 </head>
 <body>
@@ -15,8 +16,10 @@
             <video id="video-preview" autoplay playsinline muted></video>
         </div>
         <div class="controls">
-            <label for="camera-select">Seleccionar Cámara:</label>
+            <label for="camera-select">Cámara:</label>
             <select id="camera-select"></select>
+            <label for="mic-select">Micrófono:</label>
+            <select id="mic-select"></select>
             <button id="join-button" disabled>Unirse a la Producción</button>
         </div>
         <div id="status">Estado: Preparando...</div>
@@ -24,9 +27,10 @@
 
     <div id="production-room" style="display: none;">
         <h2>Sala de Producción</h2>
-        <video-player-container id="video-main-container">
-            </video-player-container>
-        <p>¡Estás en vivo!</p>
+        <video-player-container id="video-main-container"></video-player-container>
+        <div class="production-controls">
+            <button id="mute-btn"><i class="fa-solid fa-microphone"></i> <span>Silenciar</span></button>
+            </div>
     </div>
 
     <script src="https://source.zoom.us/videosdk/zoom-video-2.2.5.min.js"></script>
