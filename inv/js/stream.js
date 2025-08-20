@@ -49,24 +49,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function joinSession() {
-        // ... (el resto de esta función no cambia)
         joinButton.disabled = true;
         statusDiv.textContent = 'Estado: Obteniendo firma del servidor...';
+
         try {
             const response = await fetch(SIGNATURE_ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionName: SESSION_NAME, role_type: 1 }),
+                body: JSON.stringify({
+                    sessionName: SESSION_NAME,
+                    role_type: 1 // <-- ESTA ES LA CORRECCIÓN
+                }),
             });
             if (!response.ok) {
                 throw new Error(`El servidor de firmas respondió con el estado: ${response.status}`);
             }
             const { signature } = await response.json();
+
             if (!signature) {
                  throw new Error('La respuesta del servidor no incluyó una firma (signature).');
             }
+
             statusDiv.textContent = 'Estado: Firma obtenida. Uniéndose a la sesión...';
             await client.join(SESSION_NAME, signature, USER_NAME, SESSION_PASSWORD);
+            
         } catch (error) {
             console.error('▼▼▼ Error detallado al unirse a la sesión ▼▼▼', error);
             statusDiv.textContent = 'Error: No se pudo unir a la sesión. Revisa la consola.';
