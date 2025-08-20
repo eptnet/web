@@ -1,8 +1,7 @@
-// inv/js/stream.js - VERSIÓN FINAL BASADA EN EL CICLO DE VIDA CORRECTO DEL SDK
+// inv/js/stream.js - VERSIÓN FINAL Y ROBUSTA
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- CONFIGURACIÓN Y ELEMENTOS DEL DOM ---
     const SIGNATURE_ENDPOINT = 'https://seyknzlheaxmwztkfxmk.supabase.co/functions/v1/zoom-signature'; 
     const SESSION_NAME = 'eptstream-production-room'; 
     const USER_NAME = 'Productor-' + Math.floor(Math.random() * 1000);
@@ -18,10 +17,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const ZoomVideo = window.WebVideoSDK.default; 
     const client = ZoomVideo.createClient();
     let stream;
-    let localPreviewStream; // Stream del lobby (del navegador)
-    let selectedCameraId = ''; // Guardaremos la cámara seleccionada
+    let localPreviewStream;
+    let selectedCameraId = '';
 
-    // --- FASE 1: LOBBY (INDEPENDIENTE DEL SDK) ---
     async function setupLobby() {
         statusDiv.textContent = 'Estado: Pidiendo permisos de cámara...';
         try {
@@ -31,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const devices = await navigator.mediaDevices.enumerateDevices();
             const videoDevices = devices.filter(device => device.kind === 'videoinput');
             
-            cameraSelect.innerHTML = ''; // Limpiar opciones previas
+            cameraSelect.innerHTML = '';
             videoDevices.forEach(device => {
                 const option = document.createElement('option');
                 option.value = device.deviceId;
@@ -39,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 cameraSelect.appendChild(option);
             });
             
-            selectedCameraId = cameraSelect.value; // Guardar la selección inicial
+            selectedCameraId = cameraSelect.value;
             statusDiv.textContent = 'Estado: ¡Listo para unirte!';
             joinButton.disabled = false;
 
@@ -52,20 +50,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     cameraSelect.addEventListener('change', async () => {
         selectedCameraId = cameraSelect.value;
-        // Cambiar la vista previa del lobby al cambiar de cámara
         localPreviewStream.getTracks().forEach(track => track.stop());
         localPreviewStream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: selectedCameraId } } });
         videoPreview.srcObject = localPreviewStream;
     });
 
-    // --- FASE 2: CONEXIÓN A ZOOM ---
     async function joinSession() {
         joinButton.disabled = true;
         statusDiv.textContent = 'Estado: Inicializando SDK...';
 
         await client.init('en-US', 'Global');
         
-        // Detenemos la vista previa del lobby para liberar la cámara
         localPreviewStream.getTracks().forEach(track => track.stop());
 
         statusDiv.textContent = 'Estado: Obteniendo firma...';
@@ -89,7 +84,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- FASE 3: DENTRO DE LA SESIÓN (MANEJADO POR EL SDK) ---
     client.on('connection-change', async (payload) => {
         if (payload.state === 'Connected') {
             statusDiv.textContent = 'Estado: ¡Conectado!';
@@ -98,13 +92,22 @@ document.addEventListener('DOMContentLoaded', () => {
             productionView.style.display = 'block';
 
             stream = client.getMediaStream();
-            const currentUser = client.getCurrentUserInfo();
+
+            // --- INICIO DE LA CORRECCIÓN DEFINITIVA ---
+            // 'participants' es la lista de TODOS los usuarios en la sesión.
+            // Como acabamos de unirnos, el primer usuario (índice 0) somos nosotros.
+            // Esta es la forma más segura de obtener nuestro propio ID.
+            const self = client.getAllUser()[0];
+
+            if (!self) {
+                console.error("Error crítico: No se pudo encontrar al usuario actual en la lista de participantes.");
+                return;
+            }
+            // --- FIN DE LA CORRECCIÓN DEFINITIVA ---
 
             try {
-                // Iniciar el video, especificando la cámara que elegimos en el lobby
                 await stream.startVideo({ cameraId: selectedCameraId });
-                // Usamos attachVideo, que es el método más moderno y recomendado
-                const videoElement = await stream.attachVideo(currentUser.userId, 3);
+                const videoElement = await stream.attachVideo(self.userId, 3); // Usamos el ID seguro
                 videoMainContainer.innerHTML = '';
                 videoMainContainer.appendChild(videoElement);
             } catch (error) {
@@ -114,7 +117,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- INICIO DE LA APLICACIÓN ---
     setupLobby();
     joinButton.addEventListener('click', joinSession);
 });
