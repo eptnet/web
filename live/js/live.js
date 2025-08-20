@@ -370,7 +370,7 @@ const LiveApp = {
             const playerUrl = slide.dataset.playerUrl;
 
             if (offset === 0 && playerUrl && !playerContainer.querySelector('iframe')) {
-                playerContainer.innerHTML = `<iframe src="${playerUrl}" allow="autoplay; fullscreen" loading="lazy"></iframe>`;
+                playerContainer.innerHTML = `<iframe credentialless="true" src="${playerUrl}" allow="autoplay; fullscreen" loading="lazy"></iframe>`;
             } else if (offset !== 0 && playerContainer.querySelector('iframe')) {
                 playerContainer.innerHTML = `<img src="${slide.dataset.thumbnailUrl}" loading="lazy">`;
             }
@@ -761,7 +761,7 @@ const LiveApp = {
             countdown.style.display = 'none';
             document.getElementById('live-room-disclaimer').style.display = 'none';
             document.getElementById('live-room-report').style.display = 'none';
-            player.innerHTML = `<iframe src="https://www.youtube.com/embed/${video.youtube_video_id}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
+            player.innerHTML = `<iframe credentialless="true" src="https://www.youtube.com/embed/${video.youtube_video_id}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
             info.innerHTML = `<h3>${video.title}</h3><p>${video.description || 'No hay descripción disponible para este video.'}</p>`;
             return;
         }
@@ -774,9 +774,9 @@ const LiveApp = {
 
         if (session.status === 'EN VIVO') {
             const channel = session.platform_id || 'epistecnologia';
-            if (session.platform === 'vdo_ninja') player.innerHTML = `<iframe src="${session.viewer_url}" allow="autoplay; fullscreen; picture-in-picture"></iframe>`;
-            else if (session.platform === 'youtube') player.innerHTML = `<iframe src="https://www.youtube.com/embed/${channel}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
-            else if (session.platform === 'twitch') player.innerHTML = `<iframe src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=true" allowfullscreen allow="picture-in-picture"></iframe>`;
+            if (session.platform === 'vdo_ninja') player.innerHTML = `<iframe credentialless="true" src="${session.viewer_url}" allow="autoplay; fullscreen; picture-in-picture"></iframe>`;
+            else if (session.platform === 'youtube') player.innerHTML = `<iframe credentialless="true" src="https://www.youtube.com/embed/${channel}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
+            else if (session.platform === 'twitch') player.innerHTML = `<iframe credentialless="true" src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=true" allowfullscreen allow="picture-in-picture"></iframe>`;
         } else {
             const thumbnailUrl = session.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg';
             player.innerHTML = `<img src="${thumbnailUrl}" style="width:100%; height:100%; object-fit:cover;">`;
@@ -788,10 +788,10 @@ const LiveApp = {
             chat.innerHTML = `${chatTitle}<p>El chat para este evento está disponible directamente en Substack.</p>`;
         } else if (session.platform === 'youtube' && session.status === 'EN VIVO') {
             chat.style.cssText = 'display: grid; grid-template-rows: auto 1fr; gap: 1rem;';
-            chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}"></iframe></div>`;
+            chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe credentialless="true" src="https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}"></iframe></div>`;
         } else if (session.platform === 'twitch' && session.status === 'EN VIVO') {
             chat.style.cssText = 'display: grid; grid-template-rows: auto 1fr; gap: 1rem;';
-            chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.twitch.tv/embed/${session.platform_id}/chat?parent=${window.location.hostname}&darkpopout"></iframe></div>`;
+            chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe credentialless="true" src="https://www.twitch.tv/embed/${session.platform_id}/chat?parent=${window.location.hostname}&darkpopout"></iframe></div>`;
         } else {
             chat.innerHTML = `${chatTitle}<p>El chat solo está disponible durante la transmisión en vivo.</p>`;
         }
