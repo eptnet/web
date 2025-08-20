@@ -5,7 +5,8 @@ import { corsHeaders } from '../_shared/cors.ts'
 
 serve(async (req) => {
   const url = new URL(req.url)
-  const imageUrl = url.searchParams.get('url') // Obtenemos la URL de la imagen del parámetro
+  // Obtenemos la URL de la imagen del parámetro de la consulta
+  const imageUrl = url.searchParams.get('url')
 
   if (!imageUrl) {
     return new Response(JSON.stringify({ error: 'Falta el parámetro URL de la imagen.' }), {
@@ -22,12 +23,12 @@ serve(async (req) => {
       throw new Error(`No se pudo obtener la imagen. Estado: ${imageResponse.status}`)
     }
 
-    // Clonamos las cabeceras originales de la imagen (como el Content-Type)
+    // Clonamos las cabeceras originales de la imagen (como el tipo de contenido)
     const headers = new Headers(imageResponse.headers)
     
     // Añadimos nuestras cabeceras CORS y la cabecera de política de recursos
     Object.entries(corsHeaders).forEach(([key, value]) => headers.set(key, value))
-    headers.set('Cross-Origin-Resource-Policy', 'cross-origin') // ¡La cabecera mágica!
+    headers.set('Cross-Origin-Resource-Policy', 'cross-origin') // La cabecera clave
 
     // Devolvemos el cuerpo de la imagen (los datos binarios) con las nuevas cabeceras
     return new Response(imageResponse.body, { headers, status: 200 })
