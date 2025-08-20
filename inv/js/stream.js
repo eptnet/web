@@ -2,7 +2,7 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- CONFIGURACIÓN ---
-    const SIGNATURE_ENDPOINT = 'https://ivsboilwottnuyanvjvv.supabase.co/functions/v1/zoom-signature'; 
+    const SIGNATURE_ENDPOINT = 'https://seyknzlheaxmwztkfxmk.supabase.co/functions/v1/zoom-signature'; 
     const SESSION_NAME = 'eptstream-production-room'; 
     const USER_NAME = 'Productor-' + Math.floor(Math.random() * 1000);
     const SESSION_PASSWORD = '';
