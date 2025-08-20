@@ -1,4 +1,4 @@
-// inv/js/stream.js - VERSIÓN ESTABLE FINAL
+// inv/js/stream.js - VERSIÓN DEFINITIVA CON AJUSTE DE TIMING
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -47,8 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function joinSession() {
         joinButton.disabled = true;
-        statusDiv.textContent = 'Estado: Obteniendo firma del servidor...';
-
+        statusDiv.textContent = 'Estado: Obteniendo firma...';
         try {
             const response = await fetch(SIGNATURE_ENDPOINT, {
                 method: 'POST',
@@ -59,15 +58,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 }),
             });
             if (!response.ok) {
-                throw new Error(`El servidor de firmas respondió con el estado: ${response.status}`);
+                throw new Error(`Servidor de firmas respondió con: ${response.status}`);
             }
             const { signature } = await response.json();
             if (!signature) {
-                 throw new Error('La respuesta del servidor no incluyó una firma.');
+                 throw new Error('Servidor no incluyó una firma.');
             }
-            statusDiv.textContent = 'Estado: Firma obtenida. Uniéndose a la sesión...';
+            statusDiv.textContent = 'Estado: Uniéndose a la sesión...';
             await client.join(SESSION_NAME, signature, USER_NAME, SESSION_PASSWORD);
-            
         } catch (error) {
             console.error('Error al unirse a la sesión:', error);
             statusDiv.textContent = 'Error: No se pudo unir a la sesión.';
@@ -87,11 +85,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStream.getTracks().forEach(track => track.stop());
             }
 
-            stream = client.getMediaStream();
-            await stream.startVideo(); 
-            const userVideo = await stream.attachVideo(client.getCurrentUserInfo().userId, 3);
-            videoMainContainer.innerHTML = '';
-            videoMainContainer.appendChild(userVideo);
+            // --- INICIO DE LA CORRECCIÓN PARA LA PANTALLA NEGRA ---
+            setTimeout(async () => {
+                try {
+                    stream = client.getMediaStream();
+                    await stream.startVideo(); 
+                    const userVideo = await stream.attachVideo(client.getCurrentUserInfo().userId, 3);
+                    videoMainContainer.innerHTML = ''; 
+                    videoMainContainer.appendChild(userVideo);
+                } catch (error) {
+                    console.error('Error al renderizar el video:', error);
+                }
+            }, 150); // Un pequeño retraso para asegurar que el DOM esté listo
+            // --- FIN DE LA CORRECCIÓN ---
 
         } else if (payload.state === 'Fail') {
             console.error('Fallo en la conexión (payload):', payload);
