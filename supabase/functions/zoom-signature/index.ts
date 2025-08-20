@@ -1,9 +1,23 @@
 // supabase/functions/zoom-signature/index.ts
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-// CORRECCIÓN 1: Se usa la URL de importación correcta y completa.
 import { create } from "https://deno.land/x/djwt@v2.9.1/mod.ts";
 import { corsHeaders } from '../_shared/cors.ts'
+
+// --- INICIO DE LA CORRECCIÓN ---
+// Función para preparar la clave secreta al formato correcto (CryptoKey)
+async function prepareSecretKey(secret: string): Promise<CryptoKey> {
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(secret);
+  return await crypto.subtle.importKey(
+    "raw",
+    keyData,
+    { name: "HMAC", hash: "SHA-256" },
+    true,
+    ["sign", "verify"]
+  );
+}
+// --- FIN DE LA CORRECCIÓN ---
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -17,7 +31,6 @@ serve(async (req) => {
       throw new Error('sessionName y role son requeridos.')
     }
 
-    // CORRECCIÓN 2: Usamos los nombres de tus variables de entorno.
     const sdkKey = Deno.env.get('ZOOM_SDK_KEY')
     const sdkSecret = Deno.env.get('ZOOM_SDK_SECRET')
 
@@ -25,7 +38,11 @@ serve(async (req) => {
       throw new Error('Las credenciales del SDK de Zoom no están configuradas en las variables de entorno.')
     }
 
-    // CORRECCIÓN 1 (continuación): Usamos la función 'create' importada.
+    // --- APLICACIÓN DE LA CORRECCIÓN ---
+    // 1. Preparamos la clave secreta antes de usarla
+    const preparedKey = await prepareSecretKey(sdkSecret);
+
+    // 2. Usamos la clave ya formateada para crear la firma
     const signature = await create(
       { alg: 'HS256', typ: 'JWT' },
       {
@@ -37,7 +54,7 @@ serve(async (req) => {
         exp: Math.floor(Date.now() / 1000) + 7200,
         tokenExp: Math.floor(Date.now() / 1000) + 7200,
       },
-      sdkSecret
+      preparedKey // Se pasa la clave en el formato correcto
     )
 
     return new Response(
