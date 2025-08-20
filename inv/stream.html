@@ -5,48 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EPTstream - Estudio de Producción</title>
     <link rel="stylesheet" href="css/stream.css">
-    </head>
+</head>
 <body>
-
     <h1>EPTstream Studio</h1>
 
     <div id="lobby">
         <h2>Sala de Espera</h2>
-        <p>Configura tu cámara y audio antes de unirte a la producción.</p>
-        
         <div class="video-container">
             <video id="video-preview" autoplay playsinline muted></video>
         </div>
-
         <div class="controls">
             <label for="camera-select">Seleccionar Cámara:</label>
             <select id="camera-select"></select>
-            <button id="join-button">Unirse a la Producción</button>
+            <button id="join-button" disabled>Unirse a la Producción</button>
         </div>
         <div id="status">Estado: Preparando...</div>
     </div>
 
     <div id="production-room" style="display: none;">
         <h2>Sala de Producción</h2>
-        <video-player-container id="video-main-container" class="video-container">
+        <video-player-container id="video-main-container">
             </video-player-container>
-        <p id="production-status">¡Estás en vivo!</p>
-
-        <div class="controls-produccion">
-            <button id="start-video-btn">Iniciar Video</button>
-            <button id="stop-video-btn">Detener Video</button>
-            <button id="start-audio-btn">Iniciar Audio</button>
-            <button id="stop-audio-btn">Detener Audio</button>
-        </div>
-
-        <div id="guest-link-container" style="margin-top: 20px;">
-            <p><strong>Enlace para Invitado:</strong></p>
-            <input type="text" id="guest-link" readonly style="width: 80%; padding: 8px;">
-        </div>
+        <p>¡Estás en vivo!</p>
     </div>
 
     <script src="https://source.zoom.us/videosdk/zoom-video-2.2.5.min.js"></script>
     <script src="js/stream.js"></script>
-
 </body>
 </html>
