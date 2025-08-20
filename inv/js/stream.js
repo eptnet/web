@@ -1,4 +1,4 @@
-// inv/js/stream.js - VERSIÓN DE DIAGNÓSTICO PROFUNDO
+// inv/js/stream.js - VERSIÓN CON INICIALIZACIÓN DE STREAM CORREGIDA
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -17,26 +17,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const ZoomVideo = window.WebVideoSDK.default; 
     const client = ZoomVideo.createClient();
-    let stream;
-    let localStream;
+    let stream; // La declaramos aquí para que sea accesible en todas las funciones
 
     async function setupLobby() {
         statusDiv.textContent = 'Estado: Inicializando SDK...';
         await client.init('en-US', 'Global', { patchJsMedia: true });
+        
+        // --- INICIO DE LA CORRECCIÓN ---
+        // Obtenemos el objeto 'stream' inmediatamente después de 'init'.
+        // Esto le da al SDK acceso temprano a los dispositivos de medios.
+        stream = client.getMediaStream();
+        // --- FIN DE LA CORRECCIÓN ---
+
         statusDiv.textContent = 'Estado: SDK Inicializado. Pidiendo permisos...';
         try {
-            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            videoPreview.srcObject = localStream;
-            videoPreview.play();
+            // Usamos el 'stream' del SDK para la vista previa, en lugar de 'navigator'
+            await stream.startVideo({ videoElement: videoPreview });
+            
             statusDiv.textContent = 'Estado: Permisos concedidos. ¡Listo para unirte!';
-            const mediaStream = client.getMediaStream();
-            const cameras = mediaStream.getCameraList();
+            
+            const cameras = stream.getCameraList();
             cameras.forEach(camera => {
                 const option = document.createElement('option');
                 option.value = camera.deviceId;
                 option.textContent = camera.label;
                 cameraSelect.appendChild(option);
             });
+
             joinButton.disabled = false;
         } catch (error) {
             console.error('Error en setupLobby:', error);
@@ -48,6 +55,10 @@ document.addEventListener('DOMContentLoaded', () => {
     async function joinSession() {
         joinButton.disabled = true;
         statusDiv.textContent = 'Estado: Obteniendo firma...';
+
+        // Detenemos el video del lobby ANTES de unirnos para liberar la cámara
+        await stream.stopVideo();
+
         try {
             const response = await fetch(SIGNATURE_ENDPOINT, {
                 method: 'POST',
@@ -57,79 +68,44 @@ document.addEventListener('DOMContentLoaded', () => {
                     role_type: 1 
                 }),
             });
-            if (!response.ok) {
-                throw new Error(`Servidor de firmas respondió con: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`Servidor respondió con: ${response.status}`);
             const { signature } = await response.json();
-            if (!signature) {
-                 throw new Error('Servidor no incluyó una firma.');
-            }
+            if (!signature) throw new Error('Servidor no incluyó una firma.');
+            
             statusDiv.textContent = 'Estado: Uniéndose a la sesión...';
             await client.join(SESSION_NAME, signature, USER_NAME, SESSION_PASSWORD);
+            
         } catch (error) {
             console.error('Error al unirse a la sesión:', error);
             statusDiv.textContent = 'Error: No se pudo unir a la sesión.';
             joinButton.disabled = false;
+            // Si falla, intentamos reiniciar la vista previa del lobby
+            await stream.startVideo({ videoElement: videoPreview });
         }
     }
 
     client.on('connection-change', async (payload) => {
-        console.log('Cambio de conexión:', payload);
         if (payload.state === 'Connected') {
             statusDiv.textContent = 'Estado: ¡Conectado!';
             
             lobbyView.style.display = 'none';
             productionView.style.display = 'block';
 
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-            }
-
-            // --- INICIO DEL CHEQUEO MÉDICO ---
-            setTimeout(async () => {
-                try {
-                    console.log('--- CHEQUEO MÉDICO DEL SDK ---');
-                    stream = client.getMediaStream();
-                    
-                    console.log('1. Lista de cámaras disponibles para el SDK:', stream.getCameraList());
-                    console.log('2. Cámara que el SDK cree que está usando AHORA MISMO:', stream.getActiveCamera());
-                    
-                    const currentUser = client.getCurrentUserInfo();
-                    console.log('3. Información del usuario actual:', currentUser);
-                    
-                    if (!currentUser) {
-                        console.error("Error crítico: No se pudo obtener la información del usuario actual.");
-                        return;
-                    }
-                    
-                    console.log('4. Intentando iniciar el video...');
-                    await stream.startVideo();
-                    console.log('5. Video iniciado. Intentando adjuntar al DOM...');
-                    
-                    const userVideoElement = await stream.attachVideo(currentUser.userId, 3);
-                    console.log('6. Elemento de video recibido de attachVideo:', userVideoElement);
-                    
-                    const container = document.getElementById('video-main-container');
-                    console.log('7. Contenedor donde se insertará el video:', container);
-                    
-                    if (container && userVideoElement) {
-                        container.innerHTML = '';
-                        container.appendChild(userVideoElement);
-                        console.log('8. ¡Chequeo completado! El elemento de video fue añadido al contenedor.');
-                    } else {
-                        console.error('Error: El contenedor o el elemento de video no existen.');
-                    }
-                    console.log('--- FIN DEL CHEQUEO ---');
-                } catch (error) {
-                    console.error('ERROR DURANTE EL CHEQUEO MÉDICO:', error);
+            // Ya que el 'stream' es el mismo, solo necesitamos renderizarlo de nuevo
+            // en el nuevo contenedor. startVideo ya fue llamado en el lobby.
+            const currentUser = client.getCurrentUserInfo();
+            if (currentUser) {
+                await stream.renderVideo(videoMainContainer, currentUser.userId, 1920, 1080, 0, 0, 3);
+            } else {
+                 // Como fallback, si getCurrentUserInfo falla, intentamos con el primer usuario
+                const participants = client.getAllUser();
+                if (participants.length > 0) {
+                   await stream.renderVideo(videoMainContainer, participants[0].userId, 1920, 1080, 0, 0, 3);
                 }
-            }, 150);
-            // --- FIN DEL CHEQUEO MÉDICO ---
-
+            }
         } else if (payload.state === 'Fail') {
-            console.error('Fallo en la conexión (payload):', payload);
-            statusDiv.textContent = `Error: Fallo en la conexión. Razón: ${payload.reason || 'Desconocida'}`;
-            joinButton.disabled = false;
+            console.error('Fallo en la conexión:', payload);
+            statusDiv.textContent = `Error: ${payload.reason || 'Desconocido'}`;
         }
     });
 
