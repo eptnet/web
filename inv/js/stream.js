@@ -86,17 +86,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // --- INICIO DE LA CORRECCIÓN PARA LA PANTALLA NEGRA ---
+            // Le damos al navegador 150 milisegundos para procesar el cambio de vista
+            // antes de intentar renderizar el video.
             setTimeout(async () => {
                 try {
                     stream = client.getMediaStream();
                     await stream.startVideo(); 
                     const userVideo = await stream.attachVideo(client.getCurrentUserInfo().userId, 3);
-                    videoMainContainer.innerHTML = ''; 
-                    videoMainContainer.appendChild(userVideo);
+                    
+                    videoMainContainer.innerHTML = ''; // Limpiamos el contenedor
+                    videoMainContainer.appendChild(userVideo); // Añadimos el video
                 } catch (error) {
                     console.error('Error al renderizar el video:', error);
+                    // Opcional: Mostrar un error en la UI si el renderizado falla
+                    // videoMainContainer.innerHTML = '<p style="color:red;">Error al mostrar el video.</p>';
                 }
-            }, 150); // Un pequeño retraso para asegurar que el DOM esté listo
+            }, 150);
             // --- FIN DE LA CORRECCIÓN ---
 
         } else if (payload.state === 'Fail') {
