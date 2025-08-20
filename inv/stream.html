@@ -2,15 +2,39 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>EPTstream - Conexión Definitiva</title>
-    <link rel="stylesheet" href="/inv/css/stream.css">
-    <script src="https://source.zoom.us/videosdk/zoom-video-1.10.8.min.js"></script>
-</head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EPTstream - Estudio de Producción</title>
+    <link rel="stylesheet" href="css/stream.css">
+    </head>
 <body>
-    <h1>Prueba de Conexión de EPTstream</h1>
-    <p>Estado: <span id="status">Iniciando...</span></p>
-    <div id="video-container">
+
+    <h1>EPTstream Studio</h1>
+
+    <div id="lobby">
+        <h2>Sala de Espera</h2>
+        <p>Configura tu cámara y audio antes de unirte a la producción.</p>
+        
+        <div class="video-container">
+            <video id="video-preview" autoplay playsinline muted></video>
         </div>
-    <script type="module" src="/inv/js/stream.js"></script>
+
+        <div class="controls">
+            <label for="camera-select">Seleccionar Cámara:</label>
+            <select id="camera-select"></select>
+            <button id="join-button">Unirse a la Producción</button>
+        </div>
+        <div id="status">Estado: Preparando...</div>
+    </div>
+
+    <div id="production-room" style="display: none;">
+        <h2>Sala de Producción</h2>
+        <div id="video-main-container" class="video-container">
+            </div>
+        <p>¡Estás en vivo!</p>
+    </div>
+
+    <script src="https://source.zoom.us/videosdk/zoom-video-2.2.5.min.js"></script>
+    <script src="js/stream.js"></script>
+
 </body>
 </html>

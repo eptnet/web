@@ -1,19 +1,86 @@
 body {
+    font-family: Arial, sans-serif;
     background-color: #f0f2f5;
-    color: #1c1e21;
-    font-family: sans-serif;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0;
     padding: 20px;
 }
-#video-container {
-    margin-top: 20px;
-    width: 640px;
-    height: 360px;
-    background-color: #000;
-    border: 2px solid #ccc;
-    border-radius: 8px;
+
+h1, h2 {
+    color: #0e71eb;
 }
-video-player {
+
+#lobby, #production-room {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 800px;
+    text-align: center;
+}
+
+.video-container {
+    background-color: #000;
+    margin: 20px auto;
+    width: 100%;
+    max-width: 640px;
+    aspect-ratio: 16 / 9;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+}
+
+/* El elemento <video-player> que creará el SDK */
+video-player-container {
     width: 100%;
     height: 100%;
-    display: block;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* El video de la vista previa del lobby */
+#video-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+#camera-select {
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    min-width: 250px;
+}
+
+#join-button {
+    background-color: #0e71eb;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#join-button:hover {
+    background-color: #0d65d1;
+}
+
+#status {
+    margin-top: 20px;
+    font-weight: bold;
 }
