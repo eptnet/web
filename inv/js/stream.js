@@ -1,11 +1,9 @@
 // inv/js/stream.js - VERSIÓN FINAL Y DEFINITIVA
 
 document.addEventListener('DOMContentLoaded', () => {
-
     const SIGNATURE_ENDPOINT = 'https://seyknzlheaxmwztkfxmk.supabase.co/functions/v1/zoom-signature'; 
     const SESSION_NAME = 'eptstream-production-room'; 
-    
-    // Elementos del DOM
+
     const lobbyView = document.getElementById('lobby');
     const productionView = document.getElementById('production-room');
     const joinButton = document.getElementById('join-button');
@@ -20,16 +18,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let localPreviewStream;
     let selectedCameraId = '';
 
-    // --- FASE 1: LOBBY (COMPLETAMENTE RESTAURADO) ---
     async function setupLobby() {
         statusDiv.textContent = 'Estado: Pidiendo permisos...';
         try {
             localPreviewStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             videoPreview.srcObject = localPreviewStream;
-
             const devices = await navigator.mediaDevices.enumerateDevices();
             const videoDevices = devices.filter(device => device.kind === 'videoinput');
-            
             cameraSelect.innerHTML = '';
             videoDevices.forEach(device => {
                 const option = document.createElement('option');
@@ -37,11 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 option.textContent = device.label || `Cámara ${cameraSelect.length + 1}`;
                 cameraSelect.appendChild(option);
             });
-            
             selectedCameraId = cameraSelect.value;
             statusDiv.textContent = 'Estado: ¡Listo para unirte!';
             joinButton.disabled = false;
-
         } catch (error) {
             console.error('Error en el lobby:', error);
             statusDiv.textContent = 'Error: No se pudo acceder a la cámara.';
@@ -55,74 +48,74 @@ document.addEventListener('DOMContentLoaded', () => {
         videoPreview.srcObject = localPreviewStream;
     });
 
-    // --- FASE 2: CONEXIÓN ---
     async function joinSession() {
         joinButton.disabled = true;
         statusDiv.textContent = 'Estado: Inicializando SDK...';
-        
         await client.init('en-US', 'Global');
-        
         localPreviewStream.getTracks().forEach(track => track.stop());
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const isGuest = urlParams.get('role') === 'guest';
-        const userName = isGuest ? 'Invitado-' + Math.floor(Math.random() * 1000) : 'Productor';
+        const isGuest = new URLSearchParams(window.location.search).get('role') === 'guest';
+        const userName = isGuest ? `Invitado-${Math.floor(Math.random() * 1000)}` : 'Productor';
         const role_type = isGuest ? 0 : 1;
 
-        statusDiv.textContent = 'Estado: Obteniendo firma...';
         try {
+            statusDiv.textContent = 'Estado: Obteniendo firma...';
             const response = await fetch(SIGNATURE_ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionName: SESSION_NAME, role_type: role_type }),
+                body: JSON.stringify({ sessionName: SESSION_NAME, role_type }),
             });
             if (!response.ok) throw new Error(`Servidor respondió con: ${response.status}`);
             const { signature } = await response.json();
             
+            statusDiv.textContent = 'Estado: Uniéndose a la sesión...';
             await client.join(SESSION_NAME, signature, userName);
+            
+            // --- INICIO DE LA CORRECCIÓN DEFINITIVA ---
+            // Movemos el inicio de medios aquí, DESPUÉS de que 'join' se complete.
+            stream = client.getMediaStream();
+            await stream.startAudio();
+            await stream.startVideo({ cameraId: selectedCameraId });
+            // --- FIN DE LA CORRECCIÓN DEFINITIVA ---
+
         } catch (error) {
-            console.error('Error al unirse:', error);
+            console.error('Error al unirse a la sesión:', error);
             statusDiv.textContent = 'Error: No se pudo unir a la sesión.';
         }
     }
 
-    // --- FASE 3: DENTRO DE LA SESIÓN ---
-    client.on('connection-change', async (payload) => {
+    client.on('connection-change', (payload) => {
         if (payload.state === 'Connected') {
             lobbyView.style.display = 'none';
             productionView.style.display = 'block';
-            stream = client.getMediaStream();
-            
-            // Iniciaremos el audio primero, ya que sabemos que funciona.
-            try {
-                await stream.startAudio();
-            } catch (error) {
-                console.error("Error al iniciar el audio", error);
-            }
-            // Ahora que estamos conectados y con audio, iniciamos el video.
-            try {
-                await stream.startVideo({ cameraId: selectedCameraId });
-            } catch (error) {
-                console.error("Error al iniciar el video", error);
-            }
         }
     });
 
-    // --- EL NUEVO RENDERIZADOR DE VIDEO ---
     client.on('peer-video-state-change', async (payload) => {
         const { action, userId } = payload;
         if (action === 'Start') {
-            // Si el video de un usuario (incluido el nuestro) comienza, lo renderizamos.
+            const videoTile = document.createElement('div');
+            videoTile.className = 'video-tile';
+            videoTile.id = `video-tile-${userId}`;
+            videoMainContainer.appendChild(videoTile);
+            
             const videoElement = await stream.attachVideo(userId, 3);
-            videoMainContainer.innerHTML = ''; // Reemplaza el video anterior
-            videoMainContainer.appendChild(videoElement);
+            videoTile.appendChild(videoElement);
         } else if (action === 'Stop') {
-            // Si el video de un usuario se detiene, lo quitamos.
+            const videoTile = document.getElementById(`video-tile-${userId}`);
+            if(videoTile) videoTile.remove();
             await stream.detachVideo(userId);
         }
     });
+    
+    // Añadimos un listener para cuando un usuario abandona la sesión
+    client.on('user-removed', (payload) => {
+        payload.forEach(user => {
+            const videoTile = document.getElementById(`video-tile-${user.userId}`);
+            if(videoTile) videoTile.remove();
+        });
+    });
 
-    // --- INICIO DE LA APLICACIÓN ---
     setupLobby();
     joinButton.addEventListener('click', joinSession);
 });
