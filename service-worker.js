@@ -1,10 +1,10 @@
-// service-worker.js (Version with Substack Domain)
+// service-worker.js (Versión Definitiva y Global)
 
-console.log('Service Worker: Archivo cargado.');
+console.log('Service Worker: Archivo cargado (v2 - Global)');
 
-const EXTERNAL_IMAGE_HOSTS = [
+const EXTERNAL_HOSTS_TO_PROXY = [
   'i.ibb.co',
-  'substack-cdn.com', // <-- This was missing
+  'substackcdn.com',
   'substack-post-media.s3.amazonaws.com',
   'placehold.co',
   'googleusercontent.com',
@@ -16,18 +16,20 @@ const PROXY_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co/functions/v1/image-p
 self.addEventListener('fetch', (event) => {
   const requestUrl = new URL(event.request.url);
 
-  const isExternalImage = event.request.destination === 'image' && EXTERNAL_IMAGE_HOSTS.some(host => requestUrl.hostname.endsWith(host));
+  // --- LA NUEVA REGLA, MÁS SIMPLE Y EFECTIVA ---
+  // Verificamos únicamente si el dominio de la petición está en nuestra lista.
+  const needsProxy = EXTERNAL_HOSTS_TO_PROXY.some(host => requestUrl.hostname.endsWith(host));
 
-  if (isExternalImage) {
-    console.log(`[Service Worker] INTERCEPTADO: ${requestUrl.href}`);
+  if (needsProxy) {
+    // Si necesita el proxy, hacemos el mismo reenvío que antes.
+    console.log(`[SW] Interceptado: ${requestUrl.href}`);
     
     const proxyRequestUrl = new URL(PROXY_URL);
     proxyRequestUrl.searchParams.set('url', requestUrl.href);
     
-    console.log(`[Service Worker] REENVIANDO A: ${proxyRequestUrl.href}`);
+    console.log(`[SW] Reenviando a: ${proxyRequestUrl.href}`);
 
-    event.respondWith(fetch(proxyRequestUrl, {
-      headers: event.request.headers
-    }));
+    event.respondWith(fetch(proxyRequestUrl));
   }
+  // Si no está en la lista, la petición continúa normalmente.
 });
