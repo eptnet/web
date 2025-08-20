@@ -45,7 +45,7 @@ document.addEventListener('mainReady', () => {
                             </div>`,
         stories: `<div class="bento-box bento-box--1x3 mobile-full-width" data-id="static-launch-stories" style="background-image: url('https://i.ibb.co/9kDJPK5K/Whisk-7b4dfc4406.jpg'); cursor: pointer; background-size: cover; background-position: center;"><div class="card-content"><span class="card-category" style="color: white;">Colección</span><h4 style="color: white;">Minuto cultural 📺</h4></div></div>`,
         quote: `<div class="bento-box bento-box--4x1 bento-style--flat mobile-full-width" data-id="static-quote" style="cursor:default;"><div class="card-content" style="text-align: center;"><p style="font-size: 1.2rem; font-style: italic;">"El conocimiento es la única riqueza que no se puede robar."</p><h4 style="margin-top: 0.5rem;">- Anónimo</h4></div></div>`,
-        videoFeatured: `<div class="bento-box bento-box--3x3 mobile-full-width video-featured-module" data-id="static-video-featured"><iframe src="https://www.youtube.com/embed/6PSKbO5yfDQ?rel=0&modestbranding=1&playsinline=1" title="Video destacado de YouTube" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`,
+        videoFeatured: `<div class="bento-box bento-box--3x3 mobile-full-width video-featured-module" data-id="static-video-featured"><iframe credentialless="true" src="https://www.youtube.com/embed/6PSKbO5yfDQ?rel=0&modestbranding=1&playsinline=1" title="Video destacado de YouTube" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`,
         
         // *** NUEVO MÓDULO DE PODCAST ***
         // DESPUÉS
@@ -102,7 +102,7 @@ document.addEventListener('mainReady', () => {
                         <h3>Nuestro cóntenido en tu email</h3
                         <p>Suscríbete a nuestro newsletter.</p>
                         <br/>
-                        <iframe src="https://eptnews.substack.com/embed" width="100%" height="100%" style="border:0;" frameborder="0" scrolling="no">
+                        <iframe credentialless="true" src="https://eptnews.substack.com/embed" width="100%" height="100%" style="border:0;" frameborder="0" scrolling="no">
                         </iframe>
                     </div>
                 </div>`,
