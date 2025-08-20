@@ -1,4 +1,4 @@
-// inv/js/stream.js - VERSIÓN DEFINITIVA CON AJUSTE DE TIMING
+// inv/js/stream.js - VERSIÓN DE DIAGNÓSTICO PROFUNDO
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -85,24 +85,46 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStream.getTracks().forEach(track => track.stop());
             }
 
-            // --- INICIO DE LA CORRECCIÓN PARA LA PANTALLA NEGRA ---
-            // Le damos al navegador 150 milisegundos para procesar el cambio de vista
-            // antes de intentar renderizar el video.
+            // --- INICIO DEL CHEQUEO MÉDICO ---
             setTimeout(async () => {
                 try {
+                    console.log('--- CHEQUEO MÉDICO DEL SDK ---');
                     stream = client.getMediaStream();
-                    await stream.startVideo(); 
-                    const userVideo = await stream.attachVideo(client.getCurrentUserInfo().userId, 3);
                     
-                    videoMainContainer.innerHTML = ''; // Limpiamos el contenedor
-                    videoMainContainer.appendChild(userVideo); // Añadimos el video
+                    console.log('1. Lista de cámaras disponibles para el SDK:', stream.getCameraList());
+                    console.log('2. Cámara que el SDK cree que está usando AHORA MISMO:', stream.getActiveCamera());
+                    
+                    const currentUser = client.getCurrentUserInfo();
+                    console.log('3. Información del usuario actual:', currentUser);
+                    
+                    if (!currentUser) {
+                        console.error("Error crítico: No se pudo obtener la información del usuario actual.");
+                        return;
+                    }
+                    
+                    console.log('4. Intentando iniciar el video...');
+                    await stream.startVideo();
+                    console.log('5. Video iniciado. Intentando adjuntar al DOM...');
+                    
+                    const userVideoElement = await stream.attachVideo(currentUser.userId, 3);
+                    console.log('6. Elemento de video recibido de attachVideo:', userVideoElement);
+                    
+                    const container = document.getElementById('video-main-container');
+                    console.log('7. Contenedor donde se insertará el video:', container);
+                    
+                    if (container && userVideoElement) {
+                        container.innerHTML = '';
+                        container.appendChild(userVideoElement);
+                        console.log('8. ¡Chequeo completado! El elemento de video fue añadido al contenedor.');
+                    } else {
+                        console.error('Error: El contenedor o el elemento de video no existen.');
+                    }
+                    console.log('--- FIN DEL CHEQUEO ---');
                 } catch (error) {
-                    console.error('Error al renderizar el video:', error);
-                    // Opcional: Mostrar un error en la UI si el renderizado falla
-                    // videoMainContainer.innerHTML = '<p style="color:red;">Error al mostrar el video.</p>';
+                    console.error('ERROR DURANTE EL CHEQUEO MÉDICO:', error);
                 }
             }, 150);
-            // --- FIN DE LA CORRECCIÓN ---
+            // --- FIN DEL CHEQUEO MÉDICO ---
 
         } else if (payload.state === 'Fail') {
             console.error('Fallo en la conexión (payload):', payload);
