@@ -32,7 +32,7 @@
                     <button class="control-btn" id="mic-toggle" title="Silenciar / Activar Micrófono"><i class="fa-solid fa-microphone"></i><span>Mic</span></button>
                     <button class="control-btn" id="video-toggle" title="Detener / Iniciar Video"><i class="fa-solid fa-video"></i><span>Video</span></button>
                     <button class="control-btn" id="settings-toggle" title="Configuración"><i class="fa-solid fa-cog"></i><span>Ajustes</span></button>
-                    <button class="control-btn go-live-btn" id="go-live-button"><i class="fa-solid fa-satellite-dish"></i></i><span>GO LIVE</span></button>
+                    <button class="control-btn go-live-btn" id="go-live-button"><i class="fa-solid fa-satellite-dish"></i><span>GO LIVE</span></button>
                 </footer>
             </main>
 
@@ -41,21 +41,7 @@
                 <div id="green-room-panel" class="bento-box">
                     <h4><i class="fa-solid fa-users"></i> Participantes</h4>
                     <video-player-container id="participants-grid">
-                        <div class="participant-card">
-                            <div class="video-thumbnail"></div>
-                            <span class="participant-name-thumb">Anfitrión</span>
-                            <div class="participant-controls">
-                                <i class="fa-solid fa-microphone-slash muted"></i>
-                            </div>
-                        </div>
-                        <div class="participant-card">
-                            <div class="video-thumbnail"></div>
-                            <span class="participant-name-thumb">Invitado 1</span>
-                             <div class="participant-controls">
-                                <i class="fa-solid fa-microphone"></i>
-                            </div>
-                        </div>
-                    </video-player-container>
+                        </video-player-container>
                 </div>
 
                 <div id="scenes-panel" class="bento-box">
@@ -73,6 +59,7 @@
 
         </div>
     </div>
+    
     <script src="https://source.zoom.us/videosdk/zoom-video-2.2.5.min.js"></script>
     <script src="js/stream.js"></script>
 </body>
