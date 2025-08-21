@@ -1,4 +1,4 @@
-// inv/js/stream.js - VERSIÓN DEFINITIVA Y ESTABLE
+// inv/js/stream.js - VERSIÓN CON LÓGICA DE GREEN ROOM
 
 document.addEventListener('DOMContentLoaded', () => {
     const SIGNATURE_ENDPOINT = 'https://seyknzlheaxmwztkfxmk.supabase.co/functions/v1/zoom-signature'; 
@@ -19,18 +19,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let localPreviewStream;
     let selectedCameraId = '';
     let selectedMicId = '';
-    let selfId; // Guardaremos nuestro propio ID aquí
+    let selfId; 
 
-    // --- LOBBY (COMPLETO Y FUNCIONAL) ---
+    // --- LOBBY (Sin cambios) ---
     async function setupLobby() {
         try {
             localPreviewStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             videoPreview.srcObject = localPreviewStream;
-
             const devices = await navigator.mediaDevices.enumerateDevices();
             populateSelect(cameraSelect, devices.filter(d => d.kind === 'videoinput'));
             populateSelect(micSelect, devices.filter(d => d.kind === 'audioinput'));
-            
             selectedCameraId = cameraSelect.value;
             selectedMicId = micSelect.value;
             joinButton.disabled = false;
@@ -47,9 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function updateLobbyPreview() {
-        if (localPreviewStream) {
-            localPreviewStream.getTracks().forEach(track => track.stop());
-        }
+        if (localPreviewStream) localPreviewStream.getTracks().forEach(track => track.stop());
         localPreviewStream = await navigator.mediaDevices.getUserMedia({
             video: { deviceId: { exact: selectedCameraId } },
             audio: { deviceId: { exact: selectedMicId } }
@@ -57,17 +53,10 @@ document.addEventListener('DOMContentLoaded', () => {
         videoPreview.srcObject = localPreviewStream;
     }
 
-    cameraSelect.addEventListener('change', () => {
-        selectedCameraId = cameraSelect.value;
-        updateLobbyPreview();
-    });
+    cameraSelect.addEventListener('change', () => { selectedCameraId = cameraSelect.value; updateLobbyPreview(); });
+    micSelect.addEventListener('change', () => { selectedMicId = micSelect.value; updateLobbyPreview(); });
 
-    micSelect.addEventListener('change', () => {
-        selectedMicId = micSelect.value;
-        updateLobbyPreview();
-    });
-
-    // --- CONEXIÓN E INICIO DE MEDIOS (FLUJO CORRECTO) ---
+    // --- CONEXIÓN E INICIO DE MEDIOS ---
     async function joinSession() {
         joinButton.disabled = true;
         await client.init('en-US', 'Global', { enforceMultipleVideos: true });
@@ -82,15 +71,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const { signature } = await response.json();
             await client.join(SESSION_NAME, signature, userName);
             stream = client.getMediaStream();
-            
-            // Inicia audio y video con los dispositivos seleccionados
             await stream.startAudio({ audioId: selectedMicId });
             await stream.startVideo({ cameraId: selectedCameraId });
-
-            // --- INICIO DE LA SOLUCIÓN DEFINITIVA PARA VISTA PROPIA ---
             selfId = client.getCurrentUserInfo().userId;
-            createParticipantCard(selfId); // Creamos nuestra propia tarjeta en la Green Room
-            // --- FIN DE LA SOLUCIÓN ---
+            
+            // MODIFICACIÓN CLAVE: Creamos nuestra propia tarjeta en la Green Room
+            createParticipantCard(selfId); 
 
         } catch (error) { console.error('Error al unirse o iniciar medios:', error); }
     }
@@ -103,86 +89,67 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
+    // Esta función ahora solo se usará para el ESCENARIO PRINCIPAL
     async function renderParticipant(userId) {
         const existingTile = document.getElementById(`video-tile-${userId}`);
         if (existingTile) return;
-
         const videoTile = document.createElement('div');
         videoTile.className = 'video-tile';
         videoTile.id = `video-tile-${userId}`;
-        
         const nameTag = document.createElement('span');
         nameTag.className = 'participant-name';
         nameTag.textContent = client.getUser(userId).displayName;
-        
-        const videoElement = await stream.attachVideo(userId, 3);
-        
+        const videoElement = await stream.attachVideo(userId, 3); // Dejamos baja resolución por ahora
         videoTile.appendChild(videoElement);
         videoTile.appendChild(nameTag);
         videoContainer.appendChild(videoTile);
         updateLayout();
     }
-
+    
     // --- NUEVA FUNCIÓN PARA LA GREEN ROOM ---
     async function createParticipantCard(userId) {
-        // Evitamos duplicados si la tarjeta ya existe
         if (document.getElementById(`participant-card-${userId}`)) return;
-
         const user = client.getUser(userId);
-
-        // 1. Creamos el contenedor principal de la tarjeta
         const card = document.createElement('div');
         card.className = 'participant-card';
         card.id = `participant-card-${userId}`;
-
-        // 2. Creamos el área para la miniatura de video
         const videoThumb = document.createElement('div');
         videoThumb.className = 'video-thumbnail';
-        // Adjuntamos el video en BAJA resolución (calidad 3 = 360p), ideal para miniaturas
         const videoElement = await stream.attachVideo(userId, 3);
         videoThumb.appendChild(videoElement);
-        
-        // 3. Creamos la etiqueta con el nombre
         const nameTag = document.createElement('span');
         nameTag.className = 'participant-name-thumb';
         nameTag.textContent = user.displayName;
-
-        // 4. Creamos los controles (por ahora, solo el icono de micro)
         const controls = document.createElement('div');
         controls.className = 'participant-controls';
         const micIcon = document.createElement('i');
-        micIcon.className = 'fa-solid fa-microphone'; // Lo iniciaremos como "activo"
+        micIcon.className = 'fa-solid fa-microphone';
         micIcon.id = `mic-icon-${userId}`;
         controls.appendChild(micIcon);
-
-        // 5. Ensamblamos la tarjeta y la añadimos al grid
         card.appendChild(videoThumb);
         card.appendChild(nameTag);
         card.appendChild(controls);
         participantsGrid.appendChild(card);
     }
-    
-    // Este evento ahora solo se encarga de los INVITADOS
+
+    // MODIFICACIÓN CLAVE: Este evento ahora alimenta la Green Room
     client.on('peer-video-state-change', (payload) => {
         const { action, userId } = payload;
-        if (userId === selfId) return; // Ignoramos nuestro propio evento
-
+        if (userId === selfId) return;
         if (action === 'Start') {
             createParticipantCard(userId);
         } else if (action === 'Stop') {
-            const videoTile = document.getElementById(`video-tile-${userId}`);
-            if (videoTile) videoTile.remove();
-            updateLayout();
+            // En el futuro, podríamos querer mostrar un avatar aquí en lugar de eliminarlo
+            const card = document.getElementById(`participant-card-${userId}`);
+            // if (card) card.remove(); // Por ahora no lo eliminamos si solo apaga la cámara
         }
     });
 
+    // MODIFICACIÓN CLAVE: Aseguramos que se elimine tanto del escenario como de la Green Room
     client.on('user-removed', (payload) => {
         payload.forEach(u => {
-            // Eliminar del escenario (si estuviera)
             const videoTile = document.getElementById(`video-tile-${u.userId}`);
             if (videoTile) videoTile.remove();
-            
-            // Eliminar de la Green Room
             const participantCard = document.getElementById(`participant-card-${u.userId}`);
             if (participantCard) participantCard.remove();
         });

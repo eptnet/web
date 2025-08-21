@@ -37,6 +37,10 @@ button {
     border-radius: 8px;
 }
 
+video-player-container {
+    display: block; /* Asegura que se comporte como un div por defecto */
+}
+
 /* === ESTILOS DEL LOBBY (Ligeramente ajustados) === */
 #lobby {
     display: flex;
