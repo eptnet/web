@@ -1,10 +1,8 @@
-// inv/js/stream.js - VERSIÓN FINAL Y SIMPLIFICADA
+// inv/js/stream.js - VERSIÓN FINAL Y DEFINITIVA ("Liberar y Volver a Pedir")
 
 document.addEventListener('DOMContentLoaded', () => {
-
     const SIGNATURE_ENDPOINT = 'https://seyknzlheaxmwztkfxmk.supabase.co/functions/v1/zoom-signature'; 
     const SESSION_NAME = 'eptstream-production-room'; 
-    let userName = 'Productor-' + Math.floor(Math.random() * 1000);
 
     const lobbyView = document.getElementById('lobby');
     const productionView = document.getElementById('production-room');
@@ -44,82 +42,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function populateSelect(select, devices) {
-        devices.forEach(device => {
+        devices.forEach(d => {
             const option = document.createElement('option');
-            option.value = device.deviceId;
-            option.textContent = device.label || `${select.id.includes('camera') ? 'Cámara' : 'Micrófono'} ${select.length + 1}`;
+            option.value = d.deviceId;
+            option.textContent = d.label || `${select.id.includes('camera') ? 'Cámara' : 'Micrófono'} ${select.children.length + 1}`;
             select.appendChild(option);
         });
     }
-
-    // FASE 2: CONEXIÓN (Limpia y Directa)
-    async function joinSession() {
-        joinButton.disabled = true;
-        statusDiv.textContent = 'Estado: Inicializando SDK...';
-        await client.init('en-US', 'Global');
-        
-        // --- INICIO DE LA CORRECCIÓN CLAVE ---
-        // Añadimos el listener del detector de fallas ANTES de unirnos.
-        client.on('active-media-failed', (payload) => {
-            console.error('¡FALLA SILENCIOSA DE MEDIOS DETECTADA!', payload);
-            statusDiv.textContent = `Error de medios: ${payload.reason || payload.type}. Revisa la consola.`;
-        });
-        // --- FIN DE LA CORRECCIÓN CLAVE ---
-
-        const isGuest = new URLSearchParams(window.location.search).get('role') === 'guest';
-        const userName = isGuest ? `Invitado-${Math.floor(Math.random() * 1000)}` : 'Productor';
-        const role_type = isGuest ? 0 : 1;
-        
-        // ¡Importante! No detenemos el stream aquí, se lo pasaremos al SDK
-        
-        statusDiv.textContent = 'Estado: Obteniendo firma...';
-        try {
-            const response = await fetch(SIGNATURE_ENDPOINT, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionName: SESSION_NAME, role_type: 1 }),
-            });
-            const { signature } = await response.json();
-            await client.join(SESSION_NAME, signature, userName);
-        } catch (error) {
-            console.error('Error al unirse:', error);
-            statusDiv.textContent = 'Error: No se pudo unir a la sesión.';
-        }
-    }
-
-    // FASE 3: DENTRO DE LA SESIÓN (Lógica Centralizada)
-    client.on('connection-change', (payload) => {
-        if (payload.state === 'Connected') {
-            lobbyView.style.display = 'none';
-            productionView.style.display = 'block';
-            stream = client.getMediaStream();
-        }
-    });
     
-    client.on('user-added', async (payload) => {
-        const currentUser = payload.find(user => user.isSelf);
-        if (currentUser) {
-            // Este es el único lugar donde iniciamos y mostramos el video
-            try {
-                // Obtenemos las pistas de audio y video del stream del lobby
-                const audioTrack = localPreviewStream.getAudioTracks()[0];
-                const videoTrack = localPreviewStream.getVideoTracks()[0];
-                
-                // Le pasamos las pistas directamente al SDK para un relevo perfecto
-                await stream.startAudio({ mediaStreamTrack: audioTrack });
-                await stream.startVideo({ mediaStreamTrack: videoTrack });
-
-                // Y renderizamos el video inmediatamente
-                const videoElement = await stream.attachVideo(currentUser.userId, 3);
-                videoMainContainer.innerHTML = '';
-                videoMainContainer.appendChild(videoElement);
-            } catch (error) {
-                console.error("Error al iniciar y renderizar medios locales:", error);
-            }
-        }
-    });
-
-    // --- MANEJO DE CONTROLES (Sin cambios) ---
     cameraSelect.addEventListener('change', async () => {
         selectedCameraId = cameraSelect.value;
         const audioTrack = localPreviewStream.getAudioTracks()[0];
@@ -131,24 +61,92 @@ document.addEventListener('DOMContentLoaded', () => {
 
     micSelect.addEventListener('change', () => { selectedMicId = micSelect.value; });
 
+    // FASE 2: CONEXIÓN
+    async function joinSession() {
+        joinButton.disabled = true;
+        statusDiv.textContent = 'Estado: Inicializando SDK...';
+        await client.init('en-US', 'Global');
+        
+        // ¡PASO CLAVE! Detenemos y liberamos la cámara del lobby.
+        localPreviewStream.getTracks().forEach(track => track.stop());
+
+        const isGuest = new URLSearchParams(window.location.search).get('role') === 'guest';
+        const userName = isGuest ? `Invitado-${Math.floor(Math.random() * 1000)}` : 'Productor';
+        const role_type = isGuest ? 0 : 1;
+
+        try {
+            statusDiv.textContent = 'Estado: Obteniendo firma...';
+            const response = await fetch(SIGNATURE_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionName: SESSION_NAME, role_type }) });
+            const { signature } = await response.json();
+            await client.join(SESSION_NAME, signature, userName);
+        } catch (error) {
+            console.error('Error al unirse:', error);
+            statusDiv.textContent = 'Error: No se pudo unir.';
+        }
+    }
+
+    // FASE 3: DENTRO DE LA SESIÓN
+    client.on('connection-change', (payload) => {
+        if (payload.state === 'Connected') {
+            lobbyView.style.display = 'none';
+            productionView.style.display = 'block';
+            stream = client.getMediaStream();
+
+            // Una vez conectados, iniciamos los medios desde cero usando el SDK.
+            // Esta es la forma más segura.
+            startLocalMedia();
+        }
+    });
+
+    async function startLocalMedia() {
+        try {
+            // El SDK ahora pide la cámara y el micrófono que seleccionamos.
+            await stream.startAudio({ audioId: selectedMicId });
+            await stream.startVideo({ cameraId: selectedCameraId });
+        } catch (error) {
+            console.error("Error al iniciar medios locales:", error);
+        }
+    }
+    
+    client.on('peer-video-state-change', async (payload) => {
+        const { action, userId } = payload;
+        const existingTile = document.getElementById(`video-tile-${userId}`);
+
+        if (action === 'Start' && !existingTile) {
+            const videoTile = document.createElement('div');
+            videoTile.className = 'video-tile';
+            videoTile.id = `video-tile-${userId}`;
+            
+            const nameTag = document.createElement('span');
+            nameTag.className = 'participant-name';
+            nameTag.textContent = client.getUser(userId).displayName;
+            
+            videoMainContainer.appendChild(videoTile);
+            const videoElement = await stream.attachVideo(userId, 3);
+            videoTile.appendChild(videoElement);
+            videoTile.appendChild(nameTag); // Añadimos el nombre después
+        } else if (action === 'Stop' && existingTile) {
+            existingTile.remove();
+        }
+    });
+    
+    client.on('user-removed', (payload) => payload.forEach(u => document.getElementById(`video-tile-${u.userId}`)?.remove()));
+
     muteBtn.addEventListener('click', async () => {
         const icon = muteBtn.querySelector('i');
-        const text = muteBtn.querySelector('span');
         if (isMuted) {
             await stream.unmuteAudio();
             icon.className = 'fa-solid fa-microphone';
-            text.textContent = 'Silenciar';
-            muteBtn.classList.remove('is-muted');
+            muteBtn.title = 'Silenciar';
         } else {
             await stream.muteAudio();
             icon.className = 'fa-solid fa-microphone-slash';
-            text.textContent = 'Reactivar';
-            muteBtn.classList.add('is-muted');
+            muteBtn.title = 'Reactivar Audio';
         }
         isMuted = !isMuted;
+        muteBtn.classList.toggle('is-muted', isMuted);
     });
 
-    // --- INICIO ---
     setupLobby();
     joinButton.addEventListener('click', joinSession);
 });
