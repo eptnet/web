@@ -1,45 +1,297 @@
-body { font-family: sans-serif; text-align: center; padding-top: 20px; background-color: #f0f2f5;}
-h2 { color: #333; }
-#lobby, #production-room { max-width: 90vw; margin: auto; }
-video { width: 100%; max-width: 640px; aspect-ratio: 16 / 9; background: #000; border-radius: 8px; }
-.controls { display: flex; flex-direction: column; gap: 10px; margin: 20px auto; max-width: 400px; }
+/* === VARIABLES DE COLOR (Tu paleta) === */
+:root {
+    --color-background: #f0f2f5;
+    --color-surface: #ffffff;
+    --color-text-primary: #1c1e21;
+    --color-text-secondary: #65676b;
+    --color-accent: #b72a1e;
+    --color-accent-rgb: 183, 42, 30;
+    --color-border: #ddd;
+    --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --border-radius: 12px;
+    --gap: 20px;
+}
 
-#video-container {
-    display: grid; /* Usamos Grid para un control preciso */
-    grid-template-columns: repeat(2, 1fr); /* Dos columnas */
-    grid-template-rows: 1fr; /* Una fila */
-    gap: 10px;
-    margin-top: 20px;
-    width: 100%;
-    aspect-ratio: 16 / 9; /* El escenario completo tiene la proporción correcta */
-    background: #e0e0e0;
-    padding: 10px;
+/* Podríamos añadir el tema oscuro más adelante si lo deseas */
+
+/* === ESTILOS BASE === */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+    /* Preparamos el body para que production-room ocupe toda la pantalla */
+    height: 100vh;
+    overflow: hidden;
+}
+
+button {
+    cursor: pointer;
+    font-family: inherit;
+    border: none;
     border-radius: 8px;
 }
 
-.video-tile {
-    position: relative;
-    background-color: #000;
-    border-radius: 6px;
+/* === ESTILOS DEL LOBBY (Ligeramente ajustados) === */
+#lobby {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: var(--gap);
+}
+#lobby h2 { margin-bottom: 20px; }
+#lobby video { width: 100%; max-width: 480px; aspect-ratio: 16 / 9; background: #000; border-radius: var(--border-radius); box-shadow: var(--shadow-light); }
+#lobby .controls { display: flex; flex-direction: column; gap: 10px; margin: 20px auto; width: 100%; max-width: 400px; }
+#lobby select, #lobby button { padding: 12px; font-size: 1rem; border: 1px solid var(--color-border); border-radius: 8px; background-color: var(--color-surface); }
+#lobby #join-button { background-color: var(--color-accent); color: white; font-weight: bold; }
+#lobby #join-button:disabled { background-color: #ccc; }
+
+
+/* === ESTRUCTURA PRINCIPAL DE LA SALA DE PRODUCCIÓN === */
+#production-room {
+    width: 100%;
+    height: 100%;
+    background-color: var(--color-background);
+}
+
+.main-grid {
+    display: grid;
+    /* Layout: 3 partes para el escenario, 1 para el panel */
+    grid-template-columns: 3fr 1fr;
+    /* Layout: 1 fila principal, 1 fila para la barra de control */
+    grid-template-rows: 1fr auto;
+    gap: var(--gap);
+    height: 100%;
+    padding: var(--gap);
+}
+
+/* === 1. ESCENARIO (Columna Izquierda) === */
+#escenario {
+    grid-column: 1 / 2;
+    grid-row: 1 / 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     overflow: hidden;
+}
+
+#video-container {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background-color: #111; /* Un poco más oscuro para mejor contraste */
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-light);
+    
+    /* PREPARACIÓN PARA OVERLAYS:
+       'position: relative' permite que podamos añadir logos, banners, etc.,
+       con 'position: absolute' dentro de este lienzo. */
+    position: relative; 
+    
+    /* PREPARACIÓN PARA LAYOUTS (estilo Bento):
+       Usamos Grid para posicionar los videos de los participantes.
+       El 'gap' crea la separación que pediste. */
+    display: grid;
+    gap: 10px; /* Separación entre videos */
+    padding: 10px; /* Un pequeño margen interno */
+    overflow: hidden;
+}
+
+/* Contenedor de cada video individual en el escenario */
+.video-tile {
+    background-color: #000;
+    /* ESQUINAS CURVAS para cada video */
+    border-radius: 8px; 
+    overflow: hidden; /* Asegura que el video de adentro no se salga de las esquinas curvas */
     width: 100%;
     height: 100%;
 }
 
-.video-tile video-player { width: 100%; height: 100%; }
-
-.participant-name {
-    position: absolute;
-    bottom: 8px;
-    left: 8px;
-    background: rgba(0,0,0,0.5);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.9rem;
+/* El elemento de video/canvas del SDK irá aquí dentro */
+.video-tile video-player { /* O el selector que use el SDK de Zoom */
+    display: block;
+    width: 100%;
+    height: 100%;
 }
 
-/* Layouts dinámicos */
-#video-container.participant-1 .video-tile:first-child {
-    grid-column: 1 / 3; /* Un participante ocupa todo el espacio */
+/* PREPARACIÓN PARA MODOS DE VIDEO (cover vs contain):
+   Añadiremos estas clases con JS para controlar si el video
+   llena el espacio o mantiene su proporción original. */
+.video-tile.fit-cover video-player {
+    object-fit: cover; /* Estira el video para llenar el contenedor */
+}
+.video-tile.fit-contain video-player {
+    object-fit: contain; /* Mantiene la proporción, puede dejar barras negras */
+}
+
+
+/* === 2. PANEL DE CONTROL (Columna Derecha) === */
+#panel-control {
+    grid-column: 2 / 3;
+    grid-row: 1 / 2;
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+    overflow-y: auto; /* Para permitir scroll si hay muchos participantes */
+}
+
+/* Estilo reutilizable "Bento Box" */
+.bento-box {
+    background-color: var(--color-surface);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-light);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.bento-box h4 {
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+.bento-box h4 i { margin-right: 8px; }
+
+/* Bento Box 1: Participantes (Green Room) */
+#participants-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+}
+
+.participant-card {
+    position: relative;
+    cursor: pointer;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s ease-in-out;
+}
+.participant-card:hover { border-color: rgba(var(--color-accent-rgb), 0.5); }
+.participant-card.selected { border-color: var(--color-accent); }
+.participant-card .video-thumbnail {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background-color: #333;
+}
+.participant-card .participant-name-thumb {
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
+    font-size: 0.8rem;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+.participant-card .participant-controls {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    padding: 4px;
+    border-radius: 50%;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.participant-controls i.muted { color: #ff5252; }
+
+
+/* Bento Box 2: Escenas */
+#scene-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+    gap: 10px;
+}
+
+.scene-button {
+    aspect-ratio: 1 / 1;
+    background-color: var(--color-background);
+    border: 1px solid var(--color-border);
+    font-size: 1.2rem;
+    color: var(--color-text-secondary);
+    transition: all 0.2s ease;
+}
+.scene-button:hover { background-color: #e4e6e9; border-color: #ccc; }
+.scene-button.active { background-color: var(--color-accent); color: white; border-color: var(--color-accent); }
+
+
+/* === 3. BARRA DE CONTROL (Footer) === */
+#control-bar {
+    grid-column: 1 / -1; /* Ocupa todo el ancho */
+    grid-row: 2 / 3;
+    background-color: var(--color-surface);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-light);
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem; /* Reducimos un poco el espacio entre botones */
+}
+
+.control-btn {
+    background: none;
+    border: none;
+    color: var(--color-text-primary);
+    font-size: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 10px;
+    min-width: 70px; /* Un poco más compacto */
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+}
+.control-btn:hover { background-color: var(--color-background); }
+.control-btn i { 
+    font-size: 1.2rem; /* Reducimos el tamaño de 1.4rem a 1.2rem */
+}
+.control-btn.go-live-btn { background-color: var(--color-accent); color: white; font-weight: bold; }
+.control-btn.go-live-btn:hover { background-color: #a1251a; }
+
+
+/* === DISEÑO RESPONSIVO (para tablets y móviles) === */
+@media (max-width: 1024px) {
+    .main-grid {
+        /* Cambiamos a una sola columna, apilando todo verticalmente */
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr auto; /* Escenario, Panel, Controles */
+        overflow-y: auto;
+    }
+
+    #escenario { grid-row: 1 / 2; }
+    #panel-control { grid-row: 2 / 3; }
+    #control-bar { grid-row: 3 / 4; }
+
+    /* Hacemos el panel de control horizontal para ahorrar espacio */
+    #panel-control {
+        flex-direction: row;
+        gap: var(--gap);
+    }
+    .bento-box {
+        flex: 1; /* Cada caja bento ocupa la mitad del espacio */
+    }
+}
+
+@media (max-width: 768px) {
+    #panel-control {
+        flex-direction: column;
+    }
+    .control-btn span { display: none; } /* Ocultamos el texto en botones de control */
+    .control-btn { min-width: 50px; }
 }

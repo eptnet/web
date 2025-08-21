@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="css/stream.css">
 </head>
 <body>
+
     <div id="lobby">
         <h2>Sala de Espera</h2>
         <video id="video-preview" autoplay playsinline muted></video>
@@ -20,11 +21,58 @@
     </div>
 
     <div id="production-room" style="display: none;">
-        <h2>Sala de Producción</h2>
-        <video-player-container id="video-container">
-            </video-player-container>
-    </div>
 
+        <div class="main-grid">
+            
+            <main id="escenario">
+                <div id="video-container">
+                    </div>
+            </main>
+
+            <aside id="panel-control">
+                
+                <div id="green-room-panel" class="bento-box">
+                    <h4><i class="fa-solid fa-users"></i> Participantes</h4>
+                    <div id="participants-grid">
+                        <div class="participant-card">
+                            <div class="video-thumbnail"></div>
+                            <span class="participant-name-thumb">Anfitrión</span>
+                            <div class="participant-controls">
+                                <i class="fa-solid fa-microphone-slash muted"></i>
+                            </div>
+                        </div>
+                        <div class="participant-card">
+                            <div class="video-thumbnail"></div>
+                            <span class="participant-name-thumb">Invitado 1</span>
+                             <div class="participant-controls">
+                                <i class="fa-solid fa-microphone"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="scenes-panel" class="bento-box">
+                    <h4><i class="fa-solid fa-table-cells-large"></i> Escenas</h4>
+                    <div id="scene-buttons">
+                        <button class="scene-button" title="Solitario"><i class="fa-solid fa-user"></i></button>
+                        <button class="scene-button" title="Dúo"><i class="fa-solid fa-user-group"></i></button>
+                        <button class="scene-button" title="Trío"><i class="fa-solid fa-users-line"></i></button>
+                        <button class="scene-button" title="Cuadrícula"><i class="fa-solid fa-grip"></i></button>
+                        <button class="scene-button" title="Picture-in-Picture"><i class="fa-solid fa-photo-film"></i></button>
+                    </div>
+                </div>
+
+            </aside>
+
+            <footer id="control-bar">
+                <button class="control-btn" id="mic-toggle" title="Silenciar / Activar Micrófono"><i class="fa-solid fa-microphone"></i><span>Mic</span></button>
+                <button class="control-btn" id="video-toggle" title="Detener / Iniciar Video"><i class="fa-solid fa-video"></i><span>Video</span></button>
+                <button class="control-btn" id="settings-toggle" title="Configuración"><i class="fa-solid fa-cog"></i><span>Ajustes</span></button>
+                <button class="control-btn go-live-btn" id="go-live-button"><i class="fa-solid fa-satellite-dish"></i></i><span>GO LIVE</span></button>
+            </footer>
+
+        </div>
+    </div>
     <script src="https://source.zoom.us/videosdk/zoom-video-2.2.5.min.js"></script>
     <script src="js/stream.js"></script>
 </body>
