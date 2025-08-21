@@ -66,7 +66,8 @@ document.addEventListener('DOMContentLoaded', () => {
     async function joinSession() {
         joinButton.disabled = true;
         statusDiv.textContent = 'Estado: Inicializando SDK...';
-        await client.init('en-US', 'Global');
+        // Forzamos el modo de renderizado compatible
+        await client.init('en-US', 'Global', { enforceMultipleVideos: true });
         
         localPreviewStream.getTracks().forEach(track => track.stop());
 
