@@ -3,62 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPTstream - Estudio de Producción</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <title>EPTstream - Base Funcional</title>
     <link rel="stylesheet" href="css/stream.css">
 </head>
 <body>
     <div id="lobby">
         <h2>Sala de Espera</h2>
-        <div class="video-container">
-            <video id="video-preview" autoplay playsinline muted></video>
-        </div>
-        <div class="lobby-controls">
-            <label for="camera-select">Cámara:</label>
+        <video id="video-preview" autoplay playsinline muted></video>
+        <div class="controls">
             <select id="camera-select"></select>
-            <label for="mic-select">Micrófono:</label>
             <select id="mic-select"></select>
-            <button id="join-button" disabled>Unirse a la Producción</button>
+            <button id="join-button" disabled>Unirse</button>
         </div>
-        <div id="status">Estado: Preparando...</div>
+        <div id="status">Preparando...</div>
     </div>
 
     <div id="production-room" style="display: none;">
-        <header class="studio-header">
-            <h2>EPTstream Studio</h2>
-            </header>
-
-        <div class="studio-body">
-            <main class="main-stage">
-                <video-player-container id="video-main-container">
-                    </video-player-container>
-            </main>
-
-            <aside class="sidebar">
-                <h3>Participantes</h3>
-                <div id="participants-list">
-                    <p class="sidebar-placeholder">La lista de participantes aparecerá aquí.</p>
-                </div>
-            </aside>
-        </div>
-
-        <footer class="control-bar">
-            <button id="mute-btn" class="control-button" title="Silenciar / Reactivar Audio">
-                <i class="fa-solid fa-microphone"></i>
-            </button>
-            <button id="video-btn" class="control-button" title="Detener / Iniciar Video">
-                <i class="fa-solid fa-video"></i>
-            </button>
-            <button id="share-btn" class="control-button" title="Compartir Pantalla">
-                <i class="fa-solid fa-desktop"></i>
-            </button>
-            <button id="settings-btn" class="control-button" title="Ajustes">
-                <i class="fa-solid fa-gear"></i>
-            </button>
-            <button id="leave-btn" class="control-button leave">
-                <i class="fa-solid fa-phone-slash"></i>
-            </button>
-        </footer>
+        <h2>Sala de Producción</h2>
+        <div id="video-container">
+            </div>
     </div>
 
     <script src="https://source.zoom.us/videosdk/zoom-video-2.2.5.min.js"></script>

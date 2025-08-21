@@ -1,150 +1,24 @@
-:root {
-    --dark-bg: #131415;
-    --dark-surface: #1E1F22;
-    --dark-border: #313338;
-    --text-light: #F2F3F5;
-    --text-muted: #949BA4;
-    --accent-blue: #0e71eb;
-    --red: #DA373C;
-}
-
-*, *::before, *::after {
-    box-sizing: border-box;
-}
-
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: var(--dark-bg);
-    color: var(--text-light);
-    margin: 0;
-    height: 100vh;
-    width: 100vw;
-    overflow: hidden; /* Evita el scroll en la vista de estudio */
-}
-
-/* --- LOBBY (Adaptado al nuevo tema) --- */
-#lobby {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-}
-.lobby-controls { display: flex; flex-direction: column; align-items: stretch; gap: 1rem; margin-top: 1.5rem; width: 100%; max-width: 400px;}
-.lobby-controls label { font-size: 0.9rem; color: var(--text-muted); text-align: left; }
-#camera-select, #mic-select { background-color: #333; color: var(--text-light); border: 1px solid var(--dark-border); padding: 0.75rem; border-radius: 8px; }
-#join-button { background-color: var(--accent-blue); color: white; cursor: pointer; border: none; padding: 0.75rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 8px; transition: background-color 0.2s; }
-.video-container { background-color: #000; margin: 20px auto; width: 100%; max-width: 640px; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; }
-#video-preview { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-
-/* --- NUEVA ESTRUCTURA DEL ESTUDIO --- */
-#production-room {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-}
-
-.studio-header {
-    padding: 1rem;
-    text-align: center;
-    border-bottom: 1px solid var(--dark-border);
-}
-
-.studio-body {
-    flex-grow: 1; /* Ocupa el espacio restante */
-    display: grid;
-    /* Define el layout: Escenario a la izquierda (3/4), Sidebar a la derecha (1/4) */
-    grid-template-columns: 3fr 1fr; 
-    gap: 1rem;
-    padding: 1rem;
-    overflow: hidden;
-}
-
-.main-stage {
-    background-color: var(--dark-surface);
-    border-radius: 12px;
-    padding: 1rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-#video-main-container {
-    width: 100%;
-    height: 100%;
+body { font-family: sans-serif; text-align: center; padding-top: 20px; }
+#lobby, #production-room { max-width: 90vw; margin: auto; }
+video, .video-tile { width: 100%; max-width: 640px; aspect-ratio: 16/9; background: #000; border-radius: 8px; }
+.controls { display: flex; flex-direction: column; gap: 10px; margin: 20px auto; max-width: 400px; }
+#video-container {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    align-items: center;
-    gap: 1rem;
+    gap: 10px;
+    margin-top: 20px;
 }
-
 .video-tile {
     position: relative;
-    width: clamp(300px, 80%, 960px); /* El tamaño se ajusta mejor */
-    aspect-ratio: 16 / 9;
-    background-color: #000;
-    border-radius: 8px;
-    overflow: hidden;
-    transition: all 0.3s ease;
+    width: clamp(300px, 48%, 640px);
 }
-
-/* Layout para dos personas */
-#video-main-container.layout-duo .video-tile {
-    width: 48%;
-}
-
-.video-tile video-player {
-    width: 100%;
-    height: 100%;
-}
-
 .participant-name {
     position: absolute;
-    bottom: 10px;
-    left: 10px;
-    background-color: rgba(0, 0, 0, 0.6);
+    bottom: 8px;
+    left: 8px;
+    background: rgba(0,0,0,0.5);
     color: white;
-    padding: 5px 10px;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    z-index: 10;
+    padding: 4px 8px;
+    border-radius: 4px;
 }
-
-.sidebar {
-    background-color: var(--dark-surface);
-    border-radius: 12px;
-    padding: 1rem;
-    overflow-y: auto;
-}
-.sidebar-placeholder {
-    color: var(--text-muted);
-}
-
-.control-bar {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    border-top: 1px solid var(--dark-border);
-}
-
-.control-button {
-    background-color: #444;
-    color: var(--text-light);
-    border: none;
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    font-size: 20px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.control-button:hover { background-color: #555; }
-.control-button.is-active { background-color: var(--accent-blue); }
-.control-button.is-muted, .control-button.is-video-off { background-color: var(--red); }
-.control-button.leave { background-color: var(--red); }
-.control-button.leave:hover { background-color: #ff474d; }
