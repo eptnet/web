@@ -1,10 +1,9 @@
-// inv/js/stream.js - VERSIÓN DE LA VICTORIA
+// inv/js/stream.js - VERSIÓN FINAL Y DEFINITIVA ("Liberar y Volver a Pedir")
 
 document.addEventListener('DOMContentLoaded', () => {
     const SIGNATURE_ENDPOINT = 'https://seyknzlheaxmwztkfxmk.supabase.co/functions/v1/zoom-signature'; 
     const SESSION_NAME = 'eptstream-production-room'; 
 
-    // Elementos del DOM
     const lobbyView = document.getElementById('lobby');
     const productionView = document.getElementById('production-room');
     const joinButton = document.getElementById('join-button');
@@ -62,12 +61,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     micSelect.addEventListener('change', () => { selectedMicId = micSelect.value; });
 
-    // FASE 2: CONEXIÓN E INICIO DE MEDIOS (Lógica Corregida)
+    // FASE 2: CONEXIÓN
     async function joinSession() {
         joinButton.disabled = true;
         statusDiv.textContent = 'Estado: Inicializando SDK...';
         await client.init('en-US', 'Global');
         
+        // ¡PASO CLAVE! Detenemos y liberamos la cámara del lobby.
         localPreviewStream.getTracks().forEach(track => track.stop());
 
         const isGuest = new URLSearchParams(window.location.search).get('role') === 'guest';
@@ -78,32 +78,36 @@ document.addEventListener('DOMContentLoaded', () => {
             statusDiv.textContent = 'Estado: Obteniendo firma...';
             const response = await fetch(SIGNATURE_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionName: SESSION_NAME, role_type }) });
             const { signature } = await response.json();
-            
-            statusDiv.textContent = 'Estado: Uniéndose a la sesión...';
             await client.join(SESSION_NAME, signature, userName);
-
-            // --- ESTE ES EL LUGAR CORRECTO Y DEFINITIVO ---
-            // Justo después de que 'join' termina, el SDK está 100% listo.
-            stream = client.getMediaStream();
-            await stream.startAudio({ audioId: selectedMicId });
-            await stream.startVideo({ cameraId: selectedCameraId });
-            // --- FIN DE LA CORRECCIÓN ---
-
         } catch (error) {
-            console.error('Error crítico durante la conexión o inicio de medios:', error);
-            statusDiv.textContent = 'Error: No se pudo unir a la sesión.';
+            console.error('Error al unirse:', error);
+            statusDiv.textContent = 'Error: No se pudo unir.';
         }
     }
 
-    // FASE 3: MANEJO DE LA INTERFAZ
+    // FASE 3: DENTRO DE LA SESIÓN
     client.on('connection-change', (payload) => {
         if (payload.state === 'Connected') {
             lobbyView.style.display = 'none';
             productionView.style.display = 'block';
+            stream = client.getMediaStream();
+
+            // Una vez conectados, iniciamos los medios desde cero usando el SDK.
+            // Esta es la forma más segura.
+            startLocalMedia();
         }
     });
+
+    async function startLocalMedia() {
+        try {
+            // El SDK ahora pide la cámara y el micrófono que seleccionamos.
+            await stream.startAudio({ audioId: selectedMicId });
+            await stream.startVideo({ cameraId: selectedCameraId });
+        } catch (error) {
+            console.error("Error al iniciar medios locales:", error);
+        }
+    }
     
-    // Este evento ahora solo se encarga de DIBUJAR los videos cuando están listos
     client.on('peer-video-state-change', async (payload) => {
         const { action, userId } = payload;
         const existingTile = document.getElementById(`video-tile-${userId}`);
@@ -120,19 +124,13 @@ document.addEventListener('DOMContentLoaded', () => {
             videoMainContainer.appendChild(videoTile);
             const videoElement = await stream.attachVideo(userId, 3);
             videoTile.appendChild(videoElement);
-            videoTile.appendChild(nameTag);
+            videoTile.appendChild(nameTag); // Añadimos el nombre después
         } else if (action === 'Stop' && existingTile) {
             existingTile.remove();
         }
     });
     
-    // Limpiamos cuando un usuario se va
-    client.on('user-removed', (payload) => {
-        payload.forEach(user => {
-            const videoTile = document.getElementById(`video-tile-${user.userId}`);
-            if (videoTile) videoTile.remove();
-        });
-    });
+    client.on('user-removed', (payload) => payload.forEach(u => document.getElementById(`video-tile-${u.userId}`)?.remove()));
 
     muteBtn.addEventListener('click', async () => {
         const icon = muteBtn.querySelector('i');
@@ -149,7 +147,6 @@ document.addEventListener('DOMContentLoaded', () => {
         muteBtn.classList.toggle('is-muted', isMuted);
     });
 
-    // --- INICIO ---
     setupLobby();
     joinButton.addEventListener('click', joinSession);
 });
