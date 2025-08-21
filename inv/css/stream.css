@@ -185,31 +185,37 @@ video-player-container video-player {
 }
 
 .participant-card {
-    position: relative; /* Correcto. Crea el contexto para los overlays. */
+    position: relative; /* Regla 1: El card es nuestro "escenario" */
     cursor: pointer;
     border: 2px solid transparent;
     border-radius: 8px;
     overflow: hidden;
-    /* El tamaño y la proporción los definirá el .video-thumbnail de adentro */
-    display: block;
+    
+    /* El card ahora define la proporción y el fondo */
+    aspect-ratio: 16 / 9;
+    background-color: #333; /* Fondo oscuro mientras carga el video */
+    
+    transition: all 0.2s ease-in-out;
 }
 .participant-card:hover { border-color: rgba(var(--color-accent-rgb), 0.5); }
 .participant-card.selected { border-color: var(--color-accent); }
 
-.participant-card .video-thumbnail {
-    /* Esta es la capa base (el video). No necesita z-index. */
+/* La capa de VIDEO: la hacemos absoluta para que flote dentro del card */
+.participant-card > video-player {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
-    aspect-ratio: 16 / 9;
-    background-color: #333;
-    display: block; /* Asegura que ocupe espacio */
+    height: 100%;
+    z-index: 1; /* Capa 1: El video */
 }
 
+/* Las capas de OVERLAYS (nombre y controles) */
 .participant-card .participant-name-thumb {
-    /* Este es un overlay. Se posiciona de forma absoluta DENTRO del card. */
     position: absolute;
     bottom: 4px;
     left: 4px;
-    z-index: 10; /* Un número alto para asegurar que siempre esté arriba */
+    z-index: 2; /* Capa 2: El nombre, por encima del video */
     font-size: 0.8rem;
     background: rgba(0,0,0,0.6);
     color: white;
@@ -218,11 +224,10 @@ video-player-container video-player {
 }
 
 .participant-card .participant-controls {
-    /* Este es otro overlay. */
     position: absolute;
     top: 4px;
     right: 4px;
-    z-index: 10; /* Mismo nivel que el nombre, ambos por encima del video */
+    z-index: 2; /* Capa 2: Los controles, también por encima del video */
     background: rgba(0,0,0,0.6);
     color: white;
     padding: 4px;

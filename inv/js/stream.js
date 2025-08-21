@@ -106,29 +106,35 @@ document.addEventListener('DOMContentLoaded', () => {
         updateLayout();
     }
     
-    // --- NUEVA FUNCIÓN PARA LA GREEN ROOM ---
+    // --- FUNCIÓN PARA LA GREEN ROOM (SIMPLIFICADA) ---
     async function createParticipantCard(userId) {
         if (document.getElementById(`participant-card-${userId}`)) return;
+
         const user = client.getUser(userId);
         const card = document.createElement('div');
         card.className = 'participant-card';
         card.id = `participant-card-${userId}`;
-        const videoThumb = document.createElement('div');
-        videoThumb.className = 'video-thumbnail';
+
+        // 1. Pedimos el video al SDK
         const videoElement = await stream.attachVideo(userId, 3);
-        videoThumb.appendChild(videoElement);
+        
+        // 2. Creamos los overlays
         const nameTag = document.createElement('span');
         nameTag.className = 'participant-name-thumb';
         nameTag.textContent = user.displayName;
+
         const controls = document.createElement('div');
         controls.className = 'participant-controls';
         const micIcon = document.createElement('i');
         micIcon.className = 'fa-solid fa-microphone';
         micIcon.id = `mic-icon-${userId}`;
         controls.appendChild(micIcon);
-        card.appendChild(videoThumb);
+
+        // 3. Añadimos todo al card en el orden correcto de apilamiento (video primero)
+        card.appendChild(videoElement);
         card.appendChild(nameTag);
         card.appendChild(controls);
+        
         participantsGrid.appendChild(card);
     }
 
