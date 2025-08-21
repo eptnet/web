@@ -8,14 +8,12 @@
     <link rel="stylesheet" href="css/stream.css">
 </head>
 <body>
-    <h1>EPTstream Studio</h1>
-
     <div id="lobby">
         <h2>Sala de Espera</h2>
         <div class="video-container">
             <video id="video-preview" autoplay playsinline muted></video>
         </div>
-        <div class="controls">
+        <div class="lobby-controls">
             <label for="camera-select">Cámara:</label>
             <select id="camera-select"></select>
             <label for="mic-select">Micrófono:</label>
@@ -26,14 +24,41 @@
     </div>
 
     <div id="production-room" style="display: none;">
-        <h2>Sala de Producción</h2>
-        <video-player-container id="video-main-container">
-            </video-player-container>
-        <div class="production-controls">
-            <button id="mute-btn" title="Silenciar / Reactivar Audio">
+        <header class="studio-header">
+            <h2>EPTstream Studio</h2>
+            </header>
+
+        <div class="studio-body">
+            <main class="main-stage">
+                <video-player-container id="video-main-container">
+                    </video-player-container>
+            </main>
+
+            <aside class="sidebar">
+                <h3>Participantes</h3>
+                <div id="participants-list">
+                    <p class="sidebar-placeholder">La lista de participantes aparecerá aquí.</p>
+                </div>
+            </aside>
+        </div>
+
+        <footer class="control-bar">
+            <button id="mute-btn" class="control-button" title="Silenciar / Reactivar Audio">
                 <i class="fa-solid fa-microphone"></i>
             </button>
-        </div>
+            <button id="video-btn" class="control-button" title="Detener / Iniciar Video">
+                <i class="fa-solid fa-video"></i>
+            </button>
+            <button id="share-btn" class="control-button" title="Compartir Pantalla">
+                <i class="fa-solid fa-desktop"></i>
+            </button>
+            <button id="settings-btn" class="control-button" title="Ajustes">
+                <i class="fa-solid fa-gear"></i>
+            </button>
+            <button id="leave-btn" class="control-button leave">
+                <i class="fa-solid fa-phone-slash"></i>
+            </button>
+        </footer>
     </div>
 
     <script src="https://source.zoom.us/videosdk/zoom-video-2.2.5.min.js"></script>
