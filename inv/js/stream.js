@@ -17,36 +17,31 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedCameraId = '';
     let selectedMicId = '';
 
-    // LOBBY: Pide permisos y lista dispositivos
     async function setupLobby() {
         try {
             localPreviewStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             videoPreview.srcObject = localPreviewStream;
             const devices = await navigator.mediaDevices.enumerateDevices();
-            devices.filter(d => d.kind === 'videoinput').forEach(d => {
-                const opt = document.createElement('option');
-                opt.value = d.deviceId;
-                opt.textContent = d.label || `Cámara ${cameraSelect.length + 1}`;
-                cameraSelect.appendChild(opt);
-            });
-            devices.filter(d => d.kind === 'audioinput').forEach(d => {
-                const opt = document.createElement('option');
-                opt.value = d.deviceId;
-                opt.textContent = d.label || `Micrófono ${micSelect.length + 1}`;
-                micSelect.appendChild(opt);
-            });
+            populateSelect(cameraSelect, devices.filter(d => d.kind === 'videoinput'));
+            populateSelect(micSelect, devices.filter(d => d.kind === 'audioinput'));
             selectedCameraId = cameraSelect.value;
             selectedMicId = micSelect.value;
             joinButton.disabled = false;
-        } catch (error) {
-            console.error('Error en el lobby:', error);
-        }
+        } catch (error) { console.error('Error en el lobby:', error); }
+    }
+    
+    function populateSelect(select, devices) {
+        devices.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d.deviceId;
+            opt.textContent = d.label || `${select.id.includes('camera') ? 'Cámara' : 'Micrófono'} ${select.children.length + 1}`;
+            select.appendChild(opt);
+        });
     }
 
-    // CONEXIÓN: Se une a la sesión e inicia los medios
     async function joinSession() {
         joinButton.disabled = true;
-        await client.init('en-US', 'Global');
+        await client.init('en-US', 'Global', { enforceMultipleVideos: true }); // Mantenemos la bandera de compatibilidad
         localPreviewStream.getTracks().forEach(track => track.stop());
 
         const isGuest = new URLSearchParams(window.location.search).get('role') === 'guest';
@@ -60,12 +55,14 @@ document.addEventListener('DOMContentLoaded', () => {
             stream = client.getMediaStream();
             await stream.startAudio({ audioId: selectedMicId });
             await stream.startVideo({ cameraId: selectedCameraId });
-        } catch (error) {
-            console.error('Error al unirse:', error);
-        }
+        } catch (error) { console.error('Error al unirse:', error); }
     }
     
-    // RENDERIZADO: Dibuja/quita los videos cuando el SDK lo indica
+    function updateLayout() {
+        const participantCount = client.getAllUser().length;
+        videoContainer.className = `participant-${participantCount}`;
+    }
+
     client.on('connection-change', (payload) => {
         if (payload.state === 'Connected') {
             lobbyView.style.display = 'none';
@@ -87,16 +84,18 @@ document.addEventListener('DOMContentLoaded', () => {
             videoTile.appendChild(videoElement);
             videoTile.appendChild(nameTag);
             videoContainer.appendChild(videoTile);
+            updateLayout();
         } else if (action === 'Stop' && existingTile) {
             existingTile.remove();
+            updateLayout();
         }
     });
 
     client.on('user-removed', (payload) => {
         payload.forEach(u => document.getElementById(`video-tile-${u.userId}`)?.remove());
+        updateLayout();
     });
 
-    // INICIO
     setupLobby();
     joinButton.addEventListener('click', joinSession);
 });

@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPTstream - Base Funcional</title>
+    <title>EPTstream - Estudio de Producción</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="css/stream.css">
 </head>
 <body>
@@ -11,17 +12,17 @@
         <h2>Sala de Espera</h2>
         <video id="video-preview" autoplay playsinline muted></video>
         <div class="controls">
-            <select id="camera-select"></select>
-            <select id="mic-select"></select>
-            <button id="join-button" disabled>Unirse</button>
+            <select id="camera-select" title="Seleccionar cámara"></select>
+            <select id="mic-select" title="Seleccionar micrófono"></select>
+            <button id="join-button" disabled>Unirse a la Producción</button>
         </div>
         <div id="status">Preparando...</div>
     </div>
 
     <div id="production-room" style="display: none;">
         <h2>Sala de Producción</h2>
-        <div id="video-container">
-            </div>
+        <video-player-container id="video-container">
+            </video-player-container>
     </div>
 
     <script src="https://source.zoom.us/videosdk/zoom-video-2.2.5.min.js"></script>
