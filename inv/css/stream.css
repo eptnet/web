@@ -210,7 +210,7 @@ video-player-container video-player {
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background-color: #333; /* El color de fondo mientras carga */
+    /* background-color: #333; /* El color de fondo mientras carga */
     z-index: 0; /* Capa 0: El fondo. La más baja de todas. */
 }
 
