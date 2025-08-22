@@ -184,38 +184,57 @@ video-player-container video-player {
     gap: 10px;
 }
 
+/* ================================================================== */
+/* === INICIO DEL BLOQUE DEFINITIVO PARA LA TARJETA DE PARTICIPANTE === */
+/* ================================================================== */
+
 .participant-card {
-    position: relative; /* Regla 1: El card es nuestro "escenario" */
+    position: relative; /* Regla 1: El card es el "escenario" o contexto. */
+    display: block;
     cursor: pointer;
     border: 2px solid transparent;
     border-radius: 8px;
     overflow: hidden;
-    
-    /* El card ahora define la proporción y el fondo */
-    aspect-ratio: 16 / 9;
-    background-color: #333; /* Fondo oscuro mientras carga el video */
-    
     transition: all 0.2s ease-in-out;
 }
 .participant-card:hover { border-color: rgba(var(--color-accent-rgb), 0.5); }
 .participant-card.selected { border-color: var(--color-accent); }
 
-/* La capa de VIDEO: la hacemos absoluta para que flote dentro del card */
-.participant-card > video-player {
+/*
+ * LA MAGIA OCURRE AQUÍ:
+ * Creamos una capa de fondo virtual con ::before.
+ * Esta capa vive DETRÁS del video.
+*/
+.participant-card::before {
+    content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1; /* Capa 1: El video */
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: #333; /* El color de fondo mientras carga */
+    z-index: 0; /* Capa 0: El fondo. La más baja de todas. */
 }
 
-/* Las capas de OVERLAYS (nombre y controles) */
+/* LA CAPA DE VIDEO */
+.participant-card > video-player {
+    display: block; /* Importante para que ocupe espacio */
+    width: 100%;
+    aspect-ratio: 16 / 9; /* El video ahora define la proporción */
+    
+    /* Hacemos que el video cree su propia capa por encima del fondo */
+    position: relative;
+    z-index: 1; /* Capa 1: El video. Por encima del fondo. */
+}
+
+/* LAS CAPAS DE OVERLAYS (Nombre y Controles) */
+.participant-card .participant-name-thumb,
+.participant-card .participant-controls {
+    position: absolute; /* Se posicionan relativo al card */
+    z-index: 2; /* Capa 2: Los overlays. Por encima de todo. */
+}
+
 .participant-card .participant-name-thumb {
-    position: absolute;
     bottom: 4px;
     left: 4px;
-    z-index: 2; /* Capa 2: El nombre, por encima del video */
     font-size: 0.8rem;
     background: rgba(0,0,0,0.6);
     color: white;
@@ -224,10 +243,8 @@ video-player-container video-player {
 }
 
 .participant-card .participant-controls {
-    position: absolute;
     top: 4px;
     right: 4px;
-    z-index: 2; /* Capa 2: Los controles, también por encima del video */
     background: rgba(0,0,0,0.6);
     color: white;
     padding: 4px;
@@ -239,6 +256,10 @@ video-player-container video-player {
 }
 
 .participant-controls i.muted { color: #ff5252; }
+
+/* ================================================================== */
+/* === FIN DEL BLOQUE DEFINITIVO === */
+/* ================================================================== */
 
 /* SOLUCIÓN PARA GREEN ROOM EN UNA COLUMNA */
 /* Asegura que el contenedor de la cuadrícula ocupe el 100% del ancho */
