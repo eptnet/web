@@ -392,7 +392,23 @@ document.addEventListener('mainReady', () => {
     function createPostCardHTML(item) {
         const thumbnail = item.thumbnail || extractFirstImageUrl(item.content);
         const cardImageStyle = thumbnail ? `style="background-image: url('${thumbnail}');"` : '';
-        return `<div class="bento-box post-card bento-box--1x1" data-id="${item.guid}" ${cardImageStyle}><div class="card-content"><span class="card-category">Publicación</span><h4>${item.title}</h4></div></div>`;
+        
+        // --- LÍNEA AÑADIDA ---
+        // Creamos un extracto de 100 caracteres a partir del contenido del post.
+        const sourceText = item.description || item.content;
+        const excerpt = truncateText(sourceText, 100);
+
+        return `
+            <div class="bento-box post-card bento-box--1x1 mobile-full-width" data-id="${item.guid}" ${cardImageStyle}>
+                <div class="card-content">
+                    <span class="card-category">Publicación</span>
+                    <h4>${item.title}</h4>
+                    
+                    <p class="card-excerpt">${excerpt}</p>
+                    
+                </div>
+            </div>
+        `;
     }
 
     function extractFirstImageUrl(htmlContent) {
