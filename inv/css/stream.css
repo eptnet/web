@@ -82,32 +82,28 @@ video-player-container {
     grid-column: 1 / 2;
     grid-row: 1 / 2;
     display: flex;
-    /* CAMBIO: Ahora es flex-direction column para apilar video y controles */
     flex-direction: column; 
     align-items: center;
-    justify-content: center;
     overflow: hidden;
-    gap: var(--gap); /* Añadimos un gap para separar video y controles */
+    gap: var(--gap);
 }
 
 #video-container {
+    /* LA LÍNEA CLAVE: Le dice al lienzo que crezca y ocupe todo el espacio vertical disponible. */
+    flex-grow: 1;
+
+    /* El resto de la configuración de la cuadrícula que ya es correcta */
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 10px;
+    
+    /* Estilos visuales */
     width: 100%;
-    aspect-ratio: 16 / 9;
-    background-color: #111; /* Un poco más oscuro para mejor contraste */
+    background-color: #670303;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-light);
-    
-    /* PREPARACIÓN PARA OVERLAYS:
-       'position: relative' permite que podamos añadir logos, banners, etc.,
-       con 'position: absolute' dentro de este lienzo. */
-    position: relative; 
-    
-    /* PREPARACIÓN PARA LAYOUTS (estilo Bento):
-       Usamos Grid para posicionar los videos de los participantes.
-       El 'gap' crea la separación que pediste. */
-    display: grid;
-    gap: 10px; /* Separación entre videos */
-    padding: 10px; /* Un pequeño margen interno */
+    padding: 10px;
     overflow: hidden;
 }
 
