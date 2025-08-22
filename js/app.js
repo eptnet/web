@@ -396,7 +396,7 @@ document.addEventListener('mainReady', () => {
         // --- LÍNEA AÑADIDA ---
         // Creamos un extracto de 100 caracteres a partir del contenido del post.
         const sourceText = item.description || item.content;
-        const excerpt = truncateText(sourceText, 100);
+        const excerpt = truncateText(sourceText, 200);
 
         return `
             <div class="bento-box post-card bento-box--1x1 mobile-full-width" data-id="${item.guid}" ${cardImageStyle}>
