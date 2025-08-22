@@ -68,7 +68,7 @@ main.container {
     background-color: #18191a;
     z-index: 1;
 }
-.hero-background-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('https://i.ibb.co/rPSqjz0/a-digital-art-banner-depicting-a-futuris-9-Wt-Qkra-NRza-Qd-HG1mhcc-Ag-x-Ait-Jamg-RCat9-GLc-O810jg.jpg'); background-size: cover; background-position: center; animation: kenburns-effect 25s ease-in-out infinite; z-index: 1; }
+.hero-background-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('https://i.ibb.co/F4H4zGvN/Hero-ept.jpg'); background-size: cover; background-position: center; animation: kenburns-effect 25s ease-in-out infinite; z-index: 1; }
 .hero-container::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.25); z-index: 2; }
 .hero-content { position: relative; z-index: 3; color: white; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7); padding: 1rem; padding-top: 20vh; }
 .hero-content h1 { font-size: 4.5rem; font-weight: 700; }

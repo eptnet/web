@@ -1,18 +1,19 @@
-/* === VARIABLES DE COLOR (Tu paleta) === */
+/* ============================================================= */
+/* === EPTSTREAM CSS - ESTRATEGIA SIMPLIFICADA === */
+/* ============================================================= */
+
+/* === VARIABLES DE COLOR === */
 :root {
     --color-background: #f0f2f5;
     --color-surface: #ffffff;
     --color-text-primary: #1c1e21;
     --color-text-secondary: #65676b;
     --color-accent: #b72a1e;
-    --color-accent-rgb: 183, 42, 30;
     --color-border: #ddd;
     --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.1);
     --border-radius: 12px;
     --gap: 20px;
 }
-
-/* Podríamos añadir el tema oscuro más adelante si lo deseas */
 
 /* === ESTILOS BASE === */
 *, *::before, *::after {
@@ -20,16 +21,13 @@
     margin: 0;
     padding: 0;
 }
-
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: var(--color-background);
     color: var(--color-text-primary);
-    /* Preparamos el body para que production-room ocupe toda la pantalla */
     height: 100vh;
     overflow: hidden;
 }
-
 button {
     cursor: pointer;
     font-family: inherit;
@@ -37,11 +35,7 @@ button {
     border-radius: 8px;
 }
 
-video-player-container {
-    display: block; /* Asegura que se comporte como un div por defecto */
-}
-
-/* === ESTILOS DEL LOBBY (Ligeramente ajustados) === */
+/* === LOBBY === */
 #lobby {
     display: flex;
     flex-direction: column;
@@ -57,108 +51,64 @@ video-player-container {
 #lobby #join-button { background-color: var(--color-accent); color: white; font-weight: bold; }
 #lobby #join-button:disabled { background-color: #ccc; }
 
-
-/* === ESTRUCTURA PRINCIPAL DE LA SALA DE PRODUCCIÓN === */
+/* === ESTRUCTURA PRINCIPAL === */
 #production-room {
     width: 100%;
     height: 100%;
-    background-color: var(--color-background);
 }
-
 .main-grid {
     display: grid;
-    /* Layout: 3 partes para el escenario, 1 para el panel */
+    /* Mantiene la división en dos columnas */
     grid-template-columns: 3fr 1fr;
-    /* Layout: 1 fila principal, 1 fila para la barra de control */
-    grid-template-rows: 1fr auto;
+    /* El escenario ocupará la mayor parte verticalmente */
+    grid-template-rows: 1fr auto; /* 1fr para el escenario, auto para la barra de control */
     gap: var(--gap);
     height: 100%;
     padding: var(--gap);
 }
 
 /* === 1. ESCENARIO (Columna Izquierda) === */
-/* REEMPLAZA ESTE BLOQUE EN LA SECCIÓN "ESCENARIO" */
 #escenario {
     grid-column: 1 / 2;
     grid-row: 1 / 2;
     display: flex;
-    flex-direction: column; 
+    flex-direction: column;
     align-items: center;
     overflow: hidden;
     gap: var(--gap);
+    /* Aseguramos que ocupe todo el alto de su celda */
+    height: 100%;
 }
 
 #video-container {
-    /* LA LÍNEA CLAVE: Le dice al lienzo que crezca y ocupe todo el espacio vertical disponible. */
+    /* Ahora DEBE ocupar todo el espacio disponible */
     flex-grow: 1;
-
-    /* El resto de la configuración de la cuadrícula que ya es correcta */
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     grid-template-rows: repeat(4, 1fr);
     gap: 10px;
-    
-    /* Estilos visuales */
     width: 100%;
-    background-color: #670303;
+    background-color: #111;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-light);
     padding: 10px;
     overflow: hidden;
+    /* Forzamos la altura al 100% de su contenedor flex */
+    height: 100%;
 }
-
-/* --- BASE PARA EL SISTEMA DE GRID DEL ESCENARIO --- */
-#video-container {
-    display: grid;
-    /* La cuadrícula de 4x4 que querías */
-    grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(4, 1fr);
-    gap: 10px;
-}
-
 #video-container .video-tile {
-    /* Las coordenadas se asignarán con JavaScript */
+    position: relative;
     width: 100%;
     height: 100%;
     background-color: #000;
     border-radius: 8px;
     overflow: hidden;
 }
-
-/* Contenedor de cada video individual en el escenario */
-.video-tile {
-    background-color: #000;
-    /* ESQUINAS CURVAS para cada video */
-    border-radius: 8px; 
-    overflow: hidden; /* Asegura que el video de adentro no se salga de las esquinas curvas */
-    width: 100%;
-    height: 100%;
-}
-
-/* Fuerza al componente del SDK a ocupar todo el espacio de su contenedor */
-video-player-container video-player {
+.video-tile video-player {
     display: block;
     width: 100%;
     height: 100%;
 }
-
-/* El elemento de video/canvas del SDK irá aquí dentro */
-.video-tile video-player { /* O el selector que use el SDK de Zoom */
-    display: block;
-    width: 100%;
-    height: 100%;
-}
-
-/* PREPARACIÓN PARA MODOS DE VIDEO (cover vs contain):
-   Añadiremos estas clases con JS para controlar si el video
-   llena el espacio o mantiene su proporción original. */
-.video-tile.fit-cover video-player {
-    object-fit: cover; /* Estira el video para llenar el contenedor */
-}
-.video-tile.fit-contain video-player {
-    object-fit: contain; /* Mantiene la proporción, puede dejar barras negras */
-}
-
 
 /* === 2. PANEL DE CONTROL (Columna Derecha) === */
 #panel-control {
@@ -167,10 +117,8 @@ video-player-container video-player {
     display: flex;
     flex-direction: column;
     gap: var(--gap);
-    overflow-y: auto; /* Para permitir scroll si hay muchos participantes */
+    overflow-y: auto;
 }
-
-/* Estilo reutilizable "Bento Box" */
 .bento-box {
     background-color: var(--color-surface);
     border-radius: var(--border-radius);
@@ -180,7 +128,6 @@ video-player-container video-player {
     flex-direction: column;
     gap: 1rem;
 }
-
 .bento-box h4 {
     color: var(--color-text-secondary);
     font-size: 0.9rem;
@@ -190,20 +137,14 @@ video-player-container video-player {
     margin-bottom: 0.5rem;
 }
 .bento-box h4 i { margin-right: 8px; }
-
-/* Bento Box 1: Participantes (Green Room) */
 #participants-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 10px;
+    width: 100%;
 }
-
-/* ================================================================== */
-/* === INICIO DEL BLOQUE DEFINITIVO PARA LA TARJETA DE PARTICIPANTE === */
-/* ================================================================== */
-
 .participant-card {
-    position: relative; /* Regla 1: El card es el "escenario" o contexto. */
+    position: relative;
     display: block;
     cursor: pointer;
     border: 2px solid transparent;
@@ -211,41 +152,29 @@ video-player-container video-player {
     overflow: hidden;
     transition: all 0.2s ease-in-out;
 }
-.participant-card:hover { border-color: rgba(var(--color-accent-rgb), 0.5); }
+.participant-card:hover { border-color: rgba(183, 42, 30, 0.5); }
 .participant-card.selected { border-color: var(--color-accent); }
-
-/*
- * LA MAGIA OCURRE AQUÍ:
- * Creamos una capa de fondo virtual con ::before.
- * Esta capa vive DETRÁS del video.
-*/
 .participant-card::before {
     content: '';
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    /* background-color: #333; /* El color de fondo mientras carga */
-    z-index: 0; /* Capa 0: El fondo. La más baja de todas. */
+    background-color: #333;
+    z-index: 0;
 }
-
-/* LA CAPA DE VIDEO */
 .participant-card > video-player {
-    display: block; /* Importante para que ocupe espacio */
+    display: block;
     width: 100%;
-    aspect-ratio: 16 / 9; /* El video ahora define la proporción */
+    aspect-ratio: 16 / 9;
     border-radius: 8px;
-    /* Hacemos que el video cree su propia capa por encima del fondo */
     position: relative;
-    z-index: 1; /* Capa 1: El video. Por encima del fondo. */
+    z-index: 1;
 }
-
-/* LAS CAPAS DE OVERLAYS (Nombre y Controles) */
 .participant-card .participant-name-thumb,
 .participant-card .participant-controls {
-    position: absolute; /* Se posicionan relativo al card */
-    z-index: 2; /* Capa 2: Los overlays. Por encima de todo. */
+    position: absolute;
+    z-index: 2;
 }
-
 .participant-card .participant-name-thumb {
     bottom: 4px;
     left: 4px;
@@ -255,7 +184,6 @@ video-player-container video-player {
     padding: 2px 6px;
     border-radius: 4px;
 }
-
 .participant-card .participant-controls {
     top: 4px;
     right: 4px;
@@ -268,27 +196,11 @@ video-player-container video-player {
     align-items: center;
     justify-content: center;
 }
-
-.participant-controls i.muted { color: #ff5252; }
-
-/* ================================================================== */
-/* === FIN DEL BLOQUE DEFINITIVO === */
-/* ================================================================== */
-
-/* SOLUCIÓN PARA GREEN ROOM EN UNA COLUMNA */
-/* Asegura que el contenedor de la cuadrícula ocupe el 100% del ancho */
-video-player-container#participants-grid {
-    width: 100%;
-}
-
-
-/* Bento Box 2: Escenas */
 #scene-buttons {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
     gap: 10px;
 }
-
 .scene-button {
     aspect-ratio: 1 / 1;
     background-color: var(--color-background);
@@ -297,28 +209,23 @@ video-player-container#participants-grid {
     color: var(--color-text-secondary);
     transition: all 0.2s ease;
 }
-.scene-button:hover { background-color: #e4e6e9; border-color: #ccc; }
+.scene-button:hover { background-color: #e4e6e9; }
 .scene-button.active { background-color: var(--color-accent); color: white; border-color: var(--color-accent); }
 
-
-/* === 3. BARRA DE CONTROL (Footer) === */
+/* === BARRA DE CONTROL === */
 #control-bar {
-    /* YA NO OCUPA TODO EL ANCHO DEL GRID */
-    width: 100%; /* Ocupa el ancho de su nuevo padre, #escenario */
-    max-width: 800px; /* Un ancho máximo para que no se estire demasiado */
-    background-color: var(--color-surface);
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-light);
-    padding: 10px;
+    grid-column: 1 / 2; /* Aseguramos que ocupe todo el ancho del escenario */
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 1rem;
+    padding: 10px;
+    background-color: var(--color-surface);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-light);
 }
-
 .control-btn {
     background: none;
-    border: none;
     color: var(--color-text-primary);
     font-size: 1rem;
     display: flex;
@@ -326,45 +233,28 @@ video-player-container#participants-grid {
     align-items: center;
     gap: 5px;
     padding: 10px;
-    min-width: 70px; /* Un poco más compacto */
+    min-width: 70px;
     border-radius: 8px;
     transition: background-color 0.2s ease;
 }
 .control-btn:hover { background-color: var(--color-background); }
-.control-btn i { 
-    font-size: 1.2rem; /* Reducimos el tamaño de 1.4rem a 1.2rem */
-}
+.control-btn i { font-size: 1.2rem; }
 .control-btn.go-live-btn { background-color: var(--color-accent); color: white; font-weight: bold; }
 .control-btn.go-live-btn:hover { background-color: #a1251a; }
 
-
-/* === DISEÑO RESPONSIVO (para tablets y móviles) === */
- @media (max-width: 1024px) {
+/* === DISEÑO RESPONSIVO === */
+@media (max-width: 1024px) {
     .main-grid {
-        /* Simplificado: solo apilamos escenario y panel */
         grid-template-columns: 1fr;
-        grid-template-rows: auto 1fr; 
-        overflow-y: auto;
+        grid-template-rows: auto 1fr auto; /* Auto para escenario, 1fr para panel, auto para controles */
     }
-
     #escenario { grid-row: 1 / 2; }
     #panel-control { grid-row: 2 / 3; }
-    #control-bar { grid-row: 3 / 4; }
-
-    /* Hacemos el panel de control horizontal para ahorrar espacio */
-    #panel-control {
-        flex-direction: row;
-        gap: var(--gap);
-    }
-    .bento-box {
-        flex: 1; /* Cada caja bento ocupa la mitad del espacio */
-    }
+    #control-bar { grid-row: 3 / 4; } /* La barra de control también se mueve abajo */
+    #control-bar { max-width: 100%; border-radius: 0; box-shadow: none; } /* Ocupa todo el ancho en móvil */
 }
-
 @media (max-width: 768px) {
-    #panel-control {
-        flex-direction: column;
-    }
-    .control-btn span { display: none; } /* Ocultamos el texto en botones de control */
+    #panel-control { flex-direction: column; }
+    .control-btn span { display: none; }
     .control-btn { min-width: 50px; }
 }
