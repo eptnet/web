@@ -47,11 +47,11 @@
                 <div id="scenes-panel" class="bento-box">
                     <h4><i class="fa-solid fa-table-cells-large"></i> Escenas</h4>
                     <div id="scene-buttons">
-                        <button class="scene-button" title="Solitario"><i class="fa-solid fa-user"></i></button>
-                        <button class="scene-button" title="Dúo"><i class="fa-solid fa-user-group"></i></button>
-                        <button class="scene-button" title="Trío"><i class="fa-solid fa-users-line"></i></button>
-                        <button class="scene-button" title="Cuadrícula"><i class="fa-solid fa-grip"></i></button>
-                        <button class="scene-button" title="Picture-in-Picture"><i class="fa-solid fa-photo-film"></i></button>
+                        <button class="scene-button" data-layout="solo" title="Solitario"><i class="fa-solid fa-user"></i></button>
+                        <button class="scene-button" data-layout="duo-horizontal" title="Dúo"><i class="fa-solid fa-user-group"></i></button>
+                        <button class="scene-button" data-layout="sidebar-derecha" title="Trío"><i class="fa-solid fa-users-line"></i></button>
+                        <button class="scene-button" data-layout="cuadricula" title="Cuadrícula"><i class="fa-solid fa-grip"></i></button>
+                        <button class="scene-button" data-layout="Picture-in-Picture" title="Picture-in-Picture"><i class="fa-solid fa-photo-film"></i></button>
                     </div>
                 </div>
 
@@ -61,6 +61,7 @@
     </div>
     
     <script src="https://source.zoom.us/videosdk/zoom-video-2.2.5.min.js"></script>
+    <script src="js/layouts.js"></script>
     <script src="js/stream.js"></script>
 </body>
 </html>

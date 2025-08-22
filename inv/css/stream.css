@@ -111,6 +111,24 @@ video-player-container {
     overflow: hidden;
 }
 
+/* --- BASE PARA EL SISTEMA DE GRID DEL ESCENARIO --- */
+#video-container {
+    display: grid;
+    /* La cuadrícula de 4x4 que querías */
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 10px;
+}
+
+#video-container .video-tile {
+    /* Las coordenadas se asignarán con JavaScript */
+    width: 100%;
+    height: 100%;
+    background-color: #000;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
 /* Contenedor de cada video individual en el escenario */
 .video-tile {
     background-color: #000;
