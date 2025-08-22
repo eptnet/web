@@ -219,7 +219,7 @@ video-player-container video-player {
     display: block; /* Importante para que ocupe espacio */
     width: 100%;
     aspect-ratio: 16 / 9; /* El video ahora define la proporción */
-    
+    border-radius: 8px;
     /* Hacemos que el video cree su propia capa por encima del fondo */
     position: relative;
     z-index: 1; /* Capa 1: El video. Por encima del fondo. */
