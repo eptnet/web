@@ -547,7 +547,7 @@ input[type="range"]::-moz-range-thumb { border: none; border-radius: 50%; backgr
     .desktop-nav { display: none; }
     .mobile-nav { display: flex; }
     .post-card {
-    min-height: unset; /* Anula la altura mínima en móviles */
+    min-height: 250px; /* Anula la altura mínima en móviles */
     }
     body { padding-bottom: 160px; } /* Espacio para menú y reproductor */
     .hero-content h1 { font-size: 2.5rem; }
