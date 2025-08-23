@@ -621,21 +621,25 @@ document.addEventListener('mainReady', () => {
     };
     audioPlayer.init();
 
-    // REEMPLAZA ESTA FUNCIÓN COMPLETA EN APP.JS
-
     function initHero() {
         const heroButton = document.getElementById('scroll-to-content-btn');
-        // Apuntamos al contenido principal, que siempre es visible
         const mainContent = document.querySelector('main.container'); 
+        const desktopNav = document.querySelector('.desktop-nav'); // Obtenemos la barra de navegación
 
-        if (heroButton && mainContent) {
+        if (heroButton && mainContent && desktopNav) {
             heroButton.addEventListener('click', () => {
-                mainContent.scrollIntoView({ behavior: 'smooth' });
+                const navHeight = desktopNav.offsetHeight; // Calculamos la altura actual de la barra
+                const contentTop = mainContent.offsetTop; // Obtenemos la posición del contenido
+                
+                // Le decimos a la ventana que se desplace a la posición del contenido MENOS la altura de la barra
+                window.scrollTo({
+                    top: contentTop - navHeight,
+                    behavior: 'smooth'
+                });
             });
         }
 
-        // La lógica para la transparencia del menú se mantiene
-        const desktopNav = document.querySelector('.desktop-nav');
+        // La lógica para la transparencia del menú se mantiene igual
         if (desktopNav) { 
             const checkNavPosition = () => { 
                 desktopNav.classList.toggle('is-at-top', window.scrollY < 50); 
