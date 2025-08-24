@@ -17,6 +17,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const participantsGrid = document.getElementById('participants-grid');
     const sceneButtonsContainer = document.getElementById('scene-buttons');
 
+    let isLive = false; 
+    const goLiveButton = document.getElementById('go-live-button');
+    const liveIndicator = document.getElementById('live-indicator');
+    const outputsPanel = document.getElementById('outputs-panel');
+
     // --- CLIENTE DEL SDK Y ESTADO DE LA APLICACIÓN ---
     const ZoomVideo = window.WebVideoSDK.default; 
     const client = ZoomVideo.createClient();
@@ -26,9 +31,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedMicId = '';
 
     let estadoProduccion = {
-        escenaActiva: null,
-        participantesEnEscena: [],
-        participantesSeleccionados: []
+        escenaActiva: 'solo', // La escena 'solo' está activa por defecto
+        participantesEnEscena: [], // Quién está EN VIVO ahora mismo
+        participantesSeleccionados: [], // Buffer temporal para escenas de varios slots
+        anclado: null // Para anclar un participante en un slot
     };
 
     // =============================================================
@@ -105,24 +111,91 @@ document.addEventListener('DOMContentLoaded', () => {
     client.on('connection-change', (payload) => {
         if (payload.state === 'Connected') {
             lobbyView.style.display = 'none';
-            productionView.style.display = 'block';
+            productionView.style.display = 'grid';
+            createAddSourceButton();
         }
     });
 
     async function createParticipantCard(userId) {
         if (document.getElementById(`participant-card-${userId}`)) return;
         const user = client.getUser(userId);
+        
         const card = document.createElement('div');
         card.className = 'participant-card';
         card.id = `participant-card-${userId}`;
         card.dataset.userId = userId;
+
         const videoElement = await stream.attachVideo(userId, 3);
+        
         const nameTag = document.createElement('span');
         nameTag.className = 'participant-name-thumb';
         nameTag.textContent = user.displayName;
+
+        // --- LÓGICA DEL BOTÓN DE SILENCIO MEJORADA ---
+        const muteBtn = document.createElement('button');
+        muteBtn.className = 'participant-mute-btn';
+        muteBtn.id = `mute-btn-${userId}`;
+        muteBtn.title = 'Silenciar / Activar audio';
+        
+        // Establecemos el ícono inicial CORRECTO al crear la tarjeta
+        if (user.audio === 'muted') {
+            muteBtn.innerHTML = '<i class="fa-solid fa-microphone-slash"></i>';
+        } else {
+            muteBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+        }
+        
+        // La lógica de clic ahora solo ENVÍA la orden
+        muteBtn.onclick = (e) => {
+            e.stopPropagation();
+            const participant = client.getUser(userId);
+            if (participant.audio === 'muted') {
+                stream.unmuteAudio(userId);
+            } else {
+                stream.muteAudio(userId);
+            }
+        };
+
         card.appendChild(videoElement);
         card.appendChild(nameTag);
+        card.appendChild(muteBtn);
+        
         participantsGrid.appendChild(card);
+    }
+
+    function createAddSourceButton() {
+        if (document.getElementById('add-source-card')) return;
+        const card = document.createElement('div');
+        card.className = 'participant-card add-card';
+        card.id = 'add-source-card';
+        card.innerHTML = '<i class="fa-solid fa-plus"></i>';
+        card.title = 'Añadir Fuente (Copiar Enlace de Invitación)';
+        // CORRECCIÓN: Asignamos el clic aquí, de forma segura.
+        card.onclick = getInviteLink; 
+        participantsGrid.appendChild(card);
+    }
+
+    client.on('user-audio-status-changed', (payload) => {
+        payload.forEach(user => {
+            const muteBtn = document.getElementById(`mute-btn-${user.userId}`);
+            if (muteBtn) {
+                if (user.audio === 'muted') {
+                    muteBtn.innerHTML = '<i class="fa-solid fa-microphone-slash"></i>';
+                } else {
+                    muteBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+                }
+            }
+        });
+    });
+
+    // --- NUEVO: Función para generar el enlace de invitación ---
+    function getInviteLink() {
+        const inviteURL = window.location.origin + window.location.pathname + '?role=guest';
+        navigator.clipboard.writeText(inviteURL).then(() => {
+            alert('¡Enlace de invitación copiado al portapapeles!');
+        }).catch(err => {
+            console.error('Error al copiar el enlace: ', err);
+            prompt('Copia manualmente este enlace:', inviteURL);
+        });
     }
 
     client.on('peer-video-state-change', (payload) => {
@@ -139,94 +212,148 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // --- NUEVO: Lógica del Sidebar ---
+    // Hacemos que el panel se abra/cierre al hacer clic en un botón de ícono
+    outputsPanel.querySelector('.icon-bar').addEventListener('click', (e) => {
+        if (e.target.closest('.panel-button')) {
+            outputsPanel.classList.toggle('open');
+        }
+    });
+
+    // --- NUEVO: Lógica de "Go Live" ---
+    function toggleLiveStream() {
+        isLive = !isLive; // Invierte el estado
+
+        if (isLive) {
+            // --- INICIAR STREAM ---
+            goLiveButton.querySelector('span').textContent = 'FINALIZAR';
+            goLiveButton.classList.add('streaming');
+            liveIndicator.style.display = 'block';
+
+            console.log("STREAM INICIADO");
+            // Aquí iría la lógica para conectar a un servicio de streaming (RTMP)
+
+        } else {
+            // --- FINALIZAR STREAM ---
+            goLiveButton.querySelector('span').textContent = 'GO LIVE';
+            goLiveButton.classList.remove('streaming');
+            liveIndicator.style.display = 'none';
+
+            console.log("STREAM FINALIZADO");
+        }
+    }
+
     // =================================================================
     // --- LÓGICA DEL CONMUTADOR DE ESCENAS ---
     // =================================================================
 
     function handleSceneSelection(layoutId) {
         if (!SCENE_LAYOUTS[layoutId]) return;
-        estadoProduccion.participantesSeleccionados = [];
-        document.querySelectorAll('.participant-card.selected').forEach(c => c.classList.remove('selected'));
+        
+        console.log(`Escena activa cambiada a: ${layoutId}`);
         estadoProduccion.escenaActiva = layoutId;
+        
+        // Actualiza visualmente el botón activo
         document.querySelectorAll('.scene-button.active').forEach(b => b.classList.remove('active'));
         sceneButtonsContainer.querySelector(`[data-layout="${layoutId}"]`).classList.add('active');
-        if (SCENE_LAYOUTS[layoutId].participantCount === 0) {
-            renderizarEscena();
-        }
+        
+        // Limpiamos la selección temporal y el anclaje al cambiar de escena
+        estadoProduccion.participantesSeleccionados = [];
+        estadoProduccion.anclado = null;
+        document.querySelectorAll('.participant-card.selected').forEach(c => c.classList.remove('selected'));
+        
+        // Al seleccionar una nueva escena, renderizamos con los participantes que ya estaban, si caben
+        renderizarEscena();
     }
 
     function handleParticipantSelection(userId) {
         if (!estadoProduccion.escenaActiva) return;
-        const { participantCount } = SCENE_LAYOUTS[estadoProduccion.escenaActiva];
+
+        const layout = SCENE_LAYOUTS[estadoProduccion.escenaActiva];
+        
+        // Lógica para escenas de 1 participante (cambio instantáneo)
+        if (layout.participantCount === 1) {
+            estadoProduccion.participantesEnEscena = [userId];
+            renderizarEscena();
+            return;
+        }
+
+        // Lógica para escenas de más de 1 participante
         const seleccionados = estadoProduccion.participantesSeleccionados;
         const card = document.getElementById(`participant-card-${userId}`);
+        
         if (seleccionados.includes(userId)) {
+            // Deseleccionar
             estadoProduccion.participantesSeleccionados = seleccionados.filter(id => id !== userId);
             card.classList.remove('selected');
         } else {
-            if (seleccionados.length < participantCount) {
+            // Seleccionar, si hay espacio
+            if (seleccionados.length < layout.participantCount) {
                 estadoProduccion.participantesSeleccionados.push(userId);
                 card.classList.add('selected');
             }
         }
-        if (estadoProduccion.participantesSeleccionados.length === participantCount) {
+        
+        // Si hemos llenado todos los slots, renderizamos la escena
+        if (estadoProduccion.participantesSeleccionados.length === layout.participantCount) {
+            estadoProduccion.participantesEnEscena = [...estadoProduccion.participantesSeleccionados];
             renderizarEscena();
+            
+            // Limpiamos la selección temporal para la próxima conmutación
+            estadoProduccion.participantesSeleccionados = [];
+            document.querySelectorAll('.participant-card.selected').forEach(c => c.classList.remove('selected'));
         }
     }
 
     // --- FUNCIÓN DE RENDERIZADO (REESCRITA Y ROBUSTA) ---
     async function renderizarEscena() {
-        if (!estadoProduccion.escenaActiva) return;
-    
+        if (!estadoProduccion.escenaActiva) {
+            videoContainer.innerHTML = ''; // Si no hay escena, limpia el escenario
+            return;
+        }
+
         const layout = SCENE_LAYOUTS[estadoProduccion.escenaActiva];
-        const participantes = estadoProduccion.participantesSeleccionados;
-    
+        // CORRECCIÓN: Usamos 'participantesEnEscena', no 'participantesSeleccionados'
+        const participantes = estadoProduccion.participantesEnEscena; 
+
         videoContainer.innerHTML = ''; // Limpiamos el escenario
-    
-        // Usamos Promise.all para preparar todos los videos en paralelo
+
         const tilesPromises = participantes.map(async (userId, index) => {
+            if (!layout.grid[index]) return null; // Seguridad por si hay más participantes que slots
+
             const gridPosition = layout.grid[index];
             const user = client.getUser(userId);
-    
+
             const tile = document.createElement('div');
             tile.className = 'video-tile';
             tile.id = `video-tile-${userId}`;
             
-            // Asignamos las coordenadas de la cuadrícula
             tile.style.gridColumn = gridPosition.column;
             tile.style.gridRow = gridPosition.row;
-    
-            // Adjuntamos el video en ALTA CALIDAD
+
             const videoElement = await stream.attachVideo(userId, 1);
             
-            // Creamos y añadimos la etiqueta con el nombre también en el escenario
             const nameTag = document.createElement('span');
-            nameTag.className = 'participant-name-thumb'; // Reutilizamos la clase
+            nameTag.className = 'participant-name-thumb';
             nameTag.textContent = user.displayName;
-    
+
             tile.appendChild(videoElement);
             tile.appendChild(nameTag);
-    
+
             return tile;
         });
-    
-        // Esperamos a que todos los tiles estén listos
-        const tiles = await Promise.all(tilesPromises);
-    
-        // Y solo entonces, los añadimos al DOM
+
+        const tiles = (await Promise.all(tilesPromises)).filter(Boolean); // Filtramos nulos
+
         tiles.forEach(tile => videoContainer.appendChild(tile));
         
-        // Limpiamos el estado para la próxima selección
-        estadoProduccion.escenaActiva = null;
-        estadoProduccion.participantesSeleccionados = [];
-        document.querySelectorAll('.participant-card.selected').forEach(c => c.classList.remove('selected'));
-        document.querySelectorAll('.scene-button.active').forEach(b => b.classList.remove('active'));
+        // CORRECCIÓN: Hemos eliminado las líneas que borraban el estado de la escena.
     }
 
     // =================================================================
     // --- INICIO DE LA APLICACIÓN Y EVENT LISTENERS GLOBALES ---
     // =================================================================
-    
+        
     setupLobby();
     joinButton.addEventListener('click', joinSession);
 
@@ -239,8 +366,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     participantsGrid.addEventListener('click', (e) => {
         const card = e.target.closest('.participant-card');
+        // Aseguramos que no se active al hacer clic en el botón de añadir
         if (card && card.dataset.userId) {
             handleParticipantSelection(parseInt(card.dataset.userId, 10));
         }
     });
+
+    goLiveButton.addEventListener('click', toggleLiveStream);
+    // CORRECCIÓN: La siguiente línea ha sido eliminada para evitar el crash.
+    // document.getElementById('add-source-button').addEventListener('click', getInviteLink);
 });

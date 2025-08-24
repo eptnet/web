@@ -1,260 +1,223 @@
 /* ============================================================= */
-/* === EPTSTREAM CSS - ESTRATEGIA SIMPLIFICADA === */
+/* === EPTSTREAM CSS - VERSIÓN FINAL Y FUNCIONAL (GRID)      === */
 /* ============================================================= */
 
-/* === VARIABLES DE COLOR === */
 :root {
-    --color-background: #f0f2f5;
-    --color-surface: #ffffff;
-    --color-text-primary: #1c1e21;
-    --color-text-secondary: #65676b;
+    --color-background: #1e1e1e;
+    --color-surface: #2d2d2d;
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #a0a0a0;
     --color-accent: #b72a1e;
-    --color-border: #ddd;
-    --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --color-border: #444444;
     --border-radius: 12px;
-    --gap: 20px;
+    --gap: 16px;
 }
 
-/* === ESTILOS BASE === */
-*, *::before, *::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: var(--color-background);
-    color: var(--color-text-primary);
-    height: 100vh;
-    overflow: hidden;
-}
-button {
-    cursor: pointer;
-    font-family: inherit;
-    border: none;
-    border-radius: 8px;
-}
+/* --- RESETS Y CONFIGURACIÓN GLOBAL --- */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--color-background); color: var(--color-text-primary); display: flex; }
 
 /* === LOBBY === */
-#lobby {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    padding: var(--gap);
-}
-#lobby h2 { margin-bottom: 20px; }
-#lobby video { width: 100%; max-width: 480px; aspect-ratio: 16 / 9; background: #000; border-radius: var(--border-radius); box-shadow: var(--shadow-light); }
-#lobby .controls { display: flex; flex-direction: column; gap: 10px; margin: 20px auto; width: 100%; max-width: 400px; }
-#lobby select, #lobby button { padding: 12px; font-size: 1rem; border: 1px solid var(--color-border); border-radius: 8px; background-color: var(--color-surface); }
-#lobby #join-button { background-color: var(--color-accent); color: white; font-weight: bold; }
-#lobby #join-button:disabled { background-color: #ccc; }
+#lobby { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; gap: 15px; }
+#lobby h2 { font-weight: 600; }
+#lobby #video-preview { width: 100%; max-width: 480px; aspect-ratio: 16 / 9; background: #000; border-radius: var(--border-radius); border: 1px solid var(--color-border); }
+#lobby .controls { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 400px; }
+#lobby label { font-size: 0.9rem; color: var(--color-text-secondary); margin-top: 5px; }
+#lobby select, #lobby button { color: var(--color-text-primary); padding: 12px; font-size: 1rem; border: 1px solid var(--color-border); border-radius: 8px; background-color: var(--color-surface); }
+#lobby #join-button { background-color: var(--color-accent); font-weight: bold; cursor: pointer; transition: background-color 0.2s; }
+#lobby #join-button:hover { background-color: #d13e32; }
+#lobby #join-button:disabled { background-color: #555; color: #888; cursor: not-allowed; }
 
-/* === ESTRUCTURA PRINCIPAL === */
+/* === ESTRUCTURA PRINCIPAL (CSS GRID) === */
 #production-room {
-    width: 100%;
-    height: 100%;
-}
-.main-grid {
     display: grid;
-    /* Mantiene la división en dos columnas */
-    grid-template-columns: 3fr 1fr;
-    /* El escenario ocupará la mayor parte verticalmente */
-    grid-template-rows: 1fr auto; /* 1fr para el escenario, auto para la barra de control */
-    gap: var(--gap);
-    height: 100%;
+    width: 100%;
+    height: 100vh;
     padding: var(--gap);
-}
-
-/* === 1. ESCENARIO (Columna Izquierda) === */
-#escenario {
-    grid-column: 1 / 2;
-    grid-row: 1 / 2;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    overflow: hidden;
     gap: var(--gap);
-    /* Aseguramos que ocupe todo el alto de su celda */
-    height: 100%;
+
+    /* --- EL MAPA CORREGIDO --- */
+    /* Definimos 3 filas y 2 columnas */
+    grid-template-rows: auto 1fr auto; /* Fila superior (auto), fila central flexible (1fr), fila inferior (auto) */
+    grid-template-columns: 1fr auto;   /* Columna principal flexible (1fr), columna de iconos (auto) */
+    
+    /* Asignamos nombres a cada área, incluyendo 'layers' */
+    grid-template-areas:
+      "layers layers"
+      "center outputs"
+      "footer footer";
 }
 
-#video-container {
-    /* Ahora DEBE ocupar todo el espacio disponible */
-    flex-grow: 1;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(4, 1fr);
-    gap: 10px;
-    width: 100%;
-    background-color: #111;
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-light);
-    padding: 10px;
-    overflow: hidden;
-    /* Forzamos la altura al 100% de su contenedor flex */
-    height: 100%;
-}
-#video-container .video-tile {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    background-color: #000;
-    border-radius: 8px;
-    overflow: hidden;
-}
-.video-tile video-player {
-    display: block;
-    width: 100%;
-    height: 100%;
-}
-
-/* === 2. PANEL DE CONTROL (Columna Derecha) === */
-#panel-control {
-    grid-column: 2 / 3;
-    grid-row: 1 / 2;
-    display: flex;
-    flex-direction: column;
-    gap: var(--gap);
+/* === ASIGNACIÓN DE PIEZAS AL GRID === */
+#layers-panel { 
+    grid-area: layers;
+    max-height: 25vh;
     overflow-y: auto;
 }
-.bento-box {
-    background-color: var(--color-surface);
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-light);
-    padding: 1rem;
+#center-column { 
+    grid-area: center;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    min-height: 0;
+    gap: var(--gap);
 }
-.bento-box h4 {
-    color: var(--color-text-secondary);
-    font-size: 0.9rem;
-    font-weight: 600;
-    border-bottom: 1px solid var(--color-border);
-    padding-bottom: 0.5rem;
-    margin-bottom: 0.5rem;
+/* Estilos para el sidebar #outputs-panel */
+#outputs-panel { 
+    grid-area: outputs;
+    display: flex; /* Para poner la barra de íconos y el contenido uno al lado del otro */
+    background-color: var(--color-surface); 
+    border-radius: var(--border-radius);
+    padding: 0;
+    transition: all 0.3s ease;
+    width: 60px; /* Ancho inicial (colapsado) */
 }
-.bento-box h4 i { margin-right: 8px; }
-#participants-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 10px;
-    width: 100%;
+#outputs-panel.open {
+    width: 300px; /* Ancho cuando está expandido */
 }
-.participant-card {
-    position: relative;
-    display: block;
-    cursor: pointer;
-    border: 2px solid transparent;
-    border-radius: 8px;
-    overflow: hidden;
-    transition: all 0.2s ease-in-out;
-}
-.participant-card:hover { border-color: rgba(183, 42, 30, 0.5); }
-.participant-card.selected { border-color: var(--color-accent); }
-.participant-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background-color: #333;
-    z-index: 0;
-}
-.participant-card > video-player {
-    display: block;
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    border-radius: 8px;
-    position: relative;
-    z-index: 1;
-}
-.participant-card .participant-name-thumb,
-.participant-card .participant-controls {
-    position: absolute;
-    z-index: 2;
-}
-.participant-card .participant-name-thumb {
-    bottom: 4px;
-    left: 4px;
-    font-size: 0.8rem;
-    background: rgba(0,0,0,0.6);
-    color: white;
-    padding: 2px 6px;
-    border-radius: 4px;
-}
-.participant-card .participant-controls {
-    top: 4px;
-    right: 4px;
-    background: rgba(0,0,0,0.6);
-    color: white;
-    padding: 4px;
-    border-radius: 50%;
-    font-size: 0.7rem;
+.icon-bar {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    padding: var(--gap);
+    gap: var(--gap);
+    border-right: 1px solid var(--color-border);
+}
+.sidebar-content {
+    padding: var(--gap);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    width: 0;
+    overflow: hidden;
+}
+#outputs-panel.open .sidebar-content {
+    opacity: 1;
+    width: 100%;
+}
+
+#control-bar {
+    grid-area: footer;
+    display: flex;
+    flex-direction: row;
     justify-content: center;
+    align-items: center;
+    gap: var(--gap);
 }
-#scene-buttons {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
-    gap: 10px;
+
+/* === ESTILOS DE COMPONENTES INTERNOS === */
+#stage-area {
+    position: relative; /* Necesario para el posicionamiento del indicador "EN VIVO" */
+    min-height: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
-.scene-button {
-    aspect-ratio: 1 / 1;
-    background-color: var(--color-background);
-    border: 1px solid var(--color-border);
-    font-size: 1.2rem;
+#video-container { 
+    width: 100%; 
+    max-height: 100%; 
+    margin: 0 auto; 
+    aspect-ratio: 16 / 9; 
+    display: grid; 
+    grid-template-columns: repeat(4, 1fr); 
+    grid-template-rows: repeat(4, 1fr); 
+    gap: 8px; 
+    background-color: #000; 
+    border-radius: var(--border-radius); 
+    overflow: hidden; 
+}
+#video-container.aspect-16-9 { aspect-ratio: 16 / 9; }
+#video-container.aspect-9-16 { aspect-ratio: 9 / 16; }
+
+.video-tile { position: relative; background-color: #1a1a1a; border-radius: 6px; overflow: hidden; }
+
+#green-room-panel, #media-library-panel { flex-grow: 1; min-height: 0; } /* Paneles dentro de la columna central */
+#participants-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; overflow-y: auto; height: 100%; align-content: start; }
+.participant-card { position: relative; cursor: pointer; border: 3px solid transparent; border-radius: 8px; overflow: hidden; aspect-ratio: 16 / 9; background-color: #2c2c2c; transition: border-color 0.2s; }
+.participant-card.add-card {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2rem;
     color: var(--color-text-secondary);
-    transition: all 0.2s ease;
+    background-color: var(--color-background);
+    cursor: pointer;
 }
-.scene-button:hover { background-color: #e4e6e9; }
+.participant-card.add-card:hover {
+    background-color: #3f3f3f;
+    border-color: var(--color-text-secondary);
+}
+.participant-card.selected { border-color: var(--color-accent); }
+.participant-name-thumb { position: absolute; bottom: 5px; left: 8px; font-size: 0.8rem; font-weight: 500; background: rgba(0, 0, 0, 0.6); color: white; padding: 3px 8px; border-radius: 4px; z-index: 10; }
+/* Esta regla le dice al contenedor del video del SDK 
+  que ocupe el 100% del espacio de su padre (.participant-card o .video-tile)
+*/
+.participant-card > video-player-container, 
+.video-tile > video-player-container {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/*
+  Y esta regla le dice a la etiqueta <video> DENTRO de ese contenedor
+  que se adapte, manteniendo su proporción sin deformarse.
+*/
+.participant-card video, 
+.video-tile video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* ¡La propiedad clave! */
+}
+.participant-mute-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(0,0,0,0.5);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.2s;
+}
+.participant-mute-btn:hover {
+    background: rgba(0,0,0,0.8);
+}
+
+#bottom-controls-area { display: flex; gap: var(--gap); }
+.panel { background-color: var(--color-surface); border-radius: var(--border-radius); padding: 1rem; display: flex; flex-direction: column; }
+.panel h4 { font-size: 0.9rem; font-weight: 600; color: var(--color-text-secondary); border-bottom: 1px solid var(--color-border); padding-bottom: 0.75rem; margin-bottom: 0.75rem; }
+.panel h4 i { margin-right: 8px; }
+.panel p { text-align: center; color: var(--color-text-secondary); margin-top: 20px; }
+
+#scenes-panel { flex-grow: 1; }
+#scene-buttons { display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 10px; }
+.scene-button { aspect-ratio: 1 / 1; background-color: var(--color-background); border: 1px solid var(--color-border); font-size: 1.5rem; color: var(--color-text-secondary); transition: all 0.2s ease; cursor: pointer; border-radius: 8px; }
 .scene-button.active { background-color: var(--color-accent); color: white; border-color: var(--color-accent); }
 
-/* === BARRA DE CONTROL === */
-#control-bar {
-    grid-column: 1 / 2; /* Aseguramos que ocupe todo el ancho del escenario */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
-    padding: 10px;
-    background-color: var(--color-surface);
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-light);
-}
-.control-btn {
-    background: none;
-    color: var(--color-text-primary);
-    font-size: 1rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-    padding: 10px;
-    min-width: 70px;
-    border-radius: 8px;
-    transition: background-color 0.2s ease;
-}
-.control-btn:hover { background-color: var(--color-background); }
-.control-btn i { font-size: 1.2rem; }
+.control-btn { background: none; color: var(--color-text-primary); font-size: 0.9rem; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px; min-width: 65px; border-radius: 6px; transition: background-color 0.2s ease; border: none; cursor: pointer; }
 .control-btn.go-live-btn { background-color: var(--color-accent); color: white; font-weight: bold; }
-.control-btn.go-live-btn:hover { background-color: #a1251a; }
+.panel-button { background: none; font-size: 1.5rem; color: var(--color-text-secondary); width: 44px; height: 44px; border-radius: 50%; transition: background-color 0.2s ease; border: none; cursor: pointer; }
 
-/* === DISEÑO RESPONSIVO === */
-@media (max-width: 1024px) {
-    .main-grid {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto 1fr auto; /* Auto para escenario, 1fr para panel, auto para controles */
-    }
-    #escenario { grid-row: 1 / 2; }
-    #panel-control { grid-row: 2 / 3; }
-    #control-bar { grid-row: 3 / 4; } /* La barra de control también se mueve abajo */
-    #control-bar { max-width: 100%; border-radius: 0; box-shadow: none; } /* Ocupa todo el ancho en móvil */
+/* Estilo para el botón Go Live cuando está transmitiendo */
+.go-live-btn.streaming {
+    background-color: #A60000; /* Rojo oscuro cuando está en vivo */
 }
-@media (max-width: 768px) {
-    #panel-control { flex-direction: column; }
-    .control-btn span { display: none; }
-    .control-btn { min-width: 50px; }
+
+/* Estilo para el indicador EN VIVO */
+#live-indicator {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background-color: red;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    z-index: 100;
 }

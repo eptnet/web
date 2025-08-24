@@ -5,63 +5,74 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EPTstream - Estudio de Producción</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="css/stream.css">
+    <link rel="stylesheet" href="/inv/css/stream.css?v=1.0">
 </head>
 <body>
 
     <div id="lobby">
-        <h2>Sala de Espera</h2>
+        <h2>Configura tu Entrada</h2>
         <video id="video-preview" autoplay playsinline muted></video>
         <div class="controls">
-            <select id="camera-select" title="Seleccionar cámara"></select>
-            <select id="mic-select" title="Seleccionar micrófono"></select>
-            <button id="join-button" disabled>Unirse a la Producción</button>
+            <label for="camera-select">Cámara:</label>
+            <select id="camera-select"></select>
+            <label for="mic-select">Micrófono:</label>
+            <select id="mic-select"></select>
+            <button id="join-button" disabled>Unirse a Producción</button>
         </div>
-        <div id="status">Preparando...</div>
     </div>
 
     <div id="production-room" style="display: none;">
 
-        <div class="main-grid">
-            
-            <main id="escenario">
-                <video-player-container id="video-container">
-                    </video-player-container>
+        <main id="center-column">
+            <div id="stage-area">
+                <div id="video-container"></div>
+                <div id="live-indicator" style="display: none;">EN VIVO</div>
+            </div>
 
-                <footer id="control-bar">
-                    <button class="control-btn" id="mic-toggle" title="Silenciar / Activar Micrófono"><i class="fa-solid fa-microphone"></i><span>Mic</span></button>
-                    <button class="control-btn" id="video-toggle" title="Detener / Iniciar Video"><i class="fa-solid fa-video"></i><span>Video</span></button>
-                    <button class="control-btn" id="settings-toggle" title="Configuración"><i class="fa-solid fa-cog"></i><span>Ajustes</span></button>
-                    <button class="control-btn go-live-btn" id="go-live-button"><i class="fa-solid fa-satellite-dish"></i><span>GO LIVE</span></button>
-                </footer>
-            </main>
-
-            <aside id="panel-control">
-                
-                <div id="green-room-panel" class="bento-box">
-                    <h4><i class="fa-solid fa-users"></i> Participantes</h4>
-                    <video-player-container id="participants-grid">
-                        </video-player-container>
-                </div>
-
-                <div id="scenes-panel" class="bento-box">
-                    <h4><i class="fa-solid fa-table-cells-large"></i> Escenas</h4>
-                    <div id="scene-buttons">
-                        <button class="scene-button" data-layout="solo" title="Solitario"><i class="fa-solid fa-user"></i></button>
-                        <button class="scene-button" data-layout="duo-horizontal" title="Dúo"><i class="fa-solid fa-user-group"></i></button>
-                        <button class="scene-button" data-layout="sidebar-derecha" title="Trío"><i class="fa-solid fa-users-line"></i></button>
-                        <button class="scene-button" data-layout="cuadricula" title="Cuadrícula"><i class="fa-solid fa-grip"></i></button>
-                        <button class="scene-button" data-layout="feature" title="Picture-in-Picture"><i class="fa-solid fa-photo-film"></i></button>
-                    </div>
-                </div>
-
+            <aside id="layers-panel" class="panel">
+                <div id="participants-grid"></div>
             </aside>
 
-        </div>
+            
+                <div id="scenes-panel" class="panel">
+                    <div id="scene-buttons">
+                        <button class="scene-button" data-layout="solo" title="Solitario (1)"><i class="fa-solid fa-user"></i></button>
+                        <button class="scene-button" data-layout="duo-horizontal" title="Dúo Horizontal (2)"><i class="fa-solid fa-user-group"></i></button>
+                        <button class="scene-button" data-layout="sidebar-derecha" title="Principal y Lateral (2)"><i class="fa-solid fa-table-columns"></i></button>
+                        <button class="scene-button" data-layout="feature" title="Destacado (3)"><i class="fa-solid fa-photo-film"></i></button>
+                    </div>
+                </div>
+            
+        </main>
+
+        <aside id="outputs-panel">
+            <div class="icon-bar">
+                <button class="panel-button" title="Overlays"><i class="fa-solid fa-layer-group"></i></button>
+                <button class="panel-button" title="Comentarios"><i class="fa-solid fa-comments"></i></button>
+                <button class="panel-button" title="Chat Interno"><i class="fa-solid fa-user-secret"></i></button>
+                <button class="panel-button" title="Destinos"><i class="fa-solid fa-satellite-dish"></i></button>
+                <button class="panel-button" title="Recursos"><i class="fa-solid fa-photo-film"></i></button>
+            </div>
+            <div class="sidebar-content">
+                <h4>Panel de Overlays</h4>
+                <p>Próximamente.</p>
+            </div>
+            <div class="sidebar-content">
+                <h4><i class="fa-solid fa-photo-film"></i> Recursos</h4>
+                <p>Próximamente.</p>
+            </div>
+        </aside>
+
+        <footer id="control-bar" class="panel">
+            <button class="control-btn" id="mic-toggle" title="Silenciar Micrófono"><i class="fa-solid fa-microphone"></i><span>Mic</span></button>
+            <button class="control-btn" id="video-toggle" title="Detener Video"><i class="fa-solid fa-video"></i><span>Video</span></button>
+            <button class="control-btn go-live-btn" id="go-live-button"><i class="fa-solid fa-satellite-dish"></i><span>GO LIVE</span></button>
+        </footer>
+
     </div>
     
     <script src="https://source.zoom.us/videosdk/zoom-video-2.2.5.min.js"></script>
-    <script src="js/layouts.js"></script>
-    <script src="js/stream.js"></script>
+    <script src="/inv/js/layouts.js"></script>
+    <script src="/inv/js/stream.js?v=1.1"></script>
 </body>
 </html>
