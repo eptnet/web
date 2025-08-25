@@ -37,40 +37,37 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helve
     padding: var(--gap);
     gap: var(--gap);
 
-    /* --- EL MAPA CORREGIDO --- */
-    /* Definimos 3 filas y 2 columnas */
-    grid-template-rows: auto 1fr auto; /* Fila superior (auto), fila central flexible (1fr), fila inferior (auto) */
-    grid-template-columns: 1fr auto;   /* Columna principal flexible (1fr), columna de iconos (auto) */
-    
-    /* Asignamos nombres a cada área, incluyendo 'layers' */
+    /* --- EL NUEVO MAPA (MÁS SIMPLE) --- */
+    /* Solo 2 columnas y 2 filas, como en tu layout */
+    grid-template-columns: 1fr auto;   /* Columna central flexible, columna de outputs de ancho fijo */
+    grid-template-rows: 1fr auto;      /* Fila principal flexible, fila inferior para la barra de control */
     grid-template-areas:
-      "layers layers"
       "center outputs"
       "footer footer";
 }
 
 /* === ASIGNACIÓN DE PIEZAS AL GRID === */
-#layers-panel { 
-    grid-area: layers;
-    max-height: 25vh;
-    overflow-y: auto;
-}
+/*
+  Ahora, las únicas "piezas" que el grid principal necesita ordenar
+  son la columna central, la de outputs y la barra de control.
+  El resto (escenario, green room, escenas) se ordenan solos
+  dentro de #center-column.
+*/
 #center-column { 
     grid-area: center;
     display: flex;
-    flex-direction: column;
+    flex-direction: column; /* Apila verticalmente escenario, gRoom y escenas */
     min-height: 0;
     gap: var(--gap);
 }
-/* Estilos para el sidebar #outputs-panel */
 #outputs-panel { 
     grid-area: outputs;
-    display: flex; /* Para poner la barra de íconos y el contenido uno al lado del otro */
+    display: flex;
     background-color: var(--color-surface); 
     border-radius: var(--border-radius);
-    padding: 0;
-    transition: all 0.3s ease;
+    transition: width 0.3s ease;
     width: 60px; /* Ancho inicial (colapsado) */
+    overflow: hidden; /* Oculta el contenido que se desborda */
 }
 #outputs-panel.open {
     width: 300px; /* Ancho cuando está expandido */
@@ -81,19 +78,20 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helve
     padding: var(--gap);
     gap: var(--gap);
     border-right: 1px solid var(--color-border);
+    flex-shrink: 0; /* Evita que la barra de iconos se encoja */
 }
-.sidebar-content {
+.sidebar-content-wrapper {
     padding: var(--gap);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    width: 0;
-    overflow: hidden;
-}
-#outputs-panel.open .sidebar-content {
-    opacity: 1;
     width: 100%;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    white-space: nowrap; /* Evita que el texto se parta y colapse */
 }
 
+#outputs-panel.open .sidebar-content-wrapper {
+    opacity: 1;
+    transition-delay: 0.1s; /* Pequeño retraso para que aparezca después de expandirse */
+}
 #control-bar {
     grid-area: footer;
     display: flex;
@@ -127,8 +125,16 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helve
 #video-container.aspect-16-9 { aspect-ratio: 16 / 9; }
 #video-container.aspect-9-16 { aspect-ratio: 9 / 16; }
 
-.video-tile { position: relative; background-color: #1a1a1a; border-radius: 6px; overflow: hidden; }
-
+.video-tile { 
+    position: relative; 
+    background-color: #1a1a1a; 
+    border-radius: 6px; 
+    overflow: hidden;
+    /* Añadido: Asegura que el contenido se estire */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 #green-room-panel, #media-library-panel { flex-grow: 1; min-height: 0; } /* Paneles dentro de la columna central */
 #participants-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; overflow-y: auto; height: 100%; align-content: start; }
 .participant-card { position: relative; cursor: pointer; border: 3px solid transparent; border-radius: 8px; overflow: hidden; aspect-ratio: 16 / 9; background-color: #2c2c2c; transition: border-color 0.2s; }
@@ -147,25 +153,21 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helve
 }
 .participant-card.selected { border-color: var(--color-accent); }
 .participant-name-thumb { position: absolute; bottom: 5px; left: 8px; font-size: 0.8rem; font-weight: 500; background: rgba(0, 0, 0, 0.6); color: white; padding: 3px 8px; border-radius: 4px; z-index: 10; }
-/* Esta regla le dice al contenedor del video del SDK 
-  que ocupe el 100% del espacio de su padre (.participant-card o .video-tile)
-*/
+/* Regla para el CONTENEDOR que inyecta el SDK de Zoom */
 .participant-card > video-player-container, 
 .video-tile > video-player-container {
     display: block;
     width: 100%;
     height: 100%;
+    overflow: hidden;
 }
 
-/*
-  Y esta regla le dice a la etiqueta <video> DENTRO de ese contenedor
-  que se adapte, manteniendo su proporción sin deformarse.
-*/
+/* Regla para la ETIQUETA <video> final */
 .participant-card video, 
 .video-tile video {
     width: 100%;
     height: 100%;
-    object-fit: cover; /* ¡La propiedad clave! */
+    object-fit: cover; /* La propiedad mágica: rellena el espacio sin deformarse */
 }
 .participant-mute-btn {
     position: absolute;
