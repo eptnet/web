@@ -30,8 +30,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const client = ZoomVideo.createClient();
     let stream;
     let chatClient; // Para la comunicación
+    let liveStreamClient;
     let localPreviewStream;
     let isLive = false; 
+
+    // --- NUEVO: Credenciales para la transmisión en vivo ---
+    // ¡IMPORTANTE! Reemplaza estos valores con los de tu plataforma (YouTube, etc.)
+    const RTMP_URL = "rtmp://x.rtmp.youtube.com/live2";
+    const STREAM_KEY = "h03h-y2e0-36b5-3x4c-9wdh";
+    // ---
 
     let estadoProduccion = {
         escenaActiva: 'solo',
@@ -92,6 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             stream = client.getMediaStream();
             chatClient = client.getChatClient();
+            liveStreamClient = client.getLiveStreamClient(); // <-- AÑADE ESTA LÍNEA
 
             await stream.startAudio({ audioId: micSelect.value });
             await stream.startVideo({ cameraId: cameraSelect.value });
@@ -127,40 +135,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     client.on('chat-new-message', (payload) => {
+        // Solo los invitados deben procesar estos comandos
+        if (!isGuest) return;
+
         try {
             const command = JSON.parse(payload.message);
-            
-            // Lógica para el PRODUCTOR: si recibe una petición, responde.
-            if (!isGuest && command.type === 'guest-request-scene') {
-                console.log('Petición de escena recibida. Respondiendo...');
-                // Envía el estado actual del stream (si está en vivo) y la escena.
-                chatClient.send(JSON.stringify({
-                    type: 'initial-state',
-                    isLive: isLive,
-                    scene: estadoProduccion.escenaActiva,
-                    participants: estadoProduccion.participantesEnEscena
-                }));
-                return;
+
+            // Caso 1: El productor cambia el estado de la transmisión (EN VIVO / FINALIZADO)
+            if (command.type === 'live-state-change') {
+                console.log('Comando de estado EN VIVO recibido:', command);
+                isLive = command.status; // Actualizamos el estado local del invitado
+                if (!isLive) {
+                    videoContainer.innerHTML = ''; // Si la transmisión finaliza, limpiamos su escenario
+                }
             }
 
-            // Lógica para el INVITADO
-            if (isGuest) {
-                if(command.type === 'scene-change' || command.type === 'initial-state') {
-                    console.log('Comando de escena recibido:', command);
-                    estadoProduccion.escenaActiva = command.scene;
-                    estadoProduccion.participantesEnEscena = command.participants;
-                    if (isLive || command.type === 'initial-state') {
-                        renderizarEscena();
-                    }
-                }
-                if(command.type === 'live-state-change') {
-                    console.log('Comando de estado EN VIVO recibido:', command);
-                    isLive = command.status;
-                    if (isLive) {
-                        renderizarEscena();
-                    } else {
-                        videoContainer.innerHTML = '';
-                    }
+            // Caso 2: El productor cambia la escena MIENTRAS está en vivo
+            if (command.type === 'scene-change') {
+                console.log('Comando de escena recibido:', command);
+                // El invitado guarda la nueva escena y participantes
+                estadoProduccion.escenaActiva = command.scene;
+                estadoProduccion.participantesEnEscena = command.participants;
+                // Y solo renderiza si la transmisión está activa
+                if (isLive) {
+                    renderizarEscena();
                 }
             }
         } catch (error) { /* Ignora mensajes que no son JSON */ }
@@ -240,23 +238,45 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    function toggleLiveStream() {
+    client.on('live-stream-status', (payload) => {
+        // El payload puede ser 'connecting', 'live', 'failed', 'stopped'
+        console.log(`Estado de la transmisión en vivo: ${payload.status}`);
+    });
+
+    async function toggleLiveStream() {
         isLive = !isLive;
         const liveButtonSpan = goLiveButton.querySelector('span');
 
-        if (isLive) {
-            if(liveButtonSpan) liveButtonSpan.textContent = 'FINALIZAR';
-            goLiveButton.classList.add('streaming');
-            liveIndicator.style.display = 'block';
-            renderizarEscena();
-        } else {
-            if(liveButtonSpan) liveButtonSpan.textContent = 'GO LIVE';
-            goLiveButton.classList.remove('streaming');
-            liveIndicator.style.display = 'none';
-        }
-        
-        if (chatClient) {
-            chatClient.send(JSON.stringify({ type: 'live-state-change', status: isLive }));
+        try {
+            if (isLive) {
+                // --- INICIAR STREAM ---
+                if(liveButtonSpan) liveButtonSpan.textContent = 'FINALIZAR';
+                goLiveButton.classList.add('streaming');
+                liveIndicator.style.display = 'block';
+
+                // ¡CORRECCIÓN! Añadimos el tercer argumento requerido ('https://zoom.us')
+                await liveStreamClient.startLiveStream(RTMP_URL, STREAM_KEY, 'https://zoom.us');
+                
+                console.log("TRANSMISIÓN EN VIVO INICIADA HACIA RTMP");
+                renderizarEscena();
+
+            } else {
+                // --- FINALIZAR STREAM ---
+                if(liveButtonSpan) liveButtonSpan.textContent = 'GO LIVE';
+                goLiveButton.classList.remove('streaming');
+                liveIndicator.style.display = 'none';
+                
+                await liveStreamClient.stopLiveStream();
+                console.log("TRANSMISIÓN EN VIVO FINALIZADA");
+            }
+
+            if (chatClient) {
+                chatClient.send(JSON.stringify({ type: 'live-state-change', status: isLive }));
+            }
+        } catch (error) {
+            // MEJORA: Mostramos un error más detallado en la consola
+            console.error("Error al gestionar la transmisión en vivo:", error);
+            isLive = !isLive; // Revertimos el estado si hay un error
         }
     }
 
@@ -341,7 +361,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const tiles = (await Promise.all(tilesPromises)).filter(Boolean);
         tiles.forEach(tile => videoContainer.appendChild(tile));
 
-        if (!isGuest && chatClient) {
+        // --- LÓGICA DE ENVÍO ACTUALIZADA ---
+        // Solo enviamos una actualización de escena si NO somos un invitado Y ESTAMOS EN VIVO
+        if (!isGuest && isLive && chatClient) {
             try {
                 chatClient.send(JSON.stringify({
                     type: 'scene-change',
