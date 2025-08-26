@@ -537,3 +537,53 @@ body.loading-profile .main-content {
     width: 24px;
     text-align: center;
 }
+/* ===================================================
+   ESTILOS MEJORADOS PARA BOTONES DE NAVEGACIÓN DEL PERFIL
+   =================================================== */
+
+/* 1. Ajustamos el contenedor para dar más espacio */
+.profile-card-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem; /* Aumentamos el espacio entre botones (puedes ajustarlo a 1rem si quieres más) */
+    margin-top: 1.5rem;
+}
+
+/* 2. Damos estilo de botón a cada enlace */
+.profile-card-nav__link {
+    display: flex; /* Para alinear icono y texto */
+    align-items: center;
+    gap: 0.75rem; /* Espacio entre icono y texto */
+    
+    padding: 12px 16px;
+    background-color: var(--color-background); /* Fondo sutil para diferenciarlo de la tarjeta */
+    border: 1px solid var(--color-border);
+    border-radius: 8px; /* Esquinas redondeadas */
+    
+    text-decoration: none;
+    text-align: left;
+    font-weight: 500;
+    color: var(--color-primary);
+    
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* 3. Añadimos un efecto visual al pasar el cursor */
+.profile-card-nav__link:hover {
+    background-color: var(--color-surface);
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+}
+
+/* 4. Estilo para el icono dentro del botón */
+.profile-card-nav__link i {
+    width: 20px; /* Ancho fijo para alineación */
+    text-align: center;
+    color: var(--color-secondary);
+    transition: color 0.2s ease;
+}
+
+/* 5. También cambiamos el color del icono al pasar el cursor */
+.profile-card-nav__link:hover i {
+    color: var(--color-accent);
+}
