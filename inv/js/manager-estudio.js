@@ -664,7 +664,7 @@ export const Studio = {
         
         list.innerHTML = this.participants.map(p => `
             <li data-user-id="${p.id}">
-                <img src="${p.avatar || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="">
+                <img src="${p.avatar || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="" class="participant-avatar">
                 <span>${p.name}</span>
                 <button type="button" class="btn-remove-participant">&times;</button>
             </li>
@@ -685,16 +685,22 @@ export const Studio = {
 
     openSession(sessionData) {
         const session = JSON.parse(decodeURIComponent(sessionData));
-        
-        if (!session.director_url) {
-            alert("Esta sesión no tiene una sala de control definida.");
+
+        // Verificamos si la sesión tiene un ID para construir el enlace
+        if (!session.id) {
+            alert("Esta sesión no tiene un ID válido.");
             return;
         }
-
-        // Esta es la lógica corregida. Ahora, simplemente abrimos la URL
-        // que está guardada en la base de datos, sin importar si es la de
-        // VDO.Ninja, EPTstream o cualquier otra.
-        window.open(session.director_url, '_blank');
+        
+        // --- LÓGICA ACTUALIZADA ---
+        // Si la plataforma NO es 'eptstream', abre la sala de control local.
+        if (session.platform !== 'eptstream') {
+            window.open(`/inv/sala-de-control.html?id=${session.id}`, '_blank');
+        } else {
+            // Si es 'eptstream', abre su sala de producción directa.
+            window.open(session.director_url, '_blank');
+        }
+        // --- FIN DE LA LÓGICA ---
     },
 
     async savePlatformId(sessionId) {

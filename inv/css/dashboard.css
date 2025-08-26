@@ -1036,5 +1036,47 @@ textarea[name="description"] {
     margin-left: -12px;
 }
 
+/* --- Estilos para la lista de participantes añadidos en el modal --- */
+
+#added-participants-ul {
+    list-style: none;
+    padding: 0;
+    margin-top: 1rem;
+}
+
+#added-participants-ul li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background-color: var(--color-background);
+    padding: 0.5rem;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+}
+
+#added-participants-ul .participant-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+#added-participants-ul span {
+    flex-grow: 1;
+    font-weight: 500;
+}
+
+#added-participants-ul .btn-remove-participant {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    color: var(--color-secondary);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+}
+
 /* --- FIN: Estilos para Avatares --- */
 
