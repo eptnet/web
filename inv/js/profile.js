@@ -104,6 +104,13 @@ const ProfileApp = {
             else if (action === 'sync-orcid-works-btn') this.handleSyncWorks();
             else if (action === 'bsky-disconnect-btn') this.handleBlueskyDisconnect();
             else if (action === 'connect-community-btn-modal') this.openCommunityModal();
+
+            const themeSwitcherDesktop = document.getElementById('theme-switcher-desktop');
+            themeSwitcherDesktop?.addEventListener('click', () => this.toggleTheme());
+
+            // También preparamos el del menú móvil para consistencia
+            const themeSwitcherMobile = document.getElementById('theme-switcher-mobile');
+            themeSwitcherMobile?.addEventListener('click', () => this.toggleTheme());
         });
 
         // Listeners para los formularios
@@ -501,9 +508,14 @@ const ProfileApp = {
     applyTheme() {
         const theme = localStorage.getItem('theme') || 'light';
         document.body.classList.toggle("dark-theme", theme === "dark");
-        document.querySelectorAll('.theme-switcher i, #theme-switcher-mobile i').forEach(icon => {
-            icon.className = `fa-solid ${theme === "dark" ? "fa-sun" : "fa-moon"}`;
-        });
+        
+        // Buscamos ambos iconos, el de escritorio y el de móvil
+        const desktopIcon = document.querySelector('#theme-switcher-desktop i');
+        const mobileIcon = document.querySelector('#theme-switcher-mobile i');
+        const iconClass = theme === "dark" ? "fa-solid fa-sun" : "fa-solid fa-moon";
+
+        if(desktopIcon) desktopIcon.className = iconClass;
+        if(mobileIcon) mobileIcon.className = iconClass;
     },
 
     async renderCommunityFeed() {
