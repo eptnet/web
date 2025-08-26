@@ -1,6 +1,11 @@
 // inv/js/stream.js - VERSIÓN FINAL CON RENDERIZADO ROBUSTO
 
 document.addEventListener('DOMContentLoaded', () => {
+    // --- NUEVO: Lógica para la Vista de Invitado ---
+    const isGuest = new URLSearchParams(window.location.search).get('role') === 'guest';
+    if (isGuest) {
+        document.body.classList.add('guest-view');
+    }
     // --- CONSTANTES Y CONFIGURACIÓN ---
     const SIGNATURE_ENDPOINT = 'https://seyknzlheaxmwztkfxmk.supabase.co/functions/v1/zoom-signature'; 
     const SESSION_NAME = 'eptstream-production-room'; 
@@ -24,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- CLIENTE DEL SDK Y ESTADO DE LA APLICACIÓN ---
     const ZoomVideo = window.WebVideoSDK.default; 
+    const VideoQuality = ZoomVideo.VideoQuality; 
     const client = ZoomVideo.createClient();
     let stream;
     let localPreviewStream;
@@ -86,22 +92,65 @@ document.addEventListener('DOMContentLoaded', () => {
     async function joinSession() {
         joinButton.disabled = true;
         await client.init('en-US', 'Global', { enforceMultipleVideos: true });
-        if(localPreviewStream) localPreviewStream.getTracks().forEach(track => track.stop());
+        if (localPreviewStream) localPreviewStream.getTracks().forEach(track => track.stop());
 
         const isGuest = new URLSearchParams(window.location.search).get('role') === 'guest';
         const userName = isGuest ? `Invitado-${Math.floor(Math.random() * 1000)}` : 'Productor';
         const role_type = isGuest ? 0 : 1;
 
         try {
-            const response = await fetch(SIGNATURE_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionName: SESSION_NAME, role_type }) });
+            const response = await fetch(SIGNATURE_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionName: SESSION_NAME, role_type })
+            });
             const { signature } = await response.json();
             await client.join(SESSION_NAME, signature, userName);
+            
+            // 1. Se crea el stream
             stream = client.getMediaStream();
-            await stream.startAudio({ audioId: selectedMicId });
-            await stream.startVideo({ cameraId: selectedCameraId });
-            const selfId = client.getCurrentUserInfo().userId;
-            createParticipantCard(selfId);
-        } catch (error) { console.error('Error al unirse o iniciar medios:', error); }
+
+            // 2. AHORA SÍ: Activamos el "oído" para la comunicación
+            stream.on('data-received', (payload) => {
+                try {
+                    const command = JSON.parse(payload.data);
+                    const isGuestUser = new URLSearchParams(window.location.search).get('role') === 'guest';
+
+                    if (!isGuestUser && command.type === 'guest-request-scene') {
+                        console.log('Petición de escena recibida de un invitado. Respondiendo...');
+                        stream.sendData(JSON.stringify({
+                            type: 'scene-change',
+                            scene: estadoProduccion.escenaActiva,
+                            participants: estadoProduccion.participantesEnEscena
+                        }));
+                    }
+
+                    if (isGuestUser && command.type === 'scene-change') {
+                        console.log('Respuesta de escena recibida:', command);
+                        estadoProduccion.escenaActiva = command.scene;
+                        estadoProduccion.participantesEnEscena = command.participants;
+                        renderizarEscena();
+                    }
+                } catch (error) {
+                    console.error('Error al procesar datos recibidos:', error);
+                }
+            });
+
+            // 3. Continuamos con el resto de la lógica
+            await stream.startAudio({ audioId: micSelect.value });
+            await stream.startVideo({ cameraId: cameraSelect.value });
+            createParticipantCard(client.getCurrentUserInfo().userId);
+
+            if (isGuest) {
+                console.log("Soy un invitado, pidiendo la escena actual...");
+                setTimeout(() => {
+                    stream.sendData(JSON.stringify({ type: 'guest-request-scene' }));
+                }, 1000);
+            }
+
+        } catch (error) {
+            console.error('Error al unirse o iniciar medios:', error);
+        }
     }
     
     // =================================================================
@@ -125,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
         card.id = `participant-card-${userId}`;
         card.dataset.userId = userId;
 
-        const videoElement = await stream.attachVideo(userId, 3);
+        const videoElement = await stream.attachVideo(userId, VideoQuality.Video_180P);
         
         const nameTag = document.createElement('span');
         nameTag.className = 'participant-name-thumb';
@@ -249,6 +298,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleSceneSelection(layoutId) {
         if (!SCENE_LAYOUTS[layoutId]) return;
+
+        // --- NUEVA LÓGICA: LIMPIAR ESCENARIO ---
+        // Si hacemos clic en la escena que ya está activa, la vaciamos.
+        if (layoutId === estadoProduccion.escenaActiva && estadoProduccion.participantesEnEscena.length > 0) {
+            estadoProduccion.participantesEnEscena = [];
+            renderizarEscena();
+            return; // Salimos de la función aquí.
+        }
         
         console.log(`Escena activa cambiada a: ${layoutId}`);
         estadoProduccion.escenaActiva = layoutId;
@@ -257,12 +314,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.scene-button.active').forEach(b => b.classList.remove('active'));
         sceneButtonsContainer.querySelector(`[data-layout="${layoutId}"]`).classList.add('active');
         
-        // Limpiamos la selección temporal y el anclaje al cambiar de escena
+        // Limpiamos la selección temporal al cambiar de escena
         estadoProduccion.participantesSeleccionados = [];
-        estadoProduccion.anclado = null;
         document.querySelectorAll('.participant-card.selected').forEach(c => c.classList.remove('selected'));
         
-        // Al seleccionar una nueva escena, renderizamos con los participantes que ya estaban, si caben
+        // Al seleccionar una nueva escena, podemos intentar renderizar con lo que ya había, si cabe
         renderizarEscena();
     }
 
@@ -308,46 +364,41 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- FUNCIÓN DE RENDERIZADO (REESCRITA Y ROBUSTA) ---
     async function renderizarEscena() {
         if (!estadoProduccion.escenaActiva) {
-            videoContainer.innerHTML = ''; // Si no hay escena, limpia el escenario
+            videoContainer.innerHTML = '';
             return;
         }
-
         const layout = SCENE_LAYOUTS[estadoProduccion.escenaActiva];
-        // CORRECCIÓN: Usamos 'participantesEnEscena', no 'participantesSeleccionados'
-        const participantes = estadoProduccion.participantesEnEscena; 
-
-        videoContainer.innerHTML = ''; // Limpiamos el escenario
+        const participantes = estadoProduccion.participantesEnEscena;
+        videoContainer.innerHTML = '';
 
         const tilesPromises = participantes.map(async (userId, index) => {
-            if (!layout.grid[index]) return null; // Seguridad por si hay más participantes que slots
-
-            const gridPosition = layout.grid[index];
+            if (!layout.grid[index]) return null;
             const user = client.getUser(userId);
-
             const tile = document.createElement('div');
             tile.className = 'video-tile';
-            tile.id = `video-tile-${userId}`;
-            
-            tile.style.gridColumn = gridPosition.column;
-            tile.style.gridRow = gridPosition.row;
-
-            const videoElement = await stream.attachVideo(userId, 1);
-            
+            tile.style.gridColumn = layout.grid[index].column;
+            tile.style.gridRow = layout.grid[index].row;
+            const videoElement = await stream.attachVideo(userId, VideoQuality.Video_720P); 
             const nameTag = document.createElement('span');
             nameTag.className = 'participant-name-thumb';
             nameTag.textContent = user.displayName;
-
             tile.appendChild(videoElement);
             tile.appendChild(nameTag);
-
             return tile;
         });
 
-        const tiles = (await Promise.all(tilesPromises)).filter(Boolean); // Filtramos nulos
-
+        const tiles = (await Promise.all(tilesPromises)).filter(Boolean);
         tiles.forEach(tile => videoContainer.appendChild(tile));
-        
-        // CORRECCIÓN: Hemos eliminado las líneas que borraban el estado de la escena.
+
+        const isGuest = new URLSearchParams(window.location.search).get('role') === 'guest';
+        // Si soy el productor, envío una actualización a todos.
+        if (!isGuest) {
+            stream.sendData(JSON.stringify({
+                type: 'scene-change',
+                scene: estadoProduccion.escenaActiva,
+                participants: estadoProduccion.participantesEnEscena
+            }));
+        }
     }
 
     // =================================================================
