@@ -232,17 +232,18 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helve
 }
 /* --- ESTILOS PARA LA VISTA DE INVITADO --- */
 
-/* Ocultamos los paneles que el invitado no debe ver */
-.guest-view #layers-panel,
+/* Ocultamos solo los paneles de producción que el invitado no necesita */
 .guest-view #scenes-panel,
-.guest-view #outputs-panel,
-.guest-view #control-bar {
+.guest-view #outputs-panel {
     display: none !important;
 }
 
-/* Hacemos que la columna central ocupe todo el espacio disponible */
+/* Ajustamos el grid para que el invitado vea una estructura más simple */
 .guest-view #production-room {
+    grid-template-columns: 1fr; /* Forzamos una sola columna */
+    grid-template-rows: auto 1fr auto; /* Green Room (auto), Escenario (flexible), Barra de control (auto) */
     grid-template-areas:
-      "center center"
-      "center center";
+      "layers"
+      "center"
+      "footer";
 }
