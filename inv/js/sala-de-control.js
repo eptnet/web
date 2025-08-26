@@ -163,29 +163,33 @@ const ControlRoom = {
         let buttonHTML = '';
         switch (this.sessionData.status) {
             case 'PROGRAMADO':
-                // --- INICIO DEL CAMBIO ---
-                // Mostramos un botón diferente si la plataforma es Twitch
                 if (this.sessionData.platform === 'twitch') {
-                    buttonHTML = `
-                        <button class="btn-primary go-live" onclick="ControlRoom.goLiveOnTwitch()">
-                            <i class="fab fa-twitch"></i> Iniciar Transmisión en Twitch
-                        </button>
-                    `;
+                    buttonHTML = `<button class="btn-primary go-live" onclick="ControlRoom.goLiveOnTwitch()"><i class="fab fa-twitch"></i> Iniciar en Twitch</button>`;
                 } else {
-                    // Mantenemos la lógica anterior para las otras plataformas
                     buttonHTML = `
                         <button class="btn-secondary" onclick="ControlRoom.openRecordModal()">
-                            <i class="fa-solid fa-video"></i> Solo Grabar
+                            <i class="fa-solid fa-video"></i> Grabar
                         </button>
                         <button class="btn-primary go-live" onclick="ControlRoom.goLive()">
-                            <i class="fa-solid fa-tower-broadcast"></i> Iniciar Transmisión Pública
+                            <i class="fa-solid fa-tower-broadcast"></i> Iniciar Transmisión
                         </button>
                     `;
                 }
-                // --- FIN DEL CAMBIO ---
                 break;
             case 'EN VIVO':
-                buttonHTML = `<button class="btn-primary is-live" onclick="ControlRoom.endSession()"><i class="fa-solid fa-stop-circle"></i> Terminar Transmisión</button>`;
+                // --- INICIO DE LA CORRECCIÓN ---
+                // Ahora mostramos ambos botones cuando la sesión está en vivo (si no es de Twitch)
+                const recordButtonHTML = this.sessionData.platform !== 'twitch' 
+                    ? `<button class="btn-secondary" onclick="ControlRoom.openRecordModal()"><i class="fa-solid fa-video"></i> Grabar</button>` 
+                    : '';
+
+                buttonHTML = `
+                    ${recordButtonHTML}
+                    <button class="btn-primary is-live" onclick="ControlRoom.endSession()">
+                        <i class="fa-solid fa-stop-circle"></i> Terminar Transmisión
+                    </button>
+                `;
+                // --- FIN DE LA CORRECCIÓN ---
                 break;
             case 'FINALIZADO':
                 buttonHTML = `<p class="session-ended-message"><i class="fa-solid fa-check-circle"></i> Transmisión finalizada.</p>`;

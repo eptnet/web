@@ -187,13 +187,17 @@ export const Studio = {
                     </button>
                     <a href="${session.viewer_url}" target="_blank" class="btn-secondary" title="Ver como espectador">
                         <i class="fa-solid fa-eye"></i>
-                        <span>Ver</span>
+                        <span>Solo Ver</span>
                     </a>
                     <button class="btn-secondary" data-action="copy-guest-link" data-url="${session.guest_url}">
                         <i class="fas fa-copy"></i>
                         <span>Link invitados</span>
                     </button>
-                    
+                    ${session.recording_source_url ? `
+                    <button class="btn-secondary" data-action="copy-recording-link" data-url="${session.recording_source_url}">
+                        <i class="fas fa-video"></i>
+                        <span>Copiar Link Grab.</span>
+                    </button>` : ''}
                     <button class="btn-secondary" data-action="edit-session" data-session='${sessionData}' style="margin-left: auto;">
                         <i class="fas fa-pencil-alt"></i>
                         <span>Editar</span>
