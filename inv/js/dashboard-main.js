@@ -34,6 +34,13 @@ const App = {
         
         Header.init(this.userProfile);
         Navigation.init();
+
+        // Aplica el tema guardado al cargar la página
+        applyTheme(localStorage.getItem('theme') || 'light');
+
+        // Añade el listener para el botón de cambio de tema
+        const themeSwitcher = document.getElementById('theme-switcher-dashboard');
+        themeSwitcher?.addEventListener('click', toggleTheme);
         
         // 2. Ahora que el perfil cargó, revisamos el rol de admin
         const contentNavLink = document.querySelector('.nav-link[data-section="content-section"]');
@@ -79,6 +86,20 @@ const Header = {
         const el = document.getElementById('user-name-header');
         if (el) el.textContent = `Dashboard de ${user.full_name || user.email}`;
     }
+};
+
+const applyTheme = (theme) => {
+    document.body.classList.toggle("dark-theme", theme === "dark");
+    const themeIcon = document.querySelector('#theme-switcher-dashboard i');
+    if (themeIcon) {
+        themeIcon.className = `fa-solid ${theme === "dark" ? "fa-sun" : "fa-moon"}`;
+    }
+};
+
+const toggleTheme = () => {
+    const newTheme = document.body.classList.contains("dark-theme") ? "light" : "dark";
+    localStorage.setItem("theme", newTheme);
+    applyTheme(newTheme);
 };
 
 window.App = App;

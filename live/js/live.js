@@ -170,15 +170,16 @@ const LiveApp = {
         };
     },
     
+    // --- LÓGICA DE MENÚ, TEMA Y NOTIFICACIONES (UNIFICADA) ---
     applyTheme(theme) {
-        document.body.classList.toggle("dark-theme", theme === "dark");
-        const iconClass = theme === "dark" ? "fa-sun" : "fa-moon";
+        // En live.css, el tema por defecto es oscuro, así que la lógica es con .light-theme
+        document.body.classList.toggle("light-theme", theme === "light");
+        const iconClass = theme === "light" ? "fa-moon" : "fa-sun";
         if (this.elements.themeSwitcherDesktop) this.elements.themeSwitcherDesktop.querySelector('i').className = `fa-solid ${iconClass}`;
         if (this.elements.themeSwitcherMobile) this.elements.themeSwitcherMobile.querySelector('i').className = `fa-solid ${iconClass}`;
     },
-
     toggleTheme() {
-        const newTheme = document.body.classList.contains("dark-theme") ? "light" : "dark";
+        const newTheme = document.body.classList.contains("light-theme") ? "dark" : "light";
         localStorage.setItem("theme", newTheme);
         this.applyTheme(newTheme);
     },

@@ -16,7 +16,7 @@
                 <h2 class="link-text">Dashboard</h2>
             </div>
             <nav class="sidebar-nav">
-                <a href="#" class="nav-link active" data-section="home-section" title="Inicio"><i class="fa-solid fa-table-columns"></i><span class="link-text">Inicio</span></a>                <a href="#" class="nav-link" data-section="studio-section" title="Estudio de Grabación"><i class="fa-solid fa-podcast"></i><span class="link-text">Estudio</span></a>
+                <a href="#" class="nav-link active" data-section="home-section" title="Inicio"><i class="fa-solid fa-table-columns"></i><span class="link-text">Inicio</span></a>                <a href="#" class="nav-link" data-section="studio-section" title="Sesiones de divulgación"><i class="fa-solid fa-podcast"></i><span class="link-text">Sesiones</span></a>
                 <a href="#" class="nav-link" data-section="editor-section" title="Editor" style="display: none;"><i class="fa-solid fa-pen-to-square"></i><span class="link-text">Editor</span></a>
                 <a href="#" class="nav-link" data-section="content-section" title="Gestionar Contenido" style="display: none;"><i class="fas fa-photo-film"></i><span class="link-text">Gestionar Contenido</span></a>
                 <a href="/inv/profile.html" class="nav-link" title="Mi Perfil"><i class="fa-solid fa-user-edit"></i><span class="link-text">Mi Perfil</span></a>
@@ -29,6 +29,11 @@
         <main class="main-content">
             <header class="main-header">
                 <h1 id="user-name-header">Cargando...</h1>
+                <div class="header-actions">
+                    <button class="btn-secondary" id="theme-switcher-dashboard" title="Cambiar tema">
+                        <i class="fa-solid fa-moon"></i>
+                    </button>
+                </div>
             </header>
             
             <section id="home-section" class="content-section active"></section>
@@ -110,7 +115,7 @@
     
     <template id="template-studio-section">
         <div class="page-header">
-            <h2><i class="fas fa-podcast"></i> Estudio de Grabación</h2>
+            <h2><i class="fas fa-podcast"></i> Sesiones de divulgación</h2>
             <p>Gestiona tus sesiones agendadas y revisa la programación de la plataforma.</p>
         </div>
         <div class="studio-tabs">
