@@ -752,6 +752,7 @@ const LiveApp = {
         }, 50);
     },
 
+    //------ ORDEN EN EL LIVEROOM ------//
     buildLiveRoomHTML() {
         const container = document.createElement('div');
         container.className = 'live-room-content';
@@ -761,12 +762,11 @@ const LiveApp = {
                 <div id="live-room-interaction-area"></div>
                 <div id="live-room-primary-action"></div> 
                 <div id="live-room-countdown" class="live-room-countdown" style="display: none;"></div>
-                <div id="live-room-info" class="live-room-info"></div>
                 <div id="live-room-investigators-strip" class="live-room-investigators-strip"></div>
-                
+                <div id="live-room-info" class="live-room-info"></div>                
                 <div id="live-room-disclaimer" class="live-room-disclaimer"></div>
                 <div id="live-room-report" class="live-room-report"></div>
-                </main>
+            </main>
             <aside class="live-room-side">
                 <div id="chat-box"></div>
             </aside>`;

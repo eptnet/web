@@ -686,15 +686,14 @@ export const Studio = {
     openSession(sessionData) {
         const session = JSON.parse(decodeURIComponent(sessionData));
         
-        // Si no hay una URL de director, mostramos un error.
         if (!session.director_url) {
             alert("Esta sesión no tiene una sala de control definida.");
             return;
         }
 
-        // ¡ESTA ES LA CORRECCIÓN CLAVE!
-        // Ahora simplemente abrimos la URL que está guardada en la base de datos,
-        // sea la de VDO.Ninja o la de nuestro nuevo EPTstream.
+        // Esta es la lógica corregida. Ahora, simplemente abrimos la URL
+        // que está guardada en la base de datos, sin importar si es la de
+        // VDO.Ninja, EPTstream o cualquier otra.
         window.open(session.director_url, '_blank');
     },
 

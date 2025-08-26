@@ -1014,4 +1014,27 @@ textarea[name="description"] {
     color: var(--color-text-secondary);
     font-size: 1rem;
 }
+/* --- INICIO: Estilos para Avatares de Participantes en Tarjetas de Sesión --- */
+
+.session-card__participants {
+    display: flex;
+    align-items: center;
+    min-height: 36px; /* Altura mínima para mantener el layout consistente */
+}
+
+.participant-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%; /* La clave para hacerlo circular */
+    object-fit: cover;   /* Evita que la imagen se deforme */
+    border: 2px solid var(--color-surface); /* Un borde para separarlos */
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+}
+
+/* Efecto de solapamiento para avatares múltiples */
+.participant-avatar:not(:first-child) {
+    margin-left: -12px;
+}
+
+/* --- FIN: Estilos para Avatares --- */
 
