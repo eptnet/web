@@ -901,6 +901,7 @@ body.light-theme .desktop-nav {
 .mobile-nav__link.active { 
     color: var(--color-accent); 
 }
+.mobile-nav__text { display: none; }
 
 /* 3. MENÚ DESPLEGABLE MÓVIL (MÁS OPCIONES) */
 .mobile-more-menu { 

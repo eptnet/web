@@ -152,20 +152,20 @@
     </div>
     
     <nav class="mobile-nav">
-        <a href="/" class="mobile-nav__link" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
+        <a href="/" class="mobile-nav__link active" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
         <a href="https://eptnews.substack.com/" class="mobile-nav__link" aria-label="Newsletter"><i class="fa-solid fa-newspaper"></i></a>
-        <a href="/live.html" class="mobile-nav__link active" id="nav-live-mobile" aria-label="En Vivo"><i class="fa-solid fa-satellite-dish"></i></a>
-        <a href="#" id="community-btn-mobile" data-url="/inv/comunidad.html" class="mobile-more-menu__item"><i class="fa-solid fa-users"></i><span>Comunidad</span></a>
+        <a href="/live.html" class="mobile-nav__link" id="nav-live-mobile" aria-label="En Vivo"><i class="fa-solid fa-satellite-dish"></i></a>
         <button class="mobile-nav__link" id="mobile-more-btn" aria-label="Más opciones"><i class="fa-solid fa-bars"></i></button>
     </nav>
 
     <div class="mobile-more-menu" id="mobile-more-menu">
         <div class="mobile-more-menu__content">
-            <div id="mobile-user-actions">
-                </div>
-            <hr>
+            <a href="#" data-provider="google" id="login-google-btn-mobile" class="mobile-more-menu__item login-provider-btn"><i class="fa-brands fa-google"></i><span>Iniciar con Google</span></a>
+            <a href="#" data-provider="github" id="login-github-btn-mobile" class="mobile-more-menu__item login-provider-btn"><i class="fa-brands fa-github"></i><span>Iniciar con GitHub</span></a>
+            <hr style="border: none; border-top: 1px solid var(--color-border); margin: 0.5rem 0;">
+            <a href="#" id="community-btn-mobile" data-url="/inv/comunidad.html" class="mobile-more-menu__item"><i class="fa-solid fa-users"></i><span>Comunidad</span></a>
             <a href="/live.html#seccion-eventos" class="mobile-more-menu__item"><i class="fa-solid fa-calendar-days"></i><span>Eventos</span></a>
-            <hr>
+            <hr style="border: none; border-top: 1px solid var(--color-border); margin: 0.5rem 0;">
             <button class="mobile-more-menu__item" id="theme-switcher-mobile"><i class="fa-solid fa-moon"></i><span>Cambiar Tema</span></button>
             <button class="mobile-more-menu__item" id="mobile-more-menu-close"><i class="fa-solid fa-xmark"></i><span>Cerrar</span></button>
         </div>

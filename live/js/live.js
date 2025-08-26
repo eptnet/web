@@ -228,6 +228,39 @@ const LiveApp = {
     },
 
     addEventListeners() {
+        // --- Eventos del Menú ---
+        this.elements.themeSwitcherDesktop?.addEventListener("click", () => this.toggleTheme());
+        this.elements.themeSwitcherMobile?.addEventListener("click", () => this.toggleTheme());
+        
+        document.body.addEventListener('click', async (e) => {
+            if (e.target.closest('#logout-btn-header') || e.target.closest('#logout-btn-mobile')) {
+                await this.supabase.auth.signOut();
+            }
+            const providerBtn = e.target.closest('.login-provider-btn');
+            if (providerBtn?.dataset.provider) this.handleOAuthLogin(providerBtn.dataset.provider);
+        });
+
+        this.elements.loginModalTriggerDesktop?.addEventListener('click', () => this.elements.loginModalOverlay?.classList.add('is-visible'));
+        this.elements.loginModalCloseBtn?.addEventListener('click', () => this.elements.loginModalOverlay?.classList.remove('is-visible'));
+        this.elements.loginModalOverlay?.addEventListener('click', (e) => {
+            if (e.target === this.elements.loginModalOverlay) this.elements.loginModalOverlay.classList.remove('is-visible');
+        });
+
+        const openMobileMenu = () => { this.elements.mobileMoreMenu?.classList.add('is-visible'); this.elements.overlay?.classList.add('is-visible'); };
+        const closeMobileMenu = () => { this.elements.mobileMoreMenu?.classList.remove('is-visible'); this.elements.overlay?.classList.remove('is-visible'); };
+        this.elements.mobileMoreBtn?.addEventListener('click', openMobileMenu);
+        this.elements.mobileMoreMenuClose?.addEventListener('click', closeMobileMenu);
+        this.elements.overlay?.addEventListener('click', closeMobileMenu);
+
+        const notificationsIcon = document.getElementById('notifications-bell-icon');
+        notificationsIcon?.addEventListener('click', (e) => { e.preventDefault(); this.openNotificationsModal(); });
+        document.addEventListener('click', (e) => {
+            const notificationsModal = document.querySelector('.notifications-modal');
+            if (notificationsModal && !notificationsModal.contains(e.target) && !notificationsIcon?.contains(e.target)) {
+                notificationsModal.classList.remove('is-visible');
+            }
+        });
+        
         // Listeners para elementos estáticos de la página (fuera de los modales)
         this.elements.scheduleList.addEventListener('click', (e) => this.handleCardClick(e));
         this.elements.ondemandListContainer.addEventListener('click', (e) => this.handleCardClick(e));
