@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor de Microsite del Proyecto</title>
+    <link rel="stylesheet" href="/inv/css/style-editor.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tiny.cloud/1/wac03ii8izevsozn0if0ssfme0syw62i0zw7szp05f8trx3o/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+</head>
+<body>
+
+    <div class="editor-container">
+        <div class="editor-panel">
+            <header class="editor-header">
+                <h1>Editor del Microsite</h1>
+                <p>Construye la página pública de tu proyecto.</p>
+            </header>
+
+            <form id="microsite-form">
+                
+                <fieldset>
+                    <legend><i class="fa-solid fa-image"></i> Portada</legend>
+                    <label for="cover-headline">Titular Principal:</label>
+                    <div class="input-with-ai">
+                        <input type="text" id="cover-headline" name="cover-headline" placeholder="Un titular breve y potente...">
+                        <button type="button" class="ai-button" data-target="cover-headline" data-prompt="generate_microsite_headline" title="Generar con IA">✨</button>
+                    </div>
+                    
+                    <label for="cover-image-url">URL de Imagen de Fondo:</label>
+                    <input type="text" id="cover-image-url" name="cover-image-url" placeholder="https://ejemplo.com/imagen.jpg">
+                </fieldset>
+
+                <fieldset>
+                    <legend><i class="fa-solid fa-bullseye"></i> Resumen / El Problema</legend>
+                    <label for="summary-content">Contenido del Resumen:</label>
+                    <div class="input-with-ai">
+                        <textarea id="summary-content" name="summary-content" class="tinymce-editor" placeholder="Explica tu proyecto de forma sencilla..."></textarea>
+                        <button type="button" class="ai-button ai-button-textarea" data-target="summary-content" data-prompt="generate_accessible_summary" title="Reformular con IA">✨</button>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend><i class="fa-solid fa-layer-group"></i> Módulos de Contenido</legend>
+                    <div id="custom-modules-container">
+                        </div>
+                    <div class="module-actions">
+                        <button type="button" id="add-text-module-btn"><i class="fa-solid fa-plus"></i> Añadir Módulo de Texto</button>
+                        <button type="button" id="add-embed-module-btn"><i class="fa-solid fa-plus"></i> Añadir Módulo de Enlace/Embed</button>
+                    </div>
+                </fieldset>
+
+                <div class="final-actions">
+                    <button type="button" id="preview-btn" class="secondary-button"><i class="fa-solid fa-eye"></i> Vista Previa</button>
+                    <button type="submit" id="save-btn"><i class="fa-solid fa-save"></i> Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="preview-panel">
+            <div class="preview-placeholder">
+                <i class="fa-solid fa-desktop"></i>
+                <h2>Vista Previa del Site</h2>
+                <p>Aquí verás una aproximación de tu página pública. Por ahora, ¡concentrémonos en el contenido!</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/inv/js/microsite-editor.js"></script>
+</body>
+</html>

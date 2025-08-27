@@ -1,4 +1,4 @@
-// inv/js/stream.js - VERSIÓN COMPLETA Y VERIFICADA
+// inv/js/stream.js - VERSIÓN COMPLETA Y FINAL
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- LÓGICA PARA LA VISTA DE INVITADO ---
@@ -24,21 +24,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const goLiveButton = document.getElementById('go-live-button');
     const liveIndicator = document.getElementById('live-indicator');
     const outputsPanel = document.getElementById('outputs-panel');
+    const canvas = document.getElementById('composition-canvas');
+    const ctx = canvas.getContext('2d');
 
     // --- CLIENTE DEL SDK Y ESTADO DE LA APLICACIÓN ---
     const ZoomVideo = window.WebVideoSDK.default; 
     const client = ZoomVideo.createClient();
     let stream;
-    let chatClient; // Para la comunicación
+    let chatClient;
     let liveStreamClient;
     let localPreviewStream;
     let isLive = false; 
 
-    // --- NUEVO: Credenciales para la transmisión en vivo ---
-    // ¡IMPORTANTE! Reemplaza estos valores con los de tu plataforma (YouTube, etc.)
-    const RTMP_URL = "rtmp://x.rtmp.youtube.com/live2";
-    const STREAM_KEY = "h03h-y2e0-36b5-3x4c-9wdh";
-    // ---
+    // --- ESTADO PARA LA COMPOSICIÓN POR CANVAS ---
+    let compositionStream = null;
+    let renderers = {};
+    let drawLoopId = null;
+
+    // --- CREDENCIALES RTMP (Reemplazar con las tuyas) ---
+    const RTMP_URL = "rtmp://a.rtmp.youtube.com/live2";
+    const STREAM_KEY = "553a-09z3-de02-ms67-3pvj";
 
     let estadoProduccion = {
         escenaActiva: 'solo',
@@ -82,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function joinSession() {
         joinButton.disabled = true;
-        await client.init('en-US', 'Global', { enforceMultipleVideos: true });
+        await client.init('en-US', 'Global', { enforceMultipleVideos: true, rawData: { video: true } });
         if (localPreviewStream) localPreviewStream.getTracks().forEach(track => track.stop());
 
         const userName = isGuest ? `Invitado-${Math.floor(Math.random() * 1000)}` : 'Productor';
@@ -99,29 +104,30 @@ document.addEventListener('DOMContentLoaded', () => {
             
             stream = client.getMediaStream();
             chatClient = client.getChatClient();
-            liveStreamClient = client.getLiveStreamClient(); // <-- AÑADE ESTA LÍNEA
+            if (!isGuest) {
+                liveStreamClient = client.getLiveStreamClient();
+            }
 
             await stream.startAudio({ audioId: micSelect.value });
             await stream.startVideo({ cameraId: cameraSelect.value });
             
-            createParticipantCard(client.getCurrentUserInfo().userId);
-
-            if (isGuest) {
-                console.log("Soy un invitado, pidiendo la escena actual...");
-                setTimeout(() => {
-                    chatClient.send(JSON.stringify({ type: 'guest-request-scene' }));
-                }, 1500); // Aumentado ligeramente para más estabilidad
+            const selfId = client.getCurrentUserInfo().userId;
+            createParticipantCard(selfId);
+            if (!isGuest) {
+                 const renderer = await stream.getVideoRenderer(selfId);
+                 renderers[selfId] = renderer;
+                 console.log(`Renderer creado para el productor (selfId: ${selfId})`);
             }
 
         } catch (error) {
             console.error('Error al unirse o iniciar medios:', error);
-            joinButton.disabled = false; // Permite reintentar si falla
+            joinButton.disabled = false;
         }
     }
     
-    // =================================================================
-    // --- LÓGICA DE RENDERIZADO Y MANEJO DE EVENTOS ---
-    // =================================================================
+    // =============================================================
+    // --- LÓGICA DE EVENTOS Y COMUNICACIÓN ---
+    // =============================================================
     
     client.on('connection-change', (payload) => {
         if (payload.state === 'Connected') {
@@ -129,77 +135,45 @@ document.addEventListener('DOMContentLoaded', () => {
             productionView.style.display = 'grid';
             if (!isGuest) {
                 createAddSourceButton();
-                handleSceneSelection('solo'); // Selecciona una escena por defecto para el productor
+                handleSceneSelection('solo');
             }
         }
     });
 
     client.on('chat-new-message', (payload) => {
-        // Solo los invitados deben procesar estos comandos
         if (!isGuest) return;
-
         try {
             const command = JSON.parse(payload.message);
-
-            // Caso 1: El productor cambia el estado de la transmisión (EN VIVO / FINALIZADO)
-            if (command.type === 'live-state-change') {
-                console.log('Comando de estado EN VIVO recibido:', command);
-                isLive = command.status; // Actualizamos el estado local del invitado
-                if (!isLive) {
-                    videoContainer.innerHTML = ''; // Si la transmisión finaliza, limpiamos su escenario
-                }
-            }
-
-            // Caso 2: El productor cambia la escena MIENTRAS está en vivo
-            if (command.type === 'scene-change') {
-                console.log('Comando de escena recibido:', command);
-                // El invitado guarda la nueva escena y participantes
+            if (command.type === 'scene-change' || command.type === 'initial-state') {
                 estadoProduccion.escenaActiva = command.scene;
                 estadoProduccion.participantesEnEscena = command.participants;
-                // Y solo renderiza si la transmisión está activa
-                if (isLive) {
+                if (isLive || command.type === 'initial-state') {
                     renderizarEscena();
                 }
+            } else if (command.type === 'live-state-change') {
+                isLive = command.status;
+                if (!isLive) videoContainer.innerHTML = '';
             }
-        } catch (error) { /* Ignora mensajes que no son JSON */ }
+        } catch (error) { /* Ignora mensajes no JSON */ }
     });
-
-    async function createParticipantCard(userId) {
-        if (document.getElementById(`participant-card-${userId}`)) return;
-        const user = client.getUser(userId);
-        const card = document.createElement('div');
-        card.className = 'participant-card';
-        card.id = `participant-card-${userId}`;
-        card.dataset.userId = userId;
-
-        const videoElement = await stream.attachVideo(userId, 3);
-        const nameTag = document.createElement('span');
-        nameTag.className = 'participant-name-thumb';
-        nameTag.textContent = user.displayName;
-
-        const muteBtn = document.createElement('button');
-        muteBtn.className = 'participant-mute-btn';
-        muteBtn.id = `mute-btn-${userId}`;
-        muteBtn.title = 'Silenciar / Activar audio';
-        
-        if (user.audio === 'muted') {
-            muteBtn.innerHTML = '<i class="fa-solid fa-microphone-slash"></i>';
-        } else {
-            muteBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+    
+    client.on('peer-video-state-change', async ({ action, userId }) => {
+        if (action === 'Start') {
+            createParticipantCard(userId);
+            if (!isGuest && !renderers[userId]) {
+                const renderer = await stream.getVideoRenderer(userId);
+                renderers[userId] = renderer;
+                console.log(`Renderer creado para el usuario ${userId}`);
+            }
+        } else if (action === 'Stop') {
+            if (!isGuest && renderers[userId]) {
+                await stream.destroyVideoRenderer(renderers[userId]);
+                delete renderers[userId];
+                console.log(`Renderer destruido para el usuario ${userId}`);
+            }
         }
-        
-        muteBtn.onclick = (e) => {
-            e.stopPropagation();
-            const participant = client.getUser(userId);
-            (participant.audio === 'muted') ? stream.unmuteAudio(userId) : stream.muteAudio(userId);
-        };
-
-        card.appendChild(videoElement);
-        card.appendChild(nameTag);
-        card.appendChild(muteBtn);
-        participantsGrid.appendChild(card);
-    }
-
+    });
+    
     client.on('user-audio-status-changed', (payload) => {
         payload.forEach(user => {
             const muteBtn = document.getElementById(`mute-btn-${user.userId}`);
@@ -208,6 +182,50 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    client.on('user-removed', (payload) => {
+        payload.forEach(u => {
+            document.getElementById(`participant-card-${u.userId}`)?.remove();
+            document.getElementById(`video-tile-${u.userId}`)?.remove();
+            if(!isGuest && renderers[u.userId]) {
+                stream.destroyVideoRenderer(renderers[u.userId]);
+                delete renderers[u.userId];
+            }
+        });
+    });
+
+    client.on('live-stream-status', (payload) => console.log(`Estado de la transmisión: ${payload.status}`));
+
+    async function createParticipantCard(userId) {
+        if (document.getElementById(`participant-card-${userId}`)) return;
+        const user = client.getUser(userId);
+        const card = document.createElement('div');
+        card.className = 'participant-card';
+        card.id = `participant-card-${userId}`;
+        card.dataset.userId = userId;
+        const videoElement = await stream.attachVideo(userId, 3);
+        const nameTag = document.createElement('span');
+        nameTag.className = 'participant-name-thumb';
+        nameTag.textContent = user.displayName;
+        const muteBtn = document.createElement('button');
+        muteBtn.className = 'participant-mute-btn';
+        muteBtn.id = `mute-btn-${userId}`;
+        muteBtn.title = 'Silenciar / Activar audio';
+        if (user.audio === 'muted') {
+            muteBtn.innerHTML = '<i class="fa-solid fa-microphone-slash"></i>';
+        } else {
+            muteBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+        }
+        muteBtn.onclick = (e) => {
+            e.stopPropagation();
+            const participant = client.getUser(userId);
+            (participant.audio === 'muted') ? stream.unmuteAudio(userId) : stream.muteAudio(userId);
+        };
+        card.appendChild(videoElement);
+        card.appendChild(nameTag);
+        card.appendChild(muteBtn);
+        participantsGrid.appendChild(card);
+    }
 
     function createAddSourceButton() {
         if (document.getElementById('add-source-card')) return;
@@ -227,56 +245,78 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    client.on('peer-video-state-change', ({ action, userId }) => {
-        if (action === 'Start') createParticipantCard(userId);
-    });
+    // =================================================================
+    // --- LÓGICA DE COMPOSICIÓN Y "GO LIVE" ---
+    // =================================================================
 
-    client.on('user-removed', (payload) => {
-        payload.forEach(u => {
-            document.getElementById(`participant-card-${u.userId}`)?.remove();
-            document.getElementById(`video-tile-${u.userId}`)?.remove();
-        });
-    });
-
-    client.on('live-stream-status', (payload) => {
-        // El payload puede ser 'connecting', 'live', 'failed', 'stopped'
-        console.log(`Estado de la transmisión en vivo: ${payload.status}`);
-    });
+    function startComposition() {
+        if (drawLoopId) return; 
+        console.log("Iniciando bucle de composición en canvas...");
+        async function drawLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#1e1e1e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            const layout = SCENE_LAYOUTS[estadoProduccion.escenaActiva];
+            const participantes = estadoProduccion.participantesEnEscena;
+            if (layout && participantes.length > 0) {
+                for (let i = 0; i < participantes.length; i++) {
+                    const userId = participantes[i];
+                    const renderer = renderers[userId];
+                    const position = layout.grid[i];
+                    if (renderer && renderer.videoFrame && position) {
+                        const colStart = parseInt(position.column.split(' / ')[0]) - 1;
+                        const colEnd = parseInt(position.column.split(' / ')[1]) - 1;
+                        const rowStart = parseInt(position.row.split(' / ')[0]) - 1;
+                        const rowEnd = parseInt(position.row.split(' / ')[1]) - 1;
+                        const x = (canvas.width / 4) * colStart;
+                        const y = (canvas.height / 4) * rowStart;
+                        const width = (canvas.width / 4) * (colEnd - colStart);
+                        const height = (canvas.height / 4) * (rowEnd - rowStart);
+                        ctx.drawImage(renderer.videoFrame, x, y, width, height);
+                    }
+                }
+            }
+            drawLoopId = requestAnimationFrame(drawLoop);
+        }
+        drawLoop();
+        if (!compositionStream) {
+            compositionStream = canvas.captureStream(30);
+        }
+    }
 
     async function toggleLiveStream() {
         isLive = !isLive;
         const liveButtonSpan = goLiveButton.querySelector('span');
-
         try {
             if (isLive) {
-                // --- INICIAR STREAM ---
                 if(liveButtonSpan) liveButtonSpan.textContent = 'FINALIZAR';
                 goLiveButton.classList.add('streaming');
                 liveIndicator.style.display = 'block';
-
-                // ¡CORRECCIÓN! Añadimos el tercer argumento requerido ('https://zoom.us')
-                await liveStreamClient.startLiveStream(RTMP_URL, STREAM_KEY, 'https://zoom.us');
-                
-                console.log("TRANSMISIÓN EN VIVO INICIADA HACIA RTMP");
-                renderizarEscena();
-
+                startComposition();
+                await new Promise(resolve => setTimeout(resolve, 500));
+                await stream.stopVideo(); 
+                await stream.startVideo({ videoSource: compositionStream.getVideoTracks()[0] });
+                await liveStreamClient.startLiveStream(RTMP_URL, STREAM_KEY, 'https://youtube.com');
+                console.log("TRANSMISIÓN COMPUESTA EN VIVO INICIADA");
             } else {
-                // --- FINALIZAR STREAM ---
                 if(liveButtonSpan) liveButtonSpan.textContent = 'GO LIVE';
                 goLiveButton.classList.remove('streaming');
                 liveIndicator.style.display = 'none';
-                
                 await liveStreamClient.stopLiveStream();
-                console.log("TRANSMISIÓN EN VIVO FINALIZADA");
+                await stream.stopVideo();
+                await stream.startVideo({ cameraId: cameraSelect.value });
+                if (drawLoopId) {
+                    cancelAnimationFrame(drawLoopId);
+                    drawLoopId = null;
+                }
+                console.log("TRANSMISIÓN FINALIZADA");
             }
-
             if (chatClient) {
                 chatClient.send(JSON.stringify({ type: 'live-state-change', status: isLive }));
             }
         } catch (error) {
-            // MEJORA: Mostramos un error más detallado en la consola
-            console.error("Error al gestionar la transmisión en vivo:", error);
-            isLive = !isLive; // Revertimos el estado si hay un error
+            console.error("Error al gestionar la transmisión compuesta:", error);
+            isLive = !isLive;
         }
     }
 
@@ -286,17 +326,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleSceneSelection(layoutId) {
         if (!SCENE_LAYOUTS[layoutId]) return;
-
         if (layoutId === estadoProduccion.escenaActiva && estadoProduccion.participantesEnEscena.length > 0) {
             estadoProduccion.participantesEnEscena = [];
             renderizarEscena();
             return;
         }
-        
         estadoProduccion.escenaActiva = layoutId;
         document.querySelectorAll('.scene-button.active').forEach(b => b.classList.remove('active'));
         sceneButtonsContainer.querySelector(`[data-layout="${layoutId}"]`).classList.add('active');
-        
         estadoProduccion.participantesSeleccionados = [];
         document.querySelectorAll('.participant-card.selected').forEach(c => c.classList.remove('selected'));
         renderizarEscena();
@@ -305,16 +342,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleParticipantSelection(userId) {
         if (!estadoProduccion.escenaActiva) return;
         const layout = SCENE_LAYOUTS[estadoProduccion.escenaActiva];
-        
         if (layout.participantCount === 1) {
             estadoProduccion.participantesEnEscena = [userId];
             renderizarEscena();
             return;
         }
-
         const seleccionados = estadoProduccion.participantesSeleccionados;
         const card = document.getElementById(`participant-card-${userId}`);
-        
         if (seleccionados.includes(userId)) {
             estadoProduccion.participantesSeleccionados = seleccionados.filter(id => id !== userId);
             card.classList.remove('selected');
@@ -324,7 +358,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.classList.add('selected');
             }
         }
-        
         if (seleccionados.length === layout.participantCount) {
             estadoProduccion.participantesEnEscena = [...estadoProduccion.participantesSeleccionados];
             renderizarEscena();
@@ -341,7 +374,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const layout = SCENE_LAYOUTS[estadoProduccion.escenaActiva];
         const participantes = estadoProduccion.participantesEnEscena;
         videoContainer.innerHTML = '';
-
         const tilesPromises = participantes.map(async (userId, index) => {
             if (!layout.grid[index]) return null;
             const user = client.getUser(userId);
@@ -357,13 +389,9 @@ document.addEventListener('DOMContentLoaded', () => {
             tile.appendChild(nameTag);
             return tile;
         });
-
         const tiles = (await Promise.all(tilesPromises)).filter(Boolean);
         tiles.forEach(tile => videoContainer.appendChild(tile));
-
-        // --- LÓGICA DE ENVÍO ACTUALIZADA ---
-        // Solo enviamos una actualización de escena si NO somos un invitado Y ESTAMOS EN VIVO
-        if (!isGuest && isLive && chatClient) {
+        if (!isGuest && chatClient) {
             try {
                 chatClient.send(JSON.stringify({
                     type: 'scene-change',
@@ -381,28 +409,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // =================================================================
         
     setupLobby();
-
-    // LISTENERS DEL LOBBY
     cameraSelect.addEventListener('change', updateLobbyPreview);
     micSelect.addEventListener('change', updateLobbyPreview);
     joinButton.addEventListener('click', joinSession);
     
-    // LISTENERS DE LA SALA DE PRODUCCIÓN (SOLO PARA EL PRODUCTOR)
     if (!isGuest) {
         sceneButtonsContainer.addEventListener('click', (e) => {
             const button = e.target.closest('.scene-button');
             if (button?.dataset.layout) handleSceneSelection(button.dataset.layout);
         });
-
         participantsGrid.addEventListener('click', (e) => {
             const card = e.target.closest('.participant-card');
             if (card?.dataset.userId) {
                 handleParticipantSelection(parseInt(card.dataset.userId, 10));
             }
         });
-
         goLiveButton.addEventListener('click', toggleLiveStream);
-        
         outputsPanel.querySelector('.icon-bar').addEventListener('click', e => {
             if (e.target.closest('.panel-button')) outputsPanel.classList.toggle('open');
         });

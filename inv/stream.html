@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EPTstream - Estudio de Producción</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="/inv/css/stream.css?v=1.0">
+    <link rel="stylesheet" href="/inv/css/stream.css?v=3.0"> 
 </head>
 <body>
 
@@ -26,22 +26,22 @@
         <main id="center-column">
             <div id="stage-area">
                 <div id="video-container"></div>
+                <canvas id="composition-canvas" width="1280" height="720"></canvas>
                 <div id="live-indicator" style="display: none;">EN VIVO</div>
             </div>
 
             <aside id="layers-panel" class="panel">
                 <div id="participants-grid"></div>
             </aside>
-
             
-                <div id="scenes-panel" class="panel">
-                    <div id="scene-buttons">
-                        <button class="scene-button" data-layout="solo" title="Solitario (1)"><i class="fa-solid fa-user"></i></button>
-                        <button class="scene-button" data-layout="duo-horizontal" title="Dúo Horizontal (2)"><i class="fa-solid fa-user-group"></i></button>
-                        <button class="scene-button" data-layout="sidebar-derecha" title="Principal y Lateral (2)"><i class="fa-solid fa-table-columns"></i></button>
-                        <button class="scene-button" data-layout="feature" title="Destacado (3)"><i class="fa-solid fa-photo-film"></i></button>
-                    </div>
+            <div id="scenes-panel" class="panel">
+                <div id="scene-buttons">
+                    <button class="scene-button" data-layout="solo" title="Solitario (1)"><i class="fa-solid fa-user"></i></button>
+                    <button class="scene-button" data-layout="duo-horizontal" title="Dúo Horizontal (2)"><i class="fa-solid fa-user-group"></i></button>
+                    <button class="scene-button" data-layout="sidebar-derecha" title="Principal y Lateral (2)"><i class="fa-solid fa-table-columns"></i></button>
+                    <button class="scene-button" data-layout="feature" title="Destacado (3)"><i class="fa-solid fa-photo-film"></i></button>
                 </div>
+            </div>
             
         </main>
 
@@ -57,7 +57,8 @@
                     <h4>Panel de Overlays</h4>
                     <p>Próximamente.</p>
                 </div>
-                <div class="sidebar-content" style="display: none;"> <h4>Recursos</h4>
+                 <div class="sidebar-content" style="display: none;">
+                    <h4>Recursos</h4>
                     <p>Próximamente.</p>
                 </div>
             </div>
@@ -73,6 +74,6 @@
     
     <script src="https://source.zoom.us/videosdk/zoom-video-2.2.5.min.js"></script>
     <script src="/inv/js/layouts.js"></script>
-    <script src="/inv/js/stream.js"></script>
+    <script src="/inv/js/stream.js?v=3.0"></script> 
 </body>
 </html>
