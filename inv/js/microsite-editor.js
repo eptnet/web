@@ -31,8 +31,6 @@ const MicrositeEditorApp = {
 
         // 3. Cargamos los datos del microsite y los datos relacionados
         await this.loadMicrositeData();
-        
-        // --- LÍNEA AÑADIDA ---
         // Una vez que tenemos los datos del proyecto, cargamos el resto
         await this.loadRelatedData();
 
@@ -43,16 +41,14 @@ const MicrositeEditorApp = {
 
     // --- NUEVA FUNCIÓN PARA CARGAR DATOS RELACIONADOS ---
     async loadRelatedData() {
-        // Usamos Promise.all para hacer todas las peticiones a la vez y mejorar el rendimiento
         const [researchers, sessions, posts] = await Promise.all([
             this.fetchResearchers(),
             this.fetchSessions(),
-            this.fetchPosts()
+            this.fetchPosts() // <-- Esta función cambia
         ]);
-
         this.renderResearchers(researchers);
         this.renderSessions(sessions);
-        this.renderPosts(posts);
+        this.renderPosts(posts); // <-- Esta función cambia
     },
 
     // --- NUEVAS FUNCIONES DE FETCH ---
@@ -66,21 +62,24 @@ const MicrositeEditorApp = {
         if (error) console.error("Error fetching researchers:", error);
         return data || [];
     },
+
     async fetchSessions() {
-        // Asumimos que las sesiones se vinculan con un 'project_id'
+        // Añadimos el 'id' a la selección
         const { data, error } = await this.supabase
             .from('sessions')
-            .select('session_title, scheduled_at')
-            .eq('project_id', this.currentProject.id);
+            .select('id, session_title, scheduled_at, thumbnail_url')
+            .eq('project_title', this.currentProject.title);
         if (error) console.error("Error fetching sessions:", error);
         return data || [];
     },
+    
     async fetchPosts() {
+        // CORRECCIÓN: Ahora consultamos la tabla 'posts'
         const { data, error } = await this.supabase
             .from('posts')
-            .select('title, status, updated_at')
+            .select('title, status')
             .eq('project_id', this.currentProject.id);
-        if (error) console.error("Error fetching posts:", error);
+        if (error) { console.error("Error fetching posts:", error); return []; }
         return data || [];
     },
 
@@ -104,25 +103,26 @@ const MicrositeEditorApp = {
             `;
         }).join('');
     },
+
     renderSessions(sessions) {
         const container = document.getElementById('sessions-preview-container');
-        if (sessions.length === 0) {
-            container.innerHTML = '<p>No hay sesiones asociadas a este proyecto.</p>';
-            return;
-        }
-        container.innerHTML = sessions.map(session => {
-            const date = new Date(session.scheduled_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
-            return `
-                <div class="preview-card">
-                    <h5>${session.session_title}</h5>
-                    <p>🗓️ ${date}</p>
+        if (!sessions || sessions.length === 0) { container.innerHTML = '<p>No hay sesiones asociadas.</p>'; return; }
+        
+        // Construimos la URL del evento de la misma forma que en la página pública
+        container.innerHTML = sessions.map(s => `
+            <a href="/live.html?sesion=${s.id}" target="_blank" class="card session-card" style="text-decoration:none; color:inherit;">
+                <img src="${s.thumbnail_url || 'https://i.ibb.co/Vt9tv2D/default-placeholder.png'}" alt="Miniatura" style="width:100%; height:100px; object-fit:cover; border-radius: 8px 8px 0 0;">
+                <div style="padding:1rem;">
+                    <h5 style="margin:0;">${s.session_title}</h5>
                 </div>
-            `;
-        }).join('');
+            </a>
+        `).join('');
     },
+
     renderPosts(posts) {
+        // CORRECCIÓN: Adaptamos el renderizado a los datos de la tabla 'posts'
         const container = document.getElementById('posts-preview-container');
-        if (posts.length === 0) {
+        if (!posts || posts.length === 0) {
             container.innerHTML = '<p>No hay publicaciones asociadas a este proyecto.</p>';
             return;
         }

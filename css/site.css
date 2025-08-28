@@ -13,102 +13,87 @@ body {
     color: var(--text-color);
 }
 
-/* --- SECCIÓN DE PORTADA --- */
-.cover {
-    height: 60vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 2rem;
-    background-size: cover;
-    background-position: center;
-    color: white;
-    position: relative;
-}
-.cover::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5); /* Overlay oscuro para legibilidad */
-}
-.cover-content {
-    position: relative;
-    max-width: 800px;
-}
-#cover-headline {
-    font-size: clamp(2rem, 5vw, 3.5rem);
-    margin: 0;
-}
+/* --- SECCIÓN DE PORTADA (Sin cambios) --- */
+.cover { height: 60vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 2rem; background-size: cover; background-position: center; color: white; position: relative; }
+.cover::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); }
+.cover-content { position: relative; max-width: 800px; }
+#cover-headline { font-size: clamp(2rem, 5vw, 3.5rem); margin: 0; }
 
-/* --- CONTENIDO PRINCIPAL --- */
-.site-container {
-    max-width: 900px;
-    margin: -5rem auto 2rem auto; /* Efecto de superposición */
-    background-color: var(--surface-color);
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    padding: 2rem;
-    position: relative;
-    z-index: 10;
-}
-
-.site-section {
-    padding: 2.5rem 0;
-    border-bottom: 1px solid var(--border-color);
-}
-.site-section:last-of-type {
-    border-bottom: none;
-}
-.site-section h2 {
-    font-size: 1.8rem;
-    margin-bottom: 1.5rem;
-}
-.prose {
-    line-height: 1.7;
-    font-size: 1.1rem;
-}
+/* --- CONTENIDO PRINCIPAL (Sin cambios) --- */
+.site-container { max-width: 900px; margin: -5rem auto 2rem auto; background-color: var(--surface-color); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); padding: 2rem; position: relative; z-index: 10; }
+.site-section { padding: 2.5rem 0; border-bottom: 1px solid var(--border-color); }
+.site-section:last-of-type { border-bottom: none; }
+.site-section h2 { font-size: 1.8rem; margin-bottom: 1.5rem; }
+.prose { line-height: 1.7; font-size: 1.1rem; }
 .prose p { margin-top: 0; }
 
-/* --- GRIDS PARA TARJETAS --- */
+/* --- GRIDS PARA TARJETAS (Actualizado) --- */
 .team-grid, .card-grid {
     display: grid;
     gap: 1.5rem;
 }
-.team-grid {
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-}
-.card-grid {
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-}
+.team-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+.card-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
 
-.card {
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
+/* --- ESTILOS DE TARJETAS (Actualizado) --- */
+.card, .researcher-card-btn { border: 1px solid var(--border-color); border-radius: 8px; transition: box-shadow 0.2s, transform 0.2s; background-color: white; }
+.card:hover, .researcher-card-btn:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.08); transform: translateY(-3px); }
+
+/* Tarjeta de Sesión (Nueva y Mejorada) */
+.session-card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+.session-card-image {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 8px 8px 0 0;
+    background-color: #e2e8f0;
+}
+.session-card-content {
     padding: 1.5rem;
-    transition: box-shadow 0.2s;
 }
-.card:hover {
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-}
-.card h3 { margin: 0 0 0.5rem 0; }
-.card p { margin: 0; color: #64748b; }
+.session-card-content h3 { margin: 0 0 0.5rem 0; }
+.session-card-content p { margin: 0; color: #64748b; }
 
-/* --- ANIMACIONES DE SCROLL --- */
-.scroll-animate {
-    opacity: 0;
-    transform: translateY(40px);
-    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
-}
-.scroll-animate.is-visible {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.site-footer {
+/* Tarjeta de Investigador (Ahora es un botón) */
+.researcher-card-btn {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     text-align: center;
-    padding: 2rem;
-    color: #64748b;
-    font-size: 0.9rem;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    font-family: inherit;
 }
+.researcher-card-btn img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin-bottom: 1rem; }
+.researcher-card-btn h3 { font-size: 1.1rem; margin: 0; }
+
+/* Tarjeta de Post de Bluesky (Nueva) */
+.post-card { padding: 1.5rem; }
+.post-card .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+.post-card .post-avatar { width: 40px; height: 40px; border-radius: 50%; }
+.post-card .post-author strong { display: block; }
+.post-card .post-author span { font-size: 0.9rem; color: #64748b; }
+.post-card .post-body { font-size: 0.95rem; }
+
+/* --- MODAL (Nuevo) --- */
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
+.modal-overlay.is-visible { opacity: 1; visibility: visible; }
+.modal-content { background: white; padding: 2rem; border-radius: 12px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; position: relative; transform: scale(0.9); transition: transform 0.3s; }
+.modal-overlay.is-visible .modal-content { transform: scale(1); }
+.modal-close-btn { position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+#modal-profile-content .profile-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+#modal-profile-content .profile-avatar { width: 80px; height: 80px; border-radius: 50%; }
+#modal-profile-content .profile-name { font-size: 1.5rem; margin: 0; }
+#modal-profile-content .profile-orcid { font-size: 0.9rem; color: #64748b; }
+#modal-profile-content .profile-socials { display: flex; gap: 1rem; font-size: 1.5rem; margin-top: 1rem; }
+#modal-profile-content .profile-socials a { color: var(--text-color); }
+
+/* --- ANIMACIONES DE SCROLL (Sin cambios) --- */
+.scroll-animate { opacity: 0; transform: translateY(40px); transition: opacity 0.8s ease-out, transform 0.8s ease-out; }
+.scroll-animate.is-visible { opacity: 1; transform: translateY(0); }
+.site-footer { text-align: center; padding: 2rem; color: #64748b; font-size: 0.9rem; }
