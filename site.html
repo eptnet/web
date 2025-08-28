@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cargando Proyecto...</title>
+    <link rel="stylesheet" href="/css/site.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+</head>
+<body>
+
+    <header id="cover-section" class="cover">
+        <div class="cover-content">
+            <h1 id="cover-headline"></h1>
+            <p id="project-authors-list"></p>
+        </div>
+    </header>
+
+    <main class="site-container">
+        <section id="summary-section" class="site-section scroll-animate">
+            <h2 id="summary-title"></h2>
+            <div id="summary-content" class="prose"></div>
+        </section>
+
+        <section id="team-section" class="site-section scroll-animate">
+            <h2>Los Investigadores</h2>
+            <div id="researchers-container" class="team-grid"></div>
+        </section>
+
+        <div id="custom-modules-container">
+            </div>
+
+        <section id="sessions-section" class="site-section scroll-animate">
+            <h2>Eventos y Actividades</h2>
+            <div id="sessions-container" class="card-grid"></div>
+        </section>
+
+        <section id="posts-section" class="site-section scroll-animate">
+            <h2>Artículos y Resultados</h2>
+            <div id="posts-container" class="card-grid"></div>
+        </section>
+
+    </main>
+
+    <footer class="site-footer">
+        <p>Publicado a través de la plataforma Epistecnología</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/site.js"></script>
+</body>
+</html>

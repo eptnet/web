@@ -41,12 +41,48 @@
                 </fieldset>
 
                 <fieldset>
+                    <legend><i class="fa-solid fa-users"></i> Equipo de Investigadores</legend>
+                    <p class="form-hint">Esta sección se llena automáticamente con los autores de tu proyecto. Los perfiles con cuenta en la plataforma se mostrarán con más detalle.</p>
+                    <div id="researchers-preview-container" class="preview-grid">
+                        <p>Cargando investigadores...</p>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend><i class="fa-solid fa-podcast"></i> Eventos y Sesiones</legend>
+                    <p class="form-hint">Aquí aparecerán todas las sesiones de divulgación asociadas a este proyecto.</p>
+                    <div id="sessions-preview-container" class="preview-grid">
+                        <p>Cargando sesiones...</p>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend><i class="fa-solid fa-file-alt"></i> Artículos y Publicaciones</legend>
+                    <p class="form-hint">Aquí aparecerán todos los posts y borradores asociados a este proyecto.</p>
+                    <div id="posts-preview-container" class="preview-grid">
+                        <p>Cargando publicaciones...</p>
+                    </div>
+                </fieldset>
+
+                <fieldset>
                     <legend><i class="fa-solid fa-layer-group"></i> Módulos de Contenido</legend>
                     <div id="custom-modules-container">
                         </div>
                     <div class="module-actions">
                         <button type="button" id="add-text-module-btn"><i class="fa-solid fa-plus"></i> Añadir Módulo de Texto</button>
                         <button type="button" id="add-embed-module-btn"><i class="fa-solid fa-plus"></i> Añadir Módulo de Enlace/Embed</button>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend><i class="fa-solid fa-globe"></i> Estado de Publicación</legend>
+                    <div class="publish-toggle">
+                        <label for="microsite-is-public">Hacer microsite público</label>
+                        <p class="form-hint">Cuando esté activo, cualquiera con el enlace podrá ver la página.</p>
+                        <label class="switch">
+                            <input type="checkbox" id="microsite-is-public" name="microsite-is-public">
+                            <span class="slider round"></span>
+                        </label>
                     </div>
                 </fieldset>
 
@@ -66,6 +102,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/inv/js/microsite-editor.js"></script>
 </body>
 </html>

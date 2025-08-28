@@ -26,48 +26,66 @@ export const Projects = {
         container.innerHTML = `<div class="project-grid">${projectsHTML}</div>`;
     },
 
-    addEventListeners() {
-        const container = document.getElementById('projects-list-container');
-        if (container) {
-            container.addEventListener('change', (e) => {
-                if (e.target.name === 'project-selector') {
-                    sessionStorage.setItem('activeProject', e.target.value);
-                    document.querySelectorAll('.project-card').forEach(card => card.classList.remove('selected'));
-                    e.target.parentElement.classList.add('selected');
-                    document.querySelectorAll('.creation-card').forEach(card => card.classList.remove('disabled'));
-                }
-            });
+    // REEMPLAZA ESTA FUNCIÓN COMPLETA EN manager-proyectos.js
+
+addEventListeners() {
+    // Ponemos un ÚNICO listener en la sección principal que siempre está visible.
+    const homeSection = document.getElementById('home-section');
+    if (!homeSection) return;
+
+    homeSection.addEventListener('click', (e) => {
+        // Buscamos si el clic fue en una tarjeta de proyecto
+        const projectCard = e.target.closest('.project-card');
+        if (projectCard) {
+            // Esta lógica es para SELECCIONAR un proyecto
+            const radioInput = projectCard.querySelector('input[type="radio"]');
+            if (radioInput && !radioInput.checked) {
+                radioInput.checked = true;
+                // Disparamos un evento 'change' manualmente para que se guarde en sessionStorage
+                radioInput.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            return; // Terminamos aquí si fue un clic para seleccionar proyecto
         }
-        
-        const creationGrid = document.querySelector('.creation-grid');
-        if (creationGrid) {
-            creationGrid.addEventListener('click', (e) => {
-                const creationCard = e.target.closest('.creation-card');
 
-                if (!creationCard || creationCard.classList.contains('disabled')) {
-                    return;
-                }
+        // Buscamos si el clic fue en una tarjeta de acción (divulgar, microsite, etc.)
+        const creationCard = e.target.closest('.creation-card');
+        if (creationCard) {
+            // Esta lógica es para EJECUTAR una acción
+            if (creationCard.classList.contains('disabled')) {
+                alert("Por favor, selecciona un proyecto del Paso 1 para activar esta opción.");
+                return;
+            }
 
-                const action = creationCard.dataset.studioAction;
-                const activeProject = JSON.parse(sessionStorage.getItem('activeProject'));
+            const action = creationCard.dataset.studioAction;
+            const activeProject = JSON.parse(sessionStorage.getItem('activeProject'));
 
-                if (!activeProject) {
-                    alert("Por favor, selecciona un proyecto primero.");
-                    return;
-                }
+            // Doble verificación de que un proyecto está activo
+            if (!activeProject) {
+                alert("Error: No hay un proyecto activo. Por favor, selecciona uno.");
+                return;
+            }
 
-                // --- LÓGICA CORREGIDA Y FINAL ---
-                if (action === 'text' || action === 'social' || action === 'script') {
-                    // Ahora redirigimos pasando el projectId Y el agente seleccionado
-                    window.location.href = `/inv/editor.html?projectId=${activeProject.id}&agent=${action}`;
-                
-                } else if (action === 'image') {
-                    alert("La generación de imágenes con IA se implementará próximamente.");
-                
-                } else if (action === 'live' || action === 'podcast' || action === 'presentation' || action === 'interview') {
-                    Studio.openModal();
-                }
-            });
+            // Aquí va toda la lógica de redirección
+            if (action === 'text' || action === 'social' || action === 'script') {
+                window.location.href = `/inv/editor.html?projectId=${activeProject.id}&agent=${action}`;
+            } else if (action === 'image') {
+                alert("La generación de imágenes con IA se implementará próximamente.");
+            } else if (action === 'live' || action === 'podcast' || action === 'presentation' || action === 'interview') {
+                Studio.openModal();
+            } else if (action === 'microsite') {
+                window.location.href = '/inv/microsite-editor.html';
+            }
         }
-    }
+    });
+
+    // Mantenemos este listener aparte, ya que se asocia con el input de radio directamente
+    homeSection.addEventListener('change', (e) => {
+        if (e.target.name === 'project-selector') {
+            sessionStorage.setItem('activeProject', e.target.value);
+            document.querySelectorAll('.project-card').forEach(card => card.classList.remove('selected'));
+            e.target.closest('.project-card').classList.add('selected');
+            document.querySelectorAll('.creation-card').forEach(card => card.classList.remove('disabled'));
+        }
+    });
+}
 };
