@@ -11,22 +11,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function init() {
         const urlParams = new URLSearchParams(window.location.search);
-        const projectId = urlParams.get('id');
-        if (!projectId) { document.body.innerHTML = '<h1>Error: ID de proyecto no encontrado.</h1>'; return; }
+        // --- CAMBIO 1: Leemos 'slug' en lugar de 'id' ---
+        const slug = urlParams.get('slug');
 
+        if (!slug) {
+            document.body.innerHTML = '<h1>Error: Slug de proyecto no encontrado en la URL.</h1>';
+            return;
+        }
+
+        // --- CAMBIO 2: Buscamos en la base de datos usando la columna 'slug' ---
         const { data: project, error } = await supabase
             .from('projects')
-            .select('user_id, title, authors, microsite_content')
-            .eq('id', projectId)
+            .select('id, user_id, title, authors, microsite_content')
+            .eq('slug', slug) // <-- Aquí está la magia
             .eq('microsite_is_public', true)
             .single();
 
-        if (error || !project) { console.error('Error fetching project:', error); document.body.innerHTML = '<h1>Proyecto no encontrado o no es público.</h1>'; return; }
+        if (error || !project) {
+            console.error('Error fetching project:', error);
+            document.body.innerHTML = '<h1>Proyecto no encontrado o no es público.</h1>';
+            return;
+        }
+
+        const projectId = (await supabase.from('projects').select('id').eq('slug', slug).single()).data.id;
 
         // --- CAMBIO 1: Asegurarnos de traer el ID de la sesión ---
         const [sessionsResponse, postsResponse] = await Promise.all([
             supabase.from('sessions').select('id, session_title, scheduled_at, thumbnail_url').eq('project_title', project.title),
-            supabase.from('posts').select('title, status').eq('project_id', projectId)
+            supabase.from('posts').select('title, status').eq('project_id', project.id)
         ]);
         
         // Renderizamos todo
@@ -96,10 +108,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderCover(project) {
         const content = project.microsite_content || {};
+        const summaryText = content.summary?.content.replace(/<[^>]*>?/gm, '').substring(0, 150) || `Un proyecto de ${project.authors.join(', ')}`;
+        const pageUrl = `${window.location.origin}${window.location.pathname}?slug=${project.slug}`;
+
+        // Rellenar contenido de la página
         document.title = project.title;
         document.getElementById('cover-section').style.backgroundImage = `url(${content.cover?.imageUrl || ''})`;
         document.getElementById('cover-headline').textContent = content.cover?.headline || project.title;
         document.getElementById('project-authors-list').textContent = (project.authors || []).join(', ');
+
+        // --- LÓGICA AÑADIDA PARA RELLENAR META TAGS ---
+        document.getElementById('og-title').setAttribute('content', content.cover?.headline || project.title);
+        document.getElementById('og-description').setAttribute('content', summaryText);
+        // Usa la imagen SEO si existe, si no, usa la imagen de portada
+        document.getElementById('og-image').setAttribute('content', content.seo?.imageUrl || content.cover?.imageUrl || 'https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png');
+        document.getElementById('og-url').setAttribute('content', pageUrl);
     }
     
     function renderSummary(content) {
@@ -130,16 +153,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ESTA ES UNA DE LAS FUNCIONES QUE FALTABA
+    // ESTA INCRUSTACIONES EMBED LINK
     function renderCustomModules(modules) {
         if (!modules || modules.length === 0) return;
         const container = document.getElementById('custom-modules-container');
-        container.innerHTML = modules.map(module => `
-            <section class="site-section scroll-animate">
-                <h2>${module.title}</h2>
-                <div class="prose">${module.type === 'embed' ? `<iframe src="${module.content.replace('watch?v=', 'embed/')}" width="100%" height="400" frameborder="0" allowfullscreen></iframe>` : module.content}</div>
-            </section>
-        `).join('');
+
+        container.innerHTML = modules.map(module => {
+            // Lógica para el contenido del módulo
+            let contentHtml = '';
+            if (module.type === 'embed') {
+                // --- CORRECCIÓN AQUÍ: Se añadió credentialless="true" al iframe ---
+                contentHtml = `<iframe credentialless="true" src="${module.content.replace('watch?v=', 'embed/')}" width="100%" height="400" frameborder="0" allowfullscreen style="border:0; border-radius: 8px;"></iframe>`;
+            } else {
+                contentHtml = module.content;
+            }
+
+            return `
+                <section class="site-section scroll-animate">
+                    <h2>${module.title}</h2>
+                    <div class="prose">${contentHtml}</div>
+                </section>
+            `;
+        }).join('');
     }
     
     function renderSessions(sessions) {

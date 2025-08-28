@@ -72,7 +72,7 @@ const MicrositeEditorApp = {
         if (error) console.error("Error fetching sessions:", error);
         return data || [];
     },
-    
+
     async fetchPosts() {
         // CORRECCIÓN: Ahora consultamos la tabla 'posts'
         const { data, error } = await this.supabase
@@ -173,6 +173,7 @@ const MicrositeEditorApp = {
         const content = this.currentProject.microsite_content || {};
         document.getElementById('cover-headline').value = content.cover?.headline || `Un microsite para: ${this.currentProject.title}`;
         document.getElementById('cover-image-url').value = content.cover?.imageUrl || '';
+        document.getElementById('seo-image-url').value = content.seo?.imageUrl || '';
         document.getElementById('summary-content').value = content.summary?.content || this.currentProject.description || '';
         document.getElementById('microsite-is-public').checked = this.currentProject.microsite_is_public || false;
         const modulesContainer = document.getElementById('custom-modules-container');
@@ -204,8 +205,8 @@ const MicrositeEditorApp = {
         const form = document.getElementById('microsite-form');
         const addTextModuleBtn = document.getElementById('add-text-module-btn');
         const addEmbedModuleBtn = document.getElementById('add-embed-module-btn');
-        const previewBtn = document.getElementById('preview-btn'); // Obtenemos el botón de vista previa
-
+        const previewBtn = document.getElementById('preview-btn');
+        
         if (addTextModuleBtn) addTextModuleBtn.addEventListener('click', () => this.createModule('text'));
         if (addEmbedModuleBtn) addEmbedModuleBtn.addEventListener('click', () => this.createModule('embed'));
         if (form) form.addEventListener('submit', (e) => this.handleFormSubmit(e));
@@ -215,22 +216,21 @@ const MicrositeEditorApp = {
         });
 
         // --- INICIO DE LA LÓGICA AÑADIDA ---
-        if (previewBtn) {
-            previewBtn.addEventListener('click', () => {
-                if (!this.currentProject || !this.currentProject.id) {
-                    alert("No se ha cargado ningún proyecto para previsualizar.");
-                    return;
-                }
+            if (previewBtn) {
+                previewBtn.addEventListener('click', () => {
+                    if (!this.currentProject || !this.currentProject.slug) {
+                        alert("El proyecto no tiene un slug generado para previsualizar.");
+                        return;
+                    }
 
-                // Construimos la URL apuntando a la raíz del sitio
-                const publicUrl = `/site.html?id=${this.currentProject.id}`;
-                
-                // Abrimos la URL en una nueva pestaña
-                window.open(publicUrl, '_blank');
-            });
-        }
-        // --- FIN DE LA LÓGICA AÑADIDA ---
-    },
+                    // CORRECCIÓN: Codificamos el slug para que sea seguro en una URL
+                    const safeSlug = encodeURIComponent(this.currentProject.slug);
+                    const publicUrl = `/site.html?slug=${safeSlug}`;
+                    
+                    window.open(publicUrl, '_blank');
+                });
+            }
+        },
 
     /**
      * Crea un nuevo módulo de contenido en el DOM.
@@ -262,9 +262,19 @@ const MicrositeEditorApp = {
         const saveButton = document.getElementById('save-btn');
         saveButton.disabled = true;
         saveButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+        
         const micrositeData = {
-            cover: { headline: document.getElementById('cover-headline').value, imageUrl: document.getElementById('cover-image-url').value },
-            summary: { content: document.getElementById('summary-content').value },
+            cover: {
+                headline: document.getElementById('cover-headline').value,
+                imageUrl: document.getElementById('cover-image-url').value,
+            },
+            // --- BLOQUE AÑADIDO ---
+            seo: {
+                imageUrl: document.getElementById('seo-image-url').value,
+            },
+            summary: {
+                content: document.getElementById('summary-content').value,
+            },
             custom_modules: []
         };
         document.querySelectorAll('#custom-modules-container .module-card').forEach(moduleEl => {

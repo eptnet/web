@@ -29,6 +29,10 @@
                     
                     <label for="cover-image-url">URL de Imagen de Fondo:</label>
                     <input type="text" id="cover-image-url" name="cover-image-url" placeholder="https://ejemplo.com/imagen.jpg">
+
+                    <label for="seo-image-url">URL de Miniatura para Redes (SEO):</label>
+                    <p class="form-hint">Esta imagen se mostrará cuando compartas el enlace. Si lo dejas en blanco, se usará la imagen de fondo.</p>
+                    <input type="text" id="seo-image-url" name="seo-image-url" placeholder="URL de imagen cuadrada o 1200x630px">
                 </fieldset>
 
                 <fieldset>
@@ -66,6 +70,7 @@
 
                 <fieldset>
                     <legend><i class="fa-solid fa-layer-group"></i> Módulos de Contenido</legend>
+                    <p class="form-hint">Para video YouTube, pegar solo el url, para otras plataformas incrustar usar SOLO el link de incrustar no el código ni el link directo.</p>
                     <div id="custom-modules-container">
                         </div>
                     <div class="module-actions">
@@ -93,13 +98,6 @@
             </form>
         </div>
 
-        <div class="preview-panel">
-            <div class="preview-placeholder">
-                <i class="fa-solid fa-desktop"></i>
-                <h2>Vista Previa del Site</h2>
-                <p>Aquí verás una aproximación de tu página pública. Por ahora, ¡concentrémonos en el contenido!</p>
-            </div>
-        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
