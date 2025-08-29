@@ -22,18 +22,19 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- CAMBIO 2: Buscamos en la base de datos usando la columna 'slug' ---
         const { data: project, error } = await supabase
             .from('projects')
-            .select('id, user_id, title, authors, microsite_content')
-            .eq('slug', slug) // <-- Aquí está la magia
+            .select('id, user_id, title, authors, microsite_content, template_style, color_palette')
+            .eq('slug', slug) 
             .eq('microsite_is_public', true)
             .single();
 
         if (error || !project) {
             console.error('Error fetching project:', error);
-            document.body.innerHTML = '<h1>Proyecto no encontrado o no es público.</h1>';
+            document.body.innerHTML = '<h1>Proyecto no encontrado o no es público.</h1>'; 
             return;
         }
 
-        const projectId = (await supabase.from('projects').select('id').eq('slug', slug).single()).data.id;
+        document.body.classList.add(`template-${project.template_style}`, `palette-${project.color_palette}`);
+        // const projectId = (await supabase.from('projects').select('id').eq('slug', slug).single()).data.id;
 
         // --- CAMBIO 1: Asegurarnos de traer el ID de la sesión ---
         const [sessionsResponse, postsResponse] = await Promise.all([
@@ -51,6 +52,45 @@ document.addEventListener('DOMContentLoaded', () => {
         
         setupScrollAnimations();
         setupEventListeners();
+        setupStickyNav();
+    }
+
+    function setupStickyNav() {
+        const nav = document.querySelector('.site-nav');
+        const navLinks = nav.querySelectorAll('a');
+        const sections = document.querySelectorAll('.site-section');
+
+        // Lógica para el smooth scroll
+        navLinks.forEach(link => {
+            link.addEventListener('click', e => {
+                e.preventDefault();
+                const targetId = link.getAttribute('href');
+                const targetSection = document.querySelector(targetId);
+                if (targetSection) {
+                    targetSection.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Lógica para resaltar el enlace activo al hacer scroll
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    navLinks.forEach(link => {
+                        link.classList.toggle('active', link.getAttribute('href') === `#${entry.target.id}`);
+                    });
+                }
+            });
+        }, { rootMargin: "-50% 0px -50% 0px" }); // Se activa cuando la sección está en el centro de la pantalla
+
+        sections.forEach(section => {
+            if (section.id) { // Solo observamos secciones con ID
+                observer.observe(section);
+            }
+        });
     }
 
     function setupEventListeners() {
@@ -110,12 +150,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const content = project.microsite_content || {};
         const summaryText = content.summary?.content.replace(/<[^>]*>?/gm, '').substring(0, 150) || `Un proyecto de ${project.authors.join(', ')}`;
         const pageUrl = `${window.location.origin}${window.location.pathname}?slug=${project.slug}`;
+        const coverSection = document.getElementById('cover-section'); 
+        coverSection.style.setProperty('--cover-bg-image', `url(${content.cover?.imageUrl || ''})`); 
 
         // Rellenar contenido de la página
         document.title = project.title;
         document.getElementById('cover-section').style.backgroundImage = `url(${content.cover?.imageUrl || ''})`;
         document.getElementById('cover-headline').textContent = content.cover?.headline || project.title;
         document.getElementById('project-authors-list').textContent = (project.authors || []).join(', ');
+        document.getElementById('nav-project-title').textContent = project.title;
 
         // --- LÓGICA AÑADIDA PARA RELLENAR META TAGS ---
         document.getElementById('og-title').setAttribute('content', content.cover?.headline || project.title);
@@ -159,19 +202,52 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = document.getElementById('custom-modules-container');
 
         container.innerHTML = modules.map(module => {
-            // Lógica para el contenido del módulo
             let contentHtml = '';
-            if (module.type === 'embed') {
-                // --- CORRECCIÓN AQUÍ: Se añadió credentialless="true" al iframe ---
+            if (module.type === 'text') {
+                contentHtml = `<div class="prose">${module.content}</div>`;
+            } else if (module.type === 'embed') {
                 contentHtml = `<iframe credentialless="true" src="${module.content.replace('watch?v=', 'embed/')}" width="100%" height="400" frameborder="0" allowfullscreen style="border:0; border-radius: 8px;"></iframe>`;
-            } else {
-                contentHtml = module.content;
+            } else if (module.type === 'subscription') { // --- NUEVA LÓGICA ---
+                // Si el enlace es de Substack, lo convertimos en un embed.
+                if (module.url && module.url.includes('substack.com')) {
+                    const substackEmbedUrl = `${module.url}/embed`;
+                    contentHtml = `<p>${module.text || ''}</p> <iframe src="${substackEmbedUrl}" width="100%" height="320" style="border:1px solid #EEE; background:white;" frameborder="0" scrolling="no"></iframe>`;
+                } else {
+                    contentHtml = `<p>${module.text || ''}</p> <a href="${module.url || '#'}" target="_blank" class="btn-subscribe">Suscribirse</a>`;
+                }
+            }
+                else if (module.type === 'sponsors' && module.sponsors.length > 0) {
+                contentHtml = `
+                    <div class="sponsors-grid">
+                        ${module.sponsors.map(sponsor => `
+                            <a href="${sponsor.siteUrl}" target="_blank" rel="noopener" class="sponsor-link">
+                                <img src="${sponsor.logoUrl}" alt="Logo del patrocinador" class="sponsor-logo">
+                            </a>
+                        `).join('')}
+                    </div>
+                `;
+            }
+                else if (module.type === 'timeline' && module.milestones.length > 0) {
+                contentHtml = `
+                    <div class="timeline">
+                        ${module.milestones.map(milestone => `
+                            <div class="timeline-item">
+                                <div class="timeline-point"></div>
+                                <div class="timeline-content">
+                                    <div class="timeline-date">${milestone.date}</div>
+                                    <h3 class="timeline-title">${milestone.title}</h3>
+                                    <p class="timeline-description">${milestone.description}</p>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
             }
 
             return `
                 <section class="site-section scroll-animate">
                     <h2>${module.title}</h2>
-                    <div class="prose">${contentHtml}</div>
+                    ${contentHtml}
                 </section>
             `;
         }).join('');

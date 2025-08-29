@@ -17,37 +17,51 @@ body {
     line-height: 1.6;
 }
 
-/* --- Contenedor Principal --- */
-.editor-container {
+/* --- NUEVO: ESTILOS PARA EL MENÚ SUPERIOR DEL EDITOR --- */
+.editor-main-header {
     display: flex;
-    min-height: 100vh;
-}
-
-.editor-panel {
-    width: 60%;
-    padding: 40px;
-    overflow-y: auto;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
     background-color: var(--panel-background);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
-
-.preview-panel {
-    width: 40%;
-    background-color: var(--background-color);
-    padding: 40px;
+.header-logo {
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--text-color);
+    font-weight: 600;
 }
-
-.preview-placeholder {
-    text-align: center;
+.header-logo img {
+    height: 30px;
+}
+.header-nav {
+    display: flex;
+    gap: 1.5rem;
+}
+.header-nav a {
+    text-decoration: none;
     color: var(--text-light-color);
+    transition: color 0.2s;
 }
-.preview-placeholder i {
-    font-size: 50px;
-    margin-bottom: 20px;
+.header-nav a:hover {
+    color: var(--primary-color);
 }
 
+/* --- Contenedor Principal --- */
+.editor-panel {
+    max-width: 900px;
+    margin: 2rem auto; /* Esto centra el panel horizontalmente */
+    padding: 40px;
+    background-color: var(--panel-background);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
 /* --- Cabecera y Formulario --- */
 .editor-header {
     margin-bottom: 40px;
@@ -238,4 +252,64 @@ input:checked + .slider:before { transform: translateX(26px); }
     height: 40px;
     border-radius: 50%;
     object-fit: cover;
+}
+/* --- NUEVO: ESTILOS PARA MÓDULOS CON ITEMS (PATROCINADORES) --- */
+.sponsors-list-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+    border-left: 2px solid var(--border-color);
+    padding-left: 1rem;
+}
+.item-fieldset {
+    padding: 1rem !important;
+    position: relative;
+    border-style: dashed !important;
+}
+.btn-add-item {
+    margin-top: 1rem;
+    background-color: var(--background-color) !important;
+}
+.btn-remove-item {
+    position: absolute;
+    top: -10px;
+    right: 5px;
+    background: none !important;
+    font-size: 1.5rem;
+    padding: 0 5px;
+    color: var(--text-light-color);
+}
+/* --- NUEVO: ESTILOS PARA FORMULARIOS Y SELECTORES DE DISEÑO --- */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+.form-group:last-child {
+    margin-bottom: 0;
+}
+
+select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 16px;
+    box-sizing: border-box;
+    font-family: inherit;
+    background-color: white;
+    cursor: pointer;
+
+    /* Estilos para quitar la flecha por defecto y poner una personalizada */
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.75rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+}
+
+.design-selectors {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
 }

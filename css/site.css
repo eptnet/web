@@ -13,6 +13,53 @@ body {
     color: var(--text-color);
 }
 
+/* --- NUEVO: ESTILOS PARA EL MENÚ DE NAVEGACIÓN --- */
+.site-nav {
+    position: sticky;
+    top: 0;
+    background-color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-color);
+    z-index: 999;
+    padding: 0 2rem;
+}
+.nav-content {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 60px;
+}
+.nav-project-title {
+    font-weight: 600;
+}
+.site-nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    gap: 1.5rem;
+}
+.site-nav a {
+    text-decoration: none;
+    color: var(--text-light-color);
+    font-weight: 500;
+    padding: 0.5rem 0;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+.site-nav a:hover,
+.site-nav a.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
+/* IMPORTANTE: Ajuste para que el menú no tape los títulos */
+.site-section {
+    scroll-margin-top: 80px; /* Altura del menú + un margen */
+}
+
 /* --- SECCIÓN DE PORTADA (Sin cambios) --- */
 .cover { height: 60vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 2rem; background-size: cover; background-position: center; color: white; position: relative; }
 .cover::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); }
@@ -97,3 +144,152 @@ body {
 .scroll-animate { opacity: 0; transform: translateY(40px); transition: opacity 0.8s ease-out, transform 0.8s ease-out; }
 .scroll-animate.is-visible { opacity: 1; transform: translateY(0); }
 .site-footer { text-align: center; padding: 2rem; color: #64748b; font-size: 0.9rem; }
+/* --- NUEVO: ESTILOS PARA EL MÓDULO DE SUSCRIPCIÓN --- */
+.btn-subscribe {
+    display: inline-block;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    margin-top: 1rem;
+    transition: background-color 0.2s;
+}
+.btn-subscribe:hover {
+    background-color: #2563EB; /* Un azul un poco más oscuro */
+}
+/* --- NUEVO: ESTILOS PARA LA SECCIÓN DE PATROCINADORES --- */
+.sponsors-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center; /* Centra los logos */
+    align-items: center;
+    gap: 2rem;
+    margin-top: 1rem;
+}
+.sponsor-link {
+    display: inline-block;
+}
+.sponsor-logo {
+    height: 60px; /* Altura uniforme para todos los logos */
+    max-width: 180px;
+    object-fit: contain;
+    filter: grayscale(100%); /* Efecto elegante en blanco y negro */
+    opacity: 0.8;
+    transition: all 0.3s;
+}
+.sponsor-logo:hover {
+    filter: grayscale(0%);
+    opacity: 1;
+}
+/* --- NUEVO: ESTILOS PARA LA SECCIÓN DE TIMELINE --- */
+.timeline {
+    position: relative;
+    max-width: 700px;
+    margin: 2rem auto;
+    padding-left: 2rem;
+}
+/* La línea vertical del timeline */
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 3px;
+    background-color: var(--border-color);
+}
+.timeline-item {
+    position: relative;
+    margin-bottom: 2.5rem;
+}
+.timeline-item:last-child {
+    margin-bottom: 0;
+}
+/* El punto en la línea */
+.timeline-point {
+    position: absolute;
+    left: -2.7rem; /* (Ancho del padding + mitad del punto) */
+    top: 5px;
+    width: 1rem;
+    height: 1rem;
+    background-color: var(--primary-color);
+    border-radius: 50%;
+    border: 3px solid var(--surface-color);
+}
+.timeline-content {
+    padding-left: 1rem;
+}
+.timeline-date {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+.timeline-title {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+}
+.timeline-description {
+    margin: 0;
+    color: #64748b;
+}
+/* ====================================================== */
+/* ===== NUEVO: SISTEMA DE PLANTILLAS Y PALETAS ===== */
+/* ====================================================== */
+
+/* --- 1. Definición de Paletas de Colores --- */
+/* Paleta Oscura */
+.palette-dark {
+    --primary-color: #58A6FF; /* Azul brillante */
+    --text-color: #c9d1d9;
+    --background-color: #0d1117;
+    --surface-color: #161b22;
+    --border-color: #30363d;
+}
+/* Paleta Arena */
+.palette-sand {
+    --primary-color: #C05621; /* Naranja quemado */
+    --text-color: #4A4A4A;
+    --background-color: #FDFCFB;
+    --surface-color: #FFFFFF;
+    --border-color: #EAEAEA;
+}
+
+/* --- 2. Estilos Específicos por Plantilla --- */
+
+/* ---- PLANTILLA: CLÁSICA (Default) ---- */
+/* La plantilla clásica usa los estilos que ya teníamos, no necesita reglas nuevas. */
+
+
+/* ---- PLANTILLA: MODERNA (Inspirada en BioNova) ---- */
+.template-modern .site-container {
+    max-width: 100%;
+    margin-top: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+.template-modern .cover {
+    height: 70vh;
+    border-radius: 0 0 40px 40px;
+    /* Efecto gradiente sutil */
+    background-image: linear-gradient(135deg, rgba(88, 166, 255, 0.1), rgba(88, 166, 255, 0) 70%), 
+                      var(--cover-bg-image); /* Usamos una variable para la imagen */
+}
+.template-modern #cover-section {
+    background-image: var(--cover-bg-image);
+}
+.template-modern .site-section {
+    max-width: 900px;
+    margin: 0 auto; /* Centramos el contenido de las secciones */
+}
+.template-modern .card {
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    box-shadow: none;
+}
+/* Cambiamos el color de fondo en la paleta oscura para que las tarjetas resalten */
+.template-modern.palette-dark .card {
+    background-color: var(--surface-color);
+}
