@@ -34,6 +34,8 @@ const App = {
         
         Header.init(this.userProfile);
         Navigation.init();
+        
+        this.checkBskyConnectionStatus();
 
         // Aplica el tema guardado al cargar la página
         applyTheme(localStorage.getItem('theme') || 'light');
@@ -76,6 +78,35 @@ const App = {
                 homeSection.innerHTML = homeTemplate.innerHTML;
             }
             Projects.init();
+        }
+    },
+
+    async checkBskyConnectionStatus() {
+        const banner = document.getElementById('bsky-status-banner');
+        if (!banner) return;
+
+        try {
+            const { data, error } = await this.supabase.functions.invoke('bsky-check-status');
+            
+            if (error) throw error;
+
+            banner.classList.remove('is-loading');
+
+            if (data.connected) {
+                banner.classList.add('is-connected');
+                banner.innerHTML = `<p><i class="fa-solid fa-check-circle"></i> Conectado a Bluesky como: <strong>${data.handle}</strong></p>`;
+            } else {
+                banner.classList.add('is-disconnected');
+                banner.innerHTML = `
+                    <p><i class="fa-solid fa-triangle-exclamation"></i> No estás conectado a Bluesky. El chat no se creará para nuevos eventos.</p>
+                    <a href="/inv/profile.html#comunidad" class="btn-connect">Conectar Cuenta</a>
+                `;
+            }
+        } catch (err) {
+            banner.classList.remove('is-loading');
+            banner.classList.add('is-disconnected');
+            banner.innerHTML = `<p><i class="fa-solid fa-triangle-exclamation"></i> No se pudo verificar la conexión con Bluesky.</p>`;
+            console.error("Error al verificar el estado de Bluesky:", err);
         }
     },
 };

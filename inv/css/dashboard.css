@@ -1080,3 +1080,47 @@ textarea[name="description"] {
 
 /* --- FIN: Estilos para Avatares --- */
 
+/* Estilos para el Indicador de Conexión de Bluesky */
+.status-banner {
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.status-banner.is-loading {
+    background-color: #f0f0f0;
+    border-color: #ddd;
+    color: #666;
+}
+
+.status-banner.is-connected {
+    background-color: #e8f5e9; /* Verde claro */
+    border-color: #a5d6a7;
+    color: #2e7d32;
+}
+
+.status-banner.is-disconnected {
+    background-color: #ffebf0; /* Rojo claro */
+    border-color: #f794a4;
+    color: #c62828;
+}
+
+.status-banner p {
+    margin: 0;
+    font-weight: 500;
+}
+
+.status-banner .btn-connect {
+    background-color: #c62828;
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}

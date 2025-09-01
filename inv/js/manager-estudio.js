@@ -23,8 +23,6 @@ export const Studio = {
         });
     },
 
-    // REEMPLAZA ESTA FUNCIÓN COMPLETA
-
     addEventListeners() {
         const container = document.getElementById('my-sessions-tab');
         if (!container || container.dataset.listenerAttached) return;
@@ -71,7 +69,6 @@ export const Studio = {
         });
     },
 
-    // AÑADE ESTA NUEVA FUNCIÓN al objeto Studio en manager-estudio.js
     async archiveSession(sessionId) {
         const confirmed = confirm("¿Archivar esta sesión? Desaparecerá de las vistas públicas pero no se borrará. Podrás seguir viéndola en esta sección.");
         if (!confirmed) return;
