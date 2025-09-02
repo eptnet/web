@@ -29,39 +29,38 @@ serve(async (req) => {
     if (req.method === 'OPTIONS') { return new Response('ok', { headers: corsHeaders }) }
     try {
         const supabaseAdmin = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
-        const supabaseUserClient = createClient(
-            Deno.env.get('SUPABASE_URL') ?? '',
-            Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+        const { data: { user } } = await createClient(
+            Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_ANON_KEY') ?? '',
             { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
-        );
-
-        const { data: { user } } = await supabaseUserClient.auth.getUser();
+        ).auth.getUser();
         if (!user) throw new Error('Usuario no autenticado.');
 
-        const { sessionData, authorInfo } = await req.json();
-        if (!sessionData || !authorInfo) throw new Error('Faltan datos de la sesión o del autor.');
+        const { sessionData, authorInfo, postMethod } = await req.json();
+        if (!sessionData || !authorInfo || !postMethod) throw new Error('Faltan datos en la solicitud.');
         
         const { data: savedSession, error: insertError } = await supabaseAdmin.from('sessions').insert(sessionData).select().single();
         if (insertError) throw insertError;
 
-        const { data: creds } = await supabaseAdmin.from('bsky_credentials').select('*').eq('user_id', user.id).single();
-        
-        const agent = new BskyAgent({ service: 'https://bsky.social' });
-        let postText = '';
-        
-        if (creds) {
-            console.log(`Investigador ${creds.handle} está conectado. Publicando como usuario.`);
-            await agent.resumeSession({ ...creds });
-            postText = `📢 ¡Evento programado!\n\n"${sessionData.session_title}"\n\nConoce todos los detalles del evento y únete al chat aquí:`;
-        } else {
-            console.log(`Investigador no conectado. Publicando como el bot @${Deno.env.get('BSKY_HANDLE')}.`);
-            await agent.login({ identifier: Deno.env.get('BSKY_HANDLE')!, password: Deno.env.get('BSKY_APP_PASSWORD')! });
-            postText = `📢 ¡Evento programado!\n\n"${sessionData.session_title}"\n\n✍️ Presentado por: ${authorInfo.displayName}\n\nConoce todos los detalles del evento y únete al chat aquí:`;
+        if (postMethod === 'none') {
+            return new Response(JSON.stringify({ success: true, savedSession }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
 
+        const agent = new BskyAgent({ service: 'https://bsky.social' });
+        let postText = '';
+
+        if (postMethod === 'user') {
+            const { data: creds } = await supabaseAdmin.from('bsky_credentials').select('*').eq('user_id', user.id).single();
+            if (!creds) throw new Error("Se intentó publicar como usuario, pero no se encontraron credenciales.");
+            await agent.resumeSession({ ...creds });
+            postText = `📢 ¡Evento programado!\n\n"${sessionData.session_title}"\n\nConoce los detalles y únete al chat aquí:`;
+        } else if (postMethod === 'bot') {
+            await agent.login({ identifier: Deno.env.get('BSKY_HANDLE')!, password: Deno.env.get('BSKY_APP_PASSWORD')! });
+            postText = `📢 ¡Evento programado!\n\n"${sessionData.session_title}"\n\n✍️ Presentado por: ${authorInfo.displayName}\n\nConoce los detalles y únete al chat aquí:`;
+        }
+        
         const directLink = `https://epistecnologia.com/live.html?sesion=${savedSession.id}`;
         
-        // --- LÓGICA DE VISTA PREVIA Y MINIATURA (RESTAURADA) ---
+        // --- LÓGICA DE VISTA PREVIA Y MINIATURA ---
         const previewData = await getLinkPreview(directLink);
         let imageBlob = null;
         if (previewData && previewData.thumb) {
@@ -102,8 +101,8 @@ serve(async (req) => {
 
         return new Response(JSON.stringify({ success: true, savedSession }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-      } catch (error) {
+    } catch (error) {
         console.error('Error en create-session-and-bsky-thread:', error);
         return new Response(JSON.stringify({ error: error.message }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 });
-      }
-    })
+    }
+})
