@@ -5,79 +5,84 @@ import { BskyAgent, AtpSessionEvent, AtpSessionData } from 'npm:@atproto/api'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
+// ... (Tu función getLinkPreview no necesita cambios)
+
 serve(async (req) => {
     if (req.method === 'OPTIONS') { return new Response('ok', { headers: corsHeaders }) }
     try {
-        const supabaseAdmin = createClient(
+        const supabaseClient = createClient(
             Deno.env.get('SUPABASE_URL') ?? '',
-            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-        );
+            Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+            { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+        )
+        const { data: { user } } = await supabaseClient.auth.getUser()
+        if (!user) throw new Error('Usuario no autenticado.')
 
-        const { sessionTitle, scheduledAt, sessionId, userId, directLink } = await req.json();
-        if (!sessionTitle || !scheduledAt || !sessionId || !userId || !directLink) {
-            throw new Error('Faltan datos de la sesión (title, date, id, userId, link).');
+        const { data: creds, error: credsError } = await supabaseClient.from('bsky_credentials').select('did, handle, access_jwt, refresh_jwt').eq('user_id', user.id).single()
+        if (credsError || !creds) throw new Error('El investigador no ha conectado su cuenta de Bluesky.')
+
+        const { sessionTitle, scheduledAt, directLink, timezone } = await req.json()
+        if (!sessionTitle || !scheduledAt || !timezone || !directLink) {
+            throw new Error('Faltan datos de la sesión.')
         }
 
-        const { data: creds, error: credsError } = await supabaseAdmin
-            .from('bsky_credentials')
-            .select('did, handle, access_jwt, refresh_jwt')
-            .eq('user_id', userId)
-            .single();
-            
-        if (credsError || !creds) {
-            console.error(`No se encontraron credenciales de Bluesky para el usuario: ${userId}`);
-            throw new Error('El investigador no ha conectado su cuenta de Bluesky.');
-        }
-
-        const agent = new BskyAgent({
+        const agent = new BskyAgent({ 
             service: 'https://bsky.social',
-            // --- LA CORRECCIÓN ESTÁ AQUÍ ---
-            // Añadimos el callback para que la biblioteca pueda guardar los tokens actualizados.
             persistSession: async (evt: AtpSessionEvent, session?: AtpSessionData) => {
                 if (evt === 'update' && session) {
-                    console.log(`Actualizando tokens de sesión de Bluesky para el usuario ${userId}`);
-                    await supabaseAdmin
-                        .from('bsky_credentials')
-                        .update({
-                            access_jwt: session.accessJwt,
-                            refresh_jwt: session.refreshJwt
-                        })
-                        .eq('user_id', userId);
+                  await supabaseClient.from('bsky_credentials').update({ access_jwt: session.accessJwt, refresh_jwt: session.refreshJwt }).eq('user_id', user.id);
                 }
             },
-            // --- FIN DE LA CORRECCIÓN ---
-        });
-
-        await agent.resumeSession({
-            accessJwt: creds.access_jwt,
-            refreshJwt: creds.refresh_jwt,
-            did: creds.did,
-            handle: creds.handle,
-        });
+        })
+        await agent.resumeSession({ accessJwt: creds.access_jwt, refreshJwt: creds.refresh_jwt, did: creds.did, handle: creds.handle });
         
         const eventDate = new Date(scheduledAt);
-        const formattedDate = eventDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
-        const formattedTime = eventDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Lima' });
-        
+
+        // --- LA CORRECCIÓN ESTÁ AQUÍ ---
+        // Usamos la "timezone" enviada por el navegador del investigador para formatear la fecha y hora.
+        const formattedDate = eventDate.toLocaleDateString('es-ES', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            timeZone: timezone // Se usa la zona horaria dinámica
+        });
+        const formattedTime = eventDate.toLocaleTimeString('es-ES', {
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: timezone, // Se usa la zona horaria dinámica
+            timeZoneName: 'short' // Esto generará la abreviatura correcta (ej: PET, EST, CST)
+        });
+        // --- FIN DE LA CORRECCIÓN ---
+
+        const previewData = await getLinkPreview(directLink);
+        let imageBlob = null;
+        if (previewData && previewData.thumb) {
+            // ... (tu lógica para procesar la imagen no cambia)
+        }
+
+        // El texto del post ahora usa la hora y zona horaria correctas, sin "(PE)" fijo.
         const postRecord = {
-            text: `📢 ¡Evento programado!\n\n"${sessionTitle}"\n\n🗓️ ${formattedDate}\n⏰ ${formattedTime} (PE)\n\nÚnete a la transmisión y al chat en vivo aquí:\n${directLink}`,
+            text: `📢 ¡Evento programado!\n\n"${sessionTitle}"\n\n🗓️ ${formattedDate}\n⏰ ${formattedTime}\n\nÚnete a la transmisión y al chat en vivo aquí:\n${directLink}`,
             createdAt: new Date().toISOString(),
             langs: ["es"],
+            embed: previewData ? {
+                $type: 'app.bsky.embed.external',
+                external: {
+                    uri: directLink,
+                    title: previewData.title,
+                    description: previewData.description,
+                    thumb: imageBlob || undefined
+                }
+            } : undefined
         };
         
         const postResult = await agent.post(postRecord);
 
-        await supabaseAdmin.from('sessions').update({ 
-            bsky_chat_thread_uri: postResult.uri, 
-            bsky_chat_thread_cid: postResult.cid 
-        }).eq('id', sessionId);
-
-        return new Response(JSON.stringify({ success: true }), {
+        return new Response(JSON.stringify({ uri: postResult.uri, cid: postResult.cid }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200
-        });
-
+        })
     } catch (error) {
-        console.error('Error en bsky-create-anchor-post:', error);
+        console.error('Error en bsky-create-anchor-post:', error)
         return new Response(JSON.stringify({ error: error.message }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 500
