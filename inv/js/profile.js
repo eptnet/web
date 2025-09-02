@@ -320,6 +320,8 @@ const ProfileApp = {
         if (!sidebarButtonsContainer) return;
 
         let buttonsHTML = '';
+
+        // --- Botones de Navegación (como antes) ---
         if (profile.orcid) {
             buttonsHTML += `<a href="/inv/directorio.html" class="profile-card-nav__link"><i class="fa-solid fa-users"></i> Directorio</a>`;
         }
@@ -327,17 +329,49 @@ const ProfileApp = {
             buttonsHTML += `<a href="/inv/comunidad.html" class="profile-card-nav__link"><i class="fa-solid fa-comments"></i> Ir a la Comunidad</a>`;
         }
         buttonsHTML += `<a href="/inv/dashboard.html" class="profile-card-nav__link"><i class="fa-solid fa-arrow-right"></i> Ir al Dashboard</a>`;
+
+        // --- LÓGICA DE CONEXIÓN A BLUESKY AÑADIDA AQUÍ ---
+        if (isMyOwnProfile) {
+            // Añadimos un separador visual
+            buttonsHTML += `<hr>`;
+
+            // Comprobamos si el usuario ya conectó su cuenta (usando la variable this.bskyCreds que ya cargamos)
+            if (this.bskyCreds) {
+                // Si está conectado, mostramos un estado de conexión y el botón de desconectar
+                buttonsHTML += `
+                    <div class="status-badge connected" style="text-align: left; padding: 0.5rem 0;">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <span>Conectado como: <strong>${this.bskyCreds.handle}</strong></span>
+                    </div>
+                    <button id="bsky-disconnect-btn" class="btn btn-secondary">Desconectar Cuenta</button>
+                `;
+            } else {
+                // Si no está conectado, mostramos el botón de conectar
+                buttonsHTML += `
+                    <button id="connect-community-btn-modal" class="btn btn-primary">
+                        <i class="fa-solid fa-link"></i> Conectar Cuenta (Bluesky)
+                    </button>
+                `;
+            }
+        }
+
         sidebarButtonsContainer.innerHTML = buttonsHTML;
     },
 
     renderCommunityActionPanel(credentials) {
         const container = document.getElementById('community-action-panel');
         if (!container) return;
-        if (credentials) {
-            container.innerHTML = `<div class="status-badge connected"><i class="fa-solid fa-circle-check"></i><span>Conectado como: <strong>${credentials.handle}</strong></span></div><button id="bsky-disconnect-btn" class="btn btn-secondary" style="width: 100%; margin-top: 1rem;">Desconectar</button>`;
-        } else {
-            container.innerHTML = `<p class="form-hint">Conecta tu cuenta para poder interactuar en el feed.</p><button id="connect-community-btn-modal" class="btn btn-primary" style="width: 100%; margin-top: 1rem;"><i class="fa-solid fa-link"></i> Conectar Cuenta</button>`;
-        }
+
+        // Ahora este panel solo muestra un mensaje de ayuda.
+        container.innerHTML = `
+            <p class="form-hint">
+                La interacción con el feed de la comunidad (dar "Me Gusta", comentar, etc.) 
+                requiere una cuenta de Bluesky conectada.
+            </p>
+            <p class="form-hint" style="margin-top: 1rem;">
+                Puedes conectar o desconectar tu cuenta desde la tarjeta de tu perfil.
+            </p>
+        `;
     },
 
     handleOrcidConnect() {
