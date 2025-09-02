@@ -69,7 +69,7 @@ serve(async (req) => {
 
         // Usamos tu nuevo texto, más simple y robusto
         const postRecord = {
-            text: `🔴 ¡EVENTO EN VIVO!\n\n"${sessionTitle}"\n\nÚnete a la conversación en el chat de la transmisión en Epistecnología. Conoce todos los detalles del evento en la descripción del enlace.`,
+            text: `🔴 ¡EVENTO EN VIVO!\n\n"${sessionTitle}"\n\nÚnete a la conversación en #eptlive. Conoce todos los detalles en la descripción.\n#DivulgaciónCientífica`,
             createdAt: new Date().toISOString(),
             langs: ["es"],
             embed: {
