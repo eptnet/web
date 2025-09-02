@@ -1,7 +1,7 @@
 // ARCHIVO FINAL Y CORREGIDO: /supabase/functions/bsky-create-anchor-post/index.ts
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { BskyAgent } from 'npm:@atproto/api'
+import { BskyAgent, AtpSessionEvent, AtpSessionData } from 'npm:@atproto/api'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
@@ -64,8 +64,6 @@ serve(async (req) => {
                         encoding: contentType
                     });
                     
-                    // --- LA CORRECCIÓN DEFINITIVA ESTÁ AQUÍ ---
-                    // Extraemos el objeto 'blob' del interior de la respuesta 'data'
                     imageBlob = uploadResult.data.blob;
                 }
             } catch (imgError) {
@@ -95,6 +93,10 @@ serve(async (req) => {
         })
     } catch (error) {
         console.error('Error en bsky-create-anchor-post:', error)
-        return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+        return new Response(JSON.stringify({ error: error.message }), {
+            // --- LA CORRECCIÓN ESTÁ AQUÍ ---
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500
+        });
     }
 })

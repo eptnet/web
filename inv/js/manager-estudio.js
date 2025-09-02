@@ -546,46 +546,6 @@ export const Studio = {
             return;
         }
 
-        // --- INICIO: LÓGICA DE CHAT BLUESKY ---
-        // Si la sesión es de VDO Ninja y es una sesión nueva, creamos el hilo de chat.
-        if (platform === 'vdo_ninja' && !session) {
-            try {
-                console.log("Creando hilo de chat en Bluesky...");
-                const directLink = `https://epistecnologia.com/live.html?sesion=${savedSession.id}`;
-        
-                // Obtenemos la zona horaria del navegador del investigador
-                const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-                const { data: chatData, error: chatError } = await App.supabase.functions.invoke('bsky-create-anchor-post', {
-                    body: { 
-                        sessionTitle: savedSession.session_title,
-                        scheduledAt: savedSession.scheduled_at,
-                        directLink: directLink,
-                        timezone: timezone
-                    },
-                });
-
-                if (chatError) throw chatError;
-
-                // --- LA CORRECCIÓN ESTÁ AQUÍ ---
-                // Ahora guardamos tanto el URI como el CID del hilo.
-                await App.supabase
-                    .from('sessions')
-                    .update({ 
-                        bsky_chat_thread_uri: chatData.uri, 
-                        bsky_chat_thread_cid: chatData.cid // <-- ESTA ES LA LÍNEA QUE FALTABA
-                    })
-                    .eq('id', savedSession.id);
-                
-                console.log("Hilo de chat creado y enlazado a la sesión");
-
-            } catch (err) {
-                alert(`La sesión se agendó, pero hubo un error al crear el hilo de chat en Bluesky: ${err.message}`);
-                console.error(err);
-            }
-        }
-        // --- FIN: LÓGICA DE CHAT BLUESKY ---
-
         // Lógica para guardar participantes (sin cambios)
         await App.supabase.from('event_participants').delete().eq('session_id', savedSession.id);
         if (this.participants && this.participants.length > 0) {
