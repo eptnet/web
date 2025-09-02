@@ -1,29 +1,9 @@
-// ARCHIVO FINAL Y DEFINITIVO: /supabase/functions/create-session-and-bsky-thread/index.ts
+// ARCHIVO FINAL Y A PRUEBA DE FALLOS: /supabase/functions/create-session-and-bsky-thread/index.ts
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { BskyAgent } from 'npm:@atproto/api'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
-
-// Función auxiliar para obtener la vista previa del enlace (unfurl)
-async function getLinkPreview(url: string) {
-    try {
-        const response = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-        if (!response.ok) return null;
-        const text = await response.text();
-        const titleMatch = text.match(/<meta\s+property="og:title"\s+content="([^"]*)"/);
-        const descriptionMatch = text.match(/<meta\s+property="og:description"\s+content="([^"]*)"/);
-        const imageMatch = text.match(/<meta\s+property="og:image"\s+content="([^"]*)"/);
-        return {
-            title: titleMatch ? titleMatch[1] : 'Título no disponible',
-            description: descriptionMatch ? descriptionMatch[1] : 'Descripción no disponible',
-            thumb: imageMatch ? imageMatch[1] : undefined,
-        };
-    } catch (error) {
-        console.error(`Error al hacer unfurl del link ${url}:`, error);
-        return null;
-    }
-}
 
 serve(async (req) => {
     if (req.method === 'OPTIONS') { return new Response('ok', { headers: corsHeaders }) }
@@ -35,63 +15,44 @@ serve(async (req) => {
         ).auth.getUser();
         if (!user) throw new Error('Usuario no autenticado.');
 
-        const { sessionData, authorInfo, postMethod } = await req.json();
-        if (!sessionData || !authorInfo || !postMethod) throw new Error('Faltan datos en la solicitud.');
+        const { sessionData, authorInfo } = await req.json();
+        if (!sessionData || !authorInfo) throw new Error('Faltan datos de la sesión o del autor.');
         
         const { data: savedSession, error: insertError } = await supabaseAdmin.from('sessions').insert(sessionData).select().single();
         if (insertError) throw insertError;
 
-        if (postMethod === 'none') {
-            return new Response(JSON.stringify({ success: true, savedSession }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-        }
-
+        const { data: creds } = await supabaseAdmin.from('bsky_credentials').select('*').eq('user_id', user.id).single();
+        
         const agent = new BskyAgent({ service: 'https://bsky.social' });
         let postText = '';
+        let useUserAgent = false;
 
-        if (postMethod === 'user') {
-            const { data: creds } = await supabaseAdmin.from('bsky_credentials').select('*').eq('user_id', user.id).single();
-            if (!creds) throw new Error("Se intentó publicar como usuario, pero no se encontraron credenciales.");
-            await agent.resumeSession({ ...creds });
-            postText = `📢 ¡Evento programado!\n\n"${sessionData.session_title}"\n\nConoce los detalles y únete al chat aquí:`;
-        } else if (postMethod === 'bot') {
+        if (creds) {
+            // --- INICIO DE LA LÓGICA A PRUEBA DE FALLOS ---
+            try {
+                // 1. Intentamos usar las credenciales del investigador
+                console.log(`Intentando conectar como ${creds.handle}...`);
+                await agent.resumeSession({ ...creds });
+                console.log(`Conexión exitosa como ${creds.handle}.`);
+                postText = `📢 ¡Evento programado!\n\n"${sessionData.session_title}"\n\nConoce los detalles y únete al chat aquí:`;
+                useUserAgent = true;
+            } catch (e) {
+                // 2. Si fallan, lo registramos y nos preparamos para usar el bot
+                console.warn(`Las credenciales para ${creds.handle} son inválidas o han expirado. Usando bot como respaldo. Error: ${e.message}`);
+                useUserAgent = false;
+            }
+            // --- FIN DE LA LÓGICA A PRUEBA DE FALLOS ---
+        }
+        
+        if (!useUserAgent) {
+            // 3. Si no hay credenciales o si fallaron, usamos el bot
             await agent.login({ identifier: Deno.env.get('BSKY_HANDLE')!, password: Deno.env.get('BSKY_APP_PASSWORD')! });
             postText = `📢 ¡Evento programado!\n\n"${sessionData.session_title}"\n\n✍️ Presentado por: ${authorInfo.displayName}\n\nConoce los detalles y únete al chat aquí:`;
         }
-        
+
         const directLink = `https://epistecnologia.com/live.html?sesion=${savedSession.id}`;
         
-        // --- LÓGICA DE VISTA PREVIA Y MINIATURA ---
-        const previewData = await getLinkPreview(directLink);
-        let imageBlob = null;
-        if (previewData && previewData.thumb) {
-            try {
-                const imageResponse = await fetch(previewData.thumb);
-                if (imageResponse.ok) {
-                    const imageData = await imageResponse.arrayBuffer();
-                    const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
-                    const uploadResult = await agent.uploadBlob(new Uint8Array(imageData), { encoding: contentType });
-                    imageBlob = uploadResult.data.blob;
-                }
-            } catch (imgError) {
-                console.error("No se pudo procesar la imagen de la miniatura, se publicará sin ella.");
-            }
-        }
-
-        const postRecord = {
-            text: `${postText}\n${directLink}`,
-            createdAt: new Date().toISOString(),
-            langs: ["es"],
-            embed: {
-                $type: 'app.bsky.embed.external',
-                external: {
-                    uri: directLink,
-                    title: previewData?.title || sessionData.session_title,
-                    description: previewData?.description || 'Evento en vivo de Epistecnología',
-                    thumb: imageBlob || undefined
-                }
-            }
-        };
-        
+        const postRecord = { text: `${postText}\n${directLink}`, createdAt: new Date().toISOString(), langs: ["es"] };
         const postResult = await agent.post(postRecord);
 
         await supabaseAdmin.from('sessions').update({ 
