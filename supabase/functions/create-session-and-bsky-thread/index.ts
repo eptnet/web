@@ -1,5 +1,4 @@
-// ARCHIVO FINAL Y A PRUEBA DE FALLOS: /supabase/functions/create-session-and-bsky-thread/index.ts
-
+// Contenido CORREGIDO para: /supabase/functions/create-session-and-bsky-thread/index.ts
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { BskyAgent } from 'npm:@atproto/api'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -28,24 +27,24 @@ serve(async (req) => {
         let useUserAgent = false;
 
         if (creds) {
-            // --- INICIO DE LA LÓGICA A PRUEBA DE FALLOS ---
             try {
-                // 1. Intentamos usar las credenciales del investigador
-                console.log(`Intentando conectar como ${creds.handle}...`);
-                await agent.resumeSession({ ...creds });
-                console.log(`Conexión exitosa como ${creds.handle}.`);
+                // --- LA CORRECCIÓN ESTÁ AQUÍ ---
+                await agent.resumeSession({
+                    accessJwt: creds.access_jwt,
+                    refreshJwt: creds.refresh_jwt,
+                    did: creds.did,
+                    handle: creds.handle,
+                });
+                // --- FIN DE LA CORRECCIÓN ---
                 postText = `📢 ¡Evento programado!\n\n"${sessionData.session_title}"\n\nConoce los detalles y únete al chat aquí:`;
                 useUserAgent = true;
             } catch (e) {
-                // 2. Si fallan, lo registramos y nos preparamos para usar el bot
-                console.warn(`Las credenciales para ${creds.handle} son inválidas o han expirado. Usando bot como respaldo. Error: ${e.message}`);
+                console.warn(`Las credenciales para ${creds.handle} son inválidas. Usando bot como respaldo. Error: ${e.message}`);
                 useUserAgent = false;
             }
-            // --- FIN DE LA LÓGICA A PRUEBA DE FALLOS ---
         }
         
         if (!useUserAgent) {
-            // 3. Si no hay credenciales o si fallaron, usamos el bot
             await agent.login({ identifier: Deno.env.get('BSKY_HANDLE')!, password: Deno.env.get('BSKY_APP_PASSWORD')! });
             postText = `📢 ¡Evento programado!\n\n"${sessionData.session_title}"\n\n✍️ Presentado por: ${authorInfo.displayName}\n\nConoce los detalles y únete al chat aquí:`;
         }
