@@ -463,6 +463,7 @@ export const Studio = {
             return;
         }
 
+        // 1. Preparamos el objeto con todos los datos de la sesión
         let sessionData = {
             project_title: projectTitle,
             session_title: formData.get('sessionTitle'),
@@ -478,6 +479,7 @@ export const Studio = {
             rtmp_key: formData.get('rtmp_key')
         };
         
+        // Tu lógica para crear las URLs de VDO.Ninja, etc., no cambia
         if (!session) {
             sessionData.user_id = App.userId;
             sessionData.is_archived = false;
@@ -527,30 +529,49 @@ export const Studio = {
             }
         }
 
-        const { data: savedSession, error } = session
-            ? await App.supabase.from('sessions').update(sessionData).eq('id', session.id).select().single()
-            : await App.supabase.from('sessions').insert(sessionData).select().single();
+        // 2. Preparamos los datos de atribución del autor para el bot
+        const authorInfo = {
+            displayName: App.userProfile.display_name || App.userProfile.full_name,
+            orcid: App.userProfile.orcid
+        };
 
-        if (error) {
-            alert("No se pudo guardar la sesión.");
-            console.error('Error guardando la sesión:', error);
-            return;
+        try {
+            if (session) {
+                // --- LÓGICA DE ACTUALIZACIÓN (SIN CAMBIOS) ---
+                // Si estamos editando, solo actualizamos los datos de la sesión.
+                const { data: savedSession, error } = await App.supabase.from('sessions').update(sessionData).eq('id', session.id).select().single();
+                if (error) throw error;
+
+                await App.supabase.from('event_participants').delete().eq('session_id', savedSession.id);
+                if (this.participants && this.participants.length > 0) {
+                    const participantsData = this.participants.map(p => ({ session_id: savedSession.id, user_id: p.id }));
+                    await App.supabase.from('event_participants').insert(participantsData);
+                }
+
+            } else {
+                // --- LÓGICA DE CREACIÓN (MODIFICADA) ---
+                // Si estamos creando una nueva sesión, llamamos a nuestra nueva Edge Function "inteligente".
+                const { data, error } = await App.supabase.functions.invoke('create-session-and-bsky-thread', {
+                    body: { sessionData, authorInfo }
+                });
+                
+                if (error) throw error;
+
+                // La lógica de los participantes se puede ejecutar después
+                if (this.participants && this.participants.length > 0) {
+                    const participantsData = this.participants.map(p => ({ session_id: data.savedSession.id, user_id: p.id }));
+                    await App.supabase.from('event_participants').insert(participantsData);
+                }
+            }
+            
+            alert(`¡Sesión ${session ? 'actualizada' : 'agendada'} con éxito!`);
+            this.closeModal();
+            this.fetchSessions();
+
+        } catch (err) {
+            alert(`No se pudo guardar la sesión: ${err.message}`);
+            console.error('Error al guardar la sesión:', err);
         }
-
-        // --- EL BLOQUE DE "LÓGICA DE CHAT BLUESKY" SE HA ELIMINADO DE AQUÍ ---
-        // El Trigger de la base de datos se encargará de esto en segundo plano.
-
-        await App.supabase.from('event_participants').delete().eq('session_id', savedSession.id);
-        if (this.participants && this.participants.length > 0) {
-            const participantsData = this.participants.map(p => ({ session_id: savedSession.id, user_id: p.id }));
-            const { error: participantsError } = await App.supabase.from('event_participants').insert(participantsData);
-            if (participantsError) console.error('Error al guardar participantes:', participantsError);
-        }
-        
-        // Mensaje de éxito actualizado para informar al usuario
-        alert(`¡Sesión ${session ? 'actualizada' : 'agendada'} con éxito! El hilo de chat se creará en Bluesky en segundo plano.`);
-        this.closeModal();
-        this.fetchSessions();
     },
 
     // Pega estas nuevas funciones dentro del objeto Studio en manager-estudio.js
