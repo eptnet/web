@@ -473,7 +473,7 @@ export const Studio = {
             description: formData.get('description'),
             thumbnail_url: formData.get('thumbnail_url'),
             more_info_url: formData.get('more_info_url'),
-            platform_id: formData.get('platformId') || formData.get('substackId') || null, // Corregido para tomar el platformId
+            platform_id: formData.get('platformId') || formData.get('substackId') || null,
             rtmp_url: formData.get('rtmp_url'),
             rtmp_key: formData.get('rtmp_key')
         };
@@ -482,22 +482,15 @@ export const Studio = {
             sessionData.user_id = App.userId;
             sessionData.is_archived = false;
 
-            // --- INICIO: LÓGICA CONDICIONAL PARA LA PLATAFORMA ---
             if (platform === 'eptstream') {
-                // Generamos un nombre de sesión único para Zoom.
                 const sessionName = self.crypto.randomUUID();
-                
-                // Creamos las URLs que apuntarán a nuestra nueva sala de control web.
                 sessionData.director_url = `/inv/stream.html?session=${sessionName}&role=host`;
                 sessionData.guest_url = `/inv/stream.html?session=${sessionName}&role=guest`;
-                
-                // La URL del espectador será la de la plataforma de destino (ej. YouTube).
                 const platformId = formData.get('platformId');
                 if (platformId) {
                     sessionData.viewer_url = `https://www.youtube.com/live/${platformId}`;
                 }
             } else {
-                // Esta es tu lógica existente para VDO.Ninja. La mantenemos intacta.
                 const stableId = self.crypto.randomUUID().slice(0, 8);
                 const roomName = `ept_2_${App.userProfile.orcid.slice(-4)}_${stableId}`; 
                 const directorKey = `dir_${App.userProfile.orcid.slice(-4)}`;
@@ -532,10 +525,8 @@ export const Studio = {
                 sessionData.guest_url = `${vdoDomain}/?${guestParams.toString()}`;
                 sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}&layout&whepshare=https://use1.meshcast.io/whep/${roomName}&cleanoutput`;
             }
-            // --- FIN: LÓGICA CONDICIONAL ---
         }
 
-        // Guardamos la sesión en la base de datos
         const { data: savedSession, error } = session
             ? await App.supabase.from('sessions').update(sessionData).eq('id', session.id).select().single()
             : await App.supabase.from('sessions').insert(sessionData).select().single();
@@ -546,7 +537,9 @@ export const Studio = {
             return;
         }
 
-        // Lógica para guardar participantes (sin cambios)
+        // --- EL BLOQUE DE "LÓGICA DE CHAT BLUESKY" SE HA ELIMINADO DE AQUÍ ---
+        // El Trigger de la base de datos se encargará de esto en segundo plano.
+
         await App.supabase.from('event_participants').delete().eq('session_id', savedSession.id);
         if (this.participants && this.participants.length > 0) {
             const participantsData = this.participants.map(p => ({ session_id: savedSession.id, user_id: p.id }));
@@ -554,7 +547,8 @@ export const Studio = {
             if (participantsError) console.error('Error al guardar participantes:', participantsError);
         }
         
-        alert(`¡Sesión ${session ? 'actualizada' : 'agendada'} con éxito!`);
+        // Mensaje de éxito actualizado para informar al usuario
+        alert(`¡Sesión ${session ? 'actualizada' : 'agendada'} con éxito! El hilo de chat se creará en Bluesky en segundo plano.`);
         this.closeModal();
         this.fetchSessions();
     },
