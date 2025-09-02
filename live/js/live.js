@@ -16,7 +16,7 @@ const LiveApp = {
             console.log("LiveApp: No se está en live.html, se detiene la ejecución.");
             return;
         }
-
+        
         const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
         this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -33,7 +33,7 @@ const LiveApp = {
         } else {
             window.onYouTubeIframeAPIReady = () => { this.isApiReady = true; this.run(); };
         }
-        this.listenForChanges();
+        // this.listenForChanges();
         this.applyTheme(localStorage.getItem('theme') || 'light');
 
         // Lógica de Notificaciones
@@ -760,11 +760,15 @@ const LiveApp = {
         container.innerHTML = `
             <main class="live-room-main">
                 <div id="live-room-player" class="live-room-player"></div>
+                <div id="live-room-share-bar" class="live-room-share-bar"></div>
                 <div id="live-room-interaction-area"></div>
                 <div id="live-room-primary-action"></div> 
                 <div id="live-room-countdown" class="live-room-countdown" style="display: none;"></div>
                 <div id="live-room-investigators-strip" class="live-room-investigators-strip"></div>
-                <div id="live-room-info" class="live-room-info"></div>                
+                <div id="live-room-info" class="live-room-info"></div>
+                <div>
+                    <iframe src="https://eptnews.substack.com/embed" width="100%" height="150" style="border:1px solid #eeeeee; background:transparent;" frameborder="0" scrolling="no"></iframe>                
+                </div>
                 <div id="live-room-disclaimer" class="live-room-disclaimer"></div>
                 <div id="live-room-report" class="live-room-report"></div>
             </main>
@@ -802,6 +806,60 @@ const LiveApp = {
 
         // A partir de aquí, es solo para EVENTOS
         const session = item;
+
+        // --- INICIO: LÓGICA DE LA BARRA DE COMPARTIR ---
+        const shareBar = document.getElementById('live-room-share-bar');
+        if (shareBar) {
+            // 1. Creamos el enlace directo
+            const directLink = `${window.location.origin}/live.html?sesion=${session.id}`;
+
+            // 2. Insertamos los botones que nos diste
+            shareBar.innerHTML = `
+                <button class="share-btn" data-sharer="facebook" title="Compartir en Facebook"><i class="fa-brands fa-facebook-f"></i></button>
+                <button class="share-btn" data-sharer="linkedin" title="Compartir en LinkedIn"><i class="fa-brands fa-linkedin-in"></i></button>
+                <button class="share-btn" data-sharer="whatsapp" title="Compartir en WhatsApp"><i class="fa-brands fa-whatsapp"></i></button>
+                <button class="share-btn" data-sharer="x" title="Compartir en X"><i class="fa-brands fa-x-twitter"></i></button>
+                <button class="share-btn" data-sharer="bluesky" aria-label="Compartir en Bluesky"><i class="fa-brands fa-bluesky"></i></button>
+                <button class="share-btn" id="copy-link-live" title="Copiar enlace"><i class="fa-solid fa-link"></i></button>
+            `;
+
+            // 3. Guardamos los datos necesarios en el contenedor
+            shareBar.dataset.shareLink = directLink;
+            shareBar.dataset.shareTitle = session.session_title;
+
+            // 4. Añadimos la lógica de clic que nos diste
+            shareBar.addEventListener('click', (e) => {
+                const shareButton = e.target.closest('.share-btn');
+                if (!shareButton) return;
+
+                const service = shareButton.dataset.sharer;
+                const link = encodeURIComponent(shareBar.dataset.shareLink);
+                const title = encodeURIComponent(shareBar.dataset.shareTitle);
+                let url;
+
+                switch (service) {
+                    case 'facebook': url = `https://www.facebook.com/sharer/sharer.php?u=${link}`; break;
+                    case 'linkedin': url = `https://www.linkedin.com/shareArticle?mini=true&url=${link}&title=${title}`; break;
+                    case 'whatsapp': url = `https://api.whatsapp.com/send?text=${title}%20${link}`; break;
+                    case 'x': url = `https://twitter.com/intent/tweet?url=${link}&text=${title}`; break;
+                    case 'bluesky': url = `https://bsky.app/intent/compose?text=${title}%20${link}`; break;
+                }
+
+                if (url) {
+                    window.open(url, '_blank', 'noopener,noreferrer');
+                }
+
+                if (shareButton.id === 'copy-link-live') {
+                    navigator.clipboard.writeText(decodeURIComponent(link)).then(() => {
+                        const originalIcon = shareButton.innerHTML;
+                        shareButton.innerHTML = `<i class="fa-solid fa-check"></i>`;
+                        setTimeout(() => { shareButton.innerHTML = originalIcon; }, 1500);
+                    }).catch(err => console.error('Error al copiar enlace:', err));
+                }
+            });
+        }
+        // --- FIN: LÓGICA DE LA BARRA DE COMPARTIR ---
+
         const eventDate = new Date(session.scheduled_at);
         const dateString = eventDate.toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'short' });
         const chatTitle = `<h4><i class="fas fa-comments"></i> Chat ${session.status === 'EN VIVO' ? `<span class="card-live-indicator">EN VIVO</span> <span id="live-viewer-count" class="viewer-count"><i class="fas fa-eye"></i> ${this.viewerCount}</span>` : ''}</h4>`;
@@ -847,6 +905,7 @@ const LiveApp = {
         }
 
         let actionButtonsHTML = '';
+
         if (session.more_info_url) actionButtonsHTML += `<a href="${session.more_info_url}" target="_blank" rel="noopener noreferrer" class="btn-primary" style="display:block; text-align:center;">Saber Más</a>`;
         if (session.recording_url) actionButtonsHTML += `<a href="${session.recording_url}" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="display:block; margin-top: 1rem; text-align:center;">Ver Grabación</a>`;
 
