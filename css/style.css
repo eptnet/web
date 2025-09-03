@@ -601,7 +601,11 @@ input[type="range"]::-moz-range-thumb { border: none; border-radius: 50%; backgr
 
 /* Usamos esta clase para darle un tamaño específico al modal de login */
 .login-modal {
-    max-width: 500px;
+    background-color: var(--color-surface);
+    padding: 2rem;
+    border-radius: var(--border-radius);
+    width: 90%;
+    max-width: 450px;
 }
 
 .modal-header {
