@@ -767,7 +767,7 @@ const LiveApp = {
                 <div id="live-room-investigators-strip" class="live-room-investigators-strip"></div>
                 <div id="live-room-info" class="live-room-info"></div>
                 <div>
-                    <iframe src="https://eptnews.substack.com/embed" width="100%" height="150" style="border:1px solid #eeeeee; background:transparent;" frameborder="0" scrolling="no"></iframe>                
+                    <iframe credentialless="true" src="https://eptnews.substack.com/embed" width="100%" height="150" style="border:1px solid #eeeeee; background:transparent;" frameborder="0" scrolling="no"></iframe>                
                 </div>
                 <div id="live-room-disclaimer" class="live-room-disclaimer"></div>
                 <div id="live-room-report" class="live-room-report"></div>
