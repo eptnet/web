@@ -880,7 +880,7 @@ const LiveApp = {
             chat.innerHTML = `${chatTitle}<p>El chat para este evento está disponible directamente en Substack.</p>`;
         } else if (session.platform === 'youtube' && session.status === 'EN VIVO') {
             chat.style.cssText = 'display: grid; grid-template-rows: auto 1fr; gap: 1rem;';
-            chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe credentialless="true" src="https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}"></iframe></div>`;
+            chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}"></iframe></div>`;
         } else if (session.platform === 'twitch' && session.status === 'EN VIVO') {
             chat.style.cssText = 'display: grid; grid-template-rows: auto 1fr; gap: 1rem;';
             chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe credentialless="true" src="https://www.twitch.tv/embed/${session.platform_id}/chat?parent=${window.location.hostname}&darkpopout"></iframe></div>`;
