@@ -57,25 +57,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setupStickyNav() {
         const nav = document.querySelector('.site-nav');
+        if (!nav) return;
+
+        const navLinkList = document.getElementById('nav-link-list');
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
         const navLinks = nav.querySelectorAll('a');
         const sections = document.querySelectorAll('.site-section');
 
-        // Lógica para el smooth scroll
+        // --- LÓGICA AÑADIDA PARA EL MENÚ MÓVIL ---
+        mobileMenuBtn.addEventListener('click', () => {
+            navLinkList.classList.toggle('is-open');
+        });
+
+        // Lógica para el smooth scroll (sin cambios)
         navLinks.forEach(link => {
             link.addEventListener('click', e => {
                 e.preventDefault();
+                navLinkList.classList.remove('is-open'); // Cierra el menú móvil al hacer clic en un enlace
                 const targetId = link.getAttribute('href');
                 const targetSection = document.querySelector(targetId);
                 if (targetSection) {
-                    targetSection.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
+                    targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             });
         });
 
-        // Lógica para resaltar el enlace activo al hacer scroll
+        // Lógica para resaltar el enlace activo (sin cambios)
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
@@ -84,10 +91,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
             });
-        }, { rootMargin: "-50% 0px -50% 0px" }); // Se activa cuando la sección está en el centro de la pantalla
+        }, { rootMargin: "-40% 0px -60% 0px" });
 
         sections.forEach(section => {
-            if (section.id) { // Solo observamos secciones con ID
+            if (section.id) {
                 observer.observe(section);
             }
         });

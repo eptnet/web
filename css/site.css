@@ -17,7 +17,7 @@ body {
 .site-nav {
     position: sticky;
     top: 0;
-    background-color: rgba(255, 255, 255, 0.9);
+    background-color: rgba(123, 121, 121, 0.296);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--border-color);
     z-index: 999;
@@ -62,12 +62,30 @@ body {
 
 /* --- SECCIÓN DE PORTADA (Sin cambios) --- */
 .cover { height: 60vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 2rem; background-size: cover; background-position: center; color: white; position: relative; }
-.cover::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); }
+.cover::before { 
+    content: ''; 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    right: 0; 
+    bottom: 0; 
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 40px; 
+}
 .cover-content { position: relative; max-width: 800px; }
 #cover-headline { font-size: clamp(2rem, 5vw, 3.5rem); margin: 0; }
 
 /* --- CONTENIDO PRINCIPAL (Sin cambios) --- */
-.site-container { max-width: 900px; margin: -5rem auto 2rem auto; background-color: var(--surface-color); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); padding: 2rem; position: relative; z-index: 10; }
+.site-container {
+    max-width: 900px;
+    margin: -5rem auto 2rem auto;
+    background-color: var(--surface-color); /* Usamos la variable para que funcione con el modo oscuro */
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    padding: 2rem;
+    position: relative;
+    z-index: 10;
+}
 .site-section { padding: 2.5rem 0; border-bottom: 1px solid var(--border-color); }
 .site-section:last-of-type { border-bottom: none; }
 .site-section h2 { font-size: 1.8rem; margin-bottom: 1.5rem; }
@@ -83,7 +101,12 @@ body {
 .card-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
 
 /* --- ESTILOS DE TARJETAS (Actualizado) --- */
-.card, .researcher-card-btn { border: 1px solid var(--border-color); border-radius: 8px; transition: box-shadow 0.2s, transform 0.2s; background-color: white; }
+.card, .researcher-card-btn { 
+    border: 1px solid var(--border-color); 
+    border-radius: 8px; 
+    transition: box-shadow 0.2s, transform 0.2s; 
+    background-color: white; 
+}
 .card:hover, .researcher-card-btn:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.08); transform: translateY(-3px); }
 
 /* Tarjeta de Sesión (Nueva y Mejorada) */
@@ -267,8 +290,9 @@ body {
 .template-modern .site-container {
     max-width: 100%;
     margin-top: 0;
-    border-radius: 0;
+    border-radius: 40px 40px 0 0; /* <-- LA MAGIA ESTÁ AQUÍ */
     box-shadow: none;
+    padding-top: 4rem; /* Añadimos más espacio al principio */
 }
 .template-modern .cover {
     height: 70vh;
@@ -292,4 +316,41 @@ body {
 /* Cambiamos el color de fondo en la paleta oscura para que las tarjetas resalten */
 .template-modern.palette-dark .card {
     background-color: var(--surface-color);
+}
+/* --- NUEVO: ESTILOS PARA MENÚ RESPONSIVE --- */
+.mobile-menu-btn {
+    display: none; /* Oculto en escritorio */
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-color);
+}
+
+/* Media Query: Estilos que se aplican solo en pantallas de 768px o menos */
+@media (max-width: 768px) {
+    .nav-project-title {
+        display: none; /* Ocultamos el título para dar espacio */
+    }
+    .mobile-menu-btn {
+        display: block; /* Mostramos el botón hamburguesa */
+        z-index: 1001; /* Nos aseguramos que esté por encima de todo */
+    }
+    .nav-content {
+        justify-content: flex-end; /* Alineamos el botón a la derecha */
+    }
+    .site-nav ul {
+        display: none; /* Ocultamos la lista de enlaces por defecto */
+        position: absolute;
+        top: 60px; /* Debajo de la barra de navegación */
+        left: 0;
+        right: 0;
+        background-color: var(--surface-color);
+        flex-direction: column;
+        padding: 1rem 2rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .site-nav ul.is-open {
+        display: flex; /* La mostramos cuando tenga la clase 'is-open' */
+    }
 }
