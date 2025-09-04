@@ -1634,3 +1634,48 @@ body {
     color: white;
     border-color: var(--color-accent);
 }
+/* --- AÑADE ESTO AL FINAL DE LIVE.CSS --- */
+.chat-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+}
+.chat-tab {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: var(--color-secondary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-bottom: 3px solid transparent;
+}
+.chat-tab.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-accent);
+}
+.chat-panels-container {
+    flex-grow: 1;
+    min-height: 0;
+    position: relative;
+}
+.chat-tab-panel {
+    display: none;
+    height: 100%;
+    width: 100%;
+    position: absolute;
+}
+.chat-tab-panel.active {
+    display: flex; /* Usamos flex para que el contenido se estire */
+    flex-direction: column;
+}
+.chat-tab-panel iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 8px;
+}
+.tabbed-chat-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Un truco de flexbox para evitar desbordamientos */
+}

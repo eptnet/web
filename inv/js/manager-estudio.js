@@ -545,23 +545,23 @@ export const Studio = {
             if (error) throw error;
             savedSession = data;
         } else {
-            // --- LÓGICA DE CREACIÓN (MODIFICADA CON INTERACTIVIDAD) ---
+            // --- MODIFICACIÓN CLAVE ---
+            // La lógica de Bluesky ahora se ejecuta para CUALQUIER plataforma, no solo 'vdo_ninja'.
             let postMethod = 'none';
-            if (platform === 'vdo_ninja') {
-                try {
-                    const { data: status, error: checkError } = await App.supabase.functions.invoke('bsky-check-status');
-                    if (checkError) throw checkError;
+            try {
+                const { data: status, error: checkError } = await App.supabase.functions.invoke('bsky-check-status');
+                if (checkError) throw checkError;
 
-                    if (status.connected) {
-                        postMethod = 'user';
-                    } else {
-                        const confirmed = confirm("Tu conexión con Bluesky ha fallado o no está configurada. ¿Deseas que el bot de Epistecnología publique el anuncio del evento por ti?");
-                        if (confirmed) postMethod = 'bot';
-                    }
-                } catch (err) {
-                    alert(`No se pudo verificar la conexión con Bluesky. La sesión se agendará sin crear el hilo de chat. Error: ${err.message}`);
+                if (status.connected) {
+                    postMethod = 'user';
+                } else {
+                    const confirmed = confirm("Tu conexión con Bluesky ha fallado o no está configurada. ¿Deseas que el bot de Epistecnología publique el anuncio del evento por ti?");
+                    if (confirmed) postMethod = 'bot';
                 }
+            } catch (err) {
+                alert(`No se pudo verificar la conexión con Bluesky. La sesión se agendará sin crear el hilo de chat. Error: ${err.message}`);
             }
+            // --- FIN DE LA MODIFICACIÓN ---
 
             const { data, error } = await App.supabase.functions.invoke('create-session-and-bsky-thread', {
                 body: { sessionData, authorInfo, postMethod }

@@ -305,6 +305,24 @@ const LiveApp = {
                 this.handleReportSession(reportButton.dataset.sessionId);
                 return;
             }
+
+            // --- LÓGICA PARA LAS PESTAÑAS DEL CHAT ---
+            const clickedTab = e.target.closest('.chat-tab');
+            if (clickedTab) {
+                e.preventDefault();
+                const tabContainer = clickedTab.closest('.chat-tabs');
+                const panelsContainer = tabContainer.nextElementSibling;
+
+                // Quita la clase activa de todas las pestañas y paneles
+                tabContainer.querySelectorAll('.chat-tab').forEach(tab => tab.classList.remove('active'));
+                panelsContainer.querySelectorAll('.chat-tab-panel').forEach(panel => panel.classList.remove('active'));
+
+                // Añade la clase activa a la pestaña y panel seleccionados
+                clickedTab.classList.add('active');
+                const targetPanelId = clickedTab.dataset.tab;
+                panelsContainer.querySelector(`#${targetPanelId}`).classList.add('active');
+            }
+
         });
 
         // --- Listener de Formularios UNIFICADO (solo para el chat) ---
@@ -786,11 +804,11 @@ const LiveApp = {
         const countdown = document.getElementById('live-room-countdown');
         const primaryAction = document.getElementById('live-room-primary-action');
 
-        // Reseteamos la UI del modal
         primaryAction.innerHTML = '';
         chat.style.display = 'block';
         investigators.style.display = 'block';
         countdown.style.display = 'none';
+        chat.style.cssText = '';
 
         if (item.type === 'VIDEO') {
             const video = item;
@@ -799,15 +817,12 @@ const LiveApp = {
             countdown.style.display = 'none';
             document.getElementById('live-room-disclaimer').style.display = 'none';
             document.getElementById('live-room-report').style.display = 'none';
-            player.innerHTML = `<iframe credentialless="true" src="https://www.youtube.com/embed/${video.youtube_video_id}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
+            player.innerHTML = `<iframe src="https://www.youtube.com/embed/${video.youtube_video_id}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
             info.innerHTML = `<h3>${video.title}</h3><p>${video.description || 'No hay descripción disponible para este video.'}</p>`;
             return;
         }
 
-        // A partir de aquí, es solo para EVENTOS
         const session = item;
-
-        // --- INICIO: LÓGICA DE LA BARRA DE COMPARTIR ---
         const shareBar = document.getElementById('live-room-share-bar');
         if (shareBar) {
             // 1. Creamos el enlace directo
@@ -862,32 +877,59 @@ const LiveApp = {
 
         const eventDate = new Date(session.scheduled_at);
         const dateString = eventDate.toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'short' });
-        const chatTitle = `<h4><i class="fas fa-comments"></i> Chat ${session.status === 'EN VIVO' ? `<span class="card-live-indicator">EN VIVO</span> <span id="live-viewer-count" class="viewer-count"><i class="fas fa-eye"></i> ${this.viewerCount}</span>` : ''}</h4>`;
 
         if (session.status === 'EN VIVO') {
             const channel = session.platform_id || 'epistecnologia';
-            if (session.platform === 'vdo_ninja') player.innerHTML = `<iframe credentialless="true" src="${session.viewer_url}" allow="autoplay; fullscreen; picture-in-picture"></iframe>`;
-            else if (session.platform === 'youtube') player.innerHTML = `<iframe credentialless="true" src="https://www.youtube.com/embed/${channel}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
-            else if (session.platform === 'twitch') player.innerHTML = `<iframe credentialless="true" src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=true" allowfullscreen allow="picture-in-picture"></iframe>`;
+            if (session.platform === 'vdo_ninja') player.innerHTML = `<iframe src="${session.viewer_url}" allow="autoplay; fullscreen; picture-in-picture"></iframe>`;
+            else if (session.platform === 'youtube') player.innerHTML = `<iframe src="https://www.youtube.com/embed/${channel}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
+            else if (session.platform === 'twitch') player.innerHTML = `<iframe src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=false" allowfullscreen allow="picture-in-picture"></iframe>`;
         } else {
             const thumbnailUrl = session.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg';
             player.innerHTML = `<img src="${thumbnailUrl}" style="width:100%; height:100%; object-fit:cover;">`;
         }
 
-        if (session.platform === 'vdo_ninja' && session.bsky_chat_thread_uri) this.renderVDONinjaChat(session);
-        else if (session.platform === 'substack') {
-            primaryAction.innerHTML = `<a href="https://open.substack.com/live-stream/${session.platform_id}" target="_blank" rel="noopener noreferrer" class="btn-substack">Ir a la Sala en Substack</a>`;
-            chat.innerHTML = `${chatTitle}<p>El chat para este evento está disponible directamente en Substack.</p>`;
-        } else if (session.platform === 'youtube' && session.status === 'EN VIVO') {
-            chat.style.cssText = 'display: grid; grid-template-rows: auto 1fr; gap: 1rem;';
-            chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe src="https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}"></iframe></div>`;
-        } else if (session.platform === 'twitch' && session.status === 'EN VIVO') {
-            chat.style.cssText = 'display: grid; grid-template-rows: auto 1fr; gap: 1rem;';
-            chat.innerHTML = `${chatTitle}<div id="chat-container"><iframe credentialless="true" src="https://www.twitch.tv/embed/${session.platform_id}/chat?parent=${window.location.hostname}&darkpopout"></iframe></div>`;
+        const platform = session.platform;
+        const hasBskyChat = !!session.bsky_chat_thread_uri;
+        const isLive = session.status === 'EN VIVO';
+
+        if ((platform === 'youtube' || platform === 'twitch') && isLive && hasBskyChat) {
+            const platformName = platform === 'youtube' ? 'YouTube' : 'Twitch';
+            chat.classList.add('tabbed-chat-container');
+            chat.innerHTML = `
+                <div class="chat-tabs">
+                    <button class="chat-tab" data-tab="bsky-chat-panel">Chat EPT (Bluesky)</button>
+                    <button class="chat-tab active" data-tab="platform-chat-panel">Chat de ${platformName}</button>
+                </div>
+                <div class="chat-panels-container">
+                    <div id="bsky-chat-panel" class="chat-tab-panel"></div>
+                    <div id="platform-chat-panel" class="chat-tab-panel active">
+                        ${platform === 'youtube' ? 
+                        // AJUSTE 1: Eliminamos 'credentialless="true"' del iframe de YouTube para habilitar la escritura
+                        `<iframe src="https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}"></iframe>` :
+                        `<iframe src="https://www.twitch.tv/embed/${session.platform_id}/chat?parent=${window.location.hostname}&darkpopout"></iframe>`
+                        }
+                    </div>
+                </div>
+            `;
+            this.renderVDONinjaChat(session, 'bsky-chat-panel'); 
+        } else if (hasBskyChat) {
+            chat.classList.remove('tabbed-chat-container');
+            this.renderVDONinjaChat(session, 'chat-box');
+        } else if ((platform === 'youtube' || platform === 'twitch') && isLive) {
+            const platformName = platform === 'youtube' ? 'YouTube' : 'Twitch';
+            chat.classList.add('tabbed-chat-container');
+            chat.innerHTML = `<h4>Chat de ${platformName}</h4><div id="chat-container"><iframe src="${platform === 'youtube' ? `https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}` : `https://www.twitch.tv/embed/${session.platform_id}/chat?parent=${window.location.hostname}&darkpopout`}"></iframe></div>`;
         } else {
-            chat.innerHTML = `${chatTitle}<p>El chat solo está disponible durante la transmisión en vivo.</p>`;
+            chat.classList.remove('tabbed-chat-container');
+            const chatTitle = `<h4><i class="fas fa-comments"></i> Chat</h4>`;
+            if (session.platform === 'substack') {
+                primaryAction.innerHTML = `<a href="https://open.substack.com/live-stream/${session.platform_id}" target="_blank" rel="noopener noreferrer" class="btn-substack">Ir a la Sala en Substack</a>`;
+                chat.innerHTML = `${chatTitle}<p>El chat para este evento está disponible directamente en Substack.</p>`;
+            } else {
+                chat.innerHTML = `${chatTitle}<p>El chat aparecerá cuando el evento inicie.</p>`;
+            }
         }
-        
+
         if (session.status === 'PROGRAMADO' && eventDate > new Date()) {
             countdown.style.display = 'block';
             countdown.innerHTML = '<div id="countdown-timer"></div>';
@@ -1001,9 +1043,14 @@ const LiveApp = {
     },
 
     // Esta función ahora contiene toda la lógica de roles para el chat
-    async renderVDONinjaChat(session) {
-        const chatContainer = document.getElementById('chat-box');
-        if (!chatContainer) return;
+    async renderVDONinjaChat(session, containerId) {
+        // La variable ahora se declara una sola vez, usando el ID del contenedor que le pasamos.
+        const chatContainer = document.getElementById(containerId);
+        
+        if (!chatContainer) {
+            console.error(`No se encontró el contenedor de chat con el ID: ${containerId}`);
+            return;
+        }
 
         const { data: { session: authSession } } = await this.supabase.auth.getSession();
 
@@ -1044,7 +1091,6 @@ const LiveApp = {
                     canWrite: false,
                     customPrompt: connectPrompt
                 });
-                // Volvemos a cargar los mensajes para el modo de solo lectura.
                 this.loadAndDisplayChat(session.bsky_chat_thread_uri);
             }
         }
