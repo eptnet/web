@@ -323,6 +323,15 @@ const LiveApp = {
                 panelsContainer.querySelector(`#${targetPanelId}`).classList.add('active');
             }
 
+            // --- LÓGICA PARA ABRIR EL POP-UP DE YOUTUBE ---
+            const youtubePopupBtn = e.target.closest('#open-youtube-popup');
+            if (youtubePopupBtn) {
+                e.preventDefault();
+                const videoId = this.currentItemInView.platform_id;
+                const url = `https://www.youtube.com/live_chat?v=${videoId}&embed_domain=${window.location.hostname}`;
+                window.open(url, 'youtubeChatPopup', 'width=400,height=600,scrollbars=yes,resizable=yes');
+            }
+
         });
 
         // --- Listener de Formularios UNIFICADO (solo para el chat) ---
@@ -893,21 +902,22 @@ const LiveApp = {
         const isLive = session.status === 'EN VIVO';
 
         if ((platform === 'youtube' || platform === 'twitch') && isLive && hasBskyChat) {
-            const platformName = platform === 'youtube' ? 'YouTube' : 'Twitch';
+        const platformName = platform === 'youtube' ? 'YouTube' : 'Twitch';
+        const popupLink = platform === 'youtube' 
+            ? `<a href="#" id="open-youtube-popup" class="youtube-popup-link">Participar</a>` 
+            : ''; // No se necesita para Twitch
+            
             chat.classList.add('tabbed-chat-container');
             chat.innerHTML = `
                 <div class="chat-tabs">
                     <button class="chat-tab" data-tab="bsky-chat-panel">Chat EPT (Bluesky)</button>
                     <button class="chat-tab active" data-tab="platform-chat-panel">Chat de ${platformName}</button>
+                    ${popupLink}
                 </div>
                 <div class="chat-panels-container">
                     <div id="bsky-chat-panel" class="chat-tab-panel"></div>
                     <div id="platform-chat-panel" class="chat-tab-panel active">
-                        ${platform === 'youtube' ? 
-                        // AJUSTE 1: Eliminamos 'credentialless="true"' del iframe de YouTube para habilitar la escritura
-                        `<iframe credentialless="true" src="https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}"></iframe>` :
-                        `<iframe credentialless="true" src="https://www.twitch.tv/embed/${session.platform_id}/chat?parent=${window.location.hostname}&darkpopout"></iframe>`
-                        }
+                        <iframe credentialless="true" src="${platform === 'youtube' ? `https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}` : `https://www.twitch.tv/embed/${session.platform_id}/chat?parent=${window.location.hostname}&darkpopout`}"></iframe>
                     </div>
                 </div>
             `;

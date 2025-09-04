@@ -1679,3 +1679,19 @@ body {
     flex-direction: column;
     min-height: 0; /* Un truco de flexbox para evitar desbordamientos */
 }
+.youtube-popup-link {
+    /* Eliminamos 'margin-left: auto;' */
+    margin-left: 1rem; /* Añadimos un espacio fijo y discreto */
+    align-self: center;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background-color: #ff0000;
+    color: white;
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+.youtube-popup-link:hover {
+    background-color: #cc0000;
+}
