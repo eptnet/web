@@ -368,7 +368,7 @@ const LiveApp = {
             const id = isEvent ? data.id : `video-${data.id}`;
             const thumbnailUrl = isEvent ? data.thumbnail_url : `https://i.ytimg.com/vi/${data.youtube_video_id}/hqdefault.jpg`;
             const isLive = isEvent && data.status === 'EN VIVO';
-            const autoplay = isLive ? 'autoplay=1&muted=1' : 'autoplay=0';
+            const autoplay = isLive ? 'autoplay=1&mute=1' : 'autoplay=0';
             let playerUrl = '';
             let infoHTML = '';
 
