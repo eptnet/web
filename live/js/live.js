@@ -905,8 +905,8 @@ const LiveApp = {
                     <div id="platform-chat-panel" class="chat-tab-panel active">
                         ${platform === 'youtube' ? 
                         // AJUSTE 1: Eliminamos 'credentialless="true"' del iframe de YouTube para habilitar la escritura
-                        `<iframe src="https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}"></iframe>` :
-                        `<iframe src="https://www.twitch.tv/embed/${session.platform_id}/chat?parent=${window.location.hostname}&darkpopout"></iframe>`
+                        `<iframe credentialless="true" src="https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}"></iframe>` :
+                        `<iframe credentialless="true" src="https://www.twitch.tv/embed/${session.platform_id}/chat?parent=${window.location.hostname}&darkpopout"></iframe>`
                         }
                     </div>
                 </div>
