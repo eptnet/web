@@ -880,9 +880,9 @@ const LiveApp = {
 
         if (session.status === 'EN VIVO') {
             const channel = session.platform_id || 'epistecnologia';
-            if (session.platform === 'vdo_ninja') player.innerHTML = `<iframe src="${session.viewer_url}" allow="autoplay; fullscreen; picture-in-picture"></iframe>`;
-            else if (session.platform === 'youtube') player.innerHTML = `<iframe src="https://www.youtube.com/embed/${channel}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
-            else if (session.platform === 'twitch') player.innerHTML = `<iframe src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=false" allowfullscreen allow="picture-in-picture"></iframe>`;
+            if (session.platform === 'vdo_ninja') player.innerHTML = `<iframe credentialless="true" src="${session.viewer_url}" allow="autoplay; fullscreen; picture-in-picture"></iframe>`;
+            else if (session.platform === 'youtube') player.innerHTML = `<iframe credentialless="true" src="https://www.youtube.com/embed/${channel}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
+            else if (session.platform === 'twitch') player.innerHTML = `<iframe credentialless="true" src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=false" allowfullscreen allow="picture-in-picture"></iframe>`;
         } else {
             const thumbnailUrl = session.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg';
             player.innerHTML = `<img src="${thumbnailUrl}" style="width:100%; height:100%; object-fit:cover;">`;
