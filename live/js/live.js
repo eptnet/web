@@ -431,7 +431,7 @@ const LiveApp = {
             const playerUrl = slide.dataset.playerUrl;
 
             if (offset === 0 && playerUrl && !playerContainer.querySelector('iframe')) {
-                playerContainer.innerHTML = `<iframe credentialless="true" src="${playerUrl}" allow="autoplay; fullscreen" loading="lazy"></iframe>`;
+                playerContainer.innerHTML = `<iframe src="${playerUrl}" allow="autoplay; fullscreen" loading="lazy"></iframe>`;
             } else if (offset !== 0 && playerContainer.querySelector('iframe')) {
                 playerContainer.innerHTML = `<img src="${slide.dataset.thumbnailUrl}" loading="lazy">`;
             }
@@ -794,7 +794,7 @@ const LiveApp = {
                 <div id="live-room-investigators-strip" class="live-room-investigators-strip"></div>
                 <div id="live-room-info" class="live-room-info"></div>
                 <div>
-                    <iframe credentialless="true" src="https://eptnews.substack.com/embed" width="100%" height="150" style="border:1px solid #eeeeee; background:transparent;" frameborder="0" scrolling="no"></iframe>                
+                    <iframe src="https://eptnews.substack.com/embed" width="100%" height="150" style="border:1px solid #eeeeee; background:transparent;" frameborder="0" scrolling="no"></iframe>                
                 </div>
                 <div id="live-room-disclaimer" class="live-room-disclaimer"></div>
                 <div id="live-room-report" class="live-room-report"></div>
@@ -889,9 +889,9 @@ const LiveApp = {
 
         if (session.status === 'EN VIVO') {
             const channel = session.platform_id || 'epistecnologia';
-            if (session.platform === 'vdo_ninja') player.innerHTML = `<iframe credentialless="true" src="${session.viewer_url}" allow="autoplay; fullscreen; picture-in-picture"></iframe>`;
-            else if (session.platform === 'youtube') player.innerHTML = `<iframe credentialless="true" src="https://www.youtube.com/embed/${channel}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
-            else if (session.platform === 'twitch') player.innerHTML = `<iframe credentialless="true" src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=false" allowfullscreen allow="picture-in-picture"></iframe>`;
+            if (session.platform === 'vdo_ninja') player.innerHTML = `<iframe src="${session.viewer_url}" allow="autoplay; fullscreen; picture-in-picture"></iframe>`;
+            else if (session.platform === 'youtube') player.innerHTML = `<iframe src="https://www.youtube.com/embed/${channel}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
+            else if (session.platform === 'twitch') player.innerHTML = `<iframe rc="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=false" allowfullscreen allow="picture-in-picture"></iframe>`;
         } else {
             const thumbnailUrl = session.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg';
             player.innerHTML = `<img src="${thumbnailUrl}" style="width:100%; height:100%; object-fit:cover;">`;
@@ -917,7 +917,7 @@ const LiveApp = {
                 <div class="chat-panels-container">
                     <div id="bsky-chat-panel" class="chat-tab-panel"></div>
                     <div id="platform-chat-panel" class="chat-tab-panel active">
-                        <iframe credentialless="true" src="${platform === 'youtube' ? `https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}` : `https://www.twitch.tv/embed/${session.platform_id}/chat?parent=${window.location.hostname}&darkpopout`}"></iframe>
+                        <iframe src="${platform === 'youtube' ? `https://www.youtube.com/live_chat?v=${session.platform_id}&embed_domain=${window.location.hostname}` : `https://www.twitch.tv/embed/${session.platform_id}/chat?parent=${window.location.hostname}&darkpopout`}"></iframe>
                     </div>
                 </div>
             `;
