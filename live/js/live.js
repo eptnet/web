@@ -904,7 +904,7 @@ const LiveApp = {
         if ((platform === 'youtube' || platform === 'twitch') && isLive && hasBskyChat) {
         const platformName = platform === 'youtube' ? 'YouTube' : 'Twitch';
         const popupLink = platform === 'youtube' 
-            ? `<a href="#" id="open-youtube-popup" class="youtube-popup-link">Participar</a>` 
+            ? `<a href="#" id="open-youtube-popup" class="youtube-popup-link" title="Abrir chat en una nueva ventana"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>` 
             : ''; // No se necesita para Twitch
             
             chat.classList.add('tabbed-chat-container');

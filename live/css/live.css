@@ -217,8 +217,8 @@ body { background-color: var(--color-background); color: var(--color-primary); f
 /* 2. Botón de cierre */
 .modal-close-btn {
     position: fixed;
-    top: 1.5rem;
-    right: 2rem;
+    top: 0rem;
+    right: 1rem;
     z-index: 3010;
     background: var(--color-surface);
     color: var(--color-primary);
@@ -1680,18 +1680,26 @@ body {
     min-height: 0; /* Un truco de flexbox para evitar desbordamientos */
 }
 .youtube-popup-link {
-    /* Eliminamos 'margin-left: auto;' */
-    margin-left: 1rem; /* Añadimos un espacio fijo y discreto */
+    margin-left: 1rem;
     align-self: center;
-    padding: 4px 10px;
-    border-radius: 6px;
-    background-color: #ff0000;
-    color: white;
+    
+    /* Estilos para que se vea como un botón de icono */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%; /* Lo hacemos circular */
+    background-color: var(--color-surface);
+    color: var(--color-secondary);
+    border: 1px solid var(--border-color);
     text-decoration: none;
-    font-size: 0.8rem;
-    font-weight: 600;
-    transition: background-color 0.2s;
+    font-size: 0.9rem;
+    transition: all 0.2s;
 }
+
 .youtube-popup-link:hover {
-    background-color: #cc0000;
+    background-color: var(--color-accent);
+    color: white;
+    border-color: var(--color-accent);
 }
