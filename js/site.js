@@ -213,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (module.type === 'text') {
                 contentHtml = `<div class="prose">${module.content}</div>`;
             } else if (module.type === 'embed') {
-                contentHtml = `<iframe credentialless="true" src="${module.content.replace('watch?v=', 'embed/')}" width="100%" height="400" frameborder="0" allowfullscreen style="border:0; border-radius: 8px;"></iframe>`;
+                contentHtml = `<iframe src="${module.content.replace('watch?v=', 'embed/')}" width="100%" height="400" frameborder="0" allowfullscreen style="border:0; border-radius: 8px;"></iframe>`;
             } else if (module.type === 'subscription') { // --- NUEVA LÓGICA ---
                 // Si el enlace es de Substack, lo convertimos en un embed.
                 if (module.url && module.url.includes('substack.com')) {
