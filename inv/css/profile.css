@@ -587,3 +587,26 @@ body.loading-profile .main-content {
 .profile-card-nav__link:hover i {
     color: var(--color-accent);
 }
+/* ===================================================
+   ESTILO PARA EL BOTÓN DE APOYO
+   =================================================== */
+
+.profile-card-nav__link.support-btn {
+    /* Mantenemos los estilos base del botón, pero cambiamos el color de acento */
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+}
+
+.profile-card-nav__link.support-btn i {
+    color: var(--color-accent);
+}
+
+/* Al pasar el cursor, lo hacemos más llamativo */
+.profile-card-nav__link.support-btn:hover {
+    background-color: var(--color-accent);
+    color: white; /* El color del texto cambia a blanco */
+}
+
+.profile-card-nav__link.support-btn:hover i {
+    color: white; /* El color del icono también cambia a blanco */
+}

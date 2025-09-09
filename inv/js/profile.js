@@ -330,6 +330,14 @@ const ProfileApp = {
         }
         buttonsHTML += `<a href="/inv/dashboard.html" class="profile-card-nav__link"><i class="fa-solid fa-arrow-right"></i> Ir al Dashboard</a>`;
 
+        // --- INICIO: NUEVO BOTÓN DE APOYO A LA PLATAFORMA ---
+        buttonsHTML += `
+            <a href="https://www.paypal.com/ncp/payment/AVNL8CGY5A2FL" target="_blank" rel="noopener noreferrer" class="profile-card-nav__link support-btn">
+                <i class="fa-solid fa-heart"></i> Apoyar la Plataforma
+            </a>
+        `;
+        // --- FIN ---
+        
         // --- LÓGICA DE CONEXIÓN A BLUESKY AÑADIDA AQUÍ ---
         if (isMyOwnProfile) {
             // Añadimos un separador visual
