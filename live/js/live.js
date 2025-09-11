@@ -613,7 +613,18 @@ const LiveApp = {
             return `<iframe src="${embedUrl}" allowfullscreen allow="picture-in-picture"></iframe>`;
         }
 
-        // 2. Detección de Streamable
+        // --- INICIO: CÓDIGO AÑADIDO PARA VIMEO ---
+        // 2. Detección de Vimeo
+        // Captura el ID de formatos como: vimeo.com/123456789
+        const vimeoRegex = /vimeo\.com\/(\d+)/;
+        videoId = url.match(vimeoRegex);
+        if (videoId) {
+            embedUrl = `https://player.vimeo.com/video/${videoId[1]}`;
+            return `<iframe src="${embedUrl}" allowfullscreen allow="picture-in-picture"></iframe>`;
+        }
+        // --- FIN: CÓDIGO AÑADIDO PARA VIMEO ---
+
+        // 3. Detección de Streamable
         // Captura el ID de formatos como: streamable.com/...
         const streamableRegex = /streamable\.com\/([a-zA-Z0-9]+)/;
         videoId = url.match(streamableRegex);
@@ -622,7 +633,7 @@ const LiveApp = {
             return `<iframe src="${embedUrl}" allowfullscreen allow="picture-in-picture"></iframe>`;
         }
 
-        // 3. Detección de Archivos de Video Directos
+        // 4. Detección de Archivos de Video Directos
         if (url.endsWith('.mp4') || url.endsWith('.webm') || url.endsWith('.ogg')) {
             return `<video controls src="${url}" style="width:100%; height:100%;"></video>`;
         }
