@@ -599,6 +599,38 @@ const LiveApp = {
         }
     },
 
+    generateEmbedHTML(url) {
+        if (!url) return null;
+        let embedUrl = null;
+        let videoId = null;
+
+        // 1. Detección de YouTube
+        // Captura el ID de formatos como: youtube.com/watch?v=..., youtu.be/..., youtube.com/embed/...
+        const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/;
+        videoId = url.match(youtubeRegex);
+        if (videoId) {
+            embedUrl = `https://www.youtube.com/embed/${videoId[1]}`;
+            return `<iframe src="${embedUrl}" allowfullscreen allow="picture-in-picture"></iframe>`;
+        }
+
+        // 2. Detección de Streamable
+        // Captura el ID de formatos como: streamable.com/...
+        const streamableRegex = /streamable\.com\/([a-zA-Z0-9]+)/;
+        videoId = url.match(streamableRegex);
+        if (videoId) {
+            embedUrl = `https://streamable.com/e/${videoId[1]}`;
+            return `<iframe src="${embedUrl}" allowfullscreen allow="picture-in-picture"></iframe>`;
+        }
+
+        // 3. Detección de Archivos de Video Directos
+        if (url.endsWith('.mp4') || url.endsWith('.webm') || url.endsWith('.ogg')) {
+            return `<video controls src="${url}" style="width:100%; height:100%;"></video>`;
+        }
+        
+        // Si no coincide con ninguna plataforma conocida, devuelve null
+        return null;
+    },
+
     updateViewerCountUI() {
         const viewerCountElement = document.getElementById('live-viewer-count');
         if (viewerCountElement) {
@@ -887,15 +919,25 @@ const LiveApp = {
         const eventDate = new Date(session.scheduled_at);
         const dateString = eventDate.toLocaleString('es-ES', { dateStyle: 'full', timeStyle: 'short' });
 
+        // --- INICIO DE LA LÓGICA DEL REPRODUCTOR INTELIGENTE ---
+        const embedHTML = this.generateEmbedHTML(session.recording_url);
+
         if (session.status === 'EN VIVO') {
             const channel = session.platform_id || 'epistecnologia';
             if (session.platform === 'vdo_ninja') player.innerHTML = `<iframe src="${session.viewer_url}" allow="autoplay; fullscreen; picture-in-picture"></iframe>`;
             else if (session.platform === 'youtube') player.innerHTML = `<iframe src="https://www.youtube.com/embed/${channel}?autoplay=1" allowfullscreen allow="picture-in-picture"></iframe>`;
-            else if (session.platform === 'twitch') player.innerHTML = `<iframe rc="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=false" allowfullscreen allow="picture-in-picture"></iframe>`;
+            else if (session.platform === 'twitch') player.innerHTML = `<iframe src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&autoplay=true&muted=true" allowfullscreen allow="picture-in-picture"></iframe>`;
+            
+        } else if (embedHTML) {
+            // Si la sesión NO está en vivo PERO tenemos un enlace de grabación válido, lo mostramos.
+            player.innerHTML = embedHTML;
+            
         } else {
+            // Si no está en vivo y no hay grabación (o no es compatible), mostramos la miniatura.
             const thumbnailUrl = session.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg';
             player.innerHTML = `<img src="${thumbnailUrl}" style="width:100%; height:100%; object-fit:cover;">`;
         }
+        // --- FIN DE LA LÓGICA DEL REPRODUCTOR ---
 
         const platform = session.platform;
         const hasBskyChat = !!session.bsky_chat_thread_uri;
