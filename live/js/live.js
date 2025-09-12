@@ -1004,8 +1004,19 @@ const LiveApp = {
             const { data: project } = await this.supabase.from('projects').select('*').eq('user_id', session.organizer.id).eq('title', session.project_title).single();
             if (project) {
                 const uniqueAuthors = project.authors && Array.isArray(project.authors) ? [...new Set(project.authors)].join(', ') : 'No disponible';
-                const doiLink = project.doi ? `<a href="https://doi.org/${project.doi}" target="_blank" rel="noopener noreferrer" class="doi-badge">Ver Proyecto (DOI)</a>` : '';
-                projectHTML = `<h4>Proyecto</h4><h3 class="live-room-project-title">${project.title}</h3><p><strong>Autores:</strong> ${uniqueAuthors}</p><p>${project.description || 'Resumen no disponible.'}</p>${doiLink}`;
+                
+                // --- INICIO: LÓGICA MEJORADA PARA MOSTRAR EL DOI ---
+                const doiDisplayHTML = project.doi 
+                    ? `<p class="project-doi"><strong>DOI:</strong> <a href="https://doi.org/${project.doi}" target="_blank" rel="noopener noreferrer">${project.doi}</a></p>` 
+                    : '';
+                // --- FIN: LÓGICA MEJORADA ---
+
+                projectHTML = `
+                    <h4>Proyecto</h4>
+                    <h5 class="live-room-project-title">${project.title}</h5>
+                    <p><strong>Autores:</strong> ${uniqueAuthors}</p>
+                    <p>${project.description || 'Resumen no disponible.'}</p>
+                    ${doiDisplayHTML}`; // Usamos la nueva variable aquí
             }
         }
 
