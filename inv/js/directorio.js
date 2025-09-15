@@ -53,11 +53,10 @@ const DirectoryApp = {
         if (!this.elements.grid) return;
 
         try {
-            // Buscamos en la tabla 'profiles' todos los perfiles
+            // --- CAMBIO CLAVE: Llamamos a nuestra nueva función RPC ---
+            // .rpc() ejecuta la función que creamos en la base de datos.
             const { data, error } = await this.supabase
-                .from('profiles')
-                .select('id, display_name, avatar_url, bio')
-                .order('display_name', { ascending: true });
+                .rpc('get_all_public_profiles');
 
             if (error) throw error;
 
