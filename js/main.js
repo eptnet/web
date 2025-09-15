@@ -18,23 +18,26 @@ document.addEventListener('DOMContentLoaded', () => {
         window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         console.log("main.js: Supabase client creado y disponible globalmente.");
 
-        // --- INICIO: Lógica para manejar invitaciones ---
+        // --- INICIO: Lógica para parámetros de URL (Invitación y Login Directo) ---
         const urlParams = new URLSearchParams(window.location.search);
         const invitationToken = urlParams.get('invitation_token');
+        const authAction = urlParams.get('auth');
 
         if (invitationToken) {
-            // Si encontramos un token, lo guardamos en el almacenamiento de sesión del navegador.
-            // Esto nos permite recordarlo incluso después de que el usuario sea redirigido por Google/GitHub.
+            // Lógica de invitación (ya existente)
             sessionStorage.setItem('invitation_token', invitationToken);
-
-            // Borramos el token de la URL para que no se vea.
             window.history.replaceState({}, document.title, window.location.pathname);
-
-            // Abrimos el modal de login automáticamente.
             console.log("Token de invitación detectado. Abriendo modal de login...");
             document.getElementById('login-modal-trigger')?.click();
+
+        } else if (authAction === 'open') {
+            // NUEVA lógica de login directo
+            console.log("Acción de login/registro detectada. Abriendo modal...");
+            document.getElementById('login-modal-trigger')?.click();
+            // Limpiamos la URL para que se vea más limpia después de abrir el modal
+            window.history.replaceState({}, document.title, window.location.pathname);
         }
-        // --- FIN: Lógica para manejar invitaciones ---
+        // --- FIN ---
 
         // --- Selección de elementos del DOM ---
         const themeSwitcherDesktop = document.getElementById('theme-switcher-desktop');
