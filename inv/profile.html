@@ -67,7 +67,7 @@
                     <button class="profile-tab-link active" data-tab="tab-perfil"><i class="fa-solid fa-user-pen"></i> <span>Perfil</span></button>
                     <button class="profile-tab-link" data-tab="tab-identidad"><i class="fa-brands fa-orcid"></i> <span>ID Académico</span></button>
                     <button class="profile-tab-link" data-tab="tab-proyectos"><i class="fa-solid fa-cloud-arrow-up"></i> <span>EPT DOI</span></button>
-                    <button class="profile-tab-link" data-tab="tab-comunidad"><i class="fa-solid fa-comments"></i> <span>Comunidad</span></button>
+                    <button class="profile-tab-link" data-tab="tab-invitados"><i class="fa-solid fa-paper-plane"></i> <span>Invitados</span></button>
                 </nav>
 
                 <div id="tab-perfil" class="profile-tab-content active">
@@ -253,19 +253,30 @@
                     </div>
                 </div>
 
-                <div id="tab-comunidad" class="profile-tab-content">
+                <div id="tab-invitados" class="profile-tab-content">
                     <div class="main-column">
                         <div class="bento-box">
-                            <h3><i class="fa-solid fa-comments"></i> Comunidad Epistecnología</h3>
-                            <div id="community-feed-container" style="margin-top: 1rem;">
+                            <h3><i class="fa-solid fa-user-plus"></i> Invitar a un Colega</h3>
+                            <p class="form-hint">
+                                Introduce el correo electrónico de un colega para invitarlo a unirse a la comunidad de Epistecnología.
+                            </p>
+                            <form id="invite-form" style="margin-top: 1.5rem;">
+                                <div class="form-group">
+                                    <label for="invitee-email">Email del Invitado</label>
+                                    <input type="email" id="invitee-email" placeholder="colega@universidad.edu" required>
                                 </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa-solid fa-paper-plane"></i> Enviar Invitación
+                                </button>
+                            </form>
                         </div>
                     </div>
                     <div class="side-column">
                         <div class="bento-box">
-                            <h3>Participa</h3>
-                            <div id="community-action-panel">
-                                </div>
+                            <h3><i class="fa-solid fa-list-check"></i> Tus Invitaciones</h3>
+                            <div id="invitations-list" class="invitations-list-container">
+                                <p class="loading-message">Cargando invitaciones...</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -325,7 +336,7 @@
             <a href="#" data-provider="github" id="login-github-btn-mobile" class="mobile-more-menu__item login-provider-btn"><i class="fa-brands fa-github"></i><span>Iniciar con GitHub</span></a>
             <a href="#" class="mobile-more-menu__item is-disabled"><i class="fa-brands fa-orcid"></i><span>ORCID (Próximamente)</span></a>
             <hr>
-            <a href="https://substack.com/chat/2867518" class="mobile-more-menu__item"><i class="fa-solid fa-message"></i><span>Comunidad</span></a>
+            <a href="/inv/comunidad.html" class="mobile-more-menu__item"><i class="fa-solid fa-message"></i><span>Comunidad</span></a>
             <a href="/live.html#seccion-eventos" class="mobile-more-menu__item"><i class="fa-solid fa-calendar-days"></i><span>Eventos</span></a>
             <hr>
             <button class="mobile-more-menu__item" id="theme-switcher-mobile"><i class="fa-solid fa-moon"></i><span>Cambiar Tema</span></button>

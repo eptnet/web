@@ -18,6 +18,24 @@ document.addEventListener('DOMContentLoaded', () => {
         window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         console.log("main.js: Supabase client creado y disponible globalmente.");
 
+        // --- INICIO: Lógica para manejar invitaciones ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const invitationToken = urlParams.get('invitation_token');
+
+        if (invitationToken) {
+            // Si encontramos un token, lo guardamos en el almacenamiento de sesión del navegador.
+            // Esto nos permite recordarlo incluso después de que el usuario sea redirigido por Google/GitHub.
+            sessionStorage.setItem('invitation_token', invitationToken);
+
+            // Borramos el token de la URL para que no se vea.
+            window.history.replaceState({}, document.title, window.location.pathname);
+
+            // Abrimos el modal de login automáticamente.
+            console.log("Token de invitación detectado. Abriendo modal de login...");
+            document.getElementById('login-modal-trigger')?.click();
+        }
+        // --- FIN: Lógica para manejar invitaciones ---
+
         // --- Selección de elementos del DOM ---
         const themeSwitcherDesktop = document.getElementById('theme-switcher-desktop');
         const themeSwitcherMobile = document.getElementById('theme-switcher-mobile');
@@ -240,9 +258,26 @@ document.addEventListener('DOMContentLoaded', () => {
         applyTheme(localStorage.getItem('theme') || 'light');
         if (liveIconDesktop) liveIconDesktop.classList.add("is-live"); // <-- LÍNEA REINTEGRADA
 
-        window.supabaseClient.auth.onAuthStateChange((_event, session) => {
+        window.supabaseClient.auth.onAuthStateChange(async (_event, session) => {
              if (session?.user) {
                 showUserUI(session.user);
+
+                // Verificamos si hay un token de invitación pendiente
+                const pendingToken = sessionStorage.getItem('invitation_token');
+                if (pendingToken) {
+                    try {
+                        console.log("Aceptando invitación con token...");
+                        await window.supabaseClient.functions.invoke('accept-invitation', {
+                            body: { token: pendingToken },
+                        });
+                        // Una vez procesado (con éxito o error), lo eliminamos para no volver a intentarlo.
+                        sessionStorage.removeItem('invitation_token');
+                        console.log("Proceso de invitación finalizado.");
+                    } catch (error) {
+                        console.error("Error al aceptar la invitación:", error.message);
+                        sessionStorage.removeItem('invitation_token');
+                    }
+                }
             } else {
                 showGuestUI();
                 if (window.location.pathname.startsWith('/inv/')) {

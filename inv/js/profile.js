@@ -60,8 +60,9 @@ const ProfileApp = {
             const activeContent = document.getElementById(tabId);
             if (activeLink) activeLink.classList.add('active');
             if (activeContent) activeContent.classList.add('active');
-            if (tabId === 'tab-comunidad' && document.getElementById('community-feed-container').dataset.loaded !== 'true') {
-                this.renderCommunityFeed();
+            // Ahora, si la pestaña es "tab-invitados", cargamos la lista de invitaciones
+            if (tabId === 'tab-invitados' && document.getElementById('invitations-list').dataset.loaded !== 'true') {
+                this.renderInvitationsList();
             }
         };
 
@@ -118,6 +119,7 @@ const ProfileApp = {
         document.getElementById('platforms-form')?.addEventListener('submit', (e) => this.handleSave(e, 'platforms'));
         document.getElementById('avatar-update-form')?.addEventListener('submit', (e) => this.handleUpdateAvatar(e));
         document.getElementById('zenodo-form')?.addEventListener('submit', (e) => this.handleZenodoSubmit(e));
+        document.getElementById('invite-form')?.addEventListener('submit', (e) => this.handleInviteSubmit(e));
 
         // Listener para los "Me Gusta"
         document.getElementById('community-feed-container')?.addEventListener('click', (e) => {
@@ -293,6 +295,73 @@ const ProfileApp = {
 
         saveButton.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Guardar';
         saveButton.disabled = false;
+    },
+
+    async handleInviteSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const emailInput = document.getElementById('invitee-email');
+        const inviteeEmail = emailInput.value.trim();
+        const saveButton = form.querySelector('button[type="submit"]');
+
+        if (!inviteeEmail) {
+            alert("Por favor, introduce un correo electrónico.");
+            return;
+        }
+
+        saveButton.disabled = true;
+        saveButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
+
+        try {
+            // En el próximo paso crearemos esta Edge Function
+            const { data, error } = await this.supabase.functions.invoke('send-invitation', {
+                body: { email: inviteeEmail },
+            });
+
+            if (error) throw error;
+
+            alert(data.message);
+            emailInput.value = ''; // Limpiamos el campo
+            this.renderInvitationsList(); // Refrescamos la lista de invitaciones
+
+        } catch (error) {
+            alert(`Error al enviar la invitación: ${error.message}`);
+        } finally {
+            saveButton.disabled = false;
+            saveButton.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Enviar Invitación';
+        }
+    },
+
+    async renderInvitationsList() {
+        const container = document.getElementById('invitations-list');
+        if (!container) return;
+
+        container.dataset.loaded = 'true'; // Marcamos que ya intentamos cargar
+        container.innerHTML = '<p class="loading-message">Cargando tus invitaciones...</p>';
+
+        try {
+            const { data: invitations, error } = await this.supabase
+                .from('invitations')
+                .select('*')
+                .order('created_at', { ascending: false });
+            
+            if (error) throw error;
+
+            if (invitations.length === 0) {
+                container.innerHTML = '<p class="form-hint">Aún no has enviado ninguna invitación.</p>';
+                return;
+            }
+
+            container.innerHTML = invitations.map(inv => `
+                <div class="invitation-item status-${inv.status}">
+                    <span class="invitee-email">${inv.invitee_email}</span>
+                    <span class="invitation-status">${inv.status}</span>
+                </div>
+            `).join('');
+
+        } catch (error) {
+            container.innerHTML = '<p class="form-hint" style="color: var(--color-accent);">No se pudieron cargar las invitaciones.</p>';
+        }
     },
 
     // --- A PARTIR DE AQUÍ, SON LAS FUNCIONES DE TU ARCHIVO ESTABLE ---
