@@ -18,27 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
         window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         console.log("main.js: Supabase client creado y disponible globalmente.");
 
-        // --- INICIO: Lógica para parámetros de URL (Invitación y Login Directo) ---
-        const urlParams = new URLSearchParams(window.location.search);
-        const invitationToken = urlParams.get('invitation_token');
-        const authAction = urlParams.get('auth');
-
-        if (invitationToken) {
-            // Lógica de invitación (ya existente)
-            sessionStorage.setItem('invitation_token', invitationToken);
-            window.history.replaceState({}, document.title, window.location.pathname);
-            console.log("Token de invitación detectado. Abriendo modal de login...");
-            document.getElementById('login-modal-trigger')?.click();
-
-        } else if (authAction === 'open') {
-            // NUEVA lógica de login directo
-            console.log("Acción de login/registro detectada. Abriendo modal...");
-            document.getElementById('login-modal-trigger')?.click();
-            // Limpiamos la URL para que se vea más limpia después de abrir el modal
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
-        // --- FIN ---
-
         // --- Selección de elementos del DOM ---
         const themeSwitcherDesktop = document.getElementById('theme-switcher-desktop');
         const themeSwitcherMobile = document.getElementById('theme-switcher-mobile');
@@ -320,6 +299,27 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('community-btn-desktop')?.addEventListener('click', handleCommunityClick);
         document.getElementById('community-btn-mobile')?.addEventListener('click', handleCommunityClick);
         // --- FIN: Lógica para el botón de Comunidad ---
+
+        // --- INICIO: Lógica para parámetros de URL (Invitación y Login Directo) ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const invitationToken = urlParams.get('invitation_token');
+        const authAction = urlParams.get('auth');
+
+        if (invitationToken) {
+            // Lógica de invitación (ya existente)
+            sessionStorage.setItem('invitation_token', invitationToken);
+            window.history.replaceState({}, document.title, window.location.pathname);
+            console.log("Token de invitación detectado. Abriendo modal de login...");
+            document.getElementById('login-modal-trigger')?.click();
+
+        } else if (authAction === 'open') {
+            // NUEVA lógica de login directo
+            console.log("Acción de login/registro detectada. Abriendo modal...");
+            document.getElementById('login-modal-trigger')?.click();
+            // Limpiamos la URL para que se vea más limpia después de abrir el modal
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        // --- FIN ---
 
         document.dispatchEvent(new CustomEvent('mainReady'));
         console.log("main.js: Evento 'mainReady' disparado. Base unificada y lista.");
