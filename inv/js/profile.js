@@ -529,14 +529,31 @@ const ProfileApp = {
     renderWorks(works) {
         const orcidListContainer = document.getElementById('projects-list');
         const eptDoiListContainer = document.getElementById('ept-doi-list');
-        if (!orcidListContainer || !eptDoiListContainer) return;
+        
+        if (!orcidListContainer || !eptDoiListContainer) {
+            console.warn("No se encontraron los contenedores para la lista de proyectos.");
+            return;
+        }
+
         const orcidProjects = works.filter(work => !work.created_via_platform);
         const eptProjects = works.filter(work => work.created_via_platform);
+
         orcidListContainer.innerHTML = orcidProjects.length > 0
-            ? orcidProjects.map(work => `<div class="publication-item"><p>${work.title}</p><span>DOI: ${work.doi}</span></div>`).join('')
-            : '<p class="form-hint">No tienes publicaciones sincronizadas.</p>';
+            ? orcidProjects.map(work => `
+                <div class="publication-item">
+                    <p>${work.title}</p>
+                    <span>DOI: ${work.doi}</span>
+                </div>
+            `).join('')
+            : '<p class="form-hint">No tienes publicaciones sincronizadas desde ORCID.</p>';
+            
         eptDoiListContainer.innerHTML = eptProjects.length > 0
-            ? eptProjects.map(work => `<div class="publication-item"><p>${work.title}</p><span>DOI: ${work.doi}</span></div>`).join('')
+            ? eptProjects.map(work => `
+                <div class="publication-item">
+                    <p>${work.title}</p>
+                    <span>DOI: ${work.doi}</span>
+                </div>
+            `).join('')
             : '<p class="form-hint">No tienes publicaciones con DOI de EPT.</p>';
     },
     
