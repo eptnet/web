@@ -610,3 +610,18 @@ body.loading-profile .main-content {
 .profile-card-nav__link.support-btn:hover i {
     color: white; /* El color del icono también cambia a blanco */
 }
+.supporter-logos {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+.supporter-logos img {
+    max-height: 40px;
+    object-fit: contain;
+}
+/* Arreglo para logos blancos en tema claro */
+body:not(.dark-theme) .supporter-logos img {
+    filter: invert(1);
+}

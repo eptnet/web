@@ -203,6 +203,7 @@ const ProfileApp = {
                 // Poblar MODO EDICIÓN (formularios)
                 document.getElementById('display-name').value = profile.display_name || '';
                 document.getElementById('bio').value = profile.bio || '';
+                document.getElementById('zenodo-authors').value = profile.display_name || '';
                 document.getElementById('substack-author-name').value = profile.substack_author_name || '';
                 document.getElementById('avatar-url').value = profile.avatar_url || '';
                 document.getElementById('youtube-url').value = profile.youtube_url || '';
@@ -550,7 +551,68 @@ const ProfileApp = {
 
     async handleZenodoSubmit(e) {
         e.preventDefault();
-        alert("La funcionalidad para publicar en Zenodo está en desarrollo.");
+        const form = e.target;
+        const submitButton = form.querySelector('button[type="submit"]');
+        const messageEl = document.getElementById('zenodo-message');
+
+        messageEl.textContent = 'Iniciando proceso...';
+        messageEl.style.color = 'var(--color-secondary)';
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Publicando...';
+
+        try {
+            const file = document.getElementById('zenodo-file').files[0];
+            if (!file) throw new Error("Por favor, selecciona un archivo para publicar.");
+
+            // --- INICIO DE LA NUEVA VALIDACIÓN DE TAMAÑO ---
+            const fileSizeLimit = 50 * 1024 * 1024; // 50 MB en bytes
+            if (file.size > fileSizeLimit) {
+                throw new Error(`El archivo es demasiado grande (${(file.size / 1024 / 1024).toFixed(1)} MB). El límite es 50 MB.`);
+            }
+            // --- FIN DE LA NUEVA VALIDACIÓN DE TAMAÑO ---
+
+            // --- PASO 1: Subir el archivo a Supabase Storage ---
+            messageEl.textContent = 'Paso 1/3: Subiendo archivo al almacenamiento seguro...';
+            const fileExt = file.name.split('.').pop();
+            const filePath = `${this.user.id}/${Date.now()}.${fileExt}`; // Creamos una ruta única
+
+            const { error: uploadError } = await this.supabase.storage
+                .from('zenodo-uploads') // Usamos un bucket dedicado
+                .upload(filePath, file);
+
+            if (uploadError) throw new Error(`Error al subir el archivo: ${uploadError.message}`);
+
+            // --- PASO 2: Recolectar todos los metadatos del formulario ---
+            messageEl.textContent = 'Paso 2/3: Recopilando metadatos...';
+            const metadata = {
+                title: document.getElementById('zenodo-title').value,
+                authors: document.getElementById('zenodo-authors').value.split('\n').map(name => name.trim()).filter(Boolean),
+                affiliations: document.getElementById('zenodo-affiliations').value,
+                description: document.getElementById('zenodo-description').value,
+                keywords: document.getElementById('zenodo-keywords').value.split(',').map(kw => kw.trim()).filter(Boolean),
+                license: document.getElementById('zenodo-license').value
+            };
+
+            // --- PASO 3: Invocar la Función Edge con la información ---
+            messageEl.textContent = 'Paso 3/3: Publicando en Zenodo y obteniendo DOI...';
+            const { data, error: functionError } = await this.supabase.functions.invoke('create-zenodo-doi', {
+                body: { filePath, metadata },
+            });
+
+            if (functionError) throw functionError;
+            
+            messageEl.textContent = `¡Éxito! Tu publicación tiene el DOI: ${data.doi}`;
+            messageEl.style.color = '#28a745';
+            form.reset(); // Limpiamos el formulario
+
+        } catch (error) {
+            messageEl.textContent = `Error: ${error.message}`;
+            messageEl.style.color = 'var(--color-accent)';
+            console.error("Error en el envío a Zenodo:", error);
+        } finally {
+            submitButton.disabled = false;
+            submitButton.innerHTML = 'Publicar y Obtener DOI';
+        }
     },
 
     async handleBlueskyConnect(e) {

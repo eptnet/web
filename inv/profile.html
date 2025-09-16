@@ -227,27 +227,94 @@
                 <div id="tab-proyectos" class="profile-tab-content">
                     <div class="main-column">
                         <div class="bento-box">
-                            <h3><i class="fa-solid fa-cloud-arrow-up"></i> Obtener DOI en Zenodo EPT</h3>
+                            <h3><i class="fa-solid fa-cloud-arrow-up"></i> Publicar y Obtener DOI</h3>
                             <form id="zenodo-form">
-                                <div class="form-group"><label for="zenodo-title">Título de la Publicación</label><input type="text" id="zenodo-title" required></div>
-                                <div class="form-group"><label for="zenodo-description">Descripción / Abstract</label><textarea id="zenodo-description" rows="4" required></textarea></div>
-                                <div class="form-group"><label for="zenodo-file">Archivo a Publicar (PDF, ZIP, etc.)</label><input type="file" id="zenodo-file" required></div>
+                                
+                                <div class="form-group">
+                                    <label for="zenodo-title">Título de la Publicación</label>
+                                    <input type="text" id="zenodo-title" name="title" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="zenodo-authors">Autores</label>
+                                    <textarea id="zenodo-authors" name="authors" rows="3" placeholder="Un autor por línea. Ej: Márquez, H. A." required></textarea>
+                                    <span class="form-hint">Tu nombre ya está incluido. Añade a tus coautores o edita según el formato que necesites.</span>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="zenodo-affiliations">Afiliación</label>
+                                    <input type="text" id="zenodo-affiliations" name="affiliations" placeholder="Ej: Epistecnología A.C.">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="zenodo-description">Descripción / Abstract</label>
+                                    <textarea id="zenodo-description" name="description" rows="5" required></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="zenodo-keywords">Palabras Clave</label>
+                                    <input type="text" id="zenodo-keywords" name="keywords" placeholder="Separadas por comas. Ej: IA, Educación, Filosofía">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="zenodo-license">Licencia</label>
+                                    <select id="zenodo-license" name="license" required>
+                                        <option value="cc-by-4.0" selected>Creative Commons Attribution 4.0</option>
+                                        <option value="cc-by-sa-4.0">Creative Commons Attribution-ShareAlike 4.0</option>
+                                        <option value="cc0-1.0">Creative Commons Zero (Dominio Público)</option>
+                                        <option value="mit">MIT License (Para software)</option>
+                                    </select>
+                                    <span class="form-hint">Define cómo otros pueden usar tu trabajo.</span>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="zenodo-file">Archivo a Publicar</label>
+                                    <input type="file" id="zenodo-file" required>
+                                    
+                                    <span class="form-hint" style="margin-top: 0.75rem; display: block;">
+                                        Puedes subir archivos de **hasta 50 MB** directamente desde aquí. 
+                                        <br>
+                                        Si tu archivo es más grande, puedes 
+                                        <a href="https://zenodo.org/uploads/new?community=epistecnologia" target="_blank">subirlo directamente en Zenodo</a> 
+                                        y luego registrar el DOI en tu perfil.
+                                    </span>
+                                </div>
+                                
                                 <button type="submit" class="btn btn-primary">Publicar y Obtener DOI</button>
                                 <div id="zenodo-message" class="form-message" style="margin-top: 1rem;"></div>
                             </form>
                         </div>
                     </div>
+                    
                     <div class="side-column">
                         <div class="bento-box">
-                            <h3><i class="fa-solid fa-circle-info"></i> ¿Cómo Funciona?</h3>
+                            <h3><i class="fa-solid fa-circle-info"></i> Tu Aliado de Publicación</h3>
                             <div class="instructions-content">
-                                <p>Al publicar desde aquí, tu trabajo se sube a la comunidad oficial de Epistecnología en Zenodo, obteniendo un DOI citable a tu nombre.</p>
-                            </div>
-                        </div>
-                        <div class="bento-box">
-                            <h3><i class="fa-solid fa-th-list"></i> Tus Publicaciones EPT DOI</h3>
-                            <div id="ept-doi-list">
-                                <p class="form-hint">Aquí aparecerán los proyectos que publiques a través de esta herramienta.</p>
+                                <p><strong>EPT DOI</strong> es tu puente directo para publicar trabajos y obtener un <strong>DOI (Identificador de Objeto Digital)</strong>, el estándar universal para que tu obra sea citable de forma permanente.</p>
+                                
+                                <p>Para lograrlo, nos integramos con <strong>Zenodo</strong>, un repositorio de acceso abierto universal operado por el <strong>CERN</strong> (la Organización Europea para la Investigación Nuclear, cuna de la World Wide Web) y respaldado por <strong>OpenAIRE</strong> y la <strong>Comisión Europea</strong>.</p>
+
+                                <div class="supporter-logos">
+                                    <img src="https://zenodo.org/static/images/cern.png" alt="Logo CERN">
+                                    <img src="https://zenodo.org/static/images/openaire.png" alt="Logo OpenAIRE">
+                                    <img src="https://zenodo.org/static/images/eu.png" alt="Logo European Union">
+                                </div>
+                                
+                                <p>Zenodo te ofrece hasta <strong>50GB de almacenamiento gratuito</strong> por cada publicación, con la posibilidad de solicitar más espacio si es necesario.</p>
+                                
+                                <hr style="margin: 1.5rem 0;">
+
+                                <h4>¿Quiénes pueden publicar?</h4>
+                                <ul>
+                                    <li><strong>Investigadores:</strong> Comparte tus pre-prints, artículos, conjuntos de datos (datasets), software, figuras, presentaciones y más. Haz que cada pieza de tu investigación sea citable y visible.</li>
+                                    <li><strong>Autores y Creadores:</strong> ¿Escribiste un libro? Puedes subir un capítulo o la obra completa. ¿Diseñaste material educativo o creaste una obra artística? Todo puede tener un DOI para proteger tu autoría y facilitar que otros reconozcan y citen tu contribución.</li>
+                                </ul>
+
+                                <hr style="margin: 1.5rem 0;">
+
+                                <p class="form-hint" style="font-size: 0.8rem; text-align: center;">
+                                    <strong>Nota de Responsabilidad:</strong> Todo el contenido publicado a través de esta herramienta es responsabilidad exclusiva de sus autores.
+                                </p>
                             </div>
                         </div>
                     </div>
