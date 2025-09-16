@@ -502,24 +502,17 @@ const ProfileApp = {
         syncButton.disabled = true;
 
         try {
-            // --- INICIO DE LA LÓGICA MEJORADA ---
-
-            // 1. Obtenemos los proyectos que YA EXISTEN en nuestra base de datos para este usuario
             const { data: existingProjects, error: existingError } = await this.supabase
                 .from('projects')
                 .select('doi, created_via_platform')
                 .eq('user_id', this.user.id);
-
             if (existingError) throw existingError;
 
-            // 2. Creamos un mapa para una búsqueda rápida de los proyectos creados en EPT
             const platformCreatedMap = new Map();
             existingProjects
                 .filter(p => p.created_via_platform)
                 .forEach(p => platformCreatedMap.set(p.doi, true));
                 
-            // --- FIN DE LA LÓGICA MEJORADA ---
-
             const { data: profile } = await this.supabase.from('profiles').select('orcid').eq('id', this.user.id).single();
             if (!profile?.orcid) throw new Error("No hay un ORCID iD conectado.");
             
@@ -529,11 +522,7 @@ const ProfileApp = {
 
             if (data.works && data.works.length > 0) {
                 const projectsToSave = data.works.map(work => {
-                    // --- LÓGICA MEJORADA ---
-                    // Al preparar los datos para guardar, verificamos si el DOI ya existía como un proyecto de EPT.
-                    // Si es así, preservamos la bandera `created_via_platform` como `true`.
                     const isPlatformCreated = platformCreatedMap.has(work.doi);
-
                     return {
                         user_id: this.user.id,
                         doi: work.doi,
@@ -541,16 +530,26 @@ const ProfileApp = {
                         authors: work.authors || [],
                         publication_year: work.year || null,
                         description: work.description || null,
-                        created_via_platform: isPlatformCreated // Preservamos la bandera
+                        created_via_platform: isPlatformCreated
                     };
                 });
 
-                const { error: saveError } = await this.supabase.from('projects').upsert(projectsToSave, { onConflict: 'doi, user_id' });
-                if (saveError) throw saveError;
-            }
+                // --- CAMBIO CLAVE: Añadimos .select() para obtener los datos frescos ---
+                const { data: updatedProjects, error: saveError } = await this.supabase
+                    .from('projects')
+                    .upsert(projectsToSave, { onConflict: 'doi, user_id' })
+                    .select(); // Le pedimos a Supabase que nos devuelva los datos actualizados
 
-            alert(`Sincronización completada. Se encontraron y guardaron ${data.works?.length || 0} publicaciones.`);
-            location.reload(); // Recargamos para que se vean los cambios
+                if (saveError) throw saveError;
+                
+                // --- LÓGICA MEJORADA: Actualizamos la UI sin recargar la página ---
+                alert(`Sincronización completada. Se encontraron y guardaron ${data.works?.length || 0} publicaciones.`);
+                this.userWorks = null; // Forzamos a que se recarguen los datos en la siguiente llamada
+                await this.loadAndRenderWorks(); // Volvemos a cargar y dibujar la lista
+
+            } else {
+                alert(`Sincronización completada. No se encontraron nuevas publicaciones en ORCID.`);
+            }
 
         } catch (error) {
             alert("Error al sincronizar las publicaciones: " + error.message);
