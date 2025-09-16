@@ -60,9 +60,11 @@ const ProfileApp = {
             const activeContent = document.getElementById(tabId);
             if (activeLink) activeLink.classList.add('active');
             if (activeContent) activeContent.classList.add('active');
-            // Ahora, si la pestaña es "tab-invitados", cargamos la lista de invitaciones
-            if (tabId === 'tab-invitados' && document.getElementById('invitations-list').dataset.loaded !== 'true') {
+
+            if (tabId === 'tab-invitados') {
                 this.renderInvitationsList();
+            } else if (tabId === 'tab-identidad') { // Si se hace clic en ID Académico
+                this.loadAndRenderWorks(); // Cargamos y dibujamos los trabajos
             }
         };
 
@@ -244,14 +246,7 @@ const ProfileApp = {
                 this.toggleEditMode(document.getElementById('platforms-form').closest('.bento-box'), false);
             }
 
-            const profileHasAdvancedAccess = (profile.role === 'researcher' || profile.role === 'admin');
-            document.querySelector('.profile-tab-link[data-tab="tab-identidad"]').style.display = profileHasAdvancedAccess ? 'flex' : 'none';
-            document.querySelector('.profile-tab-link[data-tab="tab-proyectos"]').style.display = profileHasAdvancedAccess ? 'flex' : 'none';
-
-            if (profileHasAdvancedAccess) {
-                const { data: projects } = await this.supabase.from('projects').select('*').eq('user_id', profile.id);
-                if (projects) this.renderWorks(projects);
-            }
+            
         } catch (error) {
             console.error('Error en renderProfileData:', error);
         } finally {
@@ -505,24 +500,86 @@ const ProfileApp = {
         if (!syncButton) return;
         syncButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sincronizando...';
         syncButton.disabled = true;
+
         try {
+            // --- INICIO DE LA LÓGICA MEJORADA ---
+
+            // 1. Obtenemos los proyectos que YA EXISTEN en nuestra base de datos para este usuario
+            const { data: existingProjects, error: existingError } = await this.supabase
+                .from('projects')
+                .select('doi, created_via_platform')
+                .eq('user_id', this.user.id);
+
+            if (existingError) throw existingError;
+
+            // 2. Creamos un mapa para una búsqueda rápida de los proyectos creados en EPT
+            const platformCreatedMap = new Map();
+            existingProjects
+                .filter(p => p.created_via_platform)
+                .forEach(p => platformCreatedMap.set(p.doi, true));
+                
+            // --- FIN DE LA LÓGICA MEJORADA ---
+
             const { data: profile } = await this.supabase.from('profiles').select('orcid').eq('id', this.user.id).single();
             if (!profile?.orcid) throw new Error("No hay un ORCID iD conectado.");
+            
             const orcidId = profile.orcid.replace('https://orcid.org/', '');
             const { data, error: functionError } = await this.supabase.functions.invoke('get-orcid-works', { body: { orcid_id: orcidId } });
             if (functionError) throw functionError;
+
             if (data.works && data.works.length > 0) {
-                const projectsToSave = data.works.map(work => ({ user_id: this.user.id, doi: work.doi, title: work.title, authors: work.authors || [], publication_year: work.year || null, description: work.description || null }));
+                const projectsToSave = data.works.map(work => {
+                    // --- LÓGICA MEJORADA ---
+                    // Al preparar los datos para guardar, verificamos si el DOI ya existía como un proyecto de EPT.
+                    // Si es así, preservamos la bandera `created_via_platform` como `true`.
+                    const isPlatformCreated = platformCreatedMap.has(work.doi);
+
+                    return {
+                        user_id: this.user.id,
+                        doi: work.doi,
+                        title: work.title,
+                        authors: work.authors || [],
+                        publication_year: work.year || null,
+                        description: work.description || null,
+                        created_via_platform: isPlatformCreated // Preservamos la bandera
+                    };
+                });
+
                 const { error: saveError } = await this.supabase.from('projects').upsert(projectsToSave, { onConflict: 'doi, user_id' });
                 if (saveError) throw saveError;
             }
-            alert(`Sincronización completada. Se encontraron y guardaron ${data.works.length} publicaciones.`);
-            location.reload();
+
+            alert(`Sincronización completada. Se encontraron y guardaron ${data.works?.length || 0} publicaciones.`);
+            location.reload(); // Recargamos para que se vean los cambios
+
         } catch (error) {
             alert("Error al sincronizar las publicaciones: " + error.message);
         } finally {
             syncButton.innerHTML = '<i class="fa-solid fa-sync"></i> Sincronizar desde ORCID';
             syncButton.disabled = false;
+        }
+    },
+
+    async loadAndRenderWorks() {
+        // Verificamos si ya hemos cargado los datos para no volver a pedirlos
+        if (this.userWorks) {
+            this.renderWorks(this.userWorks);
+            return;
+        }
+
+        try {
+            const { data: projects, error } = await this.supabase
+                .from('projects')
+                .select('*')
+                .eq('user_id', this.user.id);
+            
+            if (error) throw error;
+            
+            this.userWorks = projects || []; // Guardamos los proyectos en memoria
+            this.renderWorks(this.userWorks);
+        } catch (error) {
+            console.error("Error al cargar los proyectos del usuario:", error);
+            document.getElementById('projects-list').innerHTML = '<p class="form-hint" style="color: var(--color-accent);">No se pudieron cargar los proyectos.</p>';
         }
     },
 
