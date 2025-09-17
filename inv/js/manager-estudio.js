@@ -304,28 +304,17 @@ export const Studio = {
         }).join('');
     },
 
-    openModal(session = null) { // Simplificamos el parámetro
+    // --- INICIO: FUNCIÓN OPENMODAL REFACTORIZADA ---
+    openModal(session = null) {
         const isEditing = !!session;
-
-        // --- INICIO DE LA MODIFICACIÓN ---
-        // Obtenemos el proyecto activo desde sessionStorage
         const activeProjectString = sessionStorage.getItem('activeProject');
         if (!isEditing && !activeProjectString) {
             alert("Por favor, selecciona primero un proyecto en la página de Inicio.");
             return;
         }
         const activeProject = activeProjectString ? JSON.parse(activeProjectString) : null;
-        // --- FIN DE LA MODIFICACIÓN ---
 
-        if (isEditing && session.participants) {
-            this.participants = session.participants.map(p => ({
-                id: p.profiles.id,
-                name: p.profiles.display_name,
-                avatar: p.profiles.avatar_url
-            }));
-        } else {
-            this.participants = [];
-        }
+        this.participants = isEditing && session.participants ? session.participants.map(p => p.profiles) : [];
 
         const toLocalISOString = (date) => {
             if (!date) return '';
@@ -333,7 +322,7 @@ export const Studio = {
             return new Date(d - tzoffset).toISOString().slice(0, 16);
         };
         
-        const initialPlatform = session?.platform || 'vdo_ninja'; // Cambiado a vdo_ninja por defecto
+        const initialPlatform = session?.platform || 'vdo_ninja';
         const modalContainer = document.getElementById('modal-overlay-container');
         
         modalContainer.innerHTML = `
@@ -348,10 +337,9 @@ export const Studio = {
                             <div class="form-group">
                                 <label>Plataforma de Transmisión</label>
                                 <div class="platform-selector">
-                                    <div class="platform-option" data-platform="eptstream"><i class="fa-solid fa-wand-magic-sparkles"></i><span>EPTstream</span></div>
-                                    <div class="platform-option" data-platform="vdo_ninja"><i class="fas fa-satellite-dish"></i><span>EPT Live</span></div>    
-                                    <div class="platform-option" data-platform="twitch"><i class="fab fa-twitch"></i><span>Twitch</span></div>
+                                    <div class="platform-option" data-platform="vdo_ninja"><i class="fas fa-satellite-dish"></i><span>EPT Live (VDO.Ninja)</span></div>    
                                     <div class="platform-option" data-platform="youtube"><i class="fab fa-youtube"></i><span>YouTube</span></div>
+                                    <div class="platform-option" data-platform="twitch"><i class="fab fa-twitch"></i><span>Twitch</span></div>
                                     <div class="platform-option" data-platform="substack"><i class="fas fa-bookmark"></i><span>Substack</span></div>
                                 </div>
                                 <input type="hidden" id="session-platform" name="platform" value="${initialPlatform}">
@@ -366,13 +354,6 @@ export const Studio = {
                             <div class="form-group"><label for="session-thumbnail">URL de Miniatura</label><input id="session-thumbnail" name="thumbnail_url" type="url" value="${session?.thumbnail_url || ''}" placeholder="https://ejemplo.com/imagen.jpg"></div>
                             <div class="form-group"><label for="session-more-info">URL para "Saber Más"</label><input id="session-more-info" name="more_info_url" type="url" value="${session?.more_info_url || ''}"></div>
                             
-                            <div class="form-group rtmps-fields" style="display: ${initialPlatform === 'youtube' || initialPlatform === 'twitch' ? 'block' : 'none'};">
-                                <hr>
-                                <label>Conf. Manual - Próx. (Usar un software como OBS)</label>
-                                <p class="form-hint">Pega aquí los datos de RTMP para transmitir directamente desde la sala de control.</p>
-                                <input id="session-rtmp-url" name="rtmp_url" type="text" value="${session?.rtmp_url || ''}" placeholder="URL del servidor RTMPS (ej: rtmps://a.rtmps.youtube.com/live2)">
-                                <input id="session-rtmp-key" name="rtmp_key" type="password" value="${session?.rtmp_key || ''}" placeholder="Clave de transmisión">
-                            </div>
                             <div class="form-group">
                                 <label for="participant-search">Añadir Investigadores Participantes</label>
                                 <div class="participant-search-group">
@@ -402,46 +383,23 @@ export const Studio = {
             platformInput.value = platform;
             
             let fieldHTML = '';
-            // Ahora este bloque se activa para YouTube, Twitch y EPTstream
-        if (platform === 'youtube' || platform === 'twitch' || platform === 'eptstream') {
-            const platformName = platform === 'youtube' ? 'Video de YouTube' : 'Canal de Twitch';
-            fieldHTML = `<div class="form-group"><label for="platform-id">ID del ${platformName}</label><input id="platform-id" name="platformId" type="text" value="${session?.platform_id || ''}" placeholder="El ID de tu canal o video"></div>`;
-        } 
-        // --- FIN: CAMBIO PUNTUAL --- 
-        else if (platform === 'substack') {
-                fieldHTML = `<div class="form-group"><label for="substack-id">ID del Directo de Substack</label><input id="substack-id" name="substackId" type="text" value="${session?.platform_id || ''}" placeholder="Lo optienes al agendar tu transmisión"></div>`;
+            if (platform === 'youtube' || platform === 'twitch' || platform === 'substack') {
+                const platformName = platform.charAt(0).toUpperCase() + platform.slice(1);
+                const placeholder = platform === 'twitch' ? 'nombre-del-canal' : 'ID_DEL_VIDEO_O_POST';
+                fieldHTML = `<div class="form-group"><label for="platform-id">ID de ${platformName}</label><p class="form-hint">Crea el evento en ${platformName}, pega el ID aquí y usa la "Sala de control" para gestionar tu directo.</p><input id="platform-id" name="platformId" type="text" value="${session?.platform_id || ''}" placeholder="${placeholder}"></div>`;
+            } else {
+                 fieldHTML = `<p class="form-hint">EPT Live (VDO.Ninja) genera automáticamente las URLs seguras. Solo necesitas ir a la Sala de Control para iniciar.</p>`;
             }
             platformSpecificFields.innerHTML = fieldHTML;
-
-            const rtmpsFields = modalContainer.querySelector('.rtmps-fields');
-            if (rtmpsFields) {
-                // Tu lógica RTMP
-                rtmpsFields.style.display = (platform === 'youtube' || platform === 'twitch' || platform === 'eptstream') ? 'block' : 'none';
-            }
         };
 
-        platformOptions.forEach(opt => {
-            opt.addEventListener('click', () => {
-                updatePlatformSelection(opt.dataset.platform);
-            });
-        });
-        
+        platformOptions.forEach(opt => opt.addEventListener('click', () => updatePlatformSelection(opt.dataset.platform)));
         updatePlatformSelection(initialPlatform);
         this.renderAddedParticipants();
 
         modalContainer.querySelector('.modal-close-btn').addEventListener('click', () => this.closeModal());
         form.addEventListener('submit', (e) => this.handleSaveSession(e, session));
-        document.getElementById('search-participant-btn').addEventListener('click', () => {
-            const searchTerm = document.getElementById('participant-search').value;
-            this.searchParticipants(searchTerm);
-        });
-        const rtmpKeyInput = document.getElementById('session-rtmp-key');
-        if (rtmpKeyInput) {
-            rtmpKeyInput.addEventListener('click', () => {
-                rtmpKeyInput.type = 'text';
-                setTimeout(() => { rtmpKeyInput.type = 'password'; }, 5000);
-            });
-        }
+        document.getElementById('search-participant-btn').addEventListener('click', () => this.searchParticipants(document.getElementById('participant-search').value));
     },
 
     closeModal() {
@@ -450,144 +408,128 @@ export const Studio = {
     },
 
     async handleSaveSession(e, session = null) {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const platform = formData.get('platform');
-    
-    const activeProjectString = sessionStorage.getItem('activeProject');
-    const activeProject = activeProjectString ? JSON.parse(activeProjectString) : null;
-    const projectTitle = session ? session.project_title : activeProject?.title;
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const platform = formData.get('platform');
+        
+        const activeProjectString = sessionStorage.getItem('activeProject');
+        const activeProject = activeProjectString ? JSON.parse(activeProjectString) : null;
+        const projectTitle = session ? session.project_title : activeProject?.title;
 
-    if (!projectTitle) {
-        alert("Error: No se pudo determinar el proyecto asociado. Por favor, selecciónalo de nuevo.");
-        return;
-    }
-
-    // 1. Preparamos el objeto con todos los datos de la sesión
-    let sessionData = {
-        project_title: projectTitle,
-        session_title: formData.get('sessionTitle'),
-        platform: platform,
-        status: 'PROGRAMADO',
-        scheduled_at: new Date(formData.get('scheduledAt')).toISOString(),
-        end_at: formData.get('endAt') ? new Date(formData.get('endAt')).toISOString() : null,
-        description: formData.get('description'),
-        thumbnail_url: formData.get('thumbnail_url'),
-        more_info_url: formData.get('more_info_url'),
-        platform_id: formData.get('platformId') || formData.get('substackId') || null,
-        rtmp_url: formData.get('rtmp_url'),
-        rtmp_key: formData.get('rtmp_key')
-    };
-    
-    // Tu lógica para crear las URLs de VDO.Ninja, etc., no cambia
-    if (!session) {
-        sessionData.user_id = App.userId;
-        sessionData.is_archived = false;
-
-        if (platform === 'eptstream') {
-            const sessionName = self.crypto.randomUUID();
-            sessionData.director_url = `/inv/stream.html?session=${sessionName}&role=host`;
-            sessionData.guest_url = `/inv/stream.html?session=${sessionName}&role=guest`;
-            const platformId = formData.get('platformId');
-            if (platformId) {
-                sessionData.viewer_url = `https://www.youtube.com/live/${platformId}`;
-            }
-        } else {
-            const stableId = self.crypto.randomUUID().slice(0, 8);
-            const roomName = `ept_2_${App.userProfile.orcid.slice(-4)}_${stableId}`; 
-            const directorKey = `dir_${App.userProfile.orcid.slice(-4)}`;
-            const vdoDomain = 'https://vdo.ninja/alpha';
-            let directorParams = new URLSearchParams({ room: roomName, director: directorKey, record: 'auto' });
-            
-            const rtmpUrl = formData.get('rtmp_url');
-            const rtmpKey = formData.get('rtmp_key');
-            if (rtmpUrl && rtmpKey) {
-                const broadcastUrl = rtmpUrl.replace(/^rtmps?:\/\//, '');
-                directorParams.set('broadcast', `${rtmpKey}@${broadcastUrl}`);
-            }
-            sessionData.director_url = `${vdoDomain}/mixer?${directorParams.toString()}&meshcast`;
-            
-            const recordingParams = new URLSearchParams({
-                scene: '0', layout: '', remote: '', clean: '', chroma: '000', ssar: 'landscape',
-                nosettings: '', prefercurrenttab: '', selfbrowsersurface: 'include',
-                displaysurface: 'browser', np: '', nopush: '', publish: '', record: '',
-                screenshareaspectratio: '1.7777777777777777', locked: '1.7777777777777777', room: roomName
-            });
-            sessionData.recording_source_url = `${vdoDomain}/?${recordingParams.toString()}`;
-            
-            let guestParams = new URLSearchParams({ room: roomName });
-            let viewerParams = new URLSearchParams({ scene: '0', showlabels: '0', room: roomName });
-            
-            if (formData.get('guestCount') > 4) {
-                const meshcastUrl = `https://cae1.meshcast.io/whep/${roomName}`;
-                directorParams.set('whepshare', meshcastUrl);
-                guestParams.set('whepshare', meshcastUrl);
-                viewerParams.set('meshcast', '1');
-            }
-            sessionData.guest_url = `${vdoDomain}/?${guestParams.toString()}`;
-            sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}&layout&whepshare=https://use1.meshcast.io/whep/${roomName}&cleanoutput`;
+        if (!projectTitle) {
+            alert("Error: No se pudo determinar el proyecto asociado. Por favor, selecciónalo de nuevo.");
+            return;
         }
-    }
 
-    // 2. Preparamos los datos de atribución del autor para el bot
-    const authorInfo = {
-        displayName: App.userProfile.display_name || App.userProfile.full_name,
-        orcid: App.userProfile.orcid
-    };
+        // 1. Preparamos el objeto con todos los datos de la sesión
+        let sessionData = {
+            project_title: projectTitle,
+            session_title: formData.get('sessionTitle'),
+            platform: platform,
+            status: 'PROGRAMADO',
+            scheduled_at: new Date(formData.get('scheduledAt')).toISOString(),
+            end_at: formData.get('endAt') ? new Date(formData.get('endAt')).toISOString() : null,
+            description: formData.get('description'),
+            thumbnail_url: formData.get('thumbnail_url'),
+            more_info_url: formData.get('more_info_url'),
+            platform_id: formData.get('platformId') || formData.get('substackId') || null,
+        };
+        
+        // Tu lógica para crear las URLs de VDO.Ninja, etc., no cambia
+        if (!session) {
+            sessionData.user_id = App.userId;
+            sessionData.is_archived = false;
 
-    try {
-        let savedSession;
-
-        if (session) {
-            // --- LÓGICA DE ACTUALIZACIÓN (SIN CAMBIOS) ---
-            // Si estamos editando, solo actualizamos los datos de la sesión.
-            const { data, error } = await App.supabase.from('sessions').update(sessionData).eq('id', session.id).select().single();
-            if (error) throw error;
-            savedSession = data;
-        } else {
-            // --- MODIFICACIÓN CLAVE ---
-            // La lógica de Bluesky ahora se ejecuta para CUALQUIER plataforma, no solo 'vdo_ninja'.
-            let postMethod = 'none';
-            try {
-                const { data: status, error: checkError } = await App.supabase.functions.invoke('bsky-check-status');
-                if (checkError) throw checkError;
-
-                if (status.connected) {
-                    postMethod = 'user';
-                } else {
-                    const confirmed = confirm("Tu conexión con Bluesky ha fallado o no está configurada. ¿Deseas que el bot de Epistecnología publique el anuncio del evento por ti?");
-                    if (confirmed) postMethod = 'bot';
+            if (platform === 'vdo_ninja') {
+                const stableId = self.crypto.randomUUID().slice(0, 8);
+                const roomName = `ept_2_${App.userProfile.orcid.slice(-4)}_${stableId}`; 
+                const directorKey = `dir_${App.userProfile.orcid.slice(-4)}`;
+                const vdoDomain = 'https://vdo.ninja/alpha';
+                let directorParams = new URLSearchParams({ room: roomName, director: directorKey, record: 'auto' });
+                
+                sessionData.director_url = `${vdoDomain}/mixer?${directorParams.toString()}&meshcast`;
+                
+                const recordingParams = new URLSearchParams({
+                    scene: '0', layout: '', remote: '', clean: '', chroma: '000', ssar: 'landscape',
+                    nosettings: '', prefercurrenttab: '', selfbrowsersurface: 'include',
+                    displaysurface: 'browser', np: '', nopush: '', publish: '', record: '',
+                    screenshareaspectratio: '1.7777777777777777', locked: '1.7777777777777777', room: roomName
+                });
+                sessionData.recording_source_url = `${vdoDomain}/?${recordingParams.toString()}`;
+                
+                let guestParams = new URLSearchParams({ room: roomName });
+                let viewerParams = new URLSearchParams({ scene: '0', showlabels: '0', room: roomName });
+                
+                if (formData.get('guestCount') > 4) {
+                    const meshcastUrl = `https://cae1.meshcast.io/whep/${roomName}`;
+                    directorParams.set('whepshare', meshcastUrl);
+                    guestParams.set('whepshare', meshcastUrl);
+                    viewerParams.set('meshcast', '1');
                 }
-            } catch (err) {
-                alert(`No se pudo verificar la conexión con Bluesky. La sesión se agendará sin crear el hilo de chat. Error: ${err.message}`);
+                sessionData.guest_url = `${vdoDomain}/?${guestParams.toString()}`;
+                sessionData.viewer_url = `${vdoDomain}/?${viewerParams.toString()}&layout&whepshare=https://use1.meshcast.io/whep/${roomName}&cleanoutput`;
             }
-            // --- FIN DE LA MODIFICACIÓN ---
-
-            const { data, error } = await App.supabase.functions.invoke('create-session-and-bsky-thread', {
-                body: { sessionData, authorInfo, postMethod }
-            });
-
-            if (error) throw error;
-            savedSession = data.savedSession;
         }
-        
-        // La lógica de los participantes ahora se ejecuta al final para ambos casos
-        if (this.participants && this.participants.length > 0) {
-            await App.supabase.from('event_participants').delete().eq('session_id', savedSession.id);
-            const participantsData = this.participants.map(p => ({ session_id: savedSession.id, user_id: p.id }));
-            const { error: participantsError } = await App.supabase.from('event_participants').insert(participantsData);
-            if (participantsError) console.error('Error al guardar participantes:', participantsError);
-        }
-        
-        alert(`¡Sesión ${session ? 'actualizada' : 'agendada'} con éxito!`);
-        this.closeModal();
-        this.fetchSessions();
 
-    } catch (err) {
-        alert(`No se pudo guardar la sesión: ${err.message}`);
-        console.error('Error al guardar la sesión:', err);
-    }
-},
+        // 2. Preparamos los datos de atribución del autor para el bot
+        const authorInfo = {
+            displayName: App.userProfile.display_name || App.userProfile.full_name,
+            orcid: App.userProfile.orcid
+        };
+
+        try {
+            let savedSession;
+
+            if (session) {
+                // --- LÓGICA DE ACTUALIZACIÓN (SIN CAMBIOS) ---
+                // Si estamos editando, solo actualizamos los datos de la sesión.
+                const { data, error } = await App.supabase.from('sessions').update(sessionData).eq('id', session.id).select().single();
+                if (error) throw error;
+                savedSession = data;
+            } else {
+                // --- MODIFICACIÓN CLAVE ---
+                // La lógica de Bluesky ahora se ejecuta para CUALQUIER plataforma, no solo 'vdo_ninja'.
+                let postMethod = 'none';
+                try {
+                    const { data: status, error: checkError } = await App.supabase.functions.invoke('bsky-check-status');
+                    if (checkError) throw checkError;
+
+                    if (status.connected) {
+                        postMethod = 'user';
+                    } else {
+                        const confirmed = confirm("Tu conexión con Bluesky ha fallado o no está configurada. ¿Deseas que el bot de Epistecnología publique el anuncio del evento por ti?");
+                        if (confirmed) postMethod = 'bot';
+                    }
+                } catch (err) {
+                    alert(`No se pudo verificar la conexión con Bluesky. La sesión se agendará sin crear el hilo de chat. Error: ${err.message}`);
+                }
+                // --- FIN DE LA MODIFICACIÓN ---
+
+                const { data, error } = await App.supabase.functions.invoke('create-session-and-bsky-thread', {
+                    body: { sessionData, authorInfo, postMethod }
+                });
+
+                if (error) throw error;
+                savedSession = data.savedSession;
+            }
+            
+            // La lógica de los participantes ahora se ejecuta al final para ambos casos
+            if (this.participants && this.participants.length > 0) {
+                await App.supabase.from('event_participants').delete().eq('session_id', savedSession.id);
+                const participantsData = this.participants.map(p => ({ session_id: savedSession.id, user_id: p.id }));
+                const { error: participantsError } = await App.supabase.from('event_participants').insert(participantsData);
+                if (participantsError) console.error('Error al guardar participantes:', participantsError);
+            }
+            
+            alert(`¡Sesión ${session ? 'actualizada' : 'agendada'} con éxito!`);
+            this.closeModal();
+            this.fetchSessions();
+
+        } catch (err) {
+            alert(`No se pudo guardar la sesión: ${err.message}`);
+            console.error('Error al guardar la sesión:', err);
+        }
+    },
 
     // Pega estas nuevas funciones dentro del objeto Studio en manager-estudio.js
 
