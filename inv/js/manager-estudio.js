@@ -53,7 +53,6 @@ export const Studio = {
                     alert('¡Enlace de grabación remota copiado al portapapeles!');
                 });
             }
-            // --- INICIO: LÓGICA AÑADIDA ---
             else if (action === 'copy-direct-link') {
                 const directUrl = button.dataset.url;
                 navigator.clipboard.writeText(directUrl).then(() => {
@@ -63,7 +62,6 @@ export const Studio = {
                     alert('No se pudo copiar el enlace.');
                 });
             }
-            // --- FIN: LÓGICA AÑADIDA ---
             else if (action === 'archive-session') this.archiveSession(sessionId);
             else if (action === 'unarchive-session') this.unarchiveSession(sessionId);
         });
@@ -313,7 +311,6 @@ export const Studio = {
             return;
         }
         const activeProject = activeProjectString ? JSON.parse(activeProjectString) : null;
-
         this.participants = isEditing && session.participants ? session.participants.map(p => p.profiles) : [];
 
         const toLocalISOString = (date) => {
@@ -333,27 +330,23 @@ export const Studio = {
                         <form id="studio-form">
                             <p>Proyecto: <strong>${session ? session.project_title : activeProject.title}</strong></p>
                             <hr>
-                            
                             <div class="form-group">
                                 <label>Plataforma de Transmisión</label>
                                 <div class="platform-selector">
-                                    <div class="platform-option" data-platform="vdo_ninja"><i class="fas fa-satellite-dish"></i><span>EPT Live (VDO.Ninja)</span></div>    
-                                    <div class="platform-option" data-platform="youtube"><i class="fab fa-youtube"></i><span>YouTube</span></div>
+                                    <div class="platform-option" data-platform="vdo_ninja"><i class="fas fa-satellite-dish"></i><span>EPT Live</span></div>    
                                     <div class="platform-option" data-platform="twitch"><i class="fab fa-twitch"></i><span>Twitch</span></div>
+                                    <div class="platform-option" data-platform="youtube"><i class="fab fa-youtube"></i><span>YouTube</span></div>
                                     <div class="platform-option" data-platform="substack"><i class="fas fa-bookmark"></i><span>Substack</span></div>
                                 </div>
                                 <input type="hidden" id="session-platform" name="platform" value="${initialPlatform}">
                             </div>
-
                             <div id="platform-specific-fields"></div>
-
                             <div class="form-group"><label for="session-title">Título del Evento</label><input id="session-title" name="sessionTitle" type="text" value="${session?.session_title || ''}" required></div>
                             <div class="form-group"><label for="session-start">Fecha y Hora de Inicio</label><input id="session-start" name="scheduledAt" type="datetime-local" value="${toLocalISOString(session?.scheduled_at)}" required></div>
                             <div class="form-group"><label for="session-end">Fecha y Hora de Fin</label><input id="session-end" name="endAt" type="datetime-local" value="${toLocalISOString(session?.end_at)}"></div>
                             <div class="form-group"><label for="session-description">Descripción Corta</label><textarea id="session-description" name="description" rows="3" maxlength="500">${session?.description || ''}</textarea></div>
                             <div class="form-group"><label for="session-thumbnail">URL de Miniatura</label><input id="session-thumbnail" name="thumbnail_url" type="url" value="${session?.thumbnail_url || ''}" placeholder="https://ejemplo.com/imagen.jpg"></div>
                             <div class="form-group"><label for="session-more-info">URL para "Saber Más"</label><input id="session-more-info" name="more_info_url" type="url" value="${session?.more_info_url || ''}"></div>
-                            
                             <div class="form-group">
                                 <label for="participant-search">Añadir Investigadores Participantes</label>
                                 <div class="participant-search-group">
@@ -366,7 +359,6 @@ export const Studio = {
                                     <ul id="added-participants-ul"></ul>
                                 </div>
                             </div>
-
                             <button type="submit" class="btn-primary" style="width:100%; margin-top: 1rem;">${isEditing ? 'Actualizar' : 'Agendar'} Sesión</button>
                         </form>
                     </main>
@@ -385,10 +377,10 @@ export const Studio = {
             let fieldHTML = '';
             if (platform === 'youtube' || platform === 'twitch' || platform === 'substack') {
                 const platformName = platform.charAt(0).toUpperCase() + platform.slice(1);
-                const placeholder = platform === 'twitch' ? 'nombre-del-canal' : 'ID_DEL_VIDEO_O_POST';
+                const placeholder = platform === 'twitch' ? 'nombre-del-canal' : 'ID del Video o Post';
                 fieldHTML = `<div class="form-group"><label for="platform-id">ID de ${platformName}</label><p class="form-hint">Crea el evento en ${platformName}, pega el ID aquí y usa la "Sala de control" para gestionar tu directo.</p><input id="platform-id" name="platformId" type="text" value="${session?.platform_id || ''}" placeholder="${placeholder}"></div>`;
             } else {
-                 fieldHTML = `<p class="form-hint">EPT Live (VDO.Ninja) genera automáticamente las URLs seguras. Solo necesitas ir a la Sala de Control para iniciar.</p>`;
+                 fieldHTML = `<p class="form-hint">EPT Live (VDO.Ninja) genera automáticamente las URLs. Solo necesitas ir a la Sala de Control para iniciar.</p>`;
             }
             platformSpecificFields.innerHTML = fieldHTML;
         };
@@ -417,11 +409,10 @@ export const Studio = {
         const projectTitle = session ? session.project_title : activeProject?.title;
 
         if (!projectTitle) {
-            alert("Error: No se pudo determinar el proyecto asociado. Por favor, selecciónalo de nuevo.");
+            alert("Error: No se pudo determinar el proyecto asociado.");
             return;
         }
 
-        // 1. Preparamos el objeto con todos los datos de la sesión
         let sessionData = {
             project_title: projectTitle,
             session_title: formData.get('sessionTitle'),
@@ -435,7 +426,6 @@ export const Studio = {
             platform_id: formData.get('platformId') || formData.get('substackId') || null,
         };
         
-        // Tu lógica para crear las URLs de VDO.Ninja, etc., no cambia
         if (!session) {
             sessionData.user_id = App.userId;
             sessionData.is_archived = false;
@@ -445,8 +435,8 @@ export const Studio = {
                 const roomName = `ept_2_${App.userProfile.orcid.slice(-4)}_${stableId}`; 
                 const directorKey = `dir_${App.userProfile.orcid.slice(-4)}`;
                 const vdoDomain = 'https://vdo.ninja/alpha';
-                let directorParams = new URLSearchParams({ room: roomName, director: directorKey, record: 'auto' });
                 
+                let directorParams = new URLSearchParams({ room: roomName, director: directorKey, record: 'auto' });
                 sessionData.director_url = `${vdoDomain}/mixer?${directorParams.toString()}&meshcast`;
                 
                 const recordingParams = new URLSearchParams({
@@ -471,7 +461,6 @@ export const Studio = {
             }
         }
 
-        // 2. Preparamos los datos de atribución del autor para el bot
         const authorInfo = {
             displayName: App.userProfile.display_name || App.userProfile.full_name,
             orcid: App.userProfile.orcid
@@ -479,21 +468,15 @@ export const Studio = {
 
         try {
             let savedSession;
-
             if (session) {
-                // --- LÓGICA DE ACTUALIZACIÓN (SIN CAMBIOS) ---
-                // Si estamos editando, solo actualizamos los datos de la sesión.
                 const { data, error } = await App.supabase.from('sessions').update(sessionData).eq('id', session.id).select().single();
                 if (error) throw error;
                 savedSession = data;
             } else {
-                // --- MODIFICACIÓN CLAVE ---
-                // La lógica de Bluesky ahora se ejecuta para CUALQUIER plataforma, no solo 'vdo_ninja'.
                 let postMethod = 'none';
                 try {
                     const { data: status, error: checkError } = await App.supabase.functions.invoke('bsky-check-status');
                     if (checkError) throw checkError;
-
                     if (status.connected) {
                         postMethod = 'user';
                     } else {
@@ -503,28 +486,23 @@ export const Studio = {
                 } catch (err) {
                     alert(`No se pudo verificar la conexión con Bluesky. La sesión se agendará sin crear el hilo de chat. Error: ${err.message}`);
                 }
-                // --- FIN DE LA MODIFICACIÓN ---
-
+                
                 const { data, error } = await App.supabase.functions.invoke('create-session-and-bsky-thread', {
                     body: { sessionData, authorInfo, postMethod }
                 });
-
                 if (error) throw error;
                 savedSession = data.savedSession;
             }
             
-            // La lógica de los participantes ahora se ejecuta al final para ambos casos
             if (this.participants && this.participants.length > 0) {
                 await App.supabase.from('event_participants').delete().eq('session_id', savedSession.id);
                 const participantsData = this.participants.map(p => ({ session_id: savedSession.id, user_id: p.id }));
-                const { error: participantsError } = await App.supabase.from('event_participants').insert(participantsData);
-                if (participantsError) console.error('Error al guardar participantes:', participantsError);
+                await App.supabase.from('event_participants').insert(participantsData);
             }
             
             alert(`¡Sesión ${session ? 'actualizada' : 'agendada'} con éxito!`);
             this.closeModal();
             this.fetchSessions();
-
         } catch (err) {
             alert(`No se pudo guardar la sesión: ${err.message}`);
             console.error('Error al guardar la sesión:', err);
@@ -619,21 +597,14 @@ export const Studio = {
     openSession(sessionData) {
         const session = JSON.parse(decodeURIComponent(sessionData));
 
-        // Verificamos si la sesión tiene un ID para construir el enlace
+        // Verificamos que la sesión tenga un ID.
         if (!session.id) {
             alert("Esta sesión no tiene un ID válido.");
             return;
         }
-        
-        // --- LÓGICA ACTUALIZADA ---
-        // Si la plataforma NO es 'eptstream', abre la sala de control local.
-        if (session.platform !== 'eptstream') {
-            window.open(`/inv/sala-de-control.html?id=${session.id}`, '_blank');
-        } else {
-            // Si es 'eptstream', abre su sala de producción directa.
-            window.open(session.director_url, '_blank');
-        }
-        // --- FIN DE LA LÓGICA ---
+
+        // Ahora, TODAS las plataformas abren la sala de control de Epistecnología.
+        window.open(`/inv/sala-de-control.html?id=${session.id}`, '_blank');
     },
 
     async savePlatformId(sessionId) {
