@@ -1,0 +1,49 @@
+/* --- ESTILOS PARA LA PÁGINA DE EVENTO --- */
+:root { /* Paleta por defecto */
+    --primary-color: #4F46E5; --text-color: #111827; --background-color: #F9FAFB; --surface-color: #FFFFFF; --border-color: #E5E7EB;
+}
+body { font-family: system-ui, sans-serif; margin: 0; background-color: var(--background-color); color: var(--text-color); }
+
+/* --- NAVEGACIÓN --- */
+.event-nav { position: sticky; top: 0; background-color: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); z-index: 100; border-bottom: 1px solid var(--border-color); }
+.nav-content { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; height: 70px; padding: 0 2rem; }
+.nav-event-title { font-weight: 600; font-size: 1.1rem; }
+.event-nav ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 2rem; }
+.event-nav a { text-decoration: none; color: var(--text-color); font-weight: 500; }
+
+/* --- PORTADA Y CUENTA REGRESIVA --- */
+.event-cover { min-height: 70vh; display: flex; justify-content: center; align-items: center; text-align: center; color: white; background-size: cover; background-position: center; padding: 2rem; position: relative; }
+.event-cover::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.2)); }
+.cover-content { position: relative; }
+#event-title-cover { font-size: clamp(2.5rem, 6vw, 4.5rem); margin: 0 0 1rem 0; }
+#countdown-timer { display: flex; gap: 1.5rem; justify-content: center; margin-top: 2rem; }
+.countdown-item { background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px; min-width: 80px; }
+.countdown-item span { display: block; font-size: 2.5rem; font-weight: 700; }
+.countdown-item div { font-size: 0.9rem; text-transform: uppercase; }
+
+/* --- CONTENIDO PRINCIPAL --- */
+.event-container { max-width: 1000px; margin: 0 auto; padding: 2rem; }
+.event-section { padding: 4rem 0; }
+.event-section h2 { font-size: 2.5rem; text-align: center; margin-bottom: 3rem; }
+
+/* --- PONENTES --- */
+.speakers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 2rem; }
+.speaker-card { text-align: center; }
+.speaker-card img { width: 150px; height: 150px; border-radius: 50%; object-fit: cover; margin-bottom: 1rem; }
+.speaker-card h3 { margin: 0 0 0.5rem 0; }
+.speaker-card p { margin: 0; color: #6B7280; }
+.speaker-card .socials { margin-top: 1rem; display: flex; justify-content: center; gap: 1rem; font-size: 1.2rem; }
+.speaker-card .socials a { color: var(--text-color); }
+
+/* --- PROGRAMA (TIMELINE) --- */
+.program-day-title { font-size: 1.8rem; margin: 3rem 0 1.5rem 0; border-bottom: 2px solid var(--primary-color); padding-bottom: 0.5rem; }
+.program-timeline { position: relative; padding-left: 2rem; }
+.program-timeline::before { content: ''; position: absolute; left: 20px; top: 10px; height: 100%; width: 2px; background-color: var(--border-color); }
+.program-item { display: flex; gap: 1.5rem; margin-bottom: 2rem; }
+.program-item-time { flex-shrink: 0; font-weight: 600; width: 80px; text-align: right; }
+.program-item-details { border: 1px solid var(--border-color); padding: 1.5rem; border-radius: 8px; background-color: var(--surface-color); width: 100%; position: relative; }
+.program-item-details::before { content: ''; position: absolute; left: -2.3rem; top: 1.7rem; width: 12px; height: 12px; background: var(--primary-color); border-radius: 50%; border: 3px solid var(--background-color); }
+.program-item-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+.program-item-header img { width: 40px; height: 40px; border-radius: 50%; }
+.program-item-header h4 { margin: 0; }
+.program-item-btn { display: inline-block; margin-top: 1rem; background-color: var(--primary-color); color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; }

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cargando Evento...</title>
+    <link rel="stylesheet" href="/css/evento.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="event-nav">
+        <div class="nav-content">
+            <span id="nav-event-title" class="nav-event-title"></span>
+            <ul>
+                <li><a href="#about-section">Sobre el Evento</a></li>
+                <li><a href="#speakers-section">Ponentes</a></li>
+                <li><a href="#program-section">Programa</a></li>
+                <li><a href="#call-for-papers-section">Call for Papers</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <header id="cover-section" class="event-cover">
+        <div class="cover-content">
+            <h1 id="event-title-cover"></h1>
+            <p id="event-project-doi"></p>
+            <div id="countdown-timer"></div>
+        </div>
+    </header>
+
+    <main class="event-container">
+        <section id="about-section" class="event-section"></section>
+        <section id="speakers-section" class="event-section"></section>
+        <section id="program-section" class="event-section"></section>
+        <section id="call-for-papers-section" class="event-section"></section>
+        <section id="past-editions-section" class="event-section"></section>
+    </main>
+    
+    <footer class="event-footer"><p>Un evento impulsado por Epistecnología</p></footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/evento.js"></script>
+</body>
+</html>
