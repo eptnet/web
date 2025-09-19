@@ -3,6 +3,7 @@
 // =================================================================
 
 export const EventsManager = {
+    events: [],
     
     init() {
         this.fetchEvents();
@@ -23,6 +24,7 @@ export const EventsManager = {
             console.error("Error fetching events:", error);
             container.innerHTML = `<p>Error al cargar los eventos.</p>`;
         } else {
+            this.events = events;
             this.renderEvents(events);
         }
     },
@@ -34,10 +36,7 @@ export const EventsManager = {
             return;
         }
 
-        container.innerHTML = events.map(event => {
-            const eventData = encodeURIComponent(JSON.stringify(event));
-
-            return `
+        container.innerHTML = events.map(event => `
             <div class="event-card">
                 <div class="event-card__header">
                     <h4>${event.title}</h4>
@@ -47,20 +46,18 @@ export const EventsManager = {
                     <p>URL: /evento.html?slug=${event.slug || '...'}</p>
                 </div>
                 <div class="event-card__actions">
-                    <button class="btn-secondary edit-event-btn" data-event='${eventData}'>
+                    <button class="btn-secondary edit-event-btn" data-event-id="${event.id}">
                         <i class="fa-solid fa-edit"></i> Editar
                     </button>
                     <a href="/evento.html?slug=${event.slug}" target="_blank" class="btn-secondary">
                         <i class="fa-solid fa-eye"></i> Ver Página
                     </a>
-                    
                     <button class="btn-danger delete-event-btn" data-event-id="${event.id}" style="margin-left: auto;">
                         <i class="fa-solid fa-trash"></i> Borrar
                     </button>
                 </div>
             </div>
-            `;
-        }).join('');
+        `).join('');
     },
 
     addEventListeners() {
@@ -77,12 +74,15 @@ export const EventsManager = {
             }
 
             if (button.classList.contains('edit-event-btn')) {
-                const eventData = JSON.parse(decodeURIComponent(button.dataset.event));
-                sessionStorage.setItem('activeEvent', JSON.stringify(eventData));
-                window.location.href = '/inv/event-editor.html';
+                const eventId = button.dataset.eventId;
+                // Buscamos el evento completo en la lista que ya tenemos en memoria
+                const eventData = EventsManager.events.find(event => event.id === eventId);
+                if (eventData) {
+                    sessionStorage.setItem('activeEvent', JSON.stringify(eventData));
+                    window.location.href = '/inv/event-editor.html';
+                }
             }
 
-            // --- LÓGICA AÑADIDA PARA EL BOTÓN DE BORRADO ---
             if (button.classList.contains('delete-event-btn')) {
                 const eventId = button.dataset.eventId;
                 this.deleteEvent(eventId);
@@ -109,5 +109,5 @@ export const EventsManager = {
             this.fetchEvents();
         }
     },
-    
+
 };

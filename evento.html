@@ -31,11 +31,37 @@
     <main class="event-container">
         <section id="about-section" class="event-section"></section>
         <section id="speakers-section" class="event-section"></section>
-        <section id="program-section" class="event-section"></section>
+
+        <section id="program-section" class="event-section program-section">
+            <h2>Programa</h2>
+            <div id="program-day-tabs" class="program-day-tabs">
+                </div>
+            <div id="program-content" class="program-content">
+                </div>
+        </section>
+
         <section id="call-for-papers-section" class="event-section"></section>
         <section id="past-editions-section" class="event-section"></section>
     </main>
     
+    <div id="program-modal" class="program-modal">
+        <div class="program-modal-content">
+            <span class="close-button">&times;</span>
+            <img id="modal-item-cover" class="modal-item-cover" src="" alt="Portada de la Ponencia">
+            <h3 id="modal-item-title"></h3>
+            <p id="modal-item-time"></p>
+            <div id="modal-item-speaker" class="modal-item-speaker">
+                <img id="modal-speaker-avatar" src="" alt="Avatar del Ponente">
+                <div class="modal-speaker-info">
+                    <span id="modal-speaker-name"></span>
+                    <span id="modal-speaker-bio"></span>
+                </div>
+            </div>
+            <p id="modal-item-description"></p>
+            <a id="modal-item-link" href="#" target="_blank" class="program-item-btn" style="display:none;"></a>
+        </div>
+    </div>
+
     <footer class="event-footer"><p>Un evento impulsado por Epistecnología</p></footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

@@ -9,6 +9,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let countdownInterval;
 
+    document.querySelector('#program-modal .close-button').addEventListener('click', closeProgramModal);
+    window.addEventListener('click', (event) => {
+        if (event.target === document.getElementById('program-modal')) {
+            closeProgramModal();
+        }
+    });
+
     async function init() {
         const urlParams = new URLSearchParams(window.location.search);
         const slug = urlParams.get('slug');
@@ -26,16 +33,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const { data: editions } = await supabase.from('event_editions').select('*').eq('event_id', event.id);
         const currentEdition = editions.sort((a,b) => new Date(b.start_date) - new Date(a.start_date))[0];
 
+        if (!currentEdition) {
+            // Manejar el caso de que no haya ediciones
+            renderCover(event, null);
+            renderMainContent(event.main_content);
+            return;
+        }
+
         renderCover(event, currentEdition);
         renderMainContent(event.main_content);
         renderSpeakers(currentEdition.speakers);
-        renderProgram(currentEdition.program);
+        renderProgram(currentEdition.program, currentEdition.speakers);
     }
 
     function renderCover(event, edition) {
         document.title = event.title;
         document.getElementById('nav-event-title').textContent = event.title;
         document.getElementById('event-title-cover').textContent = event.title;
+
+        const coverSection = document.getElementById('cover-section');
+        if (event.cover_url) {
+            coverSection.style.backgroundImage = `url(${event.cover_url})`;
+        }
+
         if(event.projects?.doi) document.getElementById('event-project-doi').textContent = `DOI: ${event.projects.doi}`;
         
         if (edition?.start_date) {
@@ -72,9 +92,12 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`).join('')}</div>`;
     }
 
-    function renderProgram(programData = []) {
-        const container = document.getElementById('program-section');
-        if (!programData || programData.length === 0) { container.style.display = 'none'; return; }
+    function renderProgram(programData = [], speakers = []) {
+        const programSection = document.getElementById('program-section');
+        if (!programData || programData.length === 0) {
+            programSection.style.display = 'none';
+            return;
+        }
         
         // Agrupamos por día
         const days = programData.reduce((acc, item) => {
@@ -84,24 +107,108 @@ document.addEventListener('DOMContentLoaded', () => {
             return acc;
         }, {});
 
-        let html = `<h2>Programa</h2>`;
-        for (const date in days) {
-            const formattedDate = new Date(date).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            html += `<h3 class="program-day-title">${formattedDate}</h3>`;
-            html += `<div class="program-timeline">${days[date].map(item => `
-                <div class="program-item">
-                    <div class="program-item-time">${item.startTime} - ${item.endTime}</div>
-                    <div class="program-item-details">
-                        <div class="program-item-header">
+        const sortedDates = Object.keys(days).sort((a,b) => new Date(a) - new Date(b));
+
+        const tabsContainer = document.getElementById('program-day-tabs');
+        const contentContainer = document.getElementById('program-content');
+        tabsContainer.innerHTML = '';
+        contentContainer.innerHTML = '';
+
+        sortedDates.forEach((date, index) => {
+            const formattedDate = new Date(date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+            const dayOfWeek = new Date(date).toLocaleDateString('es-ES', { weekday: 'short' });
+            
+            // Crear pestaña
+            const tabButton = document.createElement('button');
+            tabButton.classList.add('program-day-tab');
+            if (index === 0) tabButton.classList.add('active'); // Solo añadimos 'active' al primero
+            tabButton.dataset.day = date;
+            tabButton.innerHTML = `<span>${dayOfWeek}</span><strong>${formattedDate}</strong>`;
+            tabsContainer.appendChild(tabButton);
+
+            // Crear contenido del día
+            const dayContent = document.createElement('div');
+            dayContent.classList.add('program-day-content');
+            if (index === 0) dayContent.classList.add('active'); // Solo añadimos 'active' al primero
+            dayContent.id = `content-${date}`;
+            
+            dayContent.innerHTML = `<div class="program-timeline">${days[date].map(item => {
+                const speaker = speakers.find(s => s.name === item.speaker_name);
+                const speakerAvatar = speaker?.avatarUrl || 'https://i.ibb.co/61fJv24/default-avatar.png';
+                const speakerName = speaker?.name || 'Ponente por confirmar';
+
+                // Guardamos los datos completos en el dataset para el modal
+                const itemData = JSON.stringify({ ...item, speaker_details: speaker });
+
+                return `
+                <div class="program-item-card" data-program-item='${itemData.replace(/'/g, "&apos;")}'>
+                    <div class="item-time">${item.startTime}</div>
+                    <div class="item-details">
+                        <img src="${speakerAvatar}" alt="${speakerName}" class="item-speaker-avatar">
+                        <div class="item-info">
                             <h4>${item.title}</h4>
+                            <span>${speakerName}</span>
                         </div>
-                        <p>${item.description}</p>
-                        ${item.linkUrl ? `<a href="${item.linkUrl}" target="_blank" class="program-item-btn">${item.linkText || 'Más Info'}</a>` : ''}
                     </div>
                 </div>
-            `).join('')}</div>`;
+                `;
+            }).join('')}</div>`;
+            contentContainer.appendChild(dayContent);
+        });
+
+        // Añadir event listeners para las pestañas
+        tabsContainer.querySelectorAll('.program-day-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabsContainer.querySelectorAll('.program-day-tab').forEach(t => t.classList.remove('active'));
+                contentContainer.querySelectorAll('.program-day-content').forEach(c => c.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.getElementById(`content-${tab.dataset.day}`).classList.add('active');
+            });
+        });
+
+        // Añadir event listeners para abrir el modal al hacer clic en un item del programa
+        contentContainer.querySelectorAll('.program-item-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const itemData = JSON.parse(card.dataset.programItem.replace(/&apos;/g, "'"));
+                openProgramModal(itemData);
+            });
+        });
+    }
+
+    function openProgramModal(itemData) {
+        const modal = document.getElementById('program-modal');
+        document.getElementById('modal-item-cover').src = itemData.itemCoverUrl || 'https://i.ibb.co/61fJv24/default-placeholder.png'; // Placeholder por defecto
+        document.getElementById('modal-item-title').textContent = itemData.title;
+        document.getElementById('modal-item-time').textContent = `${itemData.date} ${itemData.startTime} - ${itemData.endTime}`;
+        document.getElementById('modal-item-description').innerHTML = itemData.description;
+
+        const speakerDetails = itemData.speaker_details;
+        if (speakerDetails) {
+            document.getElementById('modal-speaker-avatar').src = speakerDetails.avatarUrl || 'https://i.ibb.co/61fJv24/default-avatar.png';
+            document.getElementById('modal-speaker-name').textContent = speakerDetails.name;
+            document.getElementById('modal-speaker-bio').textContent = speakerDetails.bio;
+            document.getElementById('modal-item-speaker').style.display = 'flex';
+        } else {
+            document.getElementById('modal-item-speaker').style.display = 'none';
         }
-        container.innerHTML = html;
+
+        const linkButton = document.getElementById('modal-item-link');
+        if (itemData.linkUrl) {
+            linkButton.href = itemData.linkUrl;
+            linkButton.textContent = itemData.linkText || 'Más Información';
+            linkButton.style.display = 'inline-block';
+        } else {
+            linkButton.style.display = 'none';
+        }
+
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden'; // Evitar scroll en el body
+    }
+
+    function closeProgramModal() {
+        document.getElementById('program-modal').classList.remove('active');
+        document.body.style.overflow = ''; // Restaurar scroll en el body
     }
 
     function setupCountdown(targetDate) {
