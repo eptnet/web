@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor de Eventos</title>
+    <link rel="stylesheet" href="/inv/css/style-editor.css">
+    <link rel="stylesheet" href="/inv/css/event-editor.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tiny.cloud/1/wac03ii8izevsozn0if0ssfme0syw62i0zw7szp05f8trx3o/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+</head>
+<body>
+    <header class="editor-main-header">
+        <a href="/inv/dashboard.html" class="header-logo">
+            <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo">
+            <span>Editor de Eventos</span>
+        </a>
+        <nav class="header-nav">
+            <a href="/inv/dashboard.html"><i class="fa-solid fa-table-columns"></i> Dashboard</a>
+            <a href="/inv/profile.html"><i class="fa-solid fa-user"></i> Mi Perfil</a>
+        </nav>
+    </header>
+
+    <div class="editor-panel">
+        <header class="editor-header">
+            <h1 id="event-main-title">Nuevo Evento</h1>
+            <p>Define la información general de tu evento y gestiona sus ediciones.</p>
+        </header>
+
+        <div class="editor-tabs">
+            <button class="tab-link active" data-tab="tab-general">Información General</button>
+            <button class="tab-link" data-tab="tab-editions">Ediciones y Programa</button>
+        </div>
+
+        <div id="tab-general" class="tab-content active">
+            <form id="event-general-form">
+                <fieldset>
+                    <legend>Datos Principales</legend>
+                    <div class="form-group">
+                        <label for="event-title">Título del Evento</label>
+                        <input type="text" id="event-title" placeholder="Ej: Congreso Internacional de Epistemología" required>
+                    </div>
+                </fieldset>
+                <fieldset>
+                    <legend>Contenido Principal</legend>
+                    <p class="form-hint">Este contenido es general para el evento (ej: la sección "Sobre Nosotros" o "Llamada a Ponencias").</p>
+                    <div class="form-group">
+                        <label for="event-about">Sobre el Evento (Descripción Larga)</label>
+                        <textarea id="event-about" class="tinymce-editor"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="event-call-for-papers">Llamada a Ponencias (Call for Papers)</label>
+                        <textarea id="event-call-for-papers" class="tinymce-editor"></textarea>
+                    </div>
+                </fieldset>
+                <fieldset>
+                    <legend>Publicación</legend>
+                    <div class="publish-toggle">
+                        <label for="event-is-public">Hacer página del evento pública</label>
+                        <label class="switch">
+                            <input type="checkbox" id="event-is-public">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+
+        <div id="tab-editions" class="tab-content">
+            <fieldset>
+                <legend>Gestionar Ediciones</legend>
+                <div id="editions-list-container"></div>
+                <button type="button" id="add-edition-btn" class="btn-add-item"><i class="fa-solid fa-plus"></i> Añadir Nueva Edición</button>
+            </fieldset>
+
+            <div id="edition-editor-container" style="display: none;"></div>
+        </div>
+
+        <div class="final-actions">
+            <button type="button" id="save-event-btn" class="btn-primary"><i class="fa-solid fa-save"></i> Guardar Cambios</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="/inv/js/event-editor.js"></script>
+</body>
+</html>

@@ -38,6 +38,9 @@ export const Navigation = {
         } else if (sectionId === 'studio-section') {
             const { Studio } = await import('./manager-estudio.js');
             Studio.init();
+        } else if (sectionId === 'events-section') { // --- LÓGICA AÑADIDA ---
+            const { EventsManager } = await import('./manager-eventos.js');
+            EventsManager.init();
         } else if (sectionId === 'content-section') {
             if (window.App.userProfile.role === 'admin') {
                 const { ContentManager } = await import('./manager-contenido.js');

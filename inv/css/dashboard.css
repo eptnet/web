@@ -1124,3 +1124,44 @@ textarea[name="description"] {
     font-weight: 600;
     font-size: 0.9rem;
 }
+/* --- NUEVO: ESTILOS PARA LA SECCIÓN DE EVENTOS --- */
+.events-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+.event-card {
+    background-color: var(--color-surface);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-border);
+}
+.event-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+.event-card__header h4 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+.event-card__meta p {
+    font-family: monospace;
+    font-size: 0.8rem;
+    color: var(--color-secondary-text);
+    background-color: var(--color-background);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    margin: 0;
+    word-break: break-all;
+}
+.event-card__actions {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 1rem;
+}
