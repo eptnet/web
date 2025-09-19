@@ -116,10 +116,24 @@ document.addEventListener('DOMContentLoaded', () => {
         modalContent.innerHTML = '<p>Cargando perfil...</p>';
         modalOverlay.classList.add('is-visible');
 
-        const { data: profile, error } = await supabase.from('profiles').select('*').eq('display_name', authorName).single();
-        if (error || !profile) { modalContent.innerHTML = '<p>No se pudo cargar el perfil detallado.</p>'; return; }
+        // --- INICIO DE LA CORRECCIÓN ---
+        // 1. Buscamos por nombre pero sin exigir un resultado único (.single())
+        const { data: profiles, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('display_name', authorName);
 
-        // --- CAMBIO 2: Añadir todas las redes sociales y hacer ORCID cliqueable ---
+        // 2. Verificamos si la búsqueda falló o si no devolvió ningún resultado.
+        if (error || !profiles || profiles.length === 0) {
+            console.error("Error fetching profile or profile not found:", error);
+            modalContent.innerHTML = '<p>No se pudo cargar el perfil detallado.</p>';
+            return;
+        }
+
+        // 3. Tomamos el primer perfil encontrado del array.
+        const profile = profiles[0];
+        // --- FIN DE LA CORRECCIÓN ---
+
         const socials = [
             { url: profile.bsky_url, icon: 'fa-brands fa-bluesky', name: 'Bluesky' },
             { url: profile.linkedin_url, icon: 'fab fa-linkedin', name: 'LinkedIn' },
@@ -132,13 +146,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const orcidHtml = profile.orcid 
             ? `<a href="${profile.orcid}" target="_blank" rel="noopener noreferrer" class="profile-orcid">
-                 <i class="fa-brands fa-orcid"></i> ${profile.orcid.replace('https://orcid.org/','')}
-               </a>`
+                <i class="fa-brands fa-orcid"></i> ${profile.orcid.replace('https://orcid.org/','')}
+            </a>`
             : '';
 
         modalContent.innerHTML = `
             <div class="profile-header">
-                <img src="${profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="Avatar" class="profile-avatar">
+                <img src="${profile.avatar_url || 'https://i.ibb.co/61fJ_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E'}" alt="Avatar" class="profile-avatar">
                 <div>
                     <h2 class="profile-name">${profile.display_name}</h2>
                     ${orcidHtml}

@@ -44,6 +44,24 @@ document.addEventListener('DOMContentLoaded', () => {
         renderMainContent(event.main_content);
         renderSpeakers(currentEdition.speakers);
         renderProgram(currentEdition.program, currentEdition.speakers);
+        setupScrollAnimations();
+        setupEventListeners();
+        setupStickyNav();
+    }
+
+    function setupScrollAnimations() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.scroll-animate').forEach(el => {
+            observer.observe(el);
+        });
     }
 
     function renderCover(event, edition) {
@@ -178,19 +196,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function openProgramModal(itemData) {
         const modal = document.getElementById('program-modal');
-        document.getElementById('modal-item-cover').src = itemData.itemCoverUrl || 'https://i.ibb.co/61fJv24/default-placeholder.png'; // Placeholder por defecto
+
+        // --- CORRECCIÓN: PASO 1 - Poner toda la información nueva MIENTRAS el modal está oculto ---
+        document.getElementById('modal-item-cover').src = itemData.itemCoverUrl || 'https://i.ibb.co/Vt9tv2D/default-placeholder.png';
         document.getElementById('modal-item-title').textContent = itemData.title;
-        document.getElementById('modal-item-time').textContent = `${itemData.date} ${itemData.startTime} - ${itemData.endTime}`;
+        document.getElementById('modal-item-time').textContent = `${itemData.date} | ${itemData.startTime} - ${itemData.endTime}`;
         document.getElementById('modal-item-description').innerHTML = itemData.description;
 
         const speakerDetails = itemData.speaker_details;
-        if (speakerDetails) {
+        const speakerContainer = document.getElementById('modal-item-speaker');
+        if (speakerDetails && speakerDetails.name) {
             document.getElementById('modal-speaker-avatar').src = speakerDetails.avatarUrl || 'https://i.ibb.co/61fJv24/default-avatar.png';
             document.getElementById('modal-speaker-name').textContent = speakerDetails.name;
             document.getElementById('modal-speaker-bio').textContent = speakerDetails.bio;
-            document.getElementById('modal-item-speaker').style.display = 'flex';
+            speakerContainer.style.display = 'flex';
         } else {
-            document.getElementById('modal-item-speaker').style.display = 'none';
+            speakerContainer.style.display = 'none';
         }
 
         const linkButton = document.getElementById('modal-item-link');
@@ -207,8 +228,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function closeProgramModal() {
-        document.getElementById('program-modal').classList.remove('active');
-        document.body.style.overflow = ''; // Restaurar scroll en el body
+        const modal = document.getElementById('program-modal');
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+
+        // --- LÓGICA AÑADIDA ---
+        // Esperamos a que la animación de salida termine (300ms) antes de borrar el contenido.
+        // Esto evita que el contenido desaparezca bruscamente.
+        setTimeout(() => {
+            document.getElementById('modal-item-cover').src = '';
+            document.getElementById('modal-item-title').textContent = '';
+            document.getElementById('modal-item-time').textContent = '';
+            document.getElementById('modal-item-description').textContent = '';
+            document.getElementById('modal-speaker-name').textContent = '';
+            document.getElementById('modal-speaker-bio').textContent = '';
+        }, 300);
     }
 
     function setupCountdown(targetDate) {
