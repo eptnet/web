@@ -178,3 +178,18 @@ body {
     opacity: 1;
     transform: translateY(0);
 }
+/* --- NUEVO: ESTILO PARA EL BOTÓN DE AÑADIR A CALENDAR --- */
+.add-to-calendar-btn {
+    margin-left: auto; /* Empuja el botón a la derecha */
+    flex-shrink: 0;
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+.add-to-calendar-btn:hover {
+    color: var(--primary-color);
+    background-color: var(--border-color);
+}

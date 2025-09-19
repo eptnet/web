@@ -112,12 +112,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderProgram(programData = [], speakers = []) {
         const programSection = document.getElementById('program-section');
-        if (!programData || programData.length === 0) {
-            programSection.style.display = 'none';
-            return;
-        }
+        if (!programData || programData.length === 0) { programSection.style.display = 'none'; return; }
         
-        // Agrupamos por día
         const days = programData.reduce((acc, item) => {
             const date = item.date || 'Sin Fecha';
             if (!acc[date]) acc[date] = [];
@@ -136,27 +132,26 @@ document.addEventListener('DOMContentLoaded', () => {
             const formattedDate = new Date(date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
             const dayOfWeek = new Date(date).toLocaleDateString('es-ES', { weekday: 'short' });
             
-            // Crear pestaña
             const tabButton = document.createElement('button');
             tabButton.classList.add('program-day-tab');
-            if (index === 0) tabButton.classList.add('active'); // Solo añadimos 'active' al primero
+            if (index === 0) tabButton.classList.add('active');
             tabButton.dataset.day = date;
             tabButton.innerHTML = `<span>${dayOfWeek}</span><strong>${formattedDate}</strong>`;
             tabsContainer.appendChild(tabButton);
 
-            // Crear contenido del día
             const dayContent = document.createElement('div');
             dayContent.classList.add('program-day-content');
-            if (index === 0) dayContent.classList.add('active'); // Solo añadimos 'active' al primero
+            if (index === 0) dayContent.classList.add('active');
             dayContent.id = `content-${date}`;
             
             dayContent.innerHTML = `<div class="program-timeline">${days[date].map(item => {
                 const speaker = speakers.find(s => s.name === item.speaker_name);
                 const speakerAvatar = speaker?.avatarUrl || 'https://i.ibb.co/61fJv24/default-avatar.png';
                 const speakerName = speaker?.name || 'Ponente por confirmar';
-
-                // Guardamos los datos completos en el dataset para el modal
                 const itemData = JSON.stringify({ ...item, speaker_details: speaker });
+                
+                // --- LÓGICA AÑADIDA PARA EL ENLACE DE CALENDAR ---
+                const calendarLink = createGoogleCalendarLink(item);
 
                 return `
                 <div class="program-item-card" data-program-item='${itemData.replace(/'/g, "&apos;")}'>
@@ -167,6 +162,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             <h4>${item.title}</h4>
                             <span>${speakerName}</span>
                         </div>
+                        <a href="${calendarLink}" target="_blank" class="add-to-calendar-btn" title="Añadir a Google Calendar">
+                            <i class="fa-solid fa-calendar-plus"></i>
+                        </a>
                     </div>
                 </div>
                 `;
@@ -225,6 +223,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         modal.classList.add('active');
         document.body.style.overflow = 'hidden'; // Evitar scroll en el body
+    }
+
+    function createGoogleCalendarLink(item) {
+        const formatDate = (date, time) => {
+            // Formato YYYYMMDDTHHMMSSZ
+            return new Date(`${date}T${time}`).toISOString().replace(/-|:|\.\d+/g, '');
+        };
+
+        const baseUrl = 'https://www.google.com/calendar/render?action=TEMPLATE';
+        const title = encodeURIComponent(item.title);
+        const description = encodeURIComponent(item.description || '');
+        const startTime = formatDate(item.date, item.startTime);
+        const endTime = formatDate(item.date, item.endTime);
+        
+        return `${baseUrl}&text=${title}&dates=${startTime}/${endTime}&details=${description}`;
     }
 
     function closeProgramModal() {
