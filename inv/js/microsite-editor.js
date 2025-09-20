@@ -33,6 +33,7 @@ const MicrositeEditorApp = {
         await this.loadMicrositeData();
         // Una vez que tenemos los datos del proyecto, cargamos el resto
         await this.loadRelatedData();
+        await this.populateEventSelector();
 
         // 4. Inicializamos el editor de texto y los listeners
         this.initializeEditor();
@@ -134,6 +135,25 @@ const MicrositeEditorApp = {
         `).join('');
     },
 
+    async populateEventSelector() {
+        const select = document.getElementById('associated-event-select');
+        const { data: events, error } = await this.supabase
+            .from('events')
+            .select('id, title')
+            .eq('user_id', this.user.id);
+        
+        if (events) {
+            events.forEach(event => {
+                const option = document.createElement('option');
+                option.value = event.id;
+                option.textContent = event.title;
+                select.appendChild(option);
+            });
+        }
+        // Seleccionamos el valor guardado
+        select.value = this.currentProject.associated_event_id || '';
+    },
+
     /**
      * Muestra un mensaje de error en el panel de edición.
      */
@@ -150,7 +170,7 @@ const MicrositeEditorApp = {
     async loadMicrositeData() {
         const { data, error } = await this.supabase
             .from('projects')
-            .select('microsite_content, microsite_is_public')
+            .select('microsite_content, microsite_is_public, associated_event_id')
             .eq('id', this.currentProject.id)
             .eq('user_id', this.user.id) // ¡Importante! Aseguramos que el proyecto pertenezca al usuario
             .single();
@@ -163,6 +183,7 @@ const MicrositeEditorApp = {
         
         this.currentProject.microsite_content = data.microsite_content;
         this.currentProject.microsite_is_public = data.microsite_is_public;
+        this.currentProject.associated_event_id = data.associated_event_id;
         this.populateForm();
     },
 
@@ -436,6 +457,7 @@ const MicrositeEditorApp = {
         });
 
         const isPublic = document.getElementById('microsite-is-public').checked;
+        const associatedEventId = document.getElementById('associated-event-select').value;
         const templateStyle = document.getElementById('template-style-select').value;
         const colorPalette = document.getElementById('color-palette-select').value; 
 
@@ -445,7 +467,8 @@ const MicrositeEditorApp = {
                 microsite_content: micrositeData, 
                 microsite_is_public: isPublic, 
                 template_style: templateStyle, 
-                color_palette: colorPalette
+                color_palette: colorPalette,
+                associated_event_id: associatedEventId || null
             })
             .eq('id', this.currentProject.id);
         if (error) {

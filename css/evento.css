@@ -4,12 +4,11 @@
 // ================================================================= */
 
 :root {
-    /* Paleta de colores neutra, extraída de site.css */
-    --primary-color: #4338CA;
-    --text-color: #1F2937;
-    --text-secondary: #6B7280;
-    --background-color: #F9FAFB;
-    --surface-color: #FFFFFF;
+    --primary-color: #4338CA; 
+    --text-color: #1F2937; 
+    --text-secondary: #6B7280; 
+    --background-color: #FFFFFF; 
+    --surface-color: #F9FAFB; 
     --border-color: #E5E7EB;
 }
 
@@ -68,26 +67,34 @@ body {
 .speaker-card .socials { margin-top: 0.75rem; font-size: 1.1rem; }
 .speaker-card .socials a { color: var(--text-secondary); }
 
-/* --- PROGRAMA (DISEÑO REFINADO Y NEUTRO) --- */
-.program-section {
-    background-color: var(--surface-color); /* Fondo gris claro, no azul/negro */
+/* --- PROGRAMA (TIMELINE - Inspirado en bksforum.org) --- */
+.program-section { 
+    background-color: #1F2937; /* Usamos un color oscuro neutro de tu paleta */
     padding: 4rem 2rem;
     border-radius: 24px; /* Esquinas redondeadas */
-    margin: 0 1rem; /* Pequeño margen para que "flote" */
+    margin: 0 1rem;
+    color: #F9FAFB; /* Texto claro sobre fondo oscuro */
 }
-.program-section h2 { color: var(--text-color); }
+.program-section h2 { 
+    color: var(--primary-color); 
+    margin-bottom: 2rem; 
+}
 
-.program-day-tabs { display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 3rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; }
+.program-day-tabs { 
+    display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 3rem; 
+    border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; 
+}
 .program-day-tab { 
     background: none; border: 1px solid transparent; padding: 0.75rem 1.5rem; border-radius: 99px; 
-    color: var(--text-secondary); font-size: 1rem; font-weight: 500; cursor: pointer;
+    color: #D1D5DB; font-size: 1rem; font-weight: 500; cursor: pointer;
     transition: all 0.2s ease-in-out; display: flex; flex-direction: column; align-items: center;
 }
-.program-day-tab:hover { background-color: var(--border-color); color: var(--text-color); }
+.program-day-tab:hover { 
+    background-color: rgba(255,255,255,0.08); color: white; 
+}
 .program-day-tab.active { 
-    color: var(--primary-color); 
-    border-color: var(--primary-color);
-    background-color: var(--surface-color); 
+    color: white; 
+    background-color: var(--primary-color); 
 }
 .program-day-tab strong { font-size: 1.1rem; font-weight: 700; }
 
@@ -96,18 +103,18 @@ body {
 .program-day-content.active { display: block; }
 
 .program-timeline { position: relative; padding-left: 50px; max-width: 800px; margin: 0 auto; }
-.program-timeline::before { content: ''; position: absolute; left: 20px; top: 10px; bottom: 10px; width: 2px; background-color: var(--border-color); }
+.program-timeline::before { content: ''; position: absolute; left: 20px; top: 10px; bottom: 10px; width: 2px; background-color: rgba(255,255,255,0.15); }
 
 .program-item-card { display: flex; gap: 1rem; margin-bottom: 1rem; cursor: pointer; position: relative; }
-.item-time { flex-shrink: 0; font-weight: 600; width: 80px; text-align: right; color: var(--primary-color); font-size: 0.9rem; position: relative; padding-top: 5px; }
-.item-time::before { content: ''; position: absolute; left: -31px; top: 10px; width: 10px; height: 10px; background: var(--border-color); border-radius: 50%; border: 3px solid var(--surface-color); }
+.item-time { flex-shrink: 0; font-weight: 600; width: 80px; text-align: right; color: #9CA3AF; font-size: 0.9rem; position: relative; padding-top: 5px; }
+.item-time::before { content: ''; position: absolute; left: -31px; top: 10px; width: 10px; height: 10px; background: #4B5563; border-radius: 50%; border: 3px solid #1F2937; }
 .program-item-card:hover .item-time::before { background-color: var(--primary-color); }
 
 .item-details { display: flex; align-items: center; gap: 1rem; border-radius: 10px; padding: 1rem; flex-grow: 1; transition: background-color 0.2s ease; }
-.program-item-card:hover .item-details { background-color: var(--background-color); }
+.program-item-card:hover .item-details { background-color: rgba(255,255,255,0.05); }
 .item-speaker-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
-.item-info h4 { margin: 0; font-size: 1.1rem; color: var(--text-color); }
-.item-info span { font-size: 0.9rem; color: var(--text-secondary); }
+.item-info h4 { margin: 0; font-size: 1.1rem; color: white; }
+.item-info span { font-size: 0.9rem; color: #9CA3AF; }
 
 /* --- MODAL DEL PROGRAMA --- */
 .program-modal {
@@ -192,4 +199,38 @@ body {
 .add-to-calendar-btn:hover {
     color: var(--primary-color);
     background-color: var(--border-color);
+}
+/* --- NUEVO: ESTILOS RESPONSIVE PARA PÁGINA DE EVENTO --- */
+.mobile-menu-btn {
+    display: none;
+    background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-color);
+}
+
+@media (max-width: 768px) {
+    .nav-event-title { display: none; }
+    .mobile-menu-btn { display: block; z-index: 1001; }
+    .nav-content { justify-content: flex-end; }
+
+    .event-nav ul {
+        display: none;
+        position: absolute;
+        top: 70px;
+        left: 0;
+        right: 0;
+        background-color: var(--surface-color);
+        flex-direction: column;
+        padding: 1rem 2rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .event-nav ul.is-open { display: flex; }
+
+    #event-title-cover { font-size: 2.2rem; }
+    .countdown-item { min-width: 60px; padding: 0.5rem; }
+    .countdown-item span { font-size: 2rem; }
+
+    .program-timeline { padding-left: 0; }
+    .program-timeline::before { left: 5px; }
+    .program-item-card { flex-direction: column; gap: 0.5rem; }
+    .item-time { text-align: left; width: auto; padding-left: 2rem; }
+    .item-time::before { left: 0; }
 }

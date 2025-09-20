@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function init() {
         const urlParams = new URLSearchParams(window.location.search);
-        // --- CAMBIO 1: Leemos 'slug' en lugar de 'id' ---
         const slug = urlParams.get('slug');
 
         if (!slug) {
@@ -19,40 +18,97 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // --- CAMBIO 2: Buscamos en la base de datos usando la columna 'slug' ---
         const { data: project, error } = await supabase
             .from('projects')
-            .select('id, user_id, title, authors, microsite_content, template_style, color_palette')
-            .eq('slug', slug) 
+            .select(`
+                *, 
+                event:associated_event_id (
+                    title, slug, cover_url, 
+                    editions:event_editions (start_date)
+                )
+            `)
+            .eq('slug', slug)
             .eq('microsite_is_public', true)
             .single();
 
         if (error || !project) {
             console.error('Error fetching project:', error);
-            document.body.innerHTML = '<h1>Proyecto no encontrado o no es público.</h1>'; 
+            document.body.innerHTML = '<h1>Proyecto no encontrado o no es público.</h1>';
             return;
         }
 
         document.body.classList.add(`template-${project.template_style}`, `palette-${project.color_palette}`);
-        // const projectId = (await supabase.from('projects').select('id').eq('slug', slug).single()).data.id;
 
-        // --- CAMBIO 1: Asegurarnos de traer el ID de la sesión ---
-        const [sessionsResponse, postsResponse] = await Promise.all([
-            supabase.from('sessions').select('id, session_title, scheduled_at, thumbnail_url').eq('project_title', project.title),
-            supabase.from('posts').select('title, status').eq('project_id', project.id)
-        ]);
+        // --- CAMBIO: Buscamos las sesiones y posts siempre ---
+        const { data: sessions } = await supabase.from('sessions').select('id, session_title, scheduled_at, thumbnail_url, viewer_url').eq('project_title', project.title);
+        const { data: posts } = await supabase.from('posts').select('title, status').eq('project_id', project.id);
         
-        // Renderizamos todo
+        // Renderizamos las secciones principales
         renderCover(project);
         renderSummary(project.microsite_content);
         renderResearchers(project.authors);
         renderCustomModules(project.microsite_content?.custom_modules);
-        renderSessions(sessionsResponse.data);
-        renderPosts(postsResponse.data);
+        
+        // --- CAMBIO: Llamamos a una única función que gestiona qué mostrar ---
+        renderActivitiesSection(project.event, sessions);
+        
+        renderPosts(posts);
         
         setupScrollAnimations();
         setupEventListeners();
         setupStickyNav();
+    }
+
+    // AÑADE ESTA FUNCIÓN COMPLETA (Y BORRA LAS VIEJAS renderAssociatedEvent y renderSessions) en /js/site.js
+
+    function renderActivitiesSection(event, sessions) {
+        const container = document.getElementById('sessions-section');
+        let htmlContent = '';
+
+        // Parte 1: Renderizar el Evento Principal, si existe.
+        if (event && event.id) {
+            const latestEdition = event.editions?.sort((a,b) => new Date(b.start_date) - new Date(a.start_date))[0];
+            const date = latestEdition ? new Date(latestEdition.start_date).toLocaleDateString('es-ES', { year: 'numeric', month: 'long' }) : '';
+            
+            htmlContent += `
+                <h2>Evento Principal</h2>
+                <div class="card-grid">
+                    <a href="/evento.html?slug=${event.slug}" target="_blank" rel="noopener noreferrer" class="card session-card" style="text-decoration: none; color: inherit;">
+                        <img src="${event.cover_url || 'https://i.ibb.co/Vt9tv2D/default-placeholder.png'}" alt="Portada del evento" class="session-card-image">
+                        <div class="session-card-content">
+                            <h3>${event.title}</h3>
+                            <p>🗓️ ${date}</p>
+                            <span class="btn-subscribe" style="margin-top: 1rem;">Ver Detalles del Evento</span>
+                        </div>
+                    </a>
+                </div>
+            `;
+        }
+
+        // Parte 2: Renderizar las Sesiones Individuales, si existen.
+        if (sessions && sessions.length > 0) {
+            // Añadimos un título diferente si ya mostramos un evento principal.
+            htmlContent += `<h2>${event ? 'Otras Sesiones y Actividades' : 'Eventos y Actividades'}</h2>`;
+            
+            htmlContent += `<div class="card-grid">${sessions.map(session => `
+                <a href="${session.viewer_url || '#'}" target="_blank" rel="noopener noreferrer" class="card session-card" style="text-decoration: none; color: inherit;">
+                    <img src="${session.thumbnail_url || 'https://i.ibb.co/Vt9tv2D/default-placeholder.png'}" alt="Miniatura de la sesión" class="session-card-image">
+                    <div class="session-card-content">
+                        <h3>${session.session_title}</h3>
+                        <p>🗓️ ${new Date(session.scheduled_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}</p>
+                    </div>
+                </a>
+            `).join('')}</div>`;
+        }
+
+        // Parte 3: Actualizar el contenedor.
+        if (htmlContent === '') {
+            // Si no hay ni evento principal ni sesiones, ocultamos la sección.
+            container.style.display = 'none';
+        } else {
+            container.innerHTML = htmlContent;
+            container.style.display = 'block';
+        }
     }
 
     function setupStickyNav() {
@@ -300,6 +356,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p>Estado: ${p.status}</p>
             </div>
         `).join('');
+    }
+
+    function renderAssociatedEvent(event) {
+        const container = document.getElementById('sessions-section');
+        if (!event) { container.style.display = 'none'; return; }
+
+        // Buscamos la fecha de la edición más reciente
+        const latestEdition = event.editions?.sort((a,b) => new Date(b.start_date) - new Date(a.start_date))[0];
+        const date = latestEdition ? new Date(latestEdition.start_date).toLocaleDateString('es-ES', { year: 'numeric', month: 'long' }) : '';
+
+        container.innerHTML = `
+            <h2>Evento Principal</h2>
+            <div class="card-grid">
+                <a href="/evento.html?slug=${event.slug}" class="card session-card" style="text-decoration: none; color: inherit;">
+                    <img src="${event.cover_url || 'https://i.ibb.co/Vt9tv2D/default-placeholder.png'}" alt="Portada del evento" class="session-card-image">
+                    <div class="session-card-content">
+                        <h3>${event.title}</h3>
+                        <p>🗓️ ${date}</p>
+                        <span class="btn-subscribe" style="margin-top: 1rem;">Ver Detalles del Evento</span>
+                    </div>
+                </a>
+            </div>
+        `;
     }
     
     function setupScrollAnimations() {

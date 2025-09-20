@@ -23,12 +23,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const { data: event, error } = await supabase
             .from('events')
-            .select('*, projects(doi)')
+            .select('*')
             .eq('slug', slug)
             .eq('is_public', true)
             .single();
 
-        if (error || !event) { document.body.innerHTML = '<h1>Error: Evento no encontrado o no es público.</h1>'; return; }
+        if (error || !event) { 
+            console.error('Error fetching event:', error);
+            document.body.innerHTML = '<h1>Error: Evento no encontrado o no es público.</h1>'; 
+            return; 
+        }
+
+        let projectDoi = null;
+        if (event.project_id) {
+            const { data: project } = await supabase
+                .from('projects')
+                .select('doi')
+                .eq('id', event.project_id)
+                .single();
+            if (project) {
+                projectDoi = project.doi;
+            }
+        }
 
         const { data: editions } = await supabase.from('event_editions').select('*').eq('event_id', event.id);
         const currentEdition = editions.sort((a,b) => new Date(b.start_date) - new Date(a.start_date))[0];
@@ -64,23 +80,50 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function renderCover(event, edition) {
+    function setupStickyNav() {
+        const nav = document.querySelector('.event-nav');
+        if (!nav) return;
+
+        const navLinkList = document.getElementById('nav-link-list');
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+
+        mobileMenuBtn.addEventListener('click', () => {
+            navLinkList.classList.toggle('is-open');
+        });
+
+        // ... (el resto de la lógica de smooth scroll y observer no cambia) ...
+    }
+
+    function renderCover(event, edition, projectDoi) {
         document.title = event.title;
         document.getElementById('nav-event-title').textContent = event.title;
         document.getElementById('event-title-cover').textContent = event.title;
-
+        
         const coverSection = document.getElementById('cover-section');
         if (event.cover_url) {
             coverSection.style.backgroundImage = `url(${event.cover_url})`;
         }
 
-        if(event.projects?.doi) document.getElementById('event-project-doi').textContent = `DOI: ${event.projects.doi}`;
-        
+        if (projectDoi) {
+            document.getElementById('event-project-doi').textContent = `DOI: ${projectDoi}`;
+        }
+
         if (edition?.start_date) {
             setupCountdown(edition.start_date);
         } else {
             document.getElementById('countdown-timer').style.display = 'none';
         }
+
+        // --- LÓGICA AÑADIDA PARA RELLENAR META TAGS ---
+        const content = event.main_content || {};
+        const pageUrl = `${window.location.origin}${window.location.pathname}?slug=${event.slug}`;
+        const description = content.about?.replace(/<[^>]*>?/gm, '').substring(0, 150) || event.title;
+
+        document.getElementById('og-title').setAttribute('content', event.title);
+        document.getElementById('og-description').setAttribute('content', description);
+        // Usa la imagen SEO si existe; si no, la de portada; si no, una por defecto.
+        document.getElementById('og-image').setAttribute('content', content.seo?.imageUrl || event.cover_url || 'https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png');
+        document.getElementById('og-url').setAttribute('content', pageUrl);
     }
 
     function renderMainContent(content = {}) {
@@ -132,16 +175,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const formattedDate = new Date(date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
             const dayOfWeek = new Date(date).toLocaleDateString('es-ES', { weekday: 'short' });
             
+            // Crear pestaña
             const tabButton = document.createElement('button');
             tabButton.classList.add('program-day-tab');
-            if (index === 0) tabButton.classList.add('active');
+            if (index === 0) {
+                tabButton.classList.add('active'); // Solo añadimos 'active' al primero
+            }
             tabButton.dataset.day = date;
             tabButton.innerHTML = `<span>${dayOfWeek}</span><strong>${formattedDate}</strong>`;
             tabsContainer.appendChild(tabButton);
 
+            // Crear contenido del día
             const dayContent = document.createElement('div');
             dayContent.classList.add('program-day-content');
-            if (index === 0) dayContent.classList.add('active');
+            if (index === 0) {
+                dayContent.classList.add('active'); // Solo añadimos 'active' al primero
+            }
             dayContent.id = `content-${date}`;
             
             dayContent.innerHTML = `<div class="program-timeline">${days[date].map(item => {

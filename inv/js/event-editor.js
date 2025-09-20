@@ -65,6 +65,7 @@ export const EventEditorApp = {
 
         // --- CORRECCIÓN CLAVE: Acceso seguro a los datos ---
         const content = this.currentEvent.main_content || {}; // Si 'main_content' no existe, usamos un objeto vacío.
+        document.getElementById('event-seo-image-url').value = content.seo?.imageUrl || '';
         
         // Usamos el `setup` de TinyMCE para asegurar que el editor esté listo antes de poner contenido.
         // Esto evita errores si los datos se cargan muy rápido.
@@ -324,7 +325,10 @@ export const EventEditorApp = {
             is_public: document.getElementById('event-is-public').checked,
             main_content: {
                 about: document.getElementById('event-about').value, // Leemos desde el textarea
-                callForPapers: document.getElementById('event-call-for-papers').value
+                callForPapers: document.getElementById('event-call-for-papers').value,
+                seo: {
+                    imageUrl: document.getElementById('event-seo-image-url').value
+                }
             },
             user_id: this.user.id
         };
