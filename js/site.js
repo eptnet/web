@@ -1,6 +1,5 @@
 // =================================================================
-// ARCHIVO DEFINITIVO Y CORREGIDO v3: /js/site.js
-// INCLUYE TODAS LAS FUNCIONES Y LA LÓGICA CORRECTA PARA POSTS
+// ARCHIVO FINAL Y ESTABLE: /js/site.js
 // =================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -39,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderResearchers(project.authors);
         renderCustomModules(project.microsite_content?.custom_modules);
         
+        // --- LÓGICA CORREGIDA Y SIMPLIFICADA ---
         // 2. Revisamos DIRECTAMENTE si tiene un ID de evento asociado.
         if (project.associated_event_id) {
             console.log("Proyecto tiene evento asociado con ID:", project.associated_event_id);
@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderSessions(sessions);
         }
         
-        // El resto de la lógica no cambia
+        // La lógica para los posts se mantiene igual
         const { data: posts } = await supabase.from('posts').select('title, status').eq('project_id', project.id);
         renderPosts(posts);
         
@@ -67,6 +67,8 @@ document.addEventListener('DOMContentLoaded', () => {
         setupEventListeners();
         setupStickyNav();
     }
+    
+    // --- ASEGÚRATE DE TENER TODAS ESTAS FUNCIONES EN TU ARCHIVO ---
 
     function renderAssociatedEvent(event) {
         const container = document.getElementById('sessions-section');
@@ -74,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
             container.style.display = 'none';
             return;
         }
-        container.style.display = 'block'; // Aseguramos que la sección sea visible
+        container.style.display = 'block';
 
         const latestEdition = event.editions?.sort((a,b) => new Date(b.start_date) - new Date(a.start_date))[0];
         const date = latestEdition ? new Date(latestEdition.start_date).toLocaleDateString('es-ES', { year: 'numeric', month: 'long' }) : '';
@@ -94,118 +96,30 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
-    function setupStickyNav() {
-        const nav = document.querySelector('.site-nav');
-        if (!nav) return;
-
-        const navLinkList = document.getElementById('nav-link-list');
-        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-        const navLinks = nav.querySelectorAll('a');
-        const sections = document.querySelectorAll('.site-section');
-
-        // --- LÓGICA AÑADIDA PARA EL MENÚ MÓVIL ---
-        mobileMenuBtn.addEventListener('click', () => {
-            navLinkList.classList.toggle('is-open');
-        });
-
-        // Lógica para el smooth scroll (sin cambios)
-        navLinks.forEach(link => {
-            link.addEventListener('click', e => {
-                e.preventDefault();
-                navLinkList.classList.remove('is-open'); // Cierra el menú móvil al hacer clic en un enlace
-                const targetId = link.getAttribute('href');
-                const targetSection = document.querySelector(targetId);
-                if (targetSection) {
-                    targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            });
-        });
-
-        // Lógica para resaltar el enlace activo (sin cambios)
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    navLinks.forEach(link => {
-                        link.classList.toggle('active', link.getAttribute('href') === `#${entry.target.id}`);
-                    });
-                }
-            });
-        }, { rootMargin: "-40% 0px -60% 0px" });
-
-        sections.forEach(section => {
-            if (section.id) {
-                observer.observe(section);
-            }
-        });
-    }
-
-    function setupEventListeners() {
-        document.body.addEventListener('click', e => {
-            const researcherCard = e.target.closest('.researcher-card-btn');
-            if (researcherCard) { openResearcherModal(researcherCard.dataset.authorName); }
-            if (e.target.id === 'modal-close-btn' || e.target.classList.contains('modal-overlay')) {
-                closeResearcherModal();
-            }
-        });
-    }
-
-    async function openResearcherModal(authorName) {
-        const modalOverlay = document.getElementById('researcher-modal-overlay');
-        const modalContent = document.getElementById('modal-profile-content');
-        modalContent.innerHTML = '<p>Cargando perfil...</p>';
-        modalOverlay.classList.add('is-visible');
-
-        // --- INICIO DE LA CORRECCIÓN ---
-        // 1. Buscamos por nombre pero sin exigir un resultado único (.single())
-        const { data: profiles, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('display_name', authorName);
-
-        // 2. Verificamos si la búsqueda falló o si no devolvió ningún resultado.
-        if (error || !profiles || profiles.length === 0) {
-            console.error("Error fetching profile or profile not found:", error);
-            modalContent.innerHTML = '<p>No se pudo cargar el perfil detallado.</p>';
+    function renderSessions(sessions) {
+        const container = document.getElementById('sessions-section');
+        if (!sessions || sessions.length === 0) {
+            container.style.display = 'none';
             return;
         }
+        container.style.display = 'block';
 
-        // 3. Tomamos el primer perfil encontrado del array.
-        const profile = profiles[0];
-        // --- FIN DE LA CORRECCIÓN ---
-
-        const socials = [
-            { url: profile.bsky_url, icon: 'fa-brands fa-bluesky', name: 'Bluesky' },
-            { url: profile.linkedin_url, icon: 'fab fa-linkedin', name: 'LinkedIn' },
-            { url: profile.x_url, icon: 'fa-brands fa-x-twitter', name: 'X' },
-            { url: profile.youtube_url, icon: 'fab fa-youtube', name: 'YouTube' },
-            { url: profile.instagram_url, icon: 'fab fa-instagram', name: 'Instagram' },
-            { url: profile.substack_url, icon: 'fa-solid fa-bookmark', name: 'Substack' },
-            { url: profile.website_url, icon: 'fas fa-globe', name: 'Sitio Web' }
-        ].filter(s => s.url);
-        
-        const orcidHtml = profile.orcid 
-            ? `<a href="${profile.orcid}" target="_blank" rel="noopener noreferrer" class="profile-orcid">
-                <i class="fa-brands fa-orcid"></i> ${profile.orcid.replace('https://orcid.org/','')}
-            </a>`
-            : '';
-
-        modalContent.innerHTML = `
-            <div class="profile-header">
-                <img src="${profile.avatar_url || 'https://i.ibb.co/61fJ_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E'}" alt="Avatar" class="profile-avatar">
-                <div>
-                    <h2 class="profile-name">${profile.display_name}</h2>
-                    ${orcidHtml}
-                </div>
-            </div>
-            <p class="profile-bio">${profile.bio || 'Biografía no disponible.'}</p>
-            ${socials.length > 0 ? `<div class="profile-socials">${socials.map(s => `<a href="${s.url}" target="_blank" title="${s.name}"><i class="${s.icon}"></i></a>`).join('')}</div>` : ''}
+        container.innerHTML = `
+            <h2>Eventos y Actividades</h2>
+            <div class="card-grid">${sessions.map(session => `
+                <a href="/live.html?sesion=${session.id}" target="_blank" rel="noopener noreferrer" class="card session-card">
+                    <img src="${session.thumbnail_url || 'https://i.ibb.co/Vt9tv2D/default-placeholder.png'}" alt="Miniatura de la sesión" class="session-card-image">
+                    <div class="session-card-content">
+                        <h3>${session.session_title}</h3>
+                        <p>🗓️ ${new Date(session.scheduled_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}</p>
+                    </div>
+                </a>
+            `).join('')}</div>
         `;
     }
 
-    function closeResearcherModal() {
-        document.getElementById('researcher-modal-overlay').classList.remove('is-visible');
-    }
-
+    // --- El resto de las funciones auxiliares (renderCover, renderSummary, etc.) ---
+    // (Asegúrate de tener todas las funciones que te he pasado en respuestas anteriores en este archivo)
     function renderCover(project) {
         const content = project.microsite_content || {};
         const summaryText = content.summary?.content.replace(/<[^>]*>?/gm, '').substring(0, 150) || `Un proyecto de ${project.authors.join(', ')}`;
@@ -213,17 +127,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const coverSection = document.getElementById('cover-section'); 
         coverSection.style.setProperty('--cover-bg-image', `url(${content.cover?.imageUrl || ''})`); 
 
-        // Rellenar contenido de la página
         document.title = project.title;
         document.getElementById('cover-section').style.backgroundImage = `url(${content.cover?.imageUrl || ''})`;
         document.getElementById('cover-headline').textContent = content.cover?.headline || project.title;
         document.getElementById('project-authors-list').textContent = (project.authors || []).join(', ');
         document.getElementById('nav-project-title').textContent = project.title;
 
-        // --- LÓGICA AÑADIDA PARA RELLENAR META TAGS ---
         document.getElementById('og-title').setAttribute('content', content.cover?.headline || project.title);
         document.getElementById('og-description').setAttribute('content', summaryText);
-        // Usa la imagen SEO si existe, si no, usa la imagen de portada
         document.getElementById('og-image').setAttribute('content', content.seo?.imageUrl || content.cover?.imageUrl || 'https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png');
         document.getElementById('og-url').setAttribute('content', pageUrl);
     }
@@ -312,28 +223,6 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }).join('');
     }
-    
-    function renderSessions(sessions) {
-        const container = document.getElementById('sessions-section');
-        if (!sessions || sessions.length === 0) {
-            container.style.display = 'none';
-            return;
-        }
-        container.style.display = 'block'; // Aseguramos que la sección sea visible
-
-        container.innerHTML = `
-            <h2>Eventos y Actividades</h2>
-            <div class="card-grid">${sessions.map(session => `
-                <a href="/live.html?sesion=${session.id}" target="_blank" rel="noopener noreferrer" class="card session-card">
-                    <img src="${session.thumbnail_url || 'https://i.ibb.co/Vt9tv2D/default-placeholder.png'}" alt="Miniatura de la sesión" class="session-card-image">
-                    <div class="session-card-content">
-                        <h3>${session.session_title}</h3>
-                        <p>🗓️ ${new Date(session.scheduled_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}</p>
-                    </div>
-                </a>
-            `).join('')}</div>
-        `;
-    }
 
     // FUNCIÓN ACTUALIZADA PARA USAR LA TABLA 'posts'
     function renderPosts(posts) {
@@ -345,30 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p>Estado: ${p.status}</p>
             </div>
         `).join('');
-    }
-
-    function renderAssociatedEvent(event) {
-        const container = document.getElementById('sessions-section');
-        if (!event) { container.style.display = 'none'; return; }
-
-        // Buscamos la fecha de la edición más reciente
-        const latestEdition = event.editions?.sort((a,b) => new Date(b.start_date) - new Date(a.start_date))[0];
-        const date = latestEdition ? new Date(latestEdition.start_date).toLocaleDateString('es-ES', { year: 'numeric', month: 'long' }) : '';
-
-        container.innerHTML = `
-            <h2>Evento Principal</h2>
-            <div class="card-grid">
-                <a href="/evento.html?slug=${event.slug}" class="card session-card" style="text-decoration: none; color: inherit;">
-                    <img src="${event.cover_url || 'https://i.ibb.co/Vt9tv2D/default-placeholder.png'}" alt="Portada del evento" class="session-card-image">
-                    <div class="session-card-content">
-                        <h3>${event.title}</h3>
-                        <p>🗓️ ${date}</p>
-                        <span class="btn-subscribe" style="margin-top: 1rem;">Ver Detalles del Evento</span>
-                    </div>
-                </a>
-            </div>
-        `;
-    }
+    }    
     
     function setupScrollAnimations() {
         const observer = new IntersectionObserver((entries) => {
@@ -377,6 +243,118 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }, { threshold: 0.1 });
         document.querySelectorAll('.scroll-animate').forEach(el => { observer.observe(el); });
+    }
+
+    function setupEventListeners() {
+        document.body.addEventListener('click', e => {
+            const researcherCard = e.target.closest('.researcher-card-btn');
+            if (researcherCard) { openResearcherModal(researcherCard.dataset.authorName); }
+            if (e.target.id === 'modal-close-btn' || e.target.classList.contains('modal-overlay')) {
+                closeResearcherModal();
+            }
+        });
+    }
+
+    function setupStickyNav() {
+        const nav = document.querySelector('.site-nav');
+        if (!nav) return;
+
+        const navLinkList = document.getElementById('nav-link-list');
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const navLinks = nav.querySelectorAll('a');
+        const sections = document.querySelectorAll('.site-section');
+
+        // --- LÓGICA AÑADIDA PARA EL MENÚ MÓVIL ---
+        mobileMenuBtn.addEventListener('click', () => {
+            navLinkList.classList.toggle('is-open');
+        });
+
+        // Lógica para el smooth scroll (sin cambios)
+        navLinks.forEach(link => {
+            link.addEventListener('click', e => {
+                e.preventDefault();
+                navLinkList.classList.remove('is-open'); // Cierra el menú móvil al hacer clic en un enlace
+                const targetId = link.getAttribute('href');
+                const targetSection = document.querySelector(targetId);
+                if (targetSection) {
+                    targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // Lógica para resaltar el enlace activo (sin cambios)
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    navLinks.forEach(link => {
+                        link.classList.toggle('active', link.getAttribute('href') === `#${entry.target.id}`);
+                    });
+                }
+            });
+        }, { rootMargin: "-40% 0px -60% 0px" });
+
+        sections.forEach(section => {
+            if (section.id) {
+                observer.observe(section);
+            }
+        });
+    }
+
+    async function openResearcherModal(authorName) {
+        const modalOverlay = document.getElementById('researcher-modal-overlay');
+        const modalContent = document.getElementById('modal-profile-content');
+        modalContent.innerHTML = '<p>Cargando perfil...</p>';
+        modalOverlay.classList.add('is-visible');
+
+        // --- INICIO DE LA CORRECCIÓN ---
+        // 1. Buscamos por nombre pero sin exigir un resultado único (.single())
+        const { data: profiles, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('display_name', authorName);
+
+        // 2. Verificamos si la búsqueda falló o si no devolvió ningún resultado.
+        if (error || !profiles || profiles.length === 0) {
+            console.error("Error fetching profile or profile not found:", error);
+            modalContent.innerHTML = '<p>No se pudo cargar el perfil detallado.</p>';
+            return;
+        }
+
+        // 3. Tomamos el primer perfil encontrado del array.
+        const profile = profiles[0];
+        // --- FIN DE LA CORRECCIÓN ---
+
+        const socials = [
+            { url: profile.bsky_url, icon: 'fa-brands fa-bluesky', name: 'Bluesky' },
+            { url: profile.linkedin_url, icon: 'fab fa-linkedin', name: 'LinkedIn' },
+            { url: profile.x_url, icon: 'fa-brands fa-x-twitter', name: 'X' },
+            { url: profile.youtube_url, icon: 'fab fa-youtube', name: 'YouTube' },
+            { url: profile.instagram_url, icon: 'fab fa-instagram', name: 'Instagram' },
+            { url: profile.substack_url, icon: 'fa-solid fa-bookmark', name: 'Substack' },
+            { url: profile.website_url, icon: 'fas fa-globe', name: 'Sitio Web' }
+        ].filter(s => s.url);
+        
+        const orcidHtml = profile.orcid 
+            ? `<a href="${profile.orcid}" target="_blank" rel="noopener noreferrer" class="profile-orcid">
+                <i class="fa-brands fa-orcid"></i> ${profile.orcid.replace('https://orcid.org/','')}
+            </a>`
+            : '';
+
+        modalContent.innerHTML = `
+            <div class="profile-header">
+                <img src="${profile.avatar_url || 'https://i.ibb.co/61fJ_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E'}" alt="Avatar" class="profile-avatar">
+                <div>
+                    <h2 class="profile-name">${profile.display_name}</h2>
+                    ${orcidHtml}
+                </div>
+            </div>
+            <p class="profile-bio">${profile.bio || 'Biografía no disponible.'}</p>
+            ${socials.length > 0 ? `<div class="profile-socials">${socials.map(s => `<a href="${s.url}" target="_blank" title="${s.name}"><i class="${s.icon}"></i></a>`).join('')}</div>` : ''}
+        `;
+    }
+
+    function closeResearcherModal() {
+        document.getElementById('researcher-modal-overlay').classList.remove('is-visible');
     }
 
     init();
