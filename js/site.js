@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1. Buscamos el proyecto de forma simple, pidiendo todos sus campos.
         const { data: project, error } = await supabase
             .from('projects')
-            .select('*') // Pedimos toda la info del proyecto
+            .select(`*, event:associated_event_id (*, editions:event_editions(start_date))`)
             .eq('slug', slug)
             .eq('microsite_is_public', true)
             .single();
@@ -31,33 +31,18 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const { data: sessions } = await supabase.from('sessions').select('*').eq('project_title', project.title);
+
         // Renderizamos las partes que dependen solo del proyecto
         document.body.classList.add(`template-${project.template_style}`, `palette-${project.color_palette}`);
         renderCover(project);
         renderSummary(project.microsite_content);
         renderResearchers(project.authors);
         renderCustomModules(project.microsite_content?.custom_modules);
+
+        renderActivitiesSection(project.event, sessions);
         
-        // --- LÓGICA CORREGIDA Y SIMPLIFICADA ---
-        // 2. Revisamos DIRECTAMENTE si tiene un ID de evento asociado.
-        if (project.associated_event_id) {
-            console.log("Proyecto tiene evento asociado con ID:", project.associated_event_id);
-            // 3. Si existe, buscamos ESE evento específico.
-            const { data: eventData } = await supabase
-                .from('events')
-                .select('*, editions:event_editions(start_date)')
-                .eq('id', project.associated_event_id)
-                .single();
-            
-            if (eventData) {
-                renderAssociatedEvent(eventData);
-            }
-        } else {
-            // 4. Si no existe, buscamos las sesiones individuales (LiveRooms).
-            console.log("Proyecto SIN evento principal. Buscando sesiones individuales...");
-            const { data: sessions } = await supabase.from('sessions').select('id, session_title, scheduled_at, thumbnail_url, viewer_url').eq('project_title', project.title);
-            renderSessions(sessions);
-        }
+        
         
         // La lógica para los posts se mantiene igual
         const { data: posts } = await supabase.from('posts').select('title, status').eq('project_id', project.id);
@@ -66,6 +51,53 @@ document.addEventListener('DOMContentLoaded', () => {
         setupScrollAnimations();
         setupEventListeners();
         setupStickyNav();
+    }
+
+    // AÑADE ESTA FUNCIÓN COMPLETA (Y BORRA LAS VIEJAS) en /js/site.js
+    function renderActivitiesSection(event, sessions) {
+        const container = document.getElementById('sessions-section');
+        let htmlContent = '';
+
+        // Parte 1: Dibuja el Evento Principal, si existe.
+        if (event && event.id) {
+            const latestEdition = event.editions?.sort((a,b) => new Date(b.start_date) - new Date(a.start_date))[0];
+            const date = latestEdition ? new Date(latestEdition.start_date).toLocaleDateString('es-ES', { year: 'numeric', month: 'long' }) : '';
+            
+            htmlContent += `
+                <h2>Evento Principal</h2>
+                <div class="card-grid">
+                    <a href="/evento.html?slug=${event.slug}" target="_blank" rel="noopener noreferrer" class="card session-card">
+                        <img src="${event.cover_url || 'https://i.ibb.co/Vt9tv2D/default-placeholder.png'}" alt="Portada del evento" class="session-card-image">
+                        <div class="session-card-content">
+                            <h3>${event.title}</h3>
+                            <p>🗓️ ${date}</p>
+                            <span class="btn-subscribe" style="margin-top: 1rem;">Ver Detalles del Evento</span>
+                        </div>
+                    </a>
+                </div>
+            `;
+        }
+
+        // Parte 2: Dibuja las Sesiones Individuales, si existen.
+        if (sessions && sessions.length > 0) {
+            htmlContent += `<h2>${event ? 'Otras Sesiones y Actividades' : 'Eventos y Actividades'}</h2>`;
+            htmlContent += `<div class="card-grid">${sessions.map(session => `
+                <a href="/live.html?sesion=${session.id}" target="_blank" rel="noopener noreferrer" class="card session-card">
+                    <img src="${session.thumbnail_url || 'https://i.ibb.co/Vt9tv2D/default-placeholder.png'}" alt="Miniatura de la sesión" class="session-card-image">
+                    <div class="session-card-content">
+                        <h3>${session.session_title}</h3>
+                        <p>🗓️ ${new Date(session.scheduled_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}</p>
+                    </div>
+                </a>
+            `).join('')}</div>`;
+        }
+
+        if (htmlContent === '') {
+            container.style.display = 'none';
+        } else {
+            container.innerHTML = htmlContent;
+            container.style.display = 'block';
+        }
     }
     
     // --- ASEGÚRATE DE TENER TODAS ESTAS FUNCIONES EN TU ARCHIVO ---
