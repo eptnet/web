@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const { data: event, error } = await supabase
             .from('events')
-            .select('*')
+            .select('*, registration_url')
             .eq('slug', slug)
             .eq('is_public', true)
             .single();
@@ -94,6 +94,24 @@ document.addEventListener('DOMContentLoaded', () => {
         // ... (el resto de la lógica de smooth scroll y observer no cambia) ...
     }
 
+    function setupEventListeners() {
+        document.body.addEventListener('click', e => {
+            // Lógica para abrir el modal del ponente
+            const speakerCard = e.target.closest('.speaker-card');
+            if (speakerCard) {
+                const speakerData = JSON.parse(speakerCard.dataset.speakerJson.replace(/&apos;/g, "'"));
+                openSpeakerModal(speakerData);
+            }
+
+            // Lógica para cerrar el modal del ponente
+            const closeBtn = e.target.closest('.modal-close-btn');
+            const modalOverlay = e.target.closest('.modal-overlay');
+            if (closeBtn || (modalOverlay && !e.target.closest('.modal-content'))) {
+                closeSpeakerModal();
+            }
+        });
+    }
+
     function renderCover(event, edition, projectDoi) {
         document.title = event.title;
         document.getElementById('nav-event-title').textContent = event.title;
@@ -102,6 +120,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const coverSection = document.getElementById('cover-section');
         if (event.cover_url) {
             coverSection.style.backgroundImage = `url(${event.cover_url})`;
+        }
+
+        const regBtn = document.getElementById('main-registration-btn');
+        if (event.registration_url) {
+            regBtn.href = event.registration_url;
+            regBtn.style.display = 'inline-block';
+        } else {
+            regBtn.style.display = 'none';
         }
 
         if (projectDoi) {
@@ -140,17 +166,52 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderSpeakers(speakers = []) {
         const container = document.getElementById('speakers-section');
         if (!speakers || speakers.length === 0) { container.style.display = 'none'; return; }
-        container.innerHTML = `<h2>Ponentes</h2><div class="speakers-grid">${speakers.map(s => `
-            <div class="speaker-card">
+
+        container.innerHTML = `<h2>Ponentes</h2><div class="speakers-grid">${speakers.map(s => {
+            // Guardamos todos los datos del ponente en una cadena JSON para el data-attribute
+            const speakerData = JSON.stringify(s).replace(/'/g, "&apos;");
+
+            return `
+            <button class="speaker-card" data-speaker-json='${speakerData}'>
                 <img src="${s.avatarUrl || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="${s.name}">
-                <h3>${s.name}</h3>
-                <p>${s.bio || ''}</p>
-                <div class="socials">
-                    ${s.social1 ? `<a href="${s.social1}" target="_blank"><i class="fas fa-globe"></i></a>` : ''}
-                    ${s.social2 ? `<a href="${s.social2}" target="_blank"><i class="fab fa-linkedin"></i></a>` : ''}
-                    ${s.social3 ? `<a href="${s.social3}" target="_blank"><i class="fab fa-twitter"></i></a>` : ''}
+                <div>
+                    <h3>${s.name}</h3>
+                    <p>${s.bio || ''}</p>
                 </div>
-            </div>`).join('')}</div>`;
+            </button>
+            `}).join('')}</div>`;
+    }
+
+    function openSpeakerModal(speakerData) {
+        const modalOverlay = document.getElementById('speaker-modal-overlay');
+        const modalContent = document.getElementById('modal-speaker-content');
+        
+        const socials = [
+            { url: speakerData.social1, icon: 'fas fa-globe' },
+            { url: speakerData.social2, icon: 'fab fa-linkedin' },
+            { url: speakerData.social3, icon: 'fab fa-twitter' }
+        ].filter(social => social.url);
+
+        modalContent.innerHTML = `
+            <div class="profile-header">
+                <img src="${speakerData.avatarUrl || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="Avatar" class="profile-avatar">
+                <div>
+                    <h2 class="profile-name">${speakerData.name}</h2>
+                    <p>${speakerData.email || ''}</p>
+                </div>
+            </div>
+            <p class="profile-bio">${speakerData.bio || 'Biografía no disponible.'}</p>
+            ${socials.length > 0 ? `<ul class="profile-socials">${socials.map(s => `<li><a href="${s.url}" target="_blank"><i class="${s.icon}"></i></a></li>`).join('')}</ul>` : ''}
+        `;
+
+        modalOverlay.classList.add('is-visible');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeSpeakerModal() {
+        const modalOverlay = document.getElementById('speaker-modal-overlay');
+        modalOverlay.classList.remove('is-visible');
+        document.body.style.overflow = '';
     }
 
     function renderProgram(programData = [], speakers = []) {

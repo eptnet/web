@@ -61,6 +61,7 @@ export const EventEditorApp = {
         document.getElementById('event-main-title').textContent = this.currentEvent.title;
         document.getElementById('event-title').value = this.currentEvent.title;
         document.getElementById('event-cover-url').value = this.currentEvent.cover_url || '';
+        document.getElementById('event-registration-url').value = this.currentEvent.registration_url || '';
         document.getElementById('event-is-public').checked = this.currentEvent.is_public;
 
         // --- CORRECCIÓN CLAVE: Acceso seguro a los datos ---
@@ -322,6 +323,7 @@ export const EventEditorApp = {
         const eventUpdates = {
             title: document.getElementById('event-title').value,
             cover_url: document.getElementById('event-cover-url').value,
+            registration_url: document.getElementById('event-registration-url').value,
             is_public: document.getElementById('event-is-public').checked,
             main_content: {
                 about: document.getElementById('event-about').value, // Leemos desde el textarea

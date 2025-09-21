@@ -53,19 +53,63 @@ body {
 .countdown-item div { font-size: 0.9rem; text-transform: uppercase; margin-top: 0.5rem; opacity: 0.8; }
 
 /* --- CONTENIDO PRINCIPAL --- */
-.event-container { max-width: 900px; margin: 0 auto; padding: 2rem; }
+.event-container {
+    max-width: 1100px; /* Le damos un poco más de espacio para las columnas */
+    margin: 0 auto;
+    padding: 2rem;
+    display: grid; /* Lo preparamos para el layout de columnas */
+    grid-template-columns: 1fr; /* Por defecto, en móvil, es una sola columna */
+    gap: 2rem;
+}
 .event-section { padding: 4rem 0; }
 .event-section h2 { font-size: 2.5rem; text-align: center; margin-bottom: 3rem; }
 #about-section, #call-for-papers-section { font-size: 1.1rem; line-height: 1.8; }
 
-/* --- PONENTES --- */
-.speakers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 2.5rem; }
-.speaker-card { text-align: center; }
-.speaker-card img { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin-bottom: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-.speaker-card h3 { margin: 0 0 0.25rem 0; }
-.speaker-card p { font-size: 0.9rem; color: var(--text-secondary); }
-.speaker-card .socials { margin-top: 0.75rem; font-size: 1.1rem; }
-.speaker-card .socials a { color: var(--text-secondary); }
+/* --- PONENTES (DISEÑO MINIMALISTA: AVATAR Y NOMBRE) --- */
+.speakers-grid {
+    display: grid;
+    /* Usamos auto-fit para que se ajuste automáticamente */
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 2.5rem; /* Aumentamos el espacio entre ponentes */
+    justify-items: center; /* Centramos los items en la cuadrícula */
+}
+.speaker-card {
+    /* Quitamos el fondo y la sombra para un look más limpio */
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out;
+}
+.speaker-card:hover {
+    transform: scale(1.05); /* Un pequeño efecto al pasar el mouse */
+}
+.speaker-card img {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.speaker-card h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+/* Ocultamos la bio y las redes en la vista principal */
+.speaker-card p, .speaker-card .socials {
+    display: none;
+}
+
+/* En pantallas de 768px o más, creamos dos columnas para los ponentes */
+@media (min-width: 768px) {
+    .speakers-grid {
+        grid-template-columns: 1fr 1fr; /* Dos columnas del mismo tamaño */
+    }
+}
 
 /* --- PROGRAMA (TIMELINE - Inspirado en bksforum.org) --- */
 .program-section { 
@@ -234,3 +278,94 @@ body {
     .item-time { text-align: left; width: auto; padding-left: 2rem; }
     .item-time::before { left: 0; }
 }
+/* --- NUEVO: ESTILO PARA EL BOTÓN DE REGISTRO PRINCIPAL --- */
+.main-registration-btn {
+    display: inline-block;
+    margin-top: 2rem;
+    padding: 1rem 2.5rem;
+    background-color: var(--primary-color);
+    color: rgb(86, 86, 86);
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 99px; /* Botón tipo "píldora" */
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+.main-registration-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 25px rgba(0,0,0,0.4);
+}
+/* --- NUEVO: LAYOUT DE DOS COLUMNAS PARA ESCRITORIO --- */
+@media (min-width: 992px) {
+    .event-container {
+        /* En pantallas de 992px o más, creamos dos columnas */
+        /* La primera columna (Sobre el Evento) tomará el 60% y la segunda (Ponentes) el 40% */
+        grid-template-columns: 3fr 2fr;
+    }
+
+    #about-section {
+        grid-column: 1 / 2; /* Ocupa la primera columna */
+        padding-top: 0;
+    }
+    
+    #speakers-section {
+        grid-column: 2 / 3; /* Ocupa la segunda columna */
+        padding-top: 0;
+    }
+    
+    #program-section, #call-for-papers-section, #past-editions-section {
+         /* Hacemos que las siguientes secciones ocupen el ancho completo de ambas columnas */
+        grid-column: 1 / -1;
+    }
+}
+/* --- NUEVO: ESTILOS PARA EL MODAL DE PONENTE --- */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+.modal-overlay.is-visible {
+    opacity: 1;
+    visibility: visible;
+}
+.modal-content {
+    background: var(--surface-color);
+    padding: 2.5rem;
+    border-radius: 12px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    transform: scale(0.95);
+    transition: transform 0.3s;
+}
+.modal-overlay.is-visible .modal-content {
+    transform: scale(1);
+}
+.modal-close-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+#modal-speaker-content .profile-header { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1.5rem; }
+#modal-speaker-content .profile-avatar { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; }
+#modal-speaker-content .profile-name { font-size: 1.8rem; margin: 0; }
+#modal-speaker-content .profile-bio { margin: 0 0 1.5rem 0; }
+#modal-speaker-content .profile-socials { display: flex; gap: 1.5rem; font-size: 1.5rem; list-style: none; padding: 0; }
+#modal-speaker-content .profile-socials a { color: var(--text-color); }
