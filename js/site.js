@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.title = project.title;
         document.getElementById('cover-section').style.backgroundImage = `url(${content.cover?.imageUrl || ''})`;
         document.getElementById('cover-headline').textContent = content.cover?.headline || project.title;
-        document.getElementById('project-authors-list').textContent = (project.authors || []).join(', ');
+        document.getElementById('project-authors-list').textContent = project.doi ? `DOI: ${project.doi}` : '';
         document.getElementById('nav-project-title').textContent = project.title;
 
         document.getElementById('og-title').setAttribute('content', content.cover?.headline || project.title);
