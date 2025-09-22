@@ -1,50 +1,47 @@
 /* =================================================================
-// ARCHIVO CSS FINAL Y UNIFICADO: /css/evento.css
-// Paleta de colores neutra y diseño refinado del programa.
+// ARCHIVO CSS OPTIMIZADO: /css/evento.css
+// Paleta de colores ajustada y diseño del programa refinado.
 // ================================================================= */
 
 :root {
-    --primary-color: #fcfcfc; 
-    --text-color: #1F2937; 
-    --text-secondary: #6B7280; 
-    --background-color: #FFFFFF; 
-    --surface-color: #F9FAFB; 
+    --primary-color: #4338CA;
+    --text-color: #1F2937;
+    --text-secondary: #6B7280;
+    --background-color: #FFFFFF;
+    --surface-color: #F9FAFB;
     --border-color: #E5E7EB;
+    /* Colores para la sección oscura del programa */
+    --dark-surface: #111827;
+    --dark-text: #F9FAFB;
+    --dark-text-secondary: #9CA3AF;
+    --dark-border-color: #374151;
 }
 
 body {
-    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: "Inter", -apple-system, sans-serif;
     margin: 0;
     background-color: var(--background-color);
     color: var(--text-color);
     line-height: 1.6;
 }
 
+/* --- SECCIONES PRINCIPALES --- */
+.event-container { max-width: 1100px; margin: 0 auto; padding: 2rem; display: grid; grid-template-columns: 1fr; gap: 2rem; }
+.event-section { padding: 4rem 0; }
+.event-section h2 { font-size: 2.5rem; text-align: center; margin-bottom: 3rem; }
+.event-footer { background-color: var(--dark-surface); color: var(--dark-text-secondary); text-align: center; padding: 3rem; margin-top: 4rem; }
+
 /* --- NAVEGACIÓN --- */
-.event-nav {
-    position: sticky; top: 0;
-    background-color: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(10px);
-    z-index: 100;
-    border-bottom: 1px solid var(--border-color);
-}
-.nav-content {
-    max-width: 1200px; margin: 0 auto; display: flex;
-    justify-content: space-between; align-items: center;
-    height: 70px; padding: 0 2rem;
-}
+.event-nav { position: sticky; top: 0; background-color: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); z-index: 100; border-bottom: 1px solid var(--border-color); }
+.nav-content { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; height: 70px; padding: 0 2rem; }
 .nav-event-title { font-weight: 600; font-size: 1.1rem; }
 .event-nav ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 2rem; }
 .event-nav a { text-decoration: none; color: var(--text-secondary); font-weight: 500; transition: color 0.2s; }
 .event-nav a:hover { color: var(--primary-color); }
 
 /* --- PORTADA Y CUENTA REGRESIVA --- */
-.event-cover {
-    min-height: 70vh; display: flex; justify-content: center; align-items: center; text-align: center;
-    color: white; background-size: cover; background-position: center; padding: 2rem; position: relative;
-    background-color: #111827;
-}
-.event-cover::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0.1)); }
+.event-cover { min-height: 70vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: white; background-size: cover; background-position: center; padding: 2rem; position: relative; background-color: #111827; }
+.event-cover::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.2)); }
 .cover-content { position: relative; }
 #event-title-cover { font-size: clamp(2.5rem, 6vw, 4.5rem); margin: 0 0 1rem 0; line-height: 1.1; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
 #countdown-timer { display: flex; gap: 1.5rem; justify-content: center; margin-top: 2rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
@@ -52,113 +49,41 @@ body {
 .countdown-item span { display: block; font-size: 3rem; font-weight: 700; line-height: 1; }
 .countdown-item div { font-size: 0.9rem; text-transform: uppercase; margin-top: 0.5rem; opacity: 0.8; }
 
-/* --- CONTENIDO PRINCIPAL --- */
-.event-container {
-    max-width: 1100px; /* Le damos un poco más de espacio para las columnas */
-    margin: 0 auto;
-    padding: 2rem;
-    display: grid; /* Lo preparamos para el layout de columnas */
-    grid-template-columns: 1fr; /* Por defecto, en móvil, es una sola columna */
-    gap: 2rem;
-}
-.event-section { padding: 4rem 0; }
-.event-section h2 { font-size: 2.5rem; text-align: center; margin-bottom: 3rem; }
-#about-section, #call-for-papers-section { font-size: 1.1rem; line-height: 1.8; }
+.main-registration-btn { display: inline-block; margin-top: 2rem; padding: 1rem 2.5rem; background-color: var(--primary-color); color: rgb(255 255 255); font-size: 1.1rem; font-weight: 600; text-decoration: none; border-radius: 99px; transition: all 0.2s; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+.main-registration-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 25px rgba(0,0,0,0.4); }
 
-/* --- PONENTES (DISEÑO MINIMALISTA: AVATAR Y NOMBRE) --- */
-.speakers-grid {
-    display: grid;
-    /* Usamos auto-fit para que se ajuste automáticamente */
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 2.5rem; /* Aumentamos el espacio entre ponentes */
-    justify-items: center; /* Centramos los items en la cuadrícula */
-}
-.speaker-card {
-    /* Quitamos el fondo y la sombra para un look más limpio */
-    background-color: transparent;
-    border: none;
-    box-shadow: none;
-    padding: 0;
-    text-align: center;
-    cursor: pointer;
-    transition: transform 0.2s ease-in-out;
-}
-.speaker-card:hover {
-    transform: scale(1.05); /* Un pequeño efecto al pasar el mouse */
-}
-.speaker-card img {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    object-fit: cover;
-    margin-bottom: 1rem;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-.speaker-card h3 {
-    margin: 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-}
-/* Ocultamos la bio y las redes en la vista principal */
-.speaker-card p, .speaker-card .socials {
-    display: none;
-}
+/* --- PONENTES --- */
+.speakers-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 2.5rem; justify-items: center; }
+.speaker-card { background-color: transparent; border: none; box-shadow: none; padding: 0; text-align: center; cursor: pointer; transition: transform 0.2s ease-in-out; }
+.speaker-card:hover { transform: scale(1.05); }
+.speaker-card img { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin-bottom: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+.speaker-card h3 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+.speaker-card p, .speaker-card .socials { display: none; }
 
-/* En pantallas de 768px o más, creamos dos columnas para los ponentes */
-@media (min-width: 768px) {
-    .speakers-grid {
-        grid-template-columns: 1fr 1fr; /* Dos columnas del mismo tamaño */
-    }
-}
+/* --- PROGRAMA (DISEÑO REFINADO) --- */
+.program-section { background-color: var(--dark-surface); padding: 4rem 2rem; border-radius: 24px; margin: 0 1rem; color: var(--dark-text); }
+.program-section h2 { color: white; } /* Título blanco para que resalte en fondo oscuro */
 
-/* --- PROGRAMA (TIMELINE - Inspirado en bksforum.org) --- */
-.program-section { 
-    background-color: #3e3e3e; /* Usamos un color oscuro neutro de tu paleta */
-    padding: 4rem 2rem;
-    border-radius: 24px; /* Esquinas redondeadas */
-    margin: 0 1rem;
-    color: #F9FAFB; /* Texto claro sobre fondo oscuro */
-}
-.program-section h2 { 
-    color: var(--primary-color); 
-    margin-bottom: 2rem; 
-}
-
-.program-day-tabs { 
-    display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 3rem; 
-    border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; 
-}
-.program-day-tab { 
-    background: none; border: 1px solid transparent; padding: 0.75rem 1.5rem; border-radius: 20px; 
-    color: #D1D5DB; font-size: 1rem; font-weight: 500; cursor: pointer;
-    transition: all 0.2s ease-in-out; display: flex; flex-direction: column; align-items: center;
-}
-.program-day-tab:hover { 
-    background-color: rgba(255,255,255,0.08); color: white; 
-}
-.program-day-tab.active { 
-    color: rgb(92, 92, 92); 
-    background-color: var(--primary-color); 
-}
-.program-day-tab strong { font-size: 1.1rem; font-weight: 700; }
-
-.program-content { padding: 0; }
-.program-day-content { display: none; }
-.program-day-content.active { display: block; }
+.program-day-tabs { display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 3rem; border-bottom: 1px solid var(--dark-border-color); padding-bottom: 1rem; }
+.program-day-tab { background: none; border: 1px solid transparent; padding: 0.75rem 1.5rem; border-radius: 99px; color: var(--dark-text-secondary); font-size: 1rem; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+.program-day-tab:hover { background-color: rgba(255,255,255,0.08); color: var(--dark-text); }
+.program-day-tab.active { color: white; background-color: var(--primary-color); }
 
 .program-timeline { position: relative; padding-left: 50px; max-width: 800px; margin: 0 auto; }
-.program-timeline::before { content: ''; position: absolute; left: 20px; top: 10px; bottom: 10px; width: 2px; background-color: rgba(255,255,255,0.15); }
-
+.program-timeline::before { content: ''; position: absolute; left: 20px; top: 10px; bottom: 10px; width: 2px; background-color: var(--dark-border-color); }
 .program-item-card { display: flex; gap: 1rem; margin-bottom: 1rem; cursor: pointer; position: relative; }
-.item-time { flex-shrink: 0; font-weight: 600; width: 80px; text-align: right; color: #9CA3AF; font-size: 0.9rem; position: relative; padding-top: 5px; }
-.item-time::before { content: ''; position: absolute; left: -31px; top: 10px; width: 10px; height: 10px; background: #4B5563; border-radius: 50%; border: 3px solid #1F2937; }
+.item-time { flex-shrink: 0; font-weight: 600; width: 80px; text-align: right; color: var(--dark-text-secondary); font-size: 0.9rem; position: relative; padding-top: 5px; }
+.item-time::before { content: ''; position: absolute; left: -31px; top: 10px; width: 10px; height: 10px; background: #4B5563; border-radius: 50%; border: 3px solid var(--dark-surface); transition: background-color 0.2s; }
 .program-item-card:hover .item-time::before { background-color: var(--primary-color); }
 
-.item-details { display: flex; align-items: center; gap: 1rem; border-radius: 10px; padding: 1rem; flex-grow: 1; transition: background-color 0.2s ease; }
+.item-details { display: flex; align-items: center; gap: 1rem; border-radius: 10px; padding: 1rem; flex-grow: 1; transition: background-color 0.2s; }
 .program-item-card:hover .item-details { background-color: rgba(255,255,255,0.05); }
 .item-speaker-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
-.item-info h4 { margin: 0; font-size: 1.1rem; color: white; }
-.item-info span { font-size: 0.9rem; color: #9CA3AF; }
+.item-info h4 { margin: 0; font-size: 1.1rem; color: var(--dark-text); }
+.item-info span { font-size: 0.9rem; color: var(--dark-text-secondary); }
+
+.add-to-calendar-btn { margin-left: auto; flex-shrink: 0; font-size: 1.2rem; color: var(--dark-text-secondary); text-decoration: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; transition: all 0.2s; }
+.add-to-calendar-btn:hover { color: white; background-color: rgba(255,255,255,0.1); }
 
 /* --- MODAL DEL PROGRAMA --- */
 .program-modal {
@@ -199,7 +124,7 @@ body {
     object-fit: cover;
     margin-bottom: 1.5rem; /* Mantenemos el espacio con el texto de abajo */
 }
-#modal-item-title { font-size: 2rem; margin-bottom: 0.5rem; color: var(--primary-color); }
+#modal-item-title { font-size: 2rem; margin-bottom: 0.5rem; color: #3e3e3e; }
 #modal-item-time { font-size: 1rem; color: var(--text-secondary); margin-bottom: 1rem; }
 .modal-item-speaker { 
     display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; 

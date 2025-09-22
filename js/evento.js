@@ -270,11 +270,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         <img src="${speakerAvatar}" alt="${speakerName}" class="item-speaker-avatar">
                         <div class="item-info">
                             <h4>${item.title}</h4>
-                            <span>${speakerName}</span>
+                            <span>Por: ${speakerName}</span>
                         </div>
+                        ${calendarLink ? `
                         <a href="${calendarLink}" target="_blank" class="add-to-calendar-btn" title="Añadir a Google Calendar">
                             <i class="fa-solid fa-calendar-plus"></i>
-                        </a>
+                        </a>` : ''}
                     </div>
                 </div>
                 `;
@@ -304,12 +305,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function openProgramModal(itemData) {
         const modal = document.getElementById('program-modal');
+        const modalTitle = document.getElementById('modal-item-title');
 
-        // --- CORRECCIÓN: PASO 1 - Poner toda la información nueva MIENTRAS el modal está oculto ---
+        // --- INICIO DE LA CORRECCIÓN ---
+        // 1. Buscamos y eliminamos cualquier botón de calendario que exista de una apertura anterior.
+        const oldCalendarBtn = modal.querySelector('.add-to-calendar-btn');
+        if (oldCalendarBtn) {
+            oldCalendarBtn.remove();
+        }
+        // --- FIN DE LA CORRECCIÓN ---
+
         document.getElementById('modal-item-cover').src = itemData.itemCoverUrl || 'https://i.ibb.co/Vt9tv2D/default-placeholder.png';
-        document.getElementById('modal-item-title').textContent = itemData.title;
+        modalTitle.textContent = itemData.title;
         document.getElementById('modal-item-time').textContent = `${itemData.date} | ${itemData.startTime} - ${itemData.endTime}`;
-        document.getElementById('modal-item-description').innerHTML = itemData.description;
 
         const speakerDetails = itemData.speaker_details;
         const speakerContainer = document.getElementById('modal-item-speaker');
@@ -330,12 +338,28 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             linkButton.style.display = 'none';
         }
+        
+        // --- LÓGICA AÑADIDA PARA EL BOTÓN DE CALENDARIO EN EL MODAL ---
+        const calendarLink = createGoogleCalendarLink(itemData);
+        if (calendarLink) {
+            const calendarButtonHtml = `
+                <a href="${calendarLink}" target="_blank" class="add-to-calendar-btn" title="Añadir a Google Calendar">
+                    <i class="fa-solid fa-calendar-plus"></i>
+                </a>
+            `;
+            // Lo añadimos al lado del título
+            modalTitle.insertAdjacentHTML('afterend', calendarButtonHtml);
+        }
+
 
         modal.classList.add('active');
-        document.body.style.overflow = 'hidden'; // Evitar scroll en el body
+        document.body.style.overflow = 'hidden';
     }
 
     function createGoogleCalendarLink(item) {
+        if (!item.date || !item.startTime || !item.endTime) {
+            return null;
+        }
         const formatDate = (date, time) => {
             // Formato YYYYMMDDTHHMMSSZ
             return new Date(`${date}T${time}`).toISOString().replace(/-|:|\.\d+/g, '');
