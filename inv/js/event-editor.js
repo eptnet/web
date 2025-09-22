@@ -113,68 +113,181 @@ export const EventEditorApp = {
         `).join('');
     },
 
-    async openEditionEditor(editionData = null) {
-        this.activeEditionId = editionData ? editionData.id : 'new';
-        this.renderEditionsList();
+    // VERSIÓN ACTUALIZADA PARA openEditionEditor CON CHECKBOXES
+async openEditionEditor(editionData = null) {
+    this.activeEditionId = editionData ? editionData.id : 'new';
+    this.renderEditionsList();
 
-        const container = document.getElementById('edition-editor-container');
-        container.style.display = 'block';
+    const container = document.getElementById('edition-editor-container');
+    container.style.display = 'block';
 
-        // --- CORRECCIÓN: Buscamos las sesiones del usuario ---
-        const { data: allSessions } = await this.supabase
-            .from('sessions')
-            .select('id, session_title')
-            .eq('user_id', this.user.id);
-            
-        let sessionsOptions = (allSessions || []).map(session => 
-            `<option value="${session.id}">${session.session_title}</option>`
-        ).join('');
+    console.log('Buscando sesiones para el user_id:', this.user.id);
 
-        // Construimos el HTML completo del editor
-        container.innerHTML = `
-            <fieldset>
-                <legend>${editionData ? `Editando: ${editionData.edition_name}` : 'Nueva Edición'}</legend>
-                <div class="form-group"><label>Nombre de la Edición</label><input type="text" id="edition-name" value="${editionData?.edition_name || ''}" required></div>
-                <div class="form-group-grid">
-                    <div><label>Fecha de Inicio</label><input type="date" id="edition-start-date" value="${editionData?.start_date || ''}"></div>
-                    <div><label>Fecha de Fin</label><input type="date" id="edition-end-date" value="${editionData?.end_date || ''}"></div>
-                </div>
-                <div class="form-group"><label>Lugar</label><input type="text" id="edition-location" value="${editionData?.location || ''}"></div>
-            </fieldset>
-            <fieldset>
-                <legend><i class="fa-solid fa-users"></i> Ponentes</legend>
-                <div id="speakers-list-container" class="item-list-editor"></div>
-                <button type="button" class="btn-add-item" id="add-speaker-btn"><i class="fa-solid fa-plus"></i> Añadir Ponente</button>
-            </fieldset>
-            <fieldset>
-                <legend><i class="fa-solid fa-list-check"></i> Programa</legend>
-                <div id="program-items-container" class="item-list-editor"></div>
-                <button type="button" class="btn-add-item" id="add-program-item-btn"><i class="fa-solid fa-plus"></i> Añadir al Programa</button>
-            </fieldset>
-            <fieldset>
-                <legend><i class="fa-solid fa-podcast"></i> Sesiones de LiveRoom Asociadas</legend>
-                <p class="form-hint">Selecciona las sesiones que quieres mostrar en la página.</p>
-                <div class="form-group">
-                    <select id="edition-selected-sessions" multiple>${sessionsOptions}</select>
-                </div>
-            </fieldset>
-        `;
+    const { data: allSessions, error } = await this.supabase
+        .from('sessions')
+        .select('id, session_title')
+        .eq('user_id', this.user.id);
 
-        // Lógica para poblar y activar los botones
-        if (editionData) {
-            if (editionData.selected_sessions) {
-                const selectElement = container.querySelector('#edition-selected-sessions');
-                editionData.selected_sessions.forEach(sessionId => {
-                    const option = selectElement.querySelector(`option[value="${sessionId}"]`);
-                    if (option) option.selected = true;
-                });
+    if (error) {
+        console.error("Error al buscar sesiones:", error.message);
+    }
+    
+    // --- CAMBIO CLAVE: Creamos checkboxes en lugar de <option> ---
+    let sessionsCheckboxesHTML = (allSessions || []).map(session => `
+        <div class="checkbox-item">
+            <input type="checkbox" id="session-${session.id}" name="associated_session" value="${session.id}">
+            <label for="session-${session.id}">${session.session_title}</label>
+        </div>
+    `).join('');
+
+    // El HTML del contenedor principal ahora usa un div para los checkboxes.
+    container.innerHTML = `
+        <fieldset>
+            <legend>${editionData ? `Editando: ${editionData.edition_name}` : 'Nueva Edición'}</legend>
+            <div class="form-group"><label>Nombre de la Edición</label><input type="text" id="edition-name" value="${editionData?.edition_name || ''}" required></div>
+            <div class="form-group-grid">
+                <div><label>Fecha de Inicio</label><input type="date" id="edition-start-date" value="${editionData?.start_date || ''}"></div>
+                <div><label>Fecha de Fin</label><input type="date" id="edition-end-date" value="${editionData?.end_date || ''}"></div>
+            </div>
+            <div class="form-group"><label>Lugar</label><input type="text" id="edition-location" value="${editionData?.location || ''}"></div>
+        </fieldset>
+        <fieldset>
+            <legend><i class="fa-solid fa-users"></i> Ponentes</legend>
+            <div id="speakers-list-container" class="item-list-editor"></div>
+            <button type="button" class="btn-add-item" id="add-speaker-btn"><i class="fa-solid fa-plus"></i> Añadir Ponente</button>
+        </fieldset>
+        <fieldset>
+            <legend><i class="fa-solid fa-list-check"></i> Programa</legend>
+            <div id="program-items-container" class="item-list-editor"></div>
+            <button type="button" class="btn-add-item" id="add-program-item-btn"><i class="fa-solid fa-plus"></i> Añadir al Programa</button>
+        </fieldset>
+        <fieldset>
+            <legend><i class="fa-solid fa-podcast"></i> Sesiones de LiveRoom Asociadas</legend>
+            <p class="form-hint">Marca todas las sesiones que quieres mostrar en la página del evento.</p>
+            <div class="checkbox-list-container">${sessionsCheckboxesHTML}</div>
+        </fieldset>
+    `;
+
+    if (allSessions?.length === 0) {
+        container.querySelector('.checkbox-list-container').innerHTML = '<p class="form-hint" style="color: #E11D48;">No se encontraron sesiones de LiveRoom para este usuario.</p>';
+    }
+
+    // --- CAMBIO CLAVE: Lógica para marcar los checkboxes guardados ---
+    if (editionData && editionData.selected_sessions) {
+        editionData.selected_sessions.forEach(sessionId => {
+            const checkbox = container.querySelector(`input[name="associated_session"][value="${sessionId}"]`);
+            if (checkbox) {
+                checkbox.checked = true;
             }
-            (editionData.speakers || []).forEach(speaker => this.addSpeakerFields(container.querySelector('#speakers-list-container'), speaker));
-            (editionData.program || []).forEach(item => this.addProgramItemFields(container.querySelector('#program-items-container'), item));
+        });
+    }
+    
+    (editionData?.speakers || []).forEach(speaker => this.addSpeakerFields(container.querySelector('#speakers-list-container'), speaker));
+    (editionData?.program || []).forEach(item => this.addProgramItemFields(container.querySelector('#program-items-container'), item));
+    
+    container.querySelector('#add-program-item-btn').addEventListener('click', () => this.addProgramItemFields(container.querySelector('#program-items-container'), {}));
+    container.querySelector('#add-speaker-btn').addEventListener('click', () => this.addSpeakerFields(container.querySelector('#speakers-list-container')));
+},
+
+    // VERSIÓN ACTUALIZADA PARA handleSave LEYENDO CHECKBOXES
+    async handleSave() {
+        const saveButton = document.getElementById('save-event-btn');
+        saveButton.disabled = true;
+        saveButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+
+        // ... (El código para guardar el evento principal no cambia)
+        tinymce.triggerSave();
+        const eventUpdates = {
+            title: document.getElementById('event-title').value,
+            cover_url: document.getElementById('event-cover-url').value,
+            registration_url: document.getElementById('event-registration-url').value,
+            is_public: document.getElementById('event-is-public').checked,
+            main_content: {
+                about: tinymce.get('event-about').getContent(),
+                callForPapers: tinymce.get('event-call-for-papers').getContent(),
+                seo: { imageUrl: document.getElementById('event-seo-image-url').value }
+            },
+            user_id: this.user.id
+        };
+        const { data: savedEvent, error: eventError } = await this.supabase
+            .from('events')
+            .upsert(this.editMode ? { id: this.currentEvent.id, ...eventUpdates } : eventUpdates)
+            .select().single();
+
+        if (eventError) {
+            console.error("Error saving event:", eventError);
+            alert("Error al guardar el evento principal.");
+            saveButton.disabled = false;
+            saveButton.innerHTML = '<i class="fa-solid fa-save"></i> Guardar Cambios';
+            return;
+        }
+        this.currentEvent = savedEvent;
+        this.editMode = true;
+        sessionStorage.setItem('activeEvent', JSON.stringify(savedEvent));
+
+        const editionEditor = document.getElementById('edition-editor-container');
+        let editionError = null; 
+
+        if (editionEditor.style.display === 'block' && this.activeEditionId) {
+            const program = Array.from(document.querySelectorAll('#program-items-container .item-fieldset')).map(el => ({
+                date: el.querySelector('.program-item-date').value || null,
+                startTime: el.querySelector('.program-item-start-time').value,
+                endTime: el.querySelector('.program-item-end-time').value,
+                title: el.querySelector('.program-item-title').value,
+                speaker_name: el.querySelector('.program-item-speaker').value,
+                itemCoverUrl: el.querySelector('.program-item-cover-url').value,
+                description: el.querySelector('.program-item-description').value,
+                linkText: el.querySelector('.program-item-link-text').value,
+                linkUrl: el.querySelector('.program-item-link-url').value,
+            }));
+            const speakers = Array.from(document.querySelectorAll('#speakers-list-container .item-fieldset')).map(el => ({
+                name: el.querySelector('.speaker-name').value,
+                avatarUrl: el.querySelector('.speaker-avatar').value,
+                bio: el.querySelector('.speaker-bio').value,
+                email: el.querySelector('.speaker-email').value,
+                social1: el.querySelector('.speaker-social1').value,
+                social2: el.querySelector('.speaker-social2').value,
+                social3: el.querySelector('.speaker-social3').value,
+            }));
+            
+            // --- CAMBIO CLAVE: Leemos los valores de los checkboxes marcados ---
+            const selectedSessions = Array.from(document.querySelectorAll('input[name="associated_session"]:checked'))
+                                        .map(checkbox => Number(checkbox.value));
+
+            const editionDataToSave = {
+                event_id: this.currentEvent.id,
+                edition_name: document.getElementById('edition-name').value,
+                start_date: document.getElementById('edition-start-date').value || null,
+                end_date: document.getElementById('edition-end-date').value || null,
+                location: document.getElementById('edition-location').value,
+                program: program,
+                speakers: speakers,
+                selected_sessions: selectedSessions
+            };
+
+            if (this.activeEditionId !== 'new') {
+                editionDataToSave.id = this.activeEditionId;
+            }
+
+            const { error } = await this.supabase
+                .from('event_editions')
+                .upsert([editionDataToSave]); 
+            
+            editionError = error; 
         }
         
-        container.querySelector('#add-program-item-btn').addEventListener('click', () => this.addProgramItemFields(container.querySelector('#program-items-container'), {}));
-        container.querySelector('#add-speaker-btn').addEventListener('click', () => this.addSpeakerFields(container.querySelector('#speakers-list-container')));
+        if (editionError) {
+            console.error("Error saving edition:", editionError);
+            alert("Se guardó el evento principal, pero hubo un error al guardar la edición.");
+        } else {
+            alert("¡Guardado con éxito!");
+        }
+
+        saveButton.disabled = false;
+        saveButton.innerHTML = '<i class="fa-solid fa-save"></i> Guardar Cambios';
+        
+        await this.loadEventData();
+        if (editionEditor) editionEditor.style.display = 'none';
     },
 
     addEventListeners() {
@@ -317,7 +430,7 @@ export const EventEditorApp = {
         saveButton.disabled = true;
         saveButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
 
-        // 1. Guardar datos del evento principal (sin cambios)
+        // 1. Guardar datos del evento principal
         tinymce.triggerSave();
         const eventUpdates = {
             title: document.getElementById('event-title').value,
@@ -325,11 +438,9 @@ export const EventEditorApp = {
             registration_url: document.getElementById('event-registration-url').value,
             is_public: document.getElementById('event-is-public').checked,
             main_content: {
-                about: document.getElementById('event-about').value, // Leemos desde el textarea
-                callForPapers: document.getElementById('event-call-for-papers').value,
-                seo: {
-                    imageUrl: document.getElementById('event-seo-image-url').value
-                }
+                about: tinymce.get('event-about').getContent(),
+                callForPapers: tinymce.get('event-call-for-papers').getContent(),
+                seo: { imageUrl: document.getElementById('event-seo-image-url').value }
             },
             user_id: this.user.id
         };
@@ -351,10 +462,11 @@ export const EventEditorApp = {
 
         // 2. Guardar datos de la edición activa
         const editionEditor = document.getElementById('edition-editor-container');
+        let editionError = null; 
+
         if (editionEditor.style.display === 'block' && this.activeEditionId) {
-            // --- LÓGICA DE GUARDADO ACTUALIZADA ---
             const program = Array.from(document.querySelectorAll('#program-items-container .item-fieldset')).map(el => ({
-                date: el.querySelector('.program-item-date').value,
+                date: el.querySelector('.program-item-date').value || null,
                 startTime: el.querySelector('.program-item-start-time').value,
                 endTime: el.querySelector('.program-item-end-time').value,
                 title: el.querySelector('.program-item-title').value,
@@ -364,7 +476,6 @@ export const EventEditorApp = {
                 linkText: el.querySelector('.program-item-link-text').value,
                 linkUrl: el.querySelector('.program-item-link-url').value,
             }));
-
             const speakers = Array.from(document.querySelectorAll('#speakers-list-container .item-fieldset')).map(el => ({
                 name: el.querySelector('.speaker-name').value,
                 avatarUrl: el.querySelector('.speaker-avatar').value,
@@ -374,11 +485,10 @@ export const EventEditorApp = {
                 social2: el.querySelector('.speaker-social2').value,
                 social3: el.querySelector('.speaker-social3').value,
             }));
+            // Convierte los valores a números para que coincida con `bigint`
+            const selectedSessions = Array.from(document.getElementById('edition-selected-sessions').selectedOptions).map(opt => Number(opt.value));
 
-            const selectedSessionsSelect = document.getElementById('edition-selected-sessions');
-            const selectedSessions = Array.from(selectedSessionsSelect.selectedOptions).map(opt => opt.value);
-
-            const editionUpdates = {
+            const editionDataToSave = {
                 event_id: this.currentEvent.id,
                 edition_name: document.getElementById('edition-name').value,
                 start_date: document.getElementById('edition-start-date').value || null,
@@ -388,24 +498,31 @@ export const EventEditorApp = {
                 speakers: speakers,
                 selected_sessions: selectedSessions
             };
-            
-            const editionIdToSave = this.activeEditionId === 'new' ? undefined : this.activeEditionId;
-            const { error: editionError } = await this.supabase
-                .from('event_editions')
-                .upsert(editionIdToSave ? { id: editionIdToSave, ...editionUpdates } : editionUpdates);
-                
-            if (editionError) {
-                console.error("Error saving edition:", editionError);
-                alert("Se guardó el evento principal, pero hubo un error al guardar la edición.");
+
+            if (this.activeEditionId !== 'new') {
+                editionDataToSave.id = this.activeEditionId;
             }
+
+            const { error } = await this.supabase
+                .from('event_editions')
+                .upsert([editionDataToSave]); 
+            
+            editionError = error; 
         }
         
-        alert("¡Guardado con éxito!");
+        // 3. Manejo de mensajes y estado final
+        if (editionError) {
+            console.error("Error saving edition:", editionError);
+            alert("Se guardó el evento principal, pero hubo un error al guardar la edición.");
+        } else {
+            alert("¡Guardado con éxito!");
+        }
+
         saveButton.disabled = false;
         saveButton.innerHTML = '<i class="fa-solid fa-save"></i> Guardar Cambios';
         
         await this.loadEventData();
-        editionEditor.style.display = 'none';
+        if (editionEditor) editionEditor.style.display = 'none';
     },
 
     updateSpeakerOptionsInProgram() {

@@ -250,7 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
             section.className = 'event-section scroll-animate';
             if(anchorElement) anchorElement.after(section);
         }
-        section.innerHTML = `<h2>Otras Sesiones (LiveRoom)</h2><div class="card-grid">${sessions.map(s => `<a href="/live.html?sesion=${s.id}" target="_blank" rel="noopener noreferrer" class="card session-card">
+        section.innerHTML = `<h2>Sesiones (LiveRoom)</h2><div class="card-grid">${sessions.map(s => `<a href="/live.html?sesion=${s.id}" target="_blank" rel="noopener noreferrer" class="card session-card">
             <img src="${s.thumbnail_url || 'https://i.ibb.co/Vt9tv2D/default-placeholder.png'}" alt="Miniatura" class="session-card-image">
             <div class="session-card-content"><h3>${s.session_title}</h3><p>🗓️ ${new Date(s.scheduled_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}</p></div>
         </a>`).join('')}</div>`;
