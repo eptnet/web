@@ -49,8 +49,25 @@ body {
 .countdown-item span { display: block; font-size: 3rem; font-weight: 700; line-height: 1; }
 .countdown-item div { font-size: 0.9rem; text-transform: uppercase; margin-top: 0.5rem; opacity: 0.8; }
 
-.main-registration-btn { display: inline-block; margin-top: 2rem; padding: 1rem 2.5rem; background-color: var(--primary-color); color: rgb(255 255 255); font-size: 1.1rem; font-weight: 600; text-decoration: none; border-radius: 99px; transition: all 0.2s; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
-.main-registration-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 25px rgba(0,0,0,0.4); }
+.main-registration-btn {
+    display: inline-block;
+    margin-top: 2rem;
+    padding: 1rem 2.5rem;
+    background-color: var(--primary-color);
+    color: white !important; /* <-- Corregido a blanco */
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 8px; /* <-- Corregido a esquinas curvas, no ovalado */
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.main-registration-btn:hover {
+    transform: translateY(-3px);
+    background-color: var(--text-secondary); /* <-- Añadido el color "plomo" al pasar el cursor */
+    box-shadow: 0 6px 25px rgba(0,0,0,0.4);
+}
 
 /* --- PONENTES --- */
 .speakers-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 2.5rem; justify-items: center; }

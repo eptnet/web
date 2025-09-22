@@ -47,6 +47,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const { data: editions } = await supabase.from('event_editions').select('*').eq('event_id', event.id);
+        const { data: sessions } = await supabase.from('sessions').select('*').eq('project_title', event.projects.title);
+
         const currentEdition = editions.sort((a,b) => new Date(b.start_date) - new Date(a.start_date))[0];
 
         if (!currentEdition) {
@@ -60,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderMainContent(event.main_content);
         renderSpeakers(currentEdition.speakers);
         renderProgram(currentEdition.program, currentEdition.speakers);
+        renderLiveRoomSessions(sessions);
         setupScrollAnimations();
         setupEventListeners();
         setupStickyNav();
@@ -163,6 +166,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function renderLiveRoomSessions(sessions = []) {
+        const container = document.createElement('section');
+        container.id = 'liveroom-sessions-section';
+        container.className = 'event-section scroll-animate';
+        
+        if (!sessions || sessions.length === 0) {
+            return; // No hacemos nada si no hay sesiones
+        }
+
+        let htmlContent = `
+            <h2>Otras Sesiones (LiveRoom)</h2>
+            <div class="card-grid">${sessions.map(session => `
+                <a href="/live.html?sesion=${session.id}" target="_blank" rel="noopener noreferrer" class="card session-card">
+                    <img src="${session.thumbnail_url || 'https://i.ibb.co/Vt9tv2D/default-placeholder.png'}" alt="Miniatura" class="session-card-image">
+                    <div class="session-card-content">
+                        <h3>${session.session_title}</h3>
+                        <p>🗓️ ${new Date(session.scheduled_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}</p>
+                    </div>
+                </a>
+            `).join('')}</div>
+        `;
+        
+        container.innerHTML = htmlContent;
+        // La insertamos después de la sección 'Call for Papers'
+        document.getElementById('call-for-papers-section').after(container);
+    }
+
     function renderSpeakers(speakers = []) {
         const container = document.getElementById('speakers-section');
         if (!speakers || speakers.length === 0) { container.style.display = 'none'; return; }
@@ -230,40 +260,31 @@ document.addEventListener('DOMContentLoaded', () => {
         const tabsContainer = document.getElementById('program-day-tabs');
         const contentContainer = document.getElementById('program-content');
         tabsContainer.innerHTML = '';
-        contentContainer.innerHTML = '';
+        contentContainer.innerHTML = ''; // Limpiamos el contenido
 
         sortedDates.forEach((date, index) => {
             const formattedDate = new Date(date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
             const dayOfWeek = new Date(date).toLocaleDateString('es-ES', { weekday: 'short' });
             
-            // Crear pestaña
             const tabButton = document.createElement('button');
-            tabButton.classList.add('program-day-tab');
-            if (index === 0) {
-                tabButton.classList.add('active'); // Solo añadimos 'active' al primero
-            }
+            tabButton.className = `program-day-tab ${index === 0 ? 'active' : ''}`;
             tabButton.dataset.day = date;
             tabButton.innerHTML = `<span>${dayOfWeek}</span><strong>${formattedDate}</strong>`;
             tabsContainer.appendChild(tabButton);
 
-            // Crear contenido del día
             const dayContent = document.createElement('div');
-            dayContent.classList.add('program-day-content');
-            if (index === 0) {
-                dayContent.classList.add('active'); // Solo añadimos 'active' al primero
-            }
+            dayContent.className = `program-day-content ${index === 0 ? 'active' : ''}`;
             dayContent.id = `content-${date}`;
             
-            dayContent.innerHTML = `<div class="program-timeline">${days[date].map(item => {
+            let dayHtml = `<div class="program-timeline">`;
+            days[date].forEach(item => {
                 const speaker = speakers.find(s => s.name === item.speaker_name);
                 const speakerAvatar = speaker?.avatarUrl || 'https://i.ibb.co/61fJv24/default-avatar.png';
                 const speakerName = speaker?.name || 'Ponente por confirmar';
                 const itemData = JSON.stringify({ ...item, speaker_details: speaker });
-                
-                // --- LÓGICA AÑADIDA PARA EL ENLACE DE CALENDAR ---
                 const calendarLink = createGoogleCalendarLink(item);
 
-                return `
+                dayHtml += `
                 <div class="program-item-card" data-program-item='${itemData.replace(/'/g, "&apos;")}'>
                     <div class="item-time">${item.startTime}</div>
                     <div class="item-details">
@@ -272,29 +293,25 @@ document.addEventListener('DOMContentLoaded', () => {
                             <h4>${item.title}</h4>
                             <span>Por: ${speakerName}</span>
                         </div>
-                        ${calendarLink ? `
-                        <a href="${calendarLink}" target="_blank" class="add-to-calendar-btn" title="Añadir a Google Calendar">
-                            <i class="fa-solid fa-calendar-plus"></i>
-                        </a>` : ''}
+                        ${calendarLink ? `<a href="${calendarLink}" target="_blank" class="add-to-calendar-btn" title="Añadir a Google Calendar"><i class="fa-solid fa-calendar-plus"></i></a>` : ''}
                     </div>
                 </div>
                 `;
-            }).join('')}</div>`;
+            });
+            dayHtml += `</div>`;
+            dayContent.innerHTML = dayHtml;
             contentContainer.appendChild(dayContent);
         });
 
-        // Añadir event listeners para las pestañas
         tabsContainer.querySelectorAll('.program-day-tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 tabsContainer.querySelectorAll('.program-day-tab').forEach(t => t.classList.remove('active'));
                 contentContainer.querySelectorAll('.program-day-content').forEach(c => c.classList.remove('active'));
-                
                 tab.classList.add('active');
                 document.getElementById(`content-${tab.dataset.day}`).classList.add('active');
             });
         });
 
-        // Añadir event listeners para abrir el modal al hacer clic en un item del programa
         contentContainer.querySelectorAll('.program-item-card').forEach(card => {
             card.addEventListener('click', () => {
                 const itemData = JSON.parse(card.dataset.programItem.replace(/&apos;/g, "'"));
