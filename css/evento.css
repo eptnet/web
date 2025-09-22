@@ -5,6 +5,7 @@
 
 :root {
     --primary-color: #4338CA;
+    --primary-light: #6D28D9;
     --text-color: #1F2937;
     --text-secondary: #6B7280;
     --background-color: #FFFFFF;
@@ -49,23 +50,23 @@ body {
 .countdown-item span { display: block; font-size: 3rem; font-weight: 700; line-height: 1; }
 .countdown-item div { font-size: 0.9rem; text-transform: uppercase; margin-top: 0.5rem; opacity: 0.8; }
 
+/* REGLA DE BOTÓN DE REGISTRO UNIFICADA */
 .main-registration-btn {
     display: inline-block;
     margin-top: 2rem;
     padding: 1rem 2.5rem;
     background-color: var(--primary-color);
-    color: white !important; /* <-- Corregido a blanco */
+    color: white !important;
     font-size: 1.1rem;
     font-weight: 600;
     text-decoration: none;
-    border-radius: 8px; /* <-- Corregido a esquinas curvas, no ovalado */
+    border-radius: 8px;
     transition: all 0.2s ease-in-out;
     box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
-
 .main-registration-btn:hover {
     transform: translateY(-3px);
-    background-color: var(--text-secondary); /* <-- Añadido el color "plomo" al pasar el cursor */
+    background-color: var(--primary-light);
     box-shadow: 0 6px 25px rgba(0,0,0,0.4);
 }
 
@@ -77,237 +78,364 @@ body {
 .speaker-card h3 { margin: 0; font-size: 1.1rem; font-weight: 600; }
 .speaker-card p, .speaker-card .socials { display: none; }
 
-/* --- PROGRAMA (DISEÑO REFINADO) --- */
-.program-section { background-color: var(--dark-surface); padding: 4rem 2rem; border-radius: 24px; margin: 0 1rem; color: var(--dark-text); }
-.program-section h2 { color: white; } /* Título blanco para que resalte en fondo oscuro */
+/* --- PROGRAMA (DISEÑO FINAL CON ALINEACIÓN GARANTIZADA) --- */
+.program-section {
+    background-color: var(--dark-surface);
+    padding: 4rem 2rem;
+    border-radius: 24px;
+    margin: 0 1rem;
+    color: var(--dark-text);
+}
 
-.program-day-tabs { display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 3rem; border-bottom: 1px solid var(--dark-border-color); padding-bottom: 1rem; }
-.program-day-tab { background: none; border: 1px solid transparent; padding: 0.75rem 1.5rem; border-radius: 99px; color: var(--dark-text-secondary); font-size: 1rem; font-weight: 500; cursor: pointer; transition: all 0.2s; }
-.program-day-tab:hover { background-color: rgba(255,255,255,0.08); color: var(--dark-text); }
-.program-day-tab.active { color: white; background-color: var(--primary-color); }
+.program-section h2 {
+    color: white;
+}
 
-.program-timeline { position: relative; padding-left: 50px; max-width: 800px; margin: 0 auto; }
-.program-timeline::before { content: ''; position: absolute; left: 20px; top: 10px; bottom: 10px; width: 2px; background-color: var(--dark-border-color); }
-.program-item-card { display: flex; gap: 1rem; margin-bottom: 1rem; cursor: pointer; position: relative; }
-.item-time { flex-shrink: 0; font-weight: 600; width: 80px; text-align: right; color: var(--dark-text-secondary); font-size: 0.9rem; position: relative; padding-top: 5px; }
-.item-time::before { content: ''; position: absolute; left: -31px; top: 10px; width: 10px; height: 10px; background: #4B5563; border-radius: 50%; border: 3px solid var(--dark-surface); transition: background-color 0.2s; }
-.program-item-card:hover .item-time::before { background-color: var(--primary-color); }
+.program-day-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 3rem;
+    border-bottom: 1px solid var(--dark-border-color);
+    padding-bottom: 1rem;
+    flex-wrap: wrap;
+}
 
-.item-details { display: flex; align-items: center; gap: 1rem; border-radius: 10px; padding: 1rem; flex-grow: 1; transition: background-color 0.2s; }
-.program-item-card:hover .item-details { background-color: rgba(255,255,255,0.05); }
-.item-speaker-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
-.item-info h4 { margin: 0; font-size: 1.1rem; color: var(--dark-text); }
-.item-info span { font-size: 0.9rem; color: var(--dark-text-secondary); }
+.program-day-tab {
+    background: none;
+    border: 1px solid transparent;
+    padding: 0.75rem 1.5rem;
+    border-radius: 99px;
+    color: var(--dark-text-secondary);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
 
-.add-to-calendar-btn { margin-left: auto; flex-shrink: 0; font-size: 1.2rem; color: var(--dark-text-secondary); text-decoration: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; transition: all 0.2s; }
-.add-to-calendar-btn:hover { color: white; background-color: rgba(255,255,255,0.1); }
+.program-day-tab:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: var(--dark-text);
+}
+
+.program-day-tab.active {
+    color: white;
+    background-color: var(--primary-color);
+}
+
+.program-day-content {
+    display: none;
+}
+.program-day-content.active {
+    display: block;
+}
+
+.program-timeline {
+    position: relative;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Eliminamos la línea de tiempo global de aquí */
+.program-timeline::before {
+    display: none;
+}
+
+.program-item-card {
+    display: grid;
+    /* Columnas: [Hora] [Avatar Grande] [Detalles] */
+    grid-template-columns: 80px 60px 1fr;
+    gap: 1.5rem; /* Aumentamos el gap para más espacio */
+    align-items: center;
+    position: relative;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+    cursor: pointer;
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--dark-border-color);
+    border-radius: 16px;
+    transition: all 0.2s ease-in-out;
+}
+
+.program-item-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(77, 91, 206, 0.5);
+    background-color: rgba(255, 255, 255, 0.07);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.item-time {
+    text-align: right;
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--dark-text-secondary);
+    position: relative;
+}
+
+.item-time::after {
+    content: '';
+    position: absolute;
+    right: -1.5rem; /* Igual al gap */
+    top: 50%;
+    width: 1.5rem; /* Ancho del gap */
+    height: 2px;
+    background-color: var(--dark-border-color);
+}
+
+/* --- NUEVA LÓGICA DE ALINEACIÓN --- */
+.item-marker {
+    width: 60px; /* Avatar más grande */
+    height: 60px;
+    position: relative;
+}
+
+/* La línea vertical ahora es parte del marcador, no del timeline */
+.item-marker::before {
+    content: '';
+    position: absolute;
+    z-index: 0; /* Detrás del avatar */
+    left: 50%;
+    transform: translateX(-50%);
+    top: -2.5rem; /* Extendemos la línea hacia arriba */
+    bottom: -2.5rem; /* Extendemos la línea hacia abajo */
+    width: 2px;
+    background-image: linear-gradient(to bottom, var(--dark-border-color) 50%, transparent 100%);
+    background-size: 2px 10px;
+}
+/* Ocultamos las líneas sobrantes del primer y último elemento */
+.program-timeline .program-item-card:first-child .item-marker::before { top: 50%; }
+.program-timeline .program-item-card:last-child .item-marker::before { bottom: 50%; }
+
+
+.item-speaker-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--dark-surface);
+    position: relative; /* Para que se dibuje encima de la línea */
+    z-index: 1;
+}
+
+.item-dot {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 12px;
+    height: 12px;
+    background: #4B5563;
+    border-radius: 50%;
+    border: 3px solid var(--dark-surface);
+    z-index: 1;
+}
+
+.item-details {
+    text-align: left;
+}
+
+.item-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--dark-text);
+    margin: 0 0 0.25rem 0;
+}
+
+.item-description-snippet {
+    font-size: 1rem;
+    color: var(--dark-text-secondary);
+    margin: 0.25rem 0 0 0;
+    line-height: 1.5;
+}
 
 /* --- MODAL DEL PROGRAMA --- */
-.program-modal {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center;
-    visibility: hidden; opacity: 0; transition: opacity 0.3s ease, visibility 0.3s ease; z-index: 1000;
-}
+.program-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center; visibility: hidden; opacity: 0; transition: opacity 0.3s ease, visibility 0.3s ease; z-index: 1000; }
 .program-modal.active { visibility: visible; opacity: 1; }
-
-.program-modal-content {
-    background-color: var(--surface-color);
-    padding: 2.5rem;
-    border-radius: 12px;
-    max-width: 800px; /* <-- 1. Aumentamos el ancho máximo */
-    position: relative;
-    max-height: 90vh;
-    overflow-y: auto;
-    text-align: left;
-    transform: scale(0.95);
-    opacity: 0;
-    transition: transform 0.3s ease, opacity 0.3s ease;
-}
+.program-modal-content { background-color: white; padding: 2.5rem; border-radius: 12px; max-width: 800px; position: relative; max-height: 90vh; overflow-y: auto; text-align: left; transform: scale(0.95); opacity: 0; transition: transform 0.3s ease, opacity 0.3s ease; }
 .program-modal.active .program-modal-content { transform: scale(1); opacity: 1; }
 
-.close-button { 
-    position: absolute; top: 15px; right: 20px; font-size: 2rem; color: var(--text-secondary); 
-    cursor: pointer; background: none; border: none;
-}
-.modal-item-cover {
-    /* --- 2. Hacemos la imagen full-width --- */
-    width: calc(100% + 5rem);  /* Ancho total + el doble del padding (2.5rem * 2) */
-    margin-left: -2.5rem;      /* La movemos a la izquierda para cubrir el padding */
-    margin-right: -2.5rem;     /* La movemos a la derecha para cubrir el padding */
-    margin-top: -2.5rem;       /* La movemos hacia arriba para cubrir el padding */
-    border-radius: 12px 12px 0 0; /* Redondeamos solo las esquinas superiores */
-
-    max-height: 300px;
-    object-fit: cover;
-    margin-bottom: 1.5rem; /* Mantenemos el espacio con el texto de abajo */
-}
-#modal-item-title { font-size: 2rem; margin-bottom: 0.5rem; color: #3e3e3e; }
+.close-button { position: absolute; top: 15px; right: 20px; font-size: 2rem; color: var(--text-secondary); cursor: pointer; background: none; border: none; }
+.modal-item-cover { width: calc(100% + 5rem); margin-left: -2.5rem; margin-top: -2.5rem; border-radius: 12px 12px 0 0; max-height: 300px; object-fit: cover; margin-bottom: 1.5rem; }
+#modal-item-title { font-size: 2rem; margin-bottom: 0.5rem; }
 #modal-item-time { font-size: 1rem; color: var(--text-secondary); margin-bottom: 1rem; }
-.modal-item-speaker { 
-    display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; 
-    padding: 1rem; background-color: var(--surface-color); border-radius: 8px; border: 1px solid var(--border-color);
-}
-#modal-speaker-avatar { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary-color); }
+.modal-item-speaker { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; padding: 1rem; background-color: var(--surface-color); border-radius: 8px; border: 1px solid var(--border-color); }
+#modal-speaker-avatar { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; }
 .modal-speaker-info { display: flex; flex-direction: column; }
 #modal-speaker-name { font-weight: 600; font-size: 1.1rem; }
 #modal-speaker-bio { font-size: 0.9rem; color: var(--text-secondary); }
 #modal-item-description { font-size: 1rem; line-height: 1.7; color: var(--text-color); margin-bottom: 1.5rem; }
-.program-item-btn { 
-    display: inline-block; padding: 0.8rem 1.8rem; background-color: var(--primary-color); 
-    color: white; text-decoration: none; border-radius: 8px; font-weight: 600;
-    transition: background-color 0.2s ease;
-}
+.program-item-btn { display: inline-block; padding: 0.8rem 1.8rem; background-color: var(--primary-color); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; transition: background-color 0.2s ease; }
 .program-item-btn:hover { background-color: var(--primary-light); }
 
-/* --- FOOTER --- */
-.event-footer { background-color: #1a1a1a; color: #BBBBBB; text-align: center; padding: 2rem; margin-top: 4rem; font-size: 0.9rem; }
-/* --- NUEVO: ESTILOS PARA ANIMACIÓN DE SCROLL --- */
-.scroll-animate {
-    opacity: 0;
-    transform: translateY(40px);
-    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
-}
-.scroll-animate.is-visible {
-    opacity: 1;
-    transform: translateY(0);
-}
-/* --- NUEVO: ESTILO PARA EL BOTÓN DE AÑADIR A CALENDAR --- */
-.add-to-calendar-btn {
-    margin-left: auto; /* Empuja el botón a la derecha */
-    flex-shrink: 0;
-    font-size: 1.2rem;
-    color: var(--text-secondary);
-    text-decoration: none;
-    padding: 0.5rem;
-    border-radius: 50%;
-    transition: all 0.2s;
-}
-.add-to-calendar-btn:hover {
-    color: var(--primary-color);
-    background-color: var(--border-color);
-}
-/* --- NUEVO: ESTILOS RESPONSIVE PARA PÁGINA DE EVENTO --- */
-.mobile-menu-btn {
-    display: none;
-    background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-color);
-}
+/* --- ANIMACIÓN DE SCROLL --- */
+.scroll-animate { opacity: 0; transform: translateY(40px); transition: opacity 0.8s ease-out, transform 0.8s ease-out; }
+.scroll-animate.is-visible { opacity: 1; transform: translateY(0); }
+
+/* --- BOTÓN DE AÑADIR A CALENDAR --- */
+.add-to-calendar-btn { margin-left: 1rem; flex-shrink: 0; font-size: 1.2rem; color: var(--text-secondary); text-decoration: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; transition: all 0.2s; }
+.add-to-calendar-btn:hover { color: var(--primary-color); background-color: var(--border-color); }
+
+/* --- RESPONSIVE Y MODALES --- */
+.mobile-menu-btn { display: none; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-color); }
 
 @media (max-width: 768px) {
     .nav-event-title { display: none; }
     .mobile-menu-btn { display: block; z-index: 1001; }
     .nav-content { justify-content: flex-end; }
-
-    .event-nav ul {
-        display: none;
-        position: absolute;
-        top: 70px;
-        left: 0;
-        right: 0;
-        background-color: var(--surface-color);
-        flex-direction: column;
-        padding: 1rem 2rem;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
+    .event-nav ul { display: none; position: absolute; top: 70px; left: 0; right: 0; background-color: white; flex-direction: column; padding: 1rem 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     .event-nav ul.is-open { display: flex; }
-
     #event-title-cover { font-size: 2.2rem; }
     .countdown-item { min-width: 60px; padding: 0.5rem; }
     .countdown-item span { font-size: 2rem; }
-
-    .program-timeline { padding-left: 0; }
+    .program-timeline { padding-left: 20px; }
     .program-timeline::before { left: 5px; }
-    .program-item-card { flex-direction: column; gap: 0.5rem; }
-    .item-time { text-align: left; width: auto; padding-left: 2rem; }
-    .item-time::before { left: 0; }
+    .item-time { text-align: left; width: auto; }
+    .item-time::before { left: -16px; }
 }
-/* --- NUEVO: ESTILO PARA EL BOTÓN DE REGISTRO PRINCIPAL --- */
-.main-registration-btn {
-    display: inline-block;
-    margin-top: 2rem;
-    padding: 1rem 2.5rem;
-    background-color: var(--primary-color);
-    color: rgb(86, 86, 86);
-    font-size: 1.1rem;
-    font-weight: 600;
-    text-decoration: none;
-    border-radius: 99px; /* Botón tipo "píldora" */
-    transition: all 0.2s ease-in-out;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-}
-.main-registration-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 25px rgba(0,0,0,0.4);
-}
-/* --- NUEVO: LAYOUT DE DOS COLUMNAS PARA ESCRITORIO --- */
-@media (min-width: 992px) {
-    .event-container {
-        /* En pantallas de 992px o más, creamos dos columnas */
-        /* La primera columna (Sobre el Evento) tomará el 60% y la segunda (Ponentes) el 40% */
-        grid-template-columns: 3fr 2fr;
-    }
 
-    #about-section {
-        grid-column: 1 / 2; /* Ocupa la primera columna */
-        padding-top: 0;
-    }
-    
-    #speakers-section {
-        grid-column: 2 / 3; /* Ocupa la segunda columna */
-        padding-top: 0;
-    }
-    
-    #program-section, #call-for-papers-section, #past-editions-section {
-         /* Hacemos que las siguientes secciones ocupen el ancho completo de ambas columnas */
-        grid-column: 1 / -1;
-    }
+@media (min-width: 992px) {
+    .event-container { grid-template-columns: 3fr 2fr; }
+    #about-section { grid-column: 1 / 2; padding-top: 0; }
+    #speakers-section { grid-column: 2 / 3; padding-top: 0; }
+    #program-section, #call-for-papers-section, #past-editions-section { grid-column: 1 / -1; }
 }
-/* --- NUEVO: ESTILOS PARA EL MODAL DE PONENTE --- */
-.modal-overlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s, visibility 0.3s;
-}
-.modal-overlay.is-visible {
-    opacity: 1;
-    visibility: visible;
-}
-.modal-content {
-    background: var(--surface-color);
-    padding: 2.5rem;
-    border-radius: 12px;
-    max-width: 600px;
-    width: 90%;
-    max-height: 90vh;
-    overflow-y: auto;
-    position: relative;
-    transform: scale(0.95);
-    transition: transform 0.3s;
-}
-.modal-overlay.is-visible .modal-content {
-    transform: scale(1);
-}
-.modal-close-btn {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    background: none;
-    border: none;
-    font-size: 1.8rem;
-    cursor: pointer;
-    color: var(--text-secondary);
-}
+
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
+.modal-overlay.is-visible { opacity: 1; visibility: visible; }
+.modal-content { background: white; padding: 2.5rem; border-radius: 12px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; position: relative; transform: scale(0.95); transition: transform 0.3s; }
+.modal-overlay.is-visible .modal-content { transform: scale(1); }
+.modal-close-btn { position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.8rem; cursor: pointer; color: var(--text-secondary); }
 #modal-speaker-content .profile-header { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1.5rem; }
 #modal-speaker-content .profile-avatar { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; }
 #modal-speaker-content .profile-name { font-size: 1.8rem; margin: 0; }
 #modal-speaker-content .profile-bio { margin: 0 0 1.5rem 0; }
 #modal-speaker-content .profile-socials { display: flex; gap: 1.5rem; font-size: 1.5rem; list-style: none; padding: 0; }
 #modal-speaker-content .profile-socials a { color: var(--text-color); }
+/* --- ESTILOS PARA AVATARES EN EL PROGRAMA --- */
+.program-timeline {
+    padding-left: 0; /* Reseteamos el padding para el nuevo layout */
+}
+.program-item-card {
+    display: grid;
+    grid-template-columns: 80px 60px 1fr; /* Columnas para: Hora, Avatar/Punto, Detalles */
+    align-items: flex-start;
+    gap: 1rem;
+    position: relative;
+    padding: 0.5rem 0;
+}
+.program-timeline::before {
+    left: 110px; /* Posicionamos la línea del timeline en el centro de la 2da columna */
+    transform: translateX(-50%);
+}
+.item-time {
+    text-align: right;
+    padding-top: 0.25rem;
+}
+.item-marker {
+    position: relative;
+    width: 50px;
+    height: 50px;
+    margin: 0 auto;
+}
+.item-speaker-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--dark-surface);
+}
+.item-dot {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 12px;
+    height: 12px;
+    background: #4B5563;
+    border-radius: 50%;
+    border: 3px solid var(--dark-surface);
+}
+.program-item-card:hover .item-dot {
+    background-color: var(--primary-color);
+}
+.item-details p {
+    margin: 0.25rem 0 0 0;
+}
+.item-speaker-bio {
+    font-size: 0.85rem;
+    opacity: 0.7;
+    display: block; /* Asegura que aparezca debajo del nombre */
+    margin-top: 0.25rem;
+}
+
+
+/* --- ESTILOS PARA EL NUEVO BOTÓN "AGENDAR" EN EL MODAL --- */
+.modal-time-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+#modal-item-time {
+    margin: 0; /* Quitamos el margen que tenía por defecto */
+}
+.btn-calendar {
+    display: inline-block;
+    background-color: var(--surface-color);
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+.btn-calendar:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+/* --- ESTILOS PARA LA SECCIÓN DE SESIONES LIVEROOM --- */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.session-card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    background-color: white;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease-in-out;
+}
+
+.session-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.session-card-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.session-card-content {
+    padding: 1.5rem;
+}
+
+.session-card-content h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+}
+
+.session-card-content p {
+    margin: 0;
+    color: var(--text-secondary);
+}

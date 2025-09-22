@@ -115,67 +115,66 @@ export const EventEditorApp = {
 
     async openEditionEditor(editionData = null) {
         this.activeEditionId = editionData ? editionData.id : 'new';
-        this.renderEditionsList(); // Re-render para marcar la edición activa
+        this.renderEditionsList();
 
         const container = document.getElementById('edition-editor-container');
         container.style.display = 'block';
 
-        // Construimos el HTML completo del editor de la edición
-        // El orden de los fieldset está corregido como pediste (Ponentes primero)
+        // --- CORRECCIÓN: Buscamos las sesiones del usuario ---
+        const { data: allSessions } = await this.supabase
+            .from('sessions')
+            .select('id, session_title')
+            .eq('user_id', this.user.id);
+            
+        let sessionsOptions = (allSessions || []).map(session => 
+            `<option value="${session.id}">${session.session_title}</option>`
+        ).join('');
+
+        // Construimos el HTML completo del editor
         container.innerHTML = `
             <fieldset>
                 <legend>${editionData ? `Editando: ${editionData.edition_name}` : 'Nueva Edición'}</legend>
-                <div class="form-group">
-                    <label>Nombre de la Edición (ej: "Edición 2025")</label>
-                    <input type="text" id="edition-name" value="${editionData?.edition_name || ''}" required>
-                </div>
+                <div class="form-group"><label>Nombre de la Edición</label><input type="text" id="edition-name" value="${editionData?.edition_name || ''}" required></div>
                 <div class="form-group-grid">
-                    <div class="form-group">
-                        <label>Fecha de Inicio</label>
-                        <input type="date" id="edition-start-date" value="${editionData?.start_date || ''}">
-                    </div>
-                    <div class="form-group">
-                        <label>Fecha de Fin</label>
-                        <input type="date" id="edition-end-date" value="${editionData?.end_date || ''}">
-                    </div>
+                    <div><label>Fecha de Inicio</label><input type="date" id="edition-start-date" value="${editionData?.start_date || ''}"></div>
+                    <div><label>Fecha de Fin</label><input type="date" id="edition-end-date" value="${editionData?.end_date || ''}"></div>
                 </div>
-                <div class="form-group">
-                    <label>Lugar (ej: "Virtual", "Arequipa, Perú")</label>
-                    <input type="text" id="edition-location" value="${editionData?.location || ''}">
-                </div>
+                <div class="form-group"><label>Lugar</label><input type="text" id="edition-location" value="${editionData?.location || ''}"></div>
             </fieldset>
-            
             <fieldset>
-                <legend><i class="fa-solid fa-users"></i> Ponentes (Speakers)</legend>
+                <legend><i class="fa-solid fa-users"></i> Ponentes</legend>
                 <div id="speakers-list-container" class="item-list-editor"></div>
                 <button type="button" class="btn-add-item" id="add-speaker-btn"><i class="fa-solid fa-plus"></i> Añadir Ponente</button>
             </fieldset>
-            
             <fieldset>
-                <legend><i class="fa-solid fa-list-check"></i> Programa del Evento</legend>
+                <legend><i class="fa-solid fa-list-check"></i> Programa</legend>
                 <div id="program-items-container" class="item-list-editor"></div>
                 <button type="button" class="btn-add-item" id="add-program-item-btn"><i class="fa-solid fa-plus"></i> Añadir al Programa</button>
             </fieldset>
+            <fieldset>
+                <legend><i class="fa-solid fa-podcast"></i> Sesiones de LiveRoom Asociadas</legend>
+                <p class="form-hint">Selecciona las sesiones que quieres mostrar en la página.</p>
+                <div class="form-group">
+                    <select id="edition-selected-sessions" multiple>${sessionsOptions}</select>
+                </div>
+            </fieldset>
         `;
 
-        // Lógica para añadir items al programa y a los ponentes
-        const programContainer = container.querySelector('#program-items-container');
-        const speakersContainer = container.querySelector('#speakers-list-container');
-        
-        // --- CORRECCIÓN CLAVE: Eliminamos la variable que causaba el error ---
-        container.querySelector('#add-program-item-btn').addEventListener('click', () => {
-            this.addProgramItemFields(programContainer, {}); 
-        });
-        container.querySelector('#add-speaker-btn').addEventListener('click', () => {
-            this.addSpeakerFields(speakersContainer);
-        });
-
-        // Si estamos editando, poblamos los campos existentes
+        // Lógica para poblar y activar los botones
         if (editionData) {
-            (editionData.speakers || []).forEach(speaker => this.addSpeakerFields(speakersContainer, speaker));
-            // --- CORRECCIÓN CLAVE: Eliminamos la variable que causaba el error ---
-            (editionData.program || []).forEach(item => this.addProgramItemFields(programContainer, item));
+            if (editionData.selected_sessions) {
+                const selectElement = container.querySelector('#edition-selected-sessions');
+                editionData.selected_sessions.forEach(sessionId => {
+                    const option = selectElement.querySelector(`option[value="${sessionId}"]`);
+                    if (option) option.selected = true;
+                });
+            }
+            (editionData.speakers || []).forEach(speaker => this.addSpeakerFields(container.querySelector('#speakers-list-container'), speaker));
+            (editionData.program || []).forEach(item => this.addProgramItemFields(container.querySelector('#program-items-container'), item));
         }
+        
+        container.querySelector('#add-program-item-btn').addEventListener('click', () => this.addProgramItemFields(container.querySelector('#program-items-container'), {}));
+        container.querySelector('#add-speaker-btn').addEventListener('click', () => this.addSpeakerFields(container.querySelector('#speakers-list-container')));
     },
 
     addEventListeners() {
@@ -376,6 +375,9 @@ export const EventEditorApp = {
                 social3: el.querySelector('.speaker-social3').value,
             }));
 
+            const selectedSessionsSelect = document.getElementById('edition-selected-sessions');
+            const selectedSessions = Array.from(selectedSessionsSelect.selectedOptions).map(opt => opt.value);
+
             const editionUpdates = {
                 event_id: this.currentEvent.id,
                 edition_name: document.getElementById('edition-name').value,
@@ -383,7 +385,8 @@ export const EventEditorApp = {
                 end_date: document.getElementById('edition-end-date').value || null,
                 location: document.getElementById('edition-location').value,
                 program: program,
-                speakers: speakers
+                speakers: speakers,
+                selected_sessions: selectedSessions
             };
             
             const editionIdToSave = this.activeEditionId === 'new' ? undefined : this.activeEditionId;
