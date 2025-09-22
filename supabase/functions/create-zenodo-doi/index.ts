@@ -10,7 +10,6 @@ serve(async (req) => {
   }
 
   try {
-    // --- Autenticación ---
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -19,13 +18,12 @@ serve(async (req) => {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) throw new Error("Usuario no autenticado.");
 
-    // --- Recolección de datos ---
     const { filePath, metadata } = await req.json();
     if (!filePath || !metadata) throw new Error("Faltan datos esenciales.");
     const ZENODO_API_TOKEN = Deno.env.get('ZENODO_API_TOKEN');
     if (!ZENODO_API_TOKEN) throw new Error("El token de API de Zenodo no está configurado.");
 
-    // --- 1. Crear borrador en Zenodo ---
+    // 1. Crear borrador en Zenodo
     const depositionResponse = await fetch('https://zenodo.org/api/deposit/depositions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${ZENODO_API_TOKEN}` },
@@ -35,34 +33,39 @@ serve(async (req) => {
     const depositionData = await depositionResponse.json();
     const { id: depositionId, links: { bucket: bucketUrl } } = depositionData;
 
-    // --- 2. Descargar archivo de Supabase Storage ---
-    // Usamos un cliente Admin para poder acceder al bucket
+    // 2. Descargar archivo de Supabase Storage
     const supabaseAdmin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
     const { data: fileData, error: downloadError } = await supabaseAdmin.storage.from('zenodo-uploads').download(filePath);
     if (downloadError) throw downloadError;
     
-    // --- 3. Subir archivo a Zenodo ---
+    // --- 3. Subir archivo a Zenodo (SECCIÓN CORREGIDA) ---
     const fileName = filePath.split('/').pop();
-    await fetch(`${bucketUrl}/${fileName}`, {
+    const uploadResponse = await fetch(`${bucketUrl}/${fileName}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/octet-stream' }, // No se necesita Auth header aquí
+      // CORRECCIÓN: Zenodo requiere el token también para la subida del archivo.
+      headers: { 
+        'Content-Type': 'application/octet-stream',
+        'Authorization': `Bearer ${ZENODO_API_TOKEN}`
+      },
       body: fileData
     });
+    // Verificamos que la subida del archivo fue exitosa
+    if(!uploadResponse.ok) throw new Error("La subida del archivo a Zenodo falló.");
     
-    // --- 4. Añadir TODOS los metadatos a Zenodo ---
+    // --- 4. Añadir metadatos a Zenodo ---
     const metadataPayload = {
       metadata: {
         title: metadata.title,
-        upload_type: 'publication', // Tipo más específico
-        publication_type: 'other',  // Subtipo
+        upload_type: 'publication',
+        publication_type: 'other',
         description: metadata.description,
         creators: metadata.authors.map(author => ({
             name: author,
-            affiliation: metadata.affiliations || '' // Añadimos la afiliación a cada autor
+            affiliation: metadata.affiliations || ''
         })),
         keywords: metadata.keywords || [],
-        access_right: 'open', // Acceso abierto por defecto
-        license: metadata.license || 'cc-by-4.0', // Licencia por defecto si no se especifica
+        access_right: 'open',
+        license: metadata.license || 'cc-by-4.0',
         communities: [{ identifier: 'epistecnologia' }]
       }
     };
@@ -72,7 +75,7 @@ serve(async (req) => {
       body: JSON.stringify(metadataPayload)
     });
 
-    // --- 5. Publicar para obtener el DOI ---
+    // 5. Publicar para obtener el DOI
     const publishResponse = await fetch(`https://zenodo.org/api/deposit/depositions/${depositionId}/actions/publish`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${ZENODO_API_TOKEN}` }
@@ -80,12 +83,12 @@ serve(async (req) => {
     if (!publishResponse.ok) {
         const errorBody = await publishResponse.json();
         console.error("Error al publicar en Zenodo:", errorBody);
-        throw new Error("No se pudo publicar la deposición en Zenodo. Revisa los metadatos.");
+        throw new Error("No se pudo publicar la deposición. Revisa los metadatos.");
     }
     const publishedData = await publishResponse.json();
     const newDoi = publishedData.doi;
 
-    // --- 6. Guardar en nuestra tabla 'projects' ---
+    // 6. Guardar en nuestra tabla 'projects'
     await supabaseClient.from('projects').insert({
       user_id: user.id,
       doi: newDoi,
@@ -96,7 +99,7 @@ serve(async (req) => {
       created_via_platform: true
     });
     
-    // --- 7. Limpiar archivo temporal de Storage ---
+    // 7. Limpiar archivo temporal de Storage
     await supabaseAdmin.storage.from('zenodo-uploads').remove([filePath]);
 
     return new Response(JSON.stringify({ doi: newDoi }), {
