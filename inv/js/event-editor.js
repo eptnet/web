@@ -189,13 +189,12 @@ async openEditionEditor(editionData = null) {
     container.querySelector('#add-speaker-btn').addEventListener('click', () => this.addSpeakerFields(container.querySelector('#speakers-list-container')));
 },
 
-    // VERSIÓN ACTUALIZADA PARA handleSave LEYENDO CHECKBOXES
     async handleSave() {
         const saveButton = document.getElementById('save-event-btn');
         saveButton.disabled = true;
         saveButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
 
-        // ... (El código para guardar el evento principal no cambia)
+        // Guardado del evento principal (sin cambios)
         tinymce.triggerSave();
         const eventUpdates = {
             title: document.getElementById('event-title').value,
@@ -229,6 +228,7 @@ async openEditionEditor(editionData = null) {
         let editionError = null; 
 
         if (editionEditor.style.display === 'block' && this.activeEditionId) {
+            // Recolección de datos del programa y ponentes (sin cambios)
             const program = Array.from(document.querySelectorAll('#program-items-container .item-fieldset')).map(el => ({
                 date: el.querySelector('.program-item-date').value || null,
                 startTime: el.querySelector('.program-item-start-time').value,
@@ -250,10 +250,12 @@ async openEditionEditor(editionData = null) {
                 social3: el.querySelector('.speaker-social3').value,
             }));
             
-            // --- CAMBIO CLAVE: Leemos los valores de los checkboxes marcados ---
+            // --- LA LÓGICA CORRECTA PARA LEER CHECKBOXES ---
+            // Busca todos los checkboxes MARCADOS con el nombre 'associated_session'
             const selectedSessions = Array.from(document.querySelectorAll('input[name="associated_session"]:checked'))
                                         .map(checkbox => Number(checkbox.value));
 
+            // El resto de la lógica de guardado es la que ya teníamos
             const editionDataToSave = {
                 event_id: this.currentEvent.id,
                 edition_name: document.getElementById('edition-name').value,
