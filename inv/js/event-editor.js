@@ -190,6 +190,8 @@ async openEditionEditor(editionData = null) {
 },
 
     async handleSave() {
+        alert("ESTOY EJECUTANDO LA VERSIÓN NUEVA DEL CÓDIGO");
+        
         const saveButton = document.getElementById('save-event-btn');
         saveButton.disabled = true;
         saveButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
