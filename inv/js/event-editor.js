@@ -1,8 +1,3 @@
-console.log(
-  "%c CARGANDO event-editor.js - VERSIÓN FINAL Y CORRECTA - Si ves esto, el archivo es el bueno.",
-  "color: lime; font-weight: bold; font-size: 16px;"
-);
-
 export const EventEditorApp = {
     supabase: null,
     user: null,

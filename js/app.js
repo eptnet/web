@@ -100,12 +100,17 @@ document.addEventListener('mainReady', () => {
                 <div class="bento-box bento-box--2x3 mobile-full-width bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;">
                     <div class="card-content">
                         <h3>Nuestro cóntenido en tu email</h3
-                        <p>Suscríbete a nuestro newsletter.</p>
+                        <p>Suscríbete a la revista.</p>
                         <br/>
-                        <iframe src="https://eptnews.substack.com/embed" width="100%" height="100%" style="border:0;" frameborder="0" scrolling="no">
+                        <iframe src="https://publicaciones.epistecnologia.com/embed" 
+                            width="100%" 
+                            height="50%" 
+                            style="border:1px solid #EEE; background:white;" 
+                            frameborder="0" scrolling="no">
                         </iframe>
                     </div>
                 </div>`,
+                
             zenodo: `
                 <div class="bento-box zenodo-module bento-box--2x3 mobile-full-width" data-id="static-zenodo" style="background-image: url('https://i.ibb.co/x8JbV61H/a-futuristic-digital-artwork-depicting-a-k9-Jb0c-3-R0u8by-Ev-GGOrw-x-Ait-Jamg-RCat9-GLc-O810jg.jpg'); cursor: pointer;">
                     <div class="card-content">
