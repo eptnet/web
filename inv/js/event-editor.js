@@ -114,6 +114,7 @@ export const EventEditorApp = {
             </div>
         `).join('');
 
+        // --- CAMBIO CLAVE: Añadimos los campos del contador al HTML ---
         container.innerHTML = `
             <fieldset>
                 <legend>${editionData ? `Editando: ${editionData.edition_name}` : 'Nueva Edición'}</legend>
@@ -123,6 +124,19 @@ export const EventEditorApp = {
                     <div><label>Fecha de Fin</label><input type="date" id="edition-end-date" value="${editionData?.end_date || ''}"></div>
                 </div>
                 <div class="form-group"><label>Lugar</label><input type="text" id="edition-location" value="${editionData?.location || ''}"></div>
+                
+                <div class="publish-toggle form-group">
+                    <label for="edition-countdown-enabled">Activar cuenta atrás en la portada</label>
+                    <label class="switch">
+                        <input type="checkbox" id="edition-countdown-enabled">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <div class="form-group" id="countdown-time-wrapper" style="display: none;">
+                    <label for="edition-countdown-time">Hora de finalización de la cuenta atrás</label>
+                    <input type="time" id="edition-countdown-time">
+                    <p class="form-hint">Si se deja en blanco, usará las 00:00 de la fecha de inicio.</p>
+                </div>
             </fieldset>
             <fieldset>
                 <legend><i class="fa-solid fa-users"></i> Ponentes</legend>
@@ -145,6 +159,24 @@ export const EventEditorApp = {
             container.querySelector('.checkbox-list-container').innerHTML = '<p class="form-hint" style="color: #E11D48;">No se encontraron sesiones de LiveRoom para este usuario.</p>';
         }
 
+        // --- CAMBIO CLAVE: Lógica para manejar los nuevos campos del contador ---
+        const countdownToggle = container.querySelector('#edition-countdown-enabled');
+        const countdownTimeWrapper = container.querySelector('#countdown-time-wrapper');
+        const countdownTimeInput = container.querySelector('#edition-countdown-time');
+
+        // Asignamos los valores guardados (o los valores por defecto)
+        countdownToggle.checked = editionData?.countdown_enabled ?? true; // Por defecto activado
+        countdownTimeInput.value = editionData?.countdown_time || '';
+
+        // Función para mostrar/ocultar el campo de la hora
+        const toggleTimeVisibility = () => {
+            countdownTimeWrapper.style.display = countdownToggle.checked ? 'block' : 'none';
+        };
+        
+        toggleTimeVisibility(); // Mostramos/ocultamos al cargar
+        countdownToggle.addEventListener('change', toggleTimeVisibility); // Y cada vez que cambia el interruptor
+
+        // El resto de la lógica de la función sigue igual...
         if (editionData && editionData.selected_sessions) {
             editionData.selected_sessions.forEach(sessionId => {
                 const checkbox = container.querySelector(`input[name="associated_session"][value="${sessionId}"]`);
@@ -309,9 +341,12 @@ export const EventEditorApp = {
                 social2: el.querySelector('.speaker-social2').value,
                 social3: el.querySelector('.speaker-social3').value,
             }));
-            
             const selectedSessions = Array.from(document.querySelectorAll('input[name="associated_session"]:checked'))
-                                          .map(checkbox => Number(checkbox.value));
+                                        .map(checkbox => Number(checkbox.value));
+            
+            // --- CAMBIO CLAVE: Leemos los valores de los nuevos campos del contador ---
+            const countdownEnabled = document.getElementById('edition-countdown-enabled').checked;
+            const countdownTime = document.getElementById('edition-countdown-time').value || null; // Guardamos null si está vacío
 
             const editionDataToSave = {
                 event_id: this.currentEvent.id,
@@ -321,7 +356,9 @@ export const EventEditorApp = {
                 location: document.getElementById('edition-location').value,
                 program: program,
                 speakers: speakers,
-                selected_sessions: selectedSessions
+                selected_sessions: selectedSessions,
+                countdown_enabled: countdownEnabled, // Añadimos el valor a los datos
+                countdown_time: countdownTime       // Añadimos el valor a los datos
             };
 
             if (this.activeEditionId !== 'new') {

@@ -75,11 +75,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (projectDoi) {
             document.getElementById('event-project-doi').textContent = `DOI: ${projectDoi}`;
         }
-        if (edition?.start_date) {
-            setupCountdown(edition.start_date);
+
+        // --- INICIO DE LA LÓGICA CORREGIDA ---
+        // Ahora comprobamos si la edición existe, si el contador está activado y si hay una fecha de inicio.
+        if (edition && edition.countdown_enabled && edition.start_date) {
+            // Le pasamos tanto la fecha como la hora específica a la función.
+            setupCountdown(edition.start_date, edition.countdown_time);
         } else {
-            document.getElementById('countdown-timer').style.display = 'none';
+            // Si no se cumple alguna condición, nos aseguramos de que el contador esté oculto.
+            const timerEl = document.getElementById('countdown-timer');
+            if(timerEl) timerEl.style.display = 'none';
         }
+        // --- FIN DE LA LÓGICA CORREGIDA ---
     }
 
     function renderMainContent(content = {}) {
@@ -284,21 +291,42 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${baseUrl}&text=${title}&dates=${startTime}/${endTime}&details=${description}`;
     }
 
-    function setupCountdown(targetDate) {
+    function setupCountdown(targetDate, targetTime) { // <-- Ahora acepta un segundo parámetro para la hora
         clearInterval(countdownInterval);
-        // Creamos la fecha del evento como si fuera la hora local, no UTC, para el countdown.
-        const countDownDate = new Date(`${targetDate}T00:00:00`).getTime();
+
+        // --- INICIO DE LA LÓGICA CORREGIDA ---
+        // Si nos pasan una hora específica (ej: "09:30"), la usamos. Si no, usamos la medianoche.
+        const timeString = targetTime || '00:00:00';
+        
+        // Combinamos la fecha y la hora para crear el momento exacto del final de la cuenta atrás.
+        const countDownDate = new Date(`${targetDate}T${timeString}`).getTime();
+        // --- FIN DE LA LÓGICA CORREGIDA ---
+
         const timerEl = document.getElementById('countdown-timer');
         if (!timerEl) return;
+        timerEl.style.display = 'flex'; // Aseguramos que sea visible
+
         countdownInterval = setInterval(() => {
             const now = new Date().getTime();
             const distance = countDownDate - now;
-            if (distance < 0) { clearInterval(countdownInterval); timerEl.innerHTML = "<h4>¡El evento ha comenzado!</h4>"; return; }
+            
+            if (distance < 0) {
+                clearInterval(countdownInterval);
+                timerEl.innerHTML = "<h4>¡El evento ha comenzado!</h4>";
+                return;
+            }
+
             const days = Math.floor(distance / (1000 * 60 * 60 * 24));
             const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-            timerEl.innerHTML = `<div class="countdown-item"><span>${days}</span><div>Días</div></div><div class="countdown-item"><span>${hours}</span><div>Horas</div></div><div class="countdown-item"><span>${minutes}</span><div>Minutos</div></div><div class="countdown-item"><span>${seconds}</span><div>Segundos</div></div>`;
+
+            timerEl.innerHTML = `
+                <div class="countdown-item"><span>${days}</span><div>Días</div></div>
+                <div class="countdown-item"><span>${hours}</span><div>Horas</div></div>
+                <div class="countdown-item"><span>${minutes}</span><div>Minutos</div></div>
+                <div class="countdown-item"><span>${seconds}</span><div>Segundos</div></div>
+            `;
         }, 1000);
     }
 
