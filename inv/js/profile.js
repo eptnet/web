@@ -663,6 +663,7 @@ const ProfileApp = {
                 affiliations: document.getElementById('zenodo-affiliations').value,
                 description: document.getElementById('zenodo-description').value,
                 keywords: document.getElementById('zenodo-keywords').value.split(',').map(kw => kw.trim()).filter(Boolean),
+                relatedLink: document.getElementById('zenodo-related-link').value,
                 license: document.getElementById('zenodo-license').value
             };
 
