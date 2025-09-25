@@ -27,6 +27,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const { data: event, error } = await supabase.from('events').select('*').eq('slug', slug).eq('is_public', true).single();
         if (error || !event) { console.error('Error fetching event:', error); document.body.innerHTML = '<h1>Error: Evento no encontrado o no es público.</h1>'; return; }
 
+        // --- INICIO DE LA LÓGICA DEL MODAL DE AGRADECIMIENTO ---
+        // 1. Revisamos si la URL tiene el parámetro "gracias".
+        if (urlParams.has('gracias')) {
+            // 2. Si hay un mensaje personalizado, lo mostramos.
+            if (event.registration_thank_you_message) {
+                showThankYouModal(event.registration_thank_you_message);
+            }
+            // 3. Limpiamos la URL para que el modal no vuelva a aparecer si el usuario recarga.
+            history.replaceState(null, '', window.location.pathname + `?slug=${slug}`);
+        }
+        // --- FIN DE LA LÓGICA DEL MODAL ---
+
         let projectDoi = null;
         if (event.project_id) {
             const { data: project } = await supabase.from('projects').select('doi').eq('id', event.project_id).single();
@@ -34,11 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const { data: editions } = await supabase.from('event_editions').select('*').eq('event_id', event.id);
-        const currentEdition = editions?.sort((a, b) => {
-            const dateA = toLocalDate(a.start_date);
-            const dateB = toLocalDate(b.start_date);
-            return dateB - dateA;
-        })[0];
+        const currentEdition = editions?.sort((a, b) => new Date(b.start_date) - new Date(a.start_date))[0];
 
         let liveRoomSessions = [];
         if (currentEdition && currentEdition.selected_sessions?.length > 0) {
@@ -265,14 +273,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setupEventListeners() {
         document.body.addEventListener('click', e => {
+            // Lógica para el modal de ponentes (sin cambios)
             const speakerCard = e.target.closest('.speaker-card');
-            if (speakerCard) { const speakerData = JSON.parse(speakerCard.dataset.speakerJson.replace(/&apos;/g, "'")); openSpeakerModal(speakerData); }
-            const closeBtn = e.target.closest('.modal-close-btn');
-            const modalOverlay = e.target.closest('.modal-overlay');
-            if (closeBtn || (modalOverlay && !e.target.closest('.modal-content'))) { closeSpeakerModal(); }
+            if (speakerCard) { 
+                const speakerData = JSON.parse(speakerCard.dataset.speakerJson.replace(/&apos;/g, "'")); 
+                openSpeakerModal(speakerData); 
+            }
+            const speakerModalClose = e.target.closest('.modal-close-btn');
+            const speakerModalOverlay = e.target.closest('#speaker-modal-overlay');
+            if (speakerModalClose || (speakerModalOverlay && !e.target.closest('.modal-content'))) { 
+                closeSpeakerModal(); 
+            }
+
+            // Lógica para el modal del programa (sin cambios)
             const programModal = document.getElementById('program-modal');
-            const programCloseBtn = programModal.querySelector('.close-button');
-            if (e.target === programModal || e.target === programCloseBtn) { closeProgramModal(); }
+            if (programModal) {
+                const programCloseBtn = programModal.querySelector('.close-button');
+                if (e.target === programModal || e.target === programCloseBtn) { 
+                    closeProgramModal(); 
+                }
+            }
+            
+            // --- LÓGICA AÑADIDA PARA CERRAR EL MODAL DE AGRADECIMIENTO ---
+            if (e.target.closest('#thank-you-modal-close-btn') || e.target.closest('#thank-you-modal')) {
+                if (!e.target.closest('.modal-content') || e.target.closest('#thank-you-modal-close-btn')) {
+                    closeThankYouModal();
+                }
+            }
         });
     }
 
@@ -383,6 +410,25 @@ document.addEventListener('DOMContentLoaded', () => {
     function closeSpeakerModal() {
         const modalOverlay = document.getElementById('speaker-modal-overlay');
         modalOverlay.classList.remove('is-visible');
+        document.body.style.overflow = '';
+    }
+
+    // --- NUEVAS FUNCIONES PARA EL MODAL DE AGRADECIMIENTO ---
+    function showThankYouModal(message) {
+        const modal = document.getElementById('thank-you-modal');
+        const contentContainer = document.getElementById('thank-you-modal-content');
+        if (!modal || !contentContainer) return;
+
+        contentContainer.innerHTML = message;
+        modal.classList.add('is-visible');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeThankYouModal() {
+        const modal = document.getElementById('thank-you-modal');
+        if (!modal) return;
+
+        modal.classList.remove('is-visible');
         document.body.style.overflow = '';
     }
 

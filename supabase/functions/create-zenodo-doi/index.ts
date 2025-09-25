@@ -66,9 +66,19 @@ serve(async (req) => {
         keywords: metadata.keywords || [],
         access_right: 'open',
         license: metadata.license || 'cc-by-4.0',
-        communities: [{ identifier: 'epistecnologia' }]
+        communities: [{ identifier: 'epistecnologia' }],
+        related_identifiers: [] // Siempre incluimos el array
       }
     };
+
+    // Si el usuario proporcionó un enlace, lo añadimos al array en el formato que Zenodo espera
+    if (metadata.relatedLink) {
+        metadataPayload.metadata.related_identifiers.push({
+            scheme: 'url',
+            identifier: metadata.relatedLink,
+            relation: 'references', // Relación estándar: "hace referencia a"
+        });
+    }
     await fetch(`https://zenodo.org/api/deposit/depositions/${depositionId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${ZENODO_API_TOKEN}` },

@@ -28,14 +28,21 @@ export const EventEditorApp = {
 
     initializeEditors() {
         return new Promise(resolve => {
+            // Ahora inicializamos 3 editores
+            const totalEditors = 3;
+            let initializedEditors = 0;
+
             tinymce.init({
-                selector: '#event-about, #event-call-for-papers',
+                // --- CAMBIO CLAVE: Añadimos el nuevo ID al selector ---
+                selector: '#event-about, #event-call-for-papers, #event-thank-you-message',
                 height: 300,
-                init_instance_callback: (editor) => {
-                    // Esperar a que todos los editores estén listos
-                    if (tinymce.get().length === 2) {
-                        resolve();
-                    }
+                setup: (editor) => {
+                    editor.on('init', () => {
+                        initializedEditors++;
+                        if (initializedEditors >= totalEditors) {
+                            resolve();
+                        }
+                    });
                 }
             });
         });
@@ -54,6 +61,9 @@ export const EventEditorApp = {
         tinymce.get('event-about')?.setContent(content.about || '');
         tinymce.get('event-call-for-papers')?.setContent(content.callForPapers || '');
 
+        // --- CAMBIO CLAVE: Cargamos el contenido del nuevo campo ---
+        tinymce.get('event-thank-you-message')?.setContent(this.currentEvent.registration_thank_you_message || '');
+
         const { data: editions, error } = await this.supabase
             .from('event_editions')
             .select('*')
@@ -63,7 +73,6 @@ export const EventEditorApp = {
         this.currentEditions = editions || [];
         this.renderEditionsList();
     },
-
     setupTabEvents() {
         const tabLinks = document.querySelectorAll('.tab-link');
         const tabContents = document.querySelectorAll('.tab-content');
@@ -299,6 +308,7 @@ export const EventEditorApp = {
                 callForPapers: tinymce.get('event-call-for-papers').getContent(),
                 seo: { imageUrl: document.getElementById('event-seo-image-url').value }
             },
+            registration_thank_you_message: tinymce.get('event-thank-you-message').getContent(),
             user_id: this.user.id
         };
         const { data: savedEvent, error: eventError } = await this.supabase

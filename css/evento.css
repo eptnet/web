@@ -439,3 +439,39 @@ body {
     margin: 0;
     color: var(--text-secondary);
 }
+/* --- ESTILOS PARA EL MODAL DE AGRADECIMIENTO --- */
+/* Usamos los mismos estilos base del modal de ponentes para consistencia */
+#thank-you-modal {
+    /* Hereda el comportamiento de .modal-overlay */
+}
+
+#thank-you-modal .modal-content {
+    /* Hereda el comportamiento de .modal-content */
+    text-align: center; /* Centramos el contenido */
+}
+
+#thank-you-modal-content h2 {
+    margin-top: 0;
+    color: var(--primary-color);
+}
+
+#thank-you-modal-content p {
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+}
+
+#thank-you-modal-content a.btn-subscribe {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.8rem 1.8rem;
+    background-color: var(--primary-color);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+
+#thank-you-modal-content a.btn-subscribe:hover {
+    background-color: var(--primary-light);
+}
