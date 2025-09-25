@@ -66,7 +66,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderCover(event, edition, projectDoi) {
+        const pageUrl = window.location.href;
+        const seoImage = event.main_content?.seo?.imageUrl || event.cover_url || 'https://i.ibb.co/ZRmgqZ6h/eptlive-rrss.jpg';
+        const description = event.main_content?.about?.replace(/<[^>]*>?/gm, '').substring(0, 160) || `Únete al evento ${event.title}`;
+
+        // --- INICIO DE LA LÓGICA SEO ---
+        // 1. Actualizamos el título del documento y la meta etiqueta og:title
         document.title = event.title;
+        document.getElementById('og-title').setAttribute('content', event.title);
+
+        // 2. Actualizamos la descripción
+        document.getElementById('og-description').setAttribute('content', description);
+
+        // 3. Actualizamos la imagen para compartir
+        document.getElementById('og-image').setAttribute('content', seoImage);
+
+        // 4. Actualizamos la URL canónica
+        document.getElementById('og-url').setAttribute('content', pageUrl);
+        // --- FIN DE LA LÓGICA SEO ---
+
+        // El resto de la función para renderizar la portada sigue igual
         document.getElementById('nav-event-title').textContent = event.title;
         document.getElementById('event-title-cover').textContent = event.title;
         const coverSection = document.getElementById('cover-section');
@@ -84,17 +103,12 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('event-project-doi').textContent = `DOI: ${projectDoi}`;
         }
 
-        // --- INICIO DE LA LÓGICA CORREGIDA ---
-        // Ahora comprobamos si la edición existe, si el contador está activado y si hay una fecha de inicio.
         if (edition && edition.countdown_enabled && edition.start_date) {
-            // Le pasamos tanto la fecha como la hora específica a la función.
             setupCountdown(edition.start_date, edition.countdown_time);
         } else {
-            // Si no se cumple alguna condición, nos aseguramos de que el contador esté oculto.
             const timerEl = document.getElementById('countdown-timer');
             if(timerEl) timerEl.style.display = 'none';
         }
-        // --- FIN DE LA LÓGICA CORREGIDA ---
     }
 
     function renderMainContent(content = {}) {

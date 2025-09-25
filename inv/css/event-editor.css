@@ -106,3 +106,10 @@
     font-weight: 500;
     color: var(--text-color);
 }
+/* --- ESTILOS PARA LA ZONA DE BOTONES FINALES --- */
+.final-actions {
+    display: flex;
+    justify-content: flex-end; /* Alinea los botones a la derecha */
+    align-items: center;
+    gap: 1rem; /* Espacio entre botones */
+}

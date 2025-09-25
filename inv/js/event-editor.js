@@ -60,9 +60,19 @@ export const EventEditorApp = {
         
         tinymce.get('event-about')?.setContent(content.about || '');
         tinymce.get('event-call-for-papers')?.setContent(content.callForPapers || '');
-
-        // --- CAMBIO CLAVE: Cargamos el contenido del nuevo campo ---
         tinymce.get('event-thank-you-message')?.setContent(this.currentEvent.registration_thank_you_message || '');
+
+        // --- INICIO DE LA LÓGICA PARA EL BOTÓN "VER PÁGINA" ---
+        const viewPageBtn = document.getElementById('view-page-btn');
+        if (this.currentEvent && this.currentEvent.slug) {
+            // Si el evento tiene un slug (es decir, ya se ha guardado al menos una vez)
+            viewPageBtn.href = `/evento.html?slug=${this.currentEvent.slug}`;
+            viewPageBtn.style.display = 'inline-flex'; // Usamos inline-flex para centrar el icono y texto
+        } else {
+            // Si es un evento nuevo sin guardar, el botón permanece oculto
+            viewPageBtn.style.display = 'none';
+        }
+        // --- FIN DE LA LÓGICA ---
 
         const { data: editions, error } = await this.supabase
             .from('event_editions')
@@ -73,6 +83,7 @@ export const EventEditorApp = {
         this.currentEditions = editions || [];
         this.renderEditionsList();
     },
+
     setupTabEvents() {
         const tabLinks = document.querySelectorAll('.tab-link');
         const tabContents = document.querySelectorAll('.tab-content');
