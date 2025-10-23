@@ -344,14 +344,37 @@ const LiveApp = {
     },
     
     async run() {
+        // 1. Pedimos los datos SIN NINGÚN ORDEN específico (excepto no archivados)
         const [{ data: sessions }, { data: videos }] = await Promise.all([
-            this.supabase.from('sessions').select(`*, organizer: profiles (*), participants: event_participants ( profiles (*) )`).neq('is_archived', true).order('status', { ascending: true }).order('scheduled_at', { ascending: false }),
+            this.supabase.from('sessions')
+                .select(`*, organizer: profiles (*), participants: event_participants ( profiles (*) )`)
+                .neq('is_archived', true),
             this.supabase.from('ondemand_videos').select('*').order('created_at', { ascending: false })
         ]);
 
-        const allEvents = sessions || [];
+        let allEvents = sessions || [];
         const onDemandPlaylist = videos || [];
         
+        // --- INICIO: LÓGICA DE ORDENAMIENTO EN JAVASCRIPT ---
+        allEvents.sort((a, b) => {
+            // Regla 1: "EN VIVO" siempre va primero que cualquier otro estado
+            if (a.status === 'EN VIVO' && b.status !== 'EN VIVO') {
+                return -1; // 'a' (EN VIVO) va antes que 'b'
+            }
+            if (a.status !== 'EN VIVO' && b.status === 'EN VIVO') {
+                return 1; // 'b' (EN VIVO) va antes que 'a'
+            }
+            
+            // Regla 2: Si ambos son "EN VIVO", o si ninguno es "EN VIVO"
+            // (es decir, son PROGRAMADO o FINALIZADO),
+            // los ordenamos por fecha, del más nuevo al más antiguo.
+            const dateA = new Date(a.scheduled_at);
+            const dateB = new Date(b.scheduled_at);
+            
+            return dateB - dateA; // Ordena de fecha más alta (nueva) a más baja (antigua)
+        });
+        // --- FIN: LÓGICA DE ORDENAMIENTO ---
+
         this.allContentMap = {};
         allEvents.forEach(item => this.allContentMap[item.id] = { type: 'EVENT', ...item });
         onDemandPlaylist.forEach(item => this.allContentMap[`video-${item.id}`] = { type: 'VIDEO', ...item });
