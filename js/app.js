@@ -823,4 +823,145 @@ document.addEventListener('mainReady', () => {
     loadContent();
     initHero();
     initMobileNav();
+
+    // ==========================================
+    // 1. EFECTO PLEXUS (Partículas conectadas)
+    // ==========================================
+    function initPlexus() {
+        const canvas = document.getElementById('plexus-canvas');
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let particles = [];
+
+        // Configuración
+        const particleCount = 60; // Cantidad de puntos
+        const connectionDistance = 150; // Distancia para conectar líneas
+        const mouseDistance = 200; // Distancia de reacción al mouse
+
+        // Mouse
+        let mouse = { x: null, y: null };
+
+        function resize() {
+            width = canvas.width = canvas.parentElement.offsetWidth;
+            height = canvas.height = canvas.parentElement.offsetHeight;
+        }
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.5; // Velocidad lenta
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.size = Math.random() * 2 + 1;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Rebote en bordes
+                if (this.x < 0 || this.x > width) this.vx *= -1;
+                if (this.y < 0 || this.y > height) this.vy *= -1;
+
+                // Interacción con mouse
+                if (mouse.x != null) {
+                    let dx = mouse.x - this.x;
+                    let dy = mouse.y - this.y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < mouseDistance) {
+                        const forceDirectionX = dx / distance;
+                        const forceDirectionY = dy / distance;
+                        const force = (mouseDistance - distance) / mouseDistance;
+                        // Efecto de repulsión suave
+                        this.vx -= forceDirectionX * force * 0.05;
+                        this.vy -= forceDirectionY * force * 0.05;
+                    }
+                }
+            }
+
+            draw() {
+                ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--color-text-secondary');
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            
+            // Actualizar y dibujar partículas
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+
+                // Dibujar líneas
+                for (let j = i; j < particles.length; j++) {
+                    let dx = particles[i].x - particles[j].x;
+                    let dy = particles[i].y - particles[j].y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < connectionDistance) {
+                        ctx.beginPath();
+                        // Color de línea basado en el tema, con opacidad según distancia
+                        let opacity = 1 - (distance / connectionDistance);
+                        let color = getComputedStyle(document.body).classList.contains('dark-theme') ? 
+                                    `rgba(255,255,255,${opacity * 0.2})` : 
+                                    `rgba(0,0,0,${opacity * 0.1})`;
+                        
+                        ctx.strokeStyle = color;
+                        ctx.lineWidth = 1;
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', () => { resize(); initParticles(); });
+        window.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+        });
+        window.addEventListener('mouseleave', () => { mouse.x = null; mouse.y = null; });
+
+        resize();
+        initParticles();
+        animate();
+    }
+
+    // ==========================================
+    // 2. EFECTO PARALLAX EN OBJETOS FLOTANTES
+    // ==========================================
+    function initParallax() {
+        document.addEventListener('mousemove', (e) => {
+            const moveX = (e.clientX - window.innerWidth / 2) * 0.01;
+            const moveY = (e.clientY - window.innerHeight / 2) * 0.01;
+
+            document.querySelectorAll('.mouse-reactive').forEach(el => {
+                const speed = el.getAttribute('data-speed') || 2;
+                const x = moveX * speed;
+                const y = moveY * speed;
+                // Usamos translate3d para mejor rendimiento
+                el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+            });
+        });
+    }
+
+    // Inicializar efectos visuales
+    initPlexus();
+    initParallax();
+
 });

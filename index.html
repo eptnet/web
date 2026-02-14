@@ -41,6 +41,8 @@
     <div class="cinematic-wrapper">
 
         <section class="cinematic-section" id="section-hero">
+            <canvas id="plexus-canvas"></canvas>
+            <img src="https://cdn-icons-png.flaticon.com/512/2919/2919601.png" class="floating-obj mouse-reactive" data-speed="2" style="top: 20%; right: 15%; width: 80px; opacity: 0.5;" alt="Pluma">
             <div class="cinematic-content">
                 <h1 style="font-family: 'Playfair Display', serif; font-size: clamp(2.5rem, 5vw, 4.5rem); line-height: 1.1; margin-bottom: 1.5rem;">
                     Tu conocimiento es tu legado.<br>Haz que perdure para siempre.
@@ -74,13 +76,23 @@
 
         <section class="cinematic-section" id="section-library">
             <div class="cinematic-overlay"></div>
+            
+            <img src="https://cdn-icons-png.flaticon.com/512/3330/3330314.png" class="floating-obj mouse-reactive" data-speed="4" style="filter: invert(1); bottom: 15%; right: 10%; width: 200px; opacity: 0.3;" alt="Libro">
+            
             <div class="cinematic-content">
-                <h2 style="font-family: 'Playfair Display', serif; font-size: 3rem; margin-bottom: 1.5rem;">Preserva tu conocimiento.</h2>
+                <h2 class="font-display">Preserva tu conocimiento.</h2>
                 <p style="font-size: 1.2rem; line-height: 1.8;">
                     Imagina una biblioteca infinita donde nada se quema, nada se pierde y nada se olvida.
-                    <br><br>
-                    Guardar tu trabajo intelectual en redes sociales es construir sobre arena. Los algoritmos cambian, las cuentas se cierran. 
-                    <br><br>
+                </p>
+
+                <div class="warning-box">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <p>
+                        <strong>La fragilidad digital:</strong> Guardar tu trabajo intelectual en redes sociales es construir sobre arena. Los algoritmos cambian, las cuentas se cierran y el contenido desaparece.
+                    </p>
+                </div>
+                
+                <p style="font-size: 1.2rem; line-height: 1.8;">
                     <strong>Epistecnología es tu archivo permanente.</strong> Construido para durar siglos, no segundos.
                 </p>
             </div>
