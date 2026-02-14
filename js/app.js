@@ -626,31 +626,26 @@ document.addEventListener('mainReady', () => {
     };
     audioPlayer.init();
 
+    // Actualizar en app.js para manejar el scroll entre las 3 secciones
     function initHero() {
-        const heroButton = document.getElementById('scroll-to-content-btn');
+        const startBtn = document.getElementById('start-legacy-btn');
+        const searchSection = document.getElementById('search-portal');
         const mainContent = document.querySelector('main.container'); 
-        const desktopNav = document.querySelector('.desktop-nav'); // Obtenemos la barra de navegación
+        const desktopNav = document.querySelector('.desktop-nav');
 
-        if (heroButton && mainContent && desktopNav) {
-            heroButton.addEventListener('click', () => {
-                const navHeight = desktopNav.offsetHeight; // Calculamos la altura actual de la barra
-                const contentTop = mainContent.offsetTop; // Obtenemos la posición del contenido
-                
-                // Le decimos a la ventana que se desplace a la posición del contenido MENOS la altura de la barra
-                window.scrollTo({
-                    top: contentTop - navHeight,
-                    behavior: 'smooth'
-                });
-            });
-        }
+        // Botón "Comenzar" abre el registro
+        startBtn?.addEventListener('click', () => {
+            document.getElementById('login-modal-trigger')?.click();
+        });
 
-        // La lógica para la transparencia del menú se mantiene igual
+        // Control de transparencia del menú según la sección
         if (desktopNav) { 
             const checkNavPosition = () => { 
-                desktopNav.classList.toggle('is-at-top', window.scrollY < 50); 
+                // El menú se vuelve sólido al entrar en la sección de búsqueda
+                const searchTop = searchSection.offsetTop;
+                desktopNav.classList.toggle('is-at-top', window.scrollY < searchTop - 50); 
             }; 
             window.addEventListener('scroll', checkNavPosition, { passive: true }); 
-            checkNavPosition(); 
         }
     }
 

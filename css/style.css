@@ -2,6 +2,8 @@
    STYLE.CSS - VERSIÓN FINAL Y ESTABLE
    ========================================================================== */
 
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;600;700&display=swap');
+
 /* --- 1. CONFIGURACIÓN GLOBAL Y VARIABLES --- */
 :root {
     --color-background: #f0f2f5;
@@ -19,6 +21,10 @@
     --font-size-h4: 1.1rem;
     --font-size-small: 0.9rem;
     --font-size-category: 0.8rem;
+    /* Nuevos tonos para la Landing Inmersiva */
+    --color-landing-bg: #f9f7f2; /* Tono hueso/papel premium */
+    --font-serif: 'Playfair Display', serif;
+    --font-sans: 'Inter', sans-serif;
 }
 body.dark-theme {
     --color-background: #18191a;
@@ -1314,3 +1320,214 @@ body.dark-theme .ticker-row img:hover {
     }
 }
 /* --- FIN: ESTILOS PARA BENTO SUBSTACK DESTACADO --- */
+
+/* ==========================================================================
+   ESTILO CINEMÁTICO FLUIDO (SIN SNAP)
+   ========================================================================== */
+
+/* 1. Contenedor Fluido */
+.cinematic-wrapper {
+    width: 100%;
+    overflow: hidden; /* Evita scroll horizontal */
+    position: relative;
+    /* Eliminamos scroll-snap para que sea suave y natural */
+}
+
+/* 2. Secciones Cinemáticas (Full Screen pero fluidas) */
+.cinematic-section {
+    position: relative;
+    min-height: 100vh; /* Mínimo pantalla completa, pero puede crecer */
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    padding: 4rem 1rem; /* Padding para móviles */
+}
+
+/* 3. Overlay Oscuro (Legibilidad) */
+.cinematic-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.9));
+    z-index: 1;
+}
+
+.cinematic-content {
+    position: relative;
+    z-index: 10;
+    max-width: 1100px;
+    width: 100%;
+    text-align: center;
+    /* Animación suave al aparecer */
+    opacity: 0;
+    animation: fadeInUp 1.2s ease forwards;
+}
+
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+/* --- SECCIÓN 1: HERO (Adaptable a Dark Mode) --- */
+#section-hero {
+    background-color: #f9f7f2; /* Hueso en modo claro */
+    color: #1c1e21;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+/* Lógica Dark Mode para el Hero */
+body.dark-theme #section-hero {
+    background-color: #121212; /* Oscuro profundo */
+    color: #e4e6eb;
+}
+
+/* Botones del Hero */
+.hero-btn-group {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    margin-top: 3rem;
+    flex-wrap: wrap;
+}
+
+.btn-cine-primary {
+    background-color: var(--color-accent);
+    color: white;
+    padding: 1rem 2.5rem;
+    border-radius: 50px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: none;
+    box-shadow: 0 4px 15px rgba(183, 42, 30, 0.3);
+}
+.btn-cine-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(183, 42, 30, 0.5); }
+
+.btn-cine-secondary {
+    background-color: transparent;
+    border: 2px solid currentColor; /* Toma el color del texto (se adapta a dark mode) */
+    color: inherit;
+    padding: 0.9rem 2rem;
+    border-radius: 50px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+.btn-cine-secondary:hover { background: rgba(128, 128, 128, 0.1); }
+
+/* --- LOGOS UNIFORMES --- */
+.bridge-logos-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 3rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+}
+
+.bridge-logos-row img {
+    height: 45px; /* Altura fija para uniformidad */
+    width: auto;  /* Ancho automático */
+    object-fit: contain;
+    filter: grayscale(1) opacity(0.7); /* Gris por defecto */
+    transition: all 0.3s ease;
+}
+
+/* En modo oscuro, invertimos los logos negros para que se vean blancos */
+body.dark-theme .bridge-logos-row img {
+    filter: grayscale(1) invert(1) opacity(0.8);
+}
+
+.bridge-logos-row img:hover {
+    filter: grayscale(0) invert(0) opacity(1); /* Color original al hover */
+    transform: scale(1.1);
+}
+
+/* --- SECCIONES 1.1 (Estilo NatGeo) --- */
+/* Estas secciones siempre tienen texto blanco porque tienen foto de fondo oscura */
+#section-library, #section-cern, #section-magazine {
+    color: white; 
+}
+
+#section-library {
+    background-image: url('https://i.ibb.co/xqP7mCzM/luke-tanis-y-EQ9-TOa-L5-FM-unsplash.jpg?q=80&w=2070&auto=format&fit=crop');
+    align-items: flex-start; /* Texto a la izquierda */
+}
+
+#section-library .cinematic-content {
+    text-align: left;
+    margin-left: 5%;
+    max-width: 650px;
+    /* Caja de cristal esmerilado */
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
+    padding: 3rem;
+    border-left: 5px solid var(--color-accent);
+    border-radius: 0 10px 10px 0;
+}
+
+#section-cern {
+    background-image: url('https://i.ibb.co/ymsYS3z4/CERN-202108-102-106.jpg?q=80&w=2070&auto=format&fit=crop');
+}
+
+/* --- SECCIÓN REVISTA (Arreglado color verde) --- */
+#section-magazine {
+    background-color: #000;
+    overflow: hidden;
+}
+
+.magazine-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    max-width: 1400px;
+    align-items: center;
+}
+
+.magazine-info { padding: 4rem; text-align: left; z-index: 5; }
+
+/* Slider Vertical */
+.magazine-slider-container {
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+    /* Máscara para desvanecer bordes arriba y abajo */
+    mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
+}
+
+.magazine-track {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    /* Animación lenta y continua */
+    animation: scrollVertical 30s linear infinite; 
+}
+
+/* Importante: Quitamos filtros raros */
+.magazine-cover {
+    width: 280px;
+    border-radius: 8px;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.6);
+    transform: rotateY(-20deg) rotateX(10deg); /* Perspectiva 3D */
+    opacity: 0.5;
+    transition: opacity 0.3s;
+}
+.magazine-cover:hover { opacity: 0.5; }
+
+@keyframes scrollVertical {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-50%); } /* Mueve la mitad para hacer loop */
+}
+
+/* --- OBJETOS FLOTANTES --- */
+.floating-obj { position: absolute; pointer-events: none; z-index: 2; }
+
+/* --- RESPONSIVE --- */
+@media (max-width: 992px) {
+    .magazine-layout { grid-template-columns: 1fr; }
+    .magazine-slider-container { display: none; } /* Ocultar slider en móvil */
+    .magazine-info { text-align: center; padding: 2rem; }
+    #section-library .cinematic-content { margin-left: 0; width: 90%; margin: 0 auto; }
+}
