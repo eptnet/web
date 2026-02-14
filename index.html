@@ -115,37 +115,67 @@
         </section>
 
         <section class="cinematic-section" id="section-magazine">
-            <div style="position: absolute; width: 100%; height: 100%; background: radial-gradient(circle at center, #2a0a0a 0%, #000000 100%); z-index: 0;"></div>
+            <div style="position: absolute; width: 100%; height: 100%; background: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%); z-index: 0;"></div>
             
             <div class="magazine-layout">
                 <div class="magazine-info">
-                    <span style="background: var(--color-accent); color: white; padding: 5px 12px; font-weight: bold; font-size: 0.8rem; letter-spacing: 1px; border-radius: 4px;">REVISTA</span>
-                    <h2 style="font-family: 'Playfair Display', serif; font-size: 3.5rem; margin-top: 1rem; margin-bottom: 0.5rem; color: white;">Epistecnología</h2>
-                    <h3 style="font-weight: 400; font-size: 1.2rem; color: rgba(255,255,255,0.8); margin-bottom: 2rem;">Divulgación científica y cultural</h3>
+                    <span style="background: var(--color-accent); color: white; padding: 5px 12px; font-weight: bold; font-size: 0.8rem; letter-spacing: 1px; border-radius: 4px;">HEMEROTECA</span>
+                    <h2 class="font-display" style="margin-top: 1rem; color: white;">Epistecnología</h2>
+                    <h3 style="font-weight: 400; font-size: 1.3rem; color: rgba(255,255,255,0.8); margin-bottom: 2rem; font-family: var(--font-serif);">Revista de divulgación científica y cultural</h3>
                     
-                    <ul style="list-style: none; padding: 0; color: rgba(255,255,255,0.7); margin-bottom: 2rem; font-size: 0.95rem;">
-                        <li style="margin-bottom: 0.5rem;"><i class="fa-solid fa-landmark"></i> Indexada en la <strong>Biblioteca Nacional del Perú</strong></li>
-                        <li style="margin-bottom: 0.5rem;"><strong>ISSN:</strong> 3119-7108 (En línea)</li>
-                        <li><strong>Depósito Legal:</strong> 2025-10424</li>
+                    <ul style="list-style: none; padding: 0; color: rgba(255,255,255,0.7); margin-bottom: 2.5rem; font-size: 1rem; line-height: 1.8;">
+                        <li><i class="fa-solid fa-check" style="color: var(--color-accent); margin-right: 8px;"></i> Indexada en la <strong>Biblioteca Nacional del Perú</strong></li>
+                        <li><i class="fa-solid fa-check" style="color: var(--color-accent); margin-right: 8px;"></i> <strong>ISSN:</strong> 3119-7108 (En línea)</li>
+                        <li><i class="fa-solid fa-check" style="color: var(--color-accent); margin-right: 8px;"></i> <strong>Depósito Legal:</strong> 2025-10424</li>
                     </ul>
                     
-                    <a href="https://publicaciones.epistecnologia.com/s/hemeroteca" target="_blank" class="btn-cine-primary" style="display: inline-flex; align-items: center; gap: 0.5rem;">
-                        <i class="fa-solid fa-book-open"></i> Ver Hemeroteca
+                    <a href="https://publicaciones.epistecnologia.com" target="_blank" class="btn-cine-primary" style="display: inline-flex; align-items: center; gap: 0.8rem;">
+                        <i class="fa-solid fa-book-open"></i> Ir a la Hemeroteca
                     </a>
                 </div>
 
                 <div class="magazine-slider-container">
-                    <div class="magazine-track">
-                        <img src="https://i.ibb.co/Xkz3V9PM/Portada-De-Revista-Epistecnologia-N1.jpg" class="magazine-cover">
-                        <img src="https://i.ibb.co/sJzHXdqg/Rev-EPT-Edi-N02-A4.png" class="magazine-cover" style="filter: hue-rotate(45deg);">
-                        <img src="https://i.ibb.co/Xkz3V9PM/Portada-De-Revista-Epistecnologia-N1.jpg" class="magazine-cover" style="filter: hue-rotate(90deg);">
-                        <img src="https://i.ibb.co/sJzHXdqg/Rev-EPT-Edi-N02-A4.png" class="magazine-cover" style="filter: hue-rotate(135deg);">
-                        <img src="https://i.ibb.co/Xkz3V9PM/Portada-De-Revista-Epistecnologia-N1.jpg" class="magazine-cover">
-                        <img src="https://i.ibb.co/sJzHXdqg/Rev-EPT-Edi-N02-A4.png" class="magazine-cover" style="filter: hue-rotate(45deg);">
+                    <div class="magazine-track track-up">
+                        <a href="https://publicaciones.epistecnologia.com" target="_blank"><img src="https://i.ibb.co/Xkz3V9PM/Portada-De-Revista-Epistecnologia-N1.jpg" class="magazine-cover" alt="Revista Edición 1"></a>
+                        <a href="https://publicaciones.epistecnologia.com" target="_blank"><img src="https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg" class="magazine-cover" alt="Revista Edición 2"></a>
+                        <a href="https://publicaciones.epistecnologia.com" target="_blank"><img src="https://i.ibb.co/sJzHXdqg/Rev-EPT-Edi-N02-A4.png" class="magazine-cover" alt="Revista Edición 3"></a>
+                        <a href="https://publicaciones.epistecnologia.com" target="_blank"><img src="https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg" class="magazine-cover" alt="Revista Edición 1"></a>
+                        <a href="https://publicaciones.epistecnologia.com" target="_blank"><img src="https://i.ibb.co/Xkz3V9PM/Portada-De-Revista-Epistecnologia-N1.jpg" class="magazine-cover" alt="Revista Edición 2"></a>
+                    </div>
+
+                    <div class="magazine-track track-down">
+                        <a href="https://publicaciones.epistecnologia.com" target="_blank"><img src="https://i.ibb.co/sJzHXdqg/Rev-EPT-Edi-N02-A4.png" class="magazine-cover" alt="Revista Edición 4"></a>
+                        <a href="https://publicaciones.epistecnologia.com" target="_blank"><img src="https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg" class="magazine-cover" alt="Revista Edición 5"></a>
+                        <a href="https://publicaciones.epistecnologia.com" target="_blank"><img src="https://i.ibb.co/Xkz3V9PM/Portada-De-Revista-Epistecnologia-N1.jpg" class="magazine-cover" alt="Revista Edición 6"></a>
+                        <a href="https://publicaciones.epistecnologia.com" target="_blank"><img src="https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg" class="magazine-cover" alt="Revista Edición 4"></a>
+                        <a href="https://publicaciones.epistecnologia.com" target="_blank"><img src="https://i.ibb.co/sJzHXdqg/Rev-EPT-Edi-N02-A4.png" class="magazine-cover" alt="Revista Edición 5"></a>
                     </div>
                 </div>
             </div>
         </section>
+
+    </div> <section id="section-search">
+        <h2 class="search-prompt">¿Qué chispa de curiosidad<br>quieres encender hoy?</h2>
+
+        <div class="search-bar-wrapper">
+            <input type="text" class="search-input-cine" placeholder="Busca por autor, tema o escribe una duda..." id="immersive-search-input">
+            <button class="search-btn-cine" aria-label="Buscar">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+        </div>
+
+        <div class="floating-tag tag-pos-1">#InteligenciaArtificial</div>
+        <div class="floating-tag tag-pos-2">#FilosofíaModerna</div>
+        <div class="floating-tag tag-pos-3">#Bioética</div>
+        <div class="floating-tag tag-pos-4">#HistoriaDelPerú</div>
+        <div class="floating-tag tag-pos-5">#SociologíaDigital</div>
+        <div class="floating-tag tag-pos-6">#CienciaAbierta</div>
+
+        <div id="search-results-container" style="width: 100%; margin-top: 4rem; display: none;">
+            </div>
+    </section>
+
+    <div id="bento-grid-anchor"></div>
 
     </div>
 
