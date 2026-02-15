@@ -969,259 +969,107 @@ document.addEventListener('mainReady', () => {
     initPlexus();
     initParallax();
 
-    function fillSearch(term) {
-        const input = document.getElementById('main-search-input');
-        if(input) {
-            input.value = term;
-            input.focus();
-            // Aquí llamaremos a la función de búsqueda real más adelante
-        }
+
+});
+
+/* ==========================================================================
+   3. MOTOR DE BÚSQUEDA INDEPENDIENTE (Fix Definitivo)
+   Este código se ejecuta fuera del bloque principal para asegurar su carga.
+   ========================================================================== */
+
+(function initSearchSystem() {
+    console.log("🛠️ Inicializando sistema de búsqueda...");
+
+    const searchInput = document.getElementById('main-search-input');
+    const resultsContainer = document.getElementById('search-results-area');
+
+    // Validación de seguridad: Si no existe el HTML, reintentamos en 0.5s
+    if (!searchInput || !resultsContainer) {
+        // console.warn("⚠️ Buscador no detectado. Reintentando...");
+        setTimeout(initSearchSystem, 500); 
+        return;
     }
-    // Hacerla global
-    window.fillSearch = fillSearch;
 
-    /* ==========================================================================
-        MOTOR DE CONOCIMIENTO (KNOWLEDGE BASE ENGINE)
-        1. Sincronización: Substack -> Supabase (knowledge_base)
-        2. Búsqueda: Interfaz Visual -> Supabase
-        ========================================================================== */
+    let debounceTimer;
 
-        // --- 1. HERRAMIENTA DE SINCRONIZACIÓN (Admin Tool) ---
-        // Ejecutar en consola: window.syncContent()
-        async function syncSubstackToSupabase() {
-            console.log("🚀 Iniciando motor de indexación...");
-            
-            // URLs EXACTAS DE TU PROYECTO
-            const articlesUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua&order_dir=desc&count=15';
-            const podcastUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fapi.substack.com%2Ffeed%2Fpodcast%2F2867518%2Fs%2F186951.rss&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua';
+    // 1. Escuchar escritura
+    searchInput.addEventListener('input', (e) => {
+        clearTimeout(debounceTimer);
+        const query = e.target.value.trim();
 
-            let totalCount = 0;
-
-            // Función auxiliar para procesar un feed
-            const processFeed = async (url, type) => {
-                try {
-                    console.log(`📡 Conectando con feed de ${type}...`);
-                    const response = await fetch(url);
-                    const data = await response.json();
-
-                    if (data.status !== 'ok') throw new Error(`Error en feed ${type}: ${data.message}`);
-
-                    const items = data.items;
-                    console.log(`📦 Procesando ${items.length} elementos de ${type}...`);
-
-                    for (const item of items) {
-                        // Limpieza de descripción
-                        let cleanDesc = item.description || '';
-                        cleanDesc = cleanDesc.replace(/<[^>]*>?/gm, '').substring(0, 220) + '...';
-
-                        // Intentar obtener la mejor imagen
-                        let image = item.thumbnail; 
-                        if (!image && item.enclosure && item.enclosure.link) {
-                            image = item.enclosure.link; 
-                        }
-
-                        const payload = {
-                            title: item.title,
-                            description: cleanDesc,
-                            url: item.link,
-                            image_url: image, 
-                            published_at: item.pubDate,
-                            author_name: item.author || 'Epistecnología',
-                            source_type: type, // 'article' o 'podcast'
-                            tags: item.categories || []
-                        };
-
-                        // Guardar en Supabase
-                        const { error } = await window.supabaseClient
-                            .from('knowledge_base')
-                            .upsert(payload, { onConflict: 'url' });
-
-                        if (error) console.error(`❌ Error indexando ${item.title}:`, error);
-                        else totalCount++;
-                    }
-                } catch (err) {
-                    console.error(`Error procesando ${type}:`, err);
-                }
-            };
-
-            // Ejecutar ambas sincronizaciones
-            await Promise.all([
-                processFeed(articlesUrl, 'article'),
-                processFeed(podcastUrl, 'podcast')
-            ]);
-
-            alert(`✅ Sincronización Completada.\nSe han actualizado ${totalCount} items en la Base de Conocimiento.`);
+        if (query.length === 0) {
+            resultsContainer.style.display = 'none';
+            resultsContainer.innerHTML = '';
+            return;
         }
 
-        window.syncContent = syncSubstackToSupabase; // Exponer globalmente
+        // Esperar a que el usuario deje de escribir
+        debounceTimer = setTimeout(() => executeSearch(query), 400);
+    });
 
+    // 2. Escuchar Enter
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            clearTimeout(debounceTimer);
+            executeSearch(searchInput.value.trim());
+        }
+    });
 
-        /* ==========================================================================
-        2. LÓGICA DEL BUSCADOR (SISTEMA BLINDADO)
-        ========================================================================== */
+    console.log("✅ Buscador activo y escuchando eventos.");
 
-        let searchInitialized = false;
-
-        function initSearchEngine() {
-            // Evitar doble inicialización
-            if (searchInitialized) return;
-
-            const searchInput = document.getElementById('main-search-input');
-            const resultsContainer = document.getElementById('search-results-area');
-
-            // Diagnóstico en consola
-            if (!searchInput) {
-                console.warn("⚠️ Buscador: No encuentro el input '#main-search-input'. Reintentando...");
-                return;
-            }
-            if (!resultsContainer) {
-                console.warn("⚠️ Buscador: No encuentro el contenedor '#search-results-area'.");
-                return;
-            }
-
-            console.log("✅ Buscador: Elementos encontrados. Activando escuchas...");
-
-            let debounceTimer;
-
-            // 1. Escuchar escritura (Input)
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(debounceTimer);
-                const query = e.target.value.trim();
-
-                // Feedback visual inmediato
-                if (query.length === 0) {
-                    resultsContainer.style.display = 'none';
-                    resultsContainer.innerHTML = '';
-                    return;
-                }
-
-                debounceTimer = setTimeout(() => {
-                    if (query.length > 2) {
-                        performSearch(query);
-                    }
-                }, 400); 
-            });
-
-            // 2. Escuchar tecla Enter
-            searchInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault(); // Evitar submit de form si lo hay
-                    clearTimeout(debounceTimer);
-                    performSearch(searchInput.value.trim());
-                }
-            });
-
-            searchInitialized = true;
-            console.log("🚀 Motor de búsqueda listo y a la espera.");
+    // Función interna de búsqueda
+    async function executeSearch(query) {
+        if (!window.supabaseClient) {
+            console.error("❌ Supabase no está listo todavía.");
+            return;
         }
 
-        // Función de Búsqueda (Con manejo de errores UI)
-        async function performSearch(query) {
-            const resultsContainer = document.getElementById('search-results-area');
-            
-            // UI: Mostrar cargando
-            resultsContainer.style.display = 'block';
-            resultsContainer.innerHTML = `
-                <div style="text-align:center; padding:3rem; color:var(--color-text-secondary); animation: fadeIn 0.3s;">
-                    <i class="fa-solid fa-circle-nodes fa-spin fa-2x" style="color:var(--color-accent);"></i>
-                    <p style="margin-top:1rem; font-weight:500;">Conectando conocimientos...</p>
-                </div>`;
+        resultsContainer.style.display = 'block';
+        resultsContainer.innerHTML = `<div style="text-align:center; padding:2rem; color:#666;">Buscando "${query}"...</div>`;
 
-            if (!window.supabaseClient) {
-                console.error("❌ Error: Supabase no está inicializado todavía.");
-                resultsContainer.innerHTML = '<p style="text-align:center; color:red;">Error interno: Base de datos no lista.</p>';
+        try {
+            const { data: results, error } = await window.supabaseClient
+                .from('knowledge_base')
+                .select('*')
+                .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
+                .order('published_at', { ascending: false })
+                .limit(9);
+
+            if (error) throw error;
+
+            if (!results || results.length === 0) {
+                resultsContainer.innerHTML = `<div style="text-align:center; padding:2rem;">No hay resultados para "${query}".</div>`;
                 return;
             }
 
-            try {
-                console.log(`🔍 Consultando Supabase por: "${query}"`);
-
-                // Búsqueda simple en título o descripción
-                const { data: results, error } = await window.supabaseClient
-                    .from('knowledge_base')
-                    .select('*')
-                    .or(`title.ilike.%${query}%,description.ilike.%${query}%`) 
-                    .order('published_at', { ascending: false })
-                    .limit(9);
-
-                if (error) throw error;
-
-                console.log("✅ Datos recibidos:", results);
-                renderSearchResults(results, query);
-
-            } catch (error) {
-                console.error("❌ Error en búsqueda:", error);
-                resultsContainer.innerHTML = `
-                    <div style="text-align:center; padding: 2rem;">
-                        <p style="color:var(--color-accent);"><i class="fa-solid fa-triangle-exclamation"></i> Error de conexión</p>
-                        <small>${error.message}</small>
-                    </div>`;
-            }
-        }
-
-        // Renderizado de Tarjetas
-        function renderSearchResults(items, query) {
-            const resultsContainer = document.getElementById('search-results-area');
-
-            if (!items || items.length === 0) {
-                resultsContainer.innerHTML = `
-                    <div style="text-align:center; padding: 3rem; animation: fadeIn 0.5s;">
-                        <p style="font-size:1.2rem; color:var(--color-text-primary);">
-                            No encontramos nada sobre "<strong>${query}</strong>"
-                        </p>
-                        <p style="opacity:0.6;">Intenta con otra palabra clave.</p>
-                    </div>`;
-                return;
-            }
-
-            const html = items.map(item => `
-                <a href="${item.url}" target="_blank" class="result-card" style="animation: fadeInUp 0.5s ease-out;">
+            // Renderizar
+            const html = results.map(item => `
+                <a href="${item.url}" target="_blank" class="result-card">
                     <div class="result-img-wrapper">
-                        <img src="${item.image_url || 'https://placehold.co/600x400/eee/333?text=Epistec'}" 
-                            alt="${item.title}" 
-                            onerror="this.style.display='none'">
-                        <span class="source-badge ${item.source_type}">
-                            ${item.source_type === 'podcast' ? '<i class="fa-solid fa-microphone"></i>' : '<i class="fa-solid fa-align-left"></i>'} ${item.source_type}
-                        </span>
+                        <img src="${item.image_url || 'https://placehold.co/600x400'}" onerror="this.style.display='none'">
+                        <span class="source-badge">${item.source_type}</span>
                     </div>
                     <div class="result-info">
                         <h4>${item.title}</h4>
-                        <p>${item.description || 'Sin descripción disponible.'}</p>
-                        <div class="result-meta">
-                            <span>${new Date(item.published_at).toLocaleDateString()}</span>
-                            <span style="color:var(--color-accent); font-weight:700;">Leer <i class="fa-solid fa-arrow-right"></i></span>
-                        </div>
+                        <p>${item.description ? item.description.substring(0, 100) + '...' : ''}</p>
                     </div>
                 </a>
             `).join('');
 
             resultsContainer.innerHTML = `<div class="results-grid-cine">${html}</div>`;
+
+        } catch (err) {
+            console.error(err);
+            resultsContainer.innerHTML = `<div style="text-align:center; color:red;">Error en la búsqueda.</div>`;
         }
+    }
 
-        // Helper global para etiquetas
-        window.fillSearch = (term) => {
-            const input = document.getElementById('main-search-input');
-            if (input) {
-                input.value = term;
-                input.focus();
-                input.dispatchEvent(new Event('input')); 
-            }
-        };
+    // Helper global para las etiquetas (hashtags)
+    window.fillSearch = (term) => {
+        searchInput.value = term;
+        searchInput.focus();
+        searchInput.dispatchEvent(new Event('input'));
+    };
 
-        /* ==========================================================================
-        ESTRATEGIA DE INICIALIZACIÓN (Retry Pattern)
-        Intenta iniciar el buscador cada 300ms hasta que el HTML exista.
-        ========================================================================== */
-        const searchLoader = setInterval(() => {
-            const input = document.getElementById('main-search-input');
-            if (input) {
-                initSearchEngine();
-                clearInterval(searchLoader); // Detener el reintento una vez que se carga
-            }
-        }, 300);
-
-        // Respaldo: También intentamos cargar cuando el evento principal se dispare
-        document.addEventListener('mainReady', initSearchEngine);
-
-
-});
+})(); // Fin del Motor de Búsqueda
