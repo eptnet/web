@@ -982,16 +982,18 @@ document.addEventListener('mainReady', () => {
 
     /* ==========================================================================
         MOTOR DE CONOCIMIENTO (KNOWLEDGE BASE ENGINE)
-        Conecta: Substack (Artículos + Podcast) -> Supabase 'knowledge_base'
+        1. Sincronización: Substack -> Supabase (knowledge_base)
+        2. Búsqueda: Interfaz Visual -> Supabase
         ========================================================================== */
 
+        // --- 1. HERRAMIENTA DE SINCRONIZACIÓN (Admin Tool) ---
         // Ejecutar en consola: window.syncContent()
         async function syncSubstackToSupabase() {
             console.log("🚀 Iniciando motor de indexación...");
             
-            // 1. URLs EXACTAS PROVISTAS POR TI
+            // URLs EXACTAS DE TU PROYECTO
             const articlesUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua&order_dir=desc&count=15';
-            const podcastUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fapi.substack.com%2Ffeed%2Fpodcast%2F2867518%2Fs%2F186951.rss&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua'; // Usamos la misma key por si acaso
+            const podcastUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fapi.substack.com%2Ffeed%2Fpodcast%2F2867518%2Fs%2F186951.rss&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua';
 
             let totalCount = 0;
 
@@ -1008,14 +1010,14 @@ document.addEventListener('mainReady', () => {
                     console.log(`📦 Procesando ${items.length} elementos de ${type}...`);
 
                     for (const item of items) {
-                        // Limpieza de descripción (quitar HTML tags excesivos para la búsqueda)
+                        // Limpieza de descripción
                         let cleanDesc = item.description || '';
                         cleanDesc = cleanDesc.replace(/<[^>]*>?/gm, '').substring(0, 220) + '...';
 
-                        // Intentar obtener la mejor imagen disponible
+                        // Intentar obtener la mejor imagen
                         let image = item.thumbnail; 
                         if (!image && item.enclosure && item.enclosure.link) {
-                            image = item.enclosure.link; // A veces el podcast la tiene aquí
+                            image = item.enclosure.link; 
                         }
 
                         const payload = {
@@ -1029,7 +1031,7 @@ document.addEventListener('mainReady', () => {
                             tags: item.categories || []
                         };
 
-                        // Guardar en Supabase (knowledge_base)
+                        // Guardar en Supabase
                         const { error } = await window.supabaseClient
                             .from('knowledge_base')
                             .upsert(payload, { onConflict: 'url' });
@@ -1042,7 +1044,7 @@ document.addEventListener('mainReady', () => {
                 }
             };
 
-            // 2. Ejecutar ambas sincronizaciones en paralelo
+            // Ejecutar ambas sincronizaciones
             await Promise.all([
                 processFeed(articlesUrl, 'article'),
                 processFeed(podcastUrl, 'podcast')
@@ -1051,8 +1053,134 @@ document.addEventListener('mainReady', () => {
             alert(`✅ Sincronización Completada.\nSe han actualizado ${totalCount} items en la Base de Conocimiento.`);
         }
 
-        // Exponer globalmente
-        window.syncContent = syncSubstackToSupabase;
+        window.syncContent = syncSubstackToSupabase; // Exponer globalmente
+
+
+        // --- 2. LÓGICA DEL BUSCADOR (Corregida y Robusta) ---
+        function initSearchEngine() {
+            const searchInput = document.getElementById('main-search-input');
+            const resultsContainer = document.getElementById('search-results-area');
+            let debounceTimer;
+
+            if (!searchInput || !resultsContainer) return;
+
+            // Listener al escribir
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(debounceTimer);
+                const query = e.target.value.trim();
+
+                // Esperar 500ms antes de buscar
+                debounceTimer = setTimeout(() => {
+                    if (query.length > 2) {
+                        performSearch(query);
+                    } else {
+                        resultsContainer.style.display = 'none';
+                        resultsContainer.innerHTML = '';
+                    }
+                }, 500);
+            });
+
+            // Listener tecla Enter
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    clearTimeout(debounceTimer);
+                    performSearch(searchInput.value);
+                }
+            });
+        }
+
+        // Ejecutar búsqueda en Supabase
+        async function performSearch(query) {
+            const resultsContainer = document.getElementById('search-results-area');
+            
+            // UI de Carga
+            resultsContainer.style.display = 'block';
+            resultsContainer.innerHTML = `
+                <div style="text-align:center; padding:3rem; color:var(--color-text-secondary);">
+                    <i class="fa-solid fa-circle-nodes fa-spin fa-2x" style="color:var(--color-accent);"></i>
+                    <p style="margin-top:1rem;">Consultando la red neural...</p>
+                </div>`;
+
+            try {
+                console.log(`🔍 Buscando: "${query}"...`);
+
+                // BÚSQUEDA SEGURA (Solo Texto)
+                // Usamos .or solo con columnas de texto para evitar errores de tipo en PostgreSQL
+                const { data: results, error } = await window.supabaseClient
+                    .from('knowledge_base')
+                    .select('*')
+                    .or(`title.ilike.%${query}%,description.ilike.%${query}%`) 
+                    .order('published_at', { ascending: false })
+                    .limit(12);
+
+                if (error) throw error;
+
+                console.log(`✅ Resultados encontrados: ${results?.length || 0}`);
+                renderSearchResults(results, query);
+
+            } catch (error) {
+                console.error("❌ Error en búsqueda:", error);
+                resultsContainer.innerHTML = `
+                    <div style="text-align:center; padding: 2rem;">
+                        <p style="color:var(--color-accent);">Error de conexión con la base de conocimiento.</p>
+                    </div>`;
+            }
+        }
+
+        // Renderizado de Tarjetas
+        function renderSearchResults(items, query) {
+            const resultsContainer = document.getElementById('search-results-area');
+
+            if (!items || items.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div style="text-align:center; padding: 3rem;">
+                        <p style="font-size:1.2rem; color:var(--color-text-secondary);">
+                            No encontramos nada sobre "<strong>${query}</strong>" en nuestra base.
+                        </p>
+                        <p style="font-size:0.9rem; opacity:0.7;">Prueba con términos generales como: <em>Cultura, Ciencia, Historia...</em></p>
+                    </div>`;
+                return;
+            }
+
+            const html = items.map(item => `
+                <a href="${item.url}" target="_blank" class="result-card fade-in">
+                    <div class="result-img-wrapper">
+                        <img src="${item.image_url || 'https://placehold.co/600x400?text=Epistecnologia'}" 
+                            onerror="this.src='https://placehold.co/600x400?text=No+Image'" 
+                            alt="${item.title}">
+                        <span class="source-badge ${item.source_type}">
+                            ${item.source_type === 'podcast' ? '<i class="fa-solid fa-microphone"></i> Podcast' : '<i class="fa-solid fa-newspaper"></i> Artículo'}
+                        </span>
+                    </div>
+                    <div class="result-info">
+                        <h4>${item.title}</h4>
+                        <p>${item.description}</p>
+                        <div class="result-meta">
+                            <span><i class="fa-regular fa-calendar"></i> ${new Date(item.published_at).toLocaleDateString()}</span>
+                            <span style="color: var(--color-accent); font-weight:600;">Leer <i class="fa-solid fa-arrow-right-long"></i></span>
+                        </div>
+                    </div>
+                </a>
+            `).join('');
+
+            resultsContainer.innerHTML = `<div class="results-grid-cine">${html}</div>`;
+        }
+
+        // Helper para las etiquetas flotantes
+        window.fillSearch = function(term) {
+            const input = document.getElementById('main-search-input');
+            if (input) {
+                input.value = term;
+                input.focus();
+                input.dispatchEvent(new Event('input')); // Disparar búsqueda automáticamente
+            }
+        };
+
+        // Inicializar al cargar
+        document.addEventListener('mainReady', () => {
+            initSearchEngine();
+            console.log("🔍 Motor de búsqueda (Sección 2) inicializado.");
+        });
 
 
 });
