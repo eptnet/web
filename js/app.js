@@ -1056,73 +1056,105 @@ document.addEventListener('mainReady', () => {
         window.syncContent = syncSubstackToSupabase; // Exponer globalmente
 
 
-        // --- 2. LÓGICA DEL BUSCADOR (Corregida y Robusta) ---
+        /* ==========================================================================
+        2. LÓGICA DEL BUSCADOR (SISTEMA BLINDADO)
+        ========================================================================== */
+
+        let searchInitialized = false;
+
         function initSearchEngine() {
+            // Evitar doble inicialización
+            if (searchInitialized) return;
+
             const searchInput = document.getElementById('main-search-input');
             const resultsContainer = document.getElementById('search-results-area');
+
+            // Diagnóstico en consola
+            if (!searchInput) {
+                console.warn("⚠️ Buscador: No encuentro el input '#main-search-input'. Reintentando...");
+                return;
+            }
+            if (!resultsContainer) {
+                console.warn("⚠️ Buscador: No encuentro el contenedor '#search-results-area'.");
+                return;
+            }
+
+            console.log("✅ Buscador: Elementos encontrados. Activando escuchas...");
+
             let debounceTimer;
 
-            if (!searchInput || !resultsContainer) return;
-
-            // Listener al escribir
+            // 1. Escuchar escritura (Input)
             searchInput.addEventListener('input', (e) => {
                 clearTimeout(debounceTimer);
                 const query = e.target.value.trim();
 
-                // Esperar 500ms antes de buscar
+                // Feedback visual inmediato
+                if (query.length === 0) {
+                    resultsContainer.style.display = 'none';
+                    resultsContainer.innerHTML = '';
+                    return;
+                }
+
                 debounceTimer = setTimeout(() => {
                     if (query.length > 2) {
                         performSearch(query);
-                    } else {
-                        resultsContainer.style.display = 'none';
-                        resultsContainer.innerHTML = '';
                     }
-                }, 500);
+                }, 400); 
             });
 
-            // Listener tecla Enter
+            // 2. Escuchar tecla Enter
             searchInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
+                    e.preventDefault(); // Evitar submit de form si lo hay
                     clearTimeout(debounceTimer);
-                    performSearch(searchInput.value);
+                    performSearch(searchInput.value.trim());
                 }
             });
+
+            searchInitialized = true;
+            console.log("🚀 Motor de búsqueda listo y a la espera.");
         }
 
-        // Ejecutar búsqueda en Supabase
+        // Función de Búsqueda (Con manejo de errores UI)
         async function performSearch(query) {
             const resultsContainer = document.getElementById('search-results-area');
             
-            // UI de Carga
+            // UI: Mostrar cargando
             resultsContainer.style.display = 'block';
             resultsContainer.innerHTML = `
-                <div style="text-align:center; padding:3rem; color:var(--color-text-secondary);">
+                <div style="text-align:center; padding:3rem; color:var(--color-text-secondary); animation: fadeIn 0.3s;">
                     <i class="fa-solid fa-circle-nodes fa-spin fa-2x" style="color:var(--color-accent);"></i>
-                    <p style="margin-top:1rem;">Consultando la red neural...</p>
+                    <p style="margin-top:1rem; font-weight:500;">Conectando conocimientos...</p>
                 </div>`;
 
-            try {
-                console.log(`🔍 Buscando: "${query}"...`);
+            if (!window.supabaseClient) {
+                console.error("❌ Error: Supabase no está inicializado todavía.");
+                resultsContainer.innerHTML = '<p style="text-align:center; color:red;">Error interno: Base de datos no lista.</p>';
+                return;
+            }
 
-                // BÚSQUEDA SEGURA (Solo Texto)
-                // Usamos .or solo con columnas de texto para evitar errores de tipo en PostgreSQL
+            try {
+                console.log(`🔍 Consultando Supabase por: "${query}"`);
+
+                // Búsqueda simple en título o descripción
                 const { data: results, error } = await window.supabaseClient
                     .from('knowledge_base')
                     .select('*')
                     .or(`title.ilike.%${query}%,description.ilike.%${query}%`) 
                     .order('published_at', { ascending: false })
-                    .limit(12);
+                    .limit(9);
 
                 if (error) throw error;
 
-                console.log(`✅ Resultados encontrados: ${results?.length || 0}`);
+                console.log("✅ Datos recibidos:", results);
                 renderSearchResults(results, query);
 
             } catch (error) {
                 console.error("❌ Error en búsqueda:", error);
                 resultsContainer.innerHTML = `
                     <div style="text-align:center; padding: 2rem;">
-                        <p style="color:var(--color-accent);">Error de conexión con la base de conocimiento.</p>
+                        <p style="color:var(--color-accent);"><i class="fa-solid fa-triangle-exclamation"></i> Error de conexión</p>
+                        <small>${error.message}</small>
                     </div>`;
             }
         }
@@ -1133,31 +1165,31 @@ document.addEventListener('mainReady', () => {
 
             if (!items || items.length === 0) {
                 resultsContainer.innerHTML = `
-                    <div style="text-align:center; padding: 3rem;">
-                        <p style="font-size:1.2rem; color:var(--color-text-secondary);">
-                            No encontramos nada sobre "<strong>${query}</strong>" en nuestra base.
+                    <div style="text-align:center; padding: 3rem; animation: fadeIn 0.5s;">
+                        <p style="font-size:1.2rem; color:var(--color-text-primary);">
+                            No encontramos nada sobre "<strong>${query}</strong>"
                         </p>
-                        <p style="font-size:0.9rem; opacity:0.7;">Prueba con términos generales como: <em>Cultura, Ciencia, Historia...</em></p>
+                        <p style="opacity:0.6;">Intenta con otra palabra clave.</p>
                     </div>`;
                 return;
             }
 
             const html = items.map(item => `
-                <a href="${item.url}" target="_blank" class="result-card fade-in">
+                <a href="${item.url}" target="_blank" class="result-card" style="animation: fadeInUp 0.5s ease-out;">
                     <div class="result-img-wrapper">
-                        <img src="${item.image_url || 'https://placehold.co/600x400?text=Epistecnologia'}" 
-                            onerror="this.src='https://placehold.co/600x400?text=No+Image'" 
-                            alt="${item.title}">
+                        <img src="${item.image_url || 'https://placehold.co/600x400/eee/333?text=Epistec'}" 
+                            alt="${item.title}" 
+                            onerror="this.style.display='none'">
                         <span class="source-badge ${item.source_type}">
-                            ${item.source_type === 'podcast' ? '<i class="fa-solid fa-microphone"></i> Podcast' : '<i class="fa-solid fa-newspaper"></i> Artículo'}
+                            ${item.source_type === 'podcast' ? '<i class="fa-solid fa-microphone"></i>' : '<i class="fa-solid fa-align-left"></i>'} ${item.source_type}
                         </span>
                     </div>
                     <div class="result-info">
                         <h4>${item.title}</h4>
-                        <p>${item.description}</p>
+                        <p>${item.description || 'Sin descripción disponible.'}</p>
                         <div class="result-meta">
-                            <span><i class="fa-regular fa-calendar"></i> ${new Date(item.published_at).toLocaleDateString()}</span>
-                            <span style="color: var(--color-accent); font-weight:600;">Leer <i class="fa-solid fa-arrow-right-long"></i></span>
+                            <span>${new Date(item.published_at).toLocaleDateString()}</span>
+                            <span style="color:var(--color-accent); font-weight:700;">Leer <i class="fa-solid fa-arrow-right"></i></span>
                         </div>
                     </div>
                 </a>
@@ -1166,21 +1198,30 @@ document.addEventListener('mainReady', () => {
             resultsContainer.innerHTML = `<div class="results-grid-cine">${html}</div>`;
         }
 
-        // Helper para las etiquetas flotantes
-        window.fillSearch = function(term) {
+        // Helper global para etiquetas
+        window.fillSearch = (term) => {
             const input = document.getElementById('main-search-input');
             if (input) {
                 input.value = term;
                 input.focus();
-                input.dispatchEvent(new Event('input')); // Disparar búsqueda automáticamente
+                input.dispatchEvent(new Event('input')); 
             }
         };
 
-        // Inicializar al cargar
-        document.addEventListener('mainReady', () => {
-            initSearchEngine();
-            console.log("🔍 Motor de búsqueda (Sección 2) inicializado.");
-        });
+        /* ==========================================================================
+        ESTRATEGIA DE INICIALIZACIÓN (Retry Pattern)
+        Intenta iniciar el buscador cada 300ms hasta que el HTML exista.
+        ========================================================================== */
+        const searchLoader = setInterval(() => {
+            const input = document.getElementById('main-search-input');
+            if (input) {
+                initSearchEngine();
+                clearInterval(searchLoader); // Detener el reintento una vez que se carga
+            }
+        }, 300);
+
+        // Respaldo: También intentamos cargar cuando el evento principal se dispare
+        document.addEventListener('mainReady', initSearchEngine);
 
 
 });
