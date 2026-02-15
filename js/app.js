@@ -973,26 +973,24 @@ document.addEventListener('mainReady', () => {
 });
 
 /* ==========================================================================
-   3. MOTOR DE BÚSQUEDA INDEPENDIENTE (Fix Definitivo)
-   Este código se ejecuta fuera del bloque principal para asegurar su carga.
+   3. SISTEMA DE INTELIGENCIA: BÚSQUEDA Y SINCRONIZACIÓN (V3.0)
    ========================================================================== */
 
+// --- A. MOTOR DE BÚSQUEDA (Interfaz Visual) ---
 (function initSearchSystem() {
-    console.log("🛠️ Inicializando sistema de búsqueda...");
-
+    console.log("🛠️ Iniciando buscador...");
+    
     const searchInput = document.getElementById('main-search-input');
     const resultsContainer = document.getElementById('search-results-area');
 
-    // Validación de seguridad: Si no existe el HTML, reintentamos en 0.5s
     if (!searchInput || !resultsContainer) {
-        // console.warn("⚠️ Buscador no detectado. Reintentando...");
-        setTimeout(initSearchSystem, 500); 
+        setTimeout(initSearchSystem, 800); // Reintentar si el HTML no está listo
         return;
     }
 
     let debounceTimer;
 
-    // 1. Escuchar escritura
+    // Escuchar escritura
     searchInput.addEventListener('input', (e) => {
         clearTimeout(debounceTimer);
         const query = e.target.value.trim();
@@ -1002,12 +1000,12 @@ document.addEventListener('mainReady', () => {
             resultsContainer.innerHTML = '';
             return;
         }
-
-        // Esperar a que el usuario deje de escribir
+        
+        // Retraso de 400ms para no saturar la base de datos
         debounceTimer = setTimeout(() => executeSearch(query), 400);
     });
 
-    // 2. Escuchar Enter
+    // Escuchar Enter
     searchInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -1016,60 +1014,123 @@ document.addEventListener('mainReady', () => {
         }
     });
 
-    console.log("✅ Buscador activo y escuchando eventos.");
-
-    // Función interna de búsqueda
     async function executeSearch(query) {
-        if (!window.supabaseClient) {
-            console.error("❌ Supabase no está listo todavía.");
-            return;
-        }
+        if (!window.supabaseClient) return;
 
         resultsContainer.style.display = 'block';
-        resultsContainer.innerHTML = `<div style="text-align:center; padding:2rem; color:#666;">Buscando "${query}"...</div>`;
+        resultsContainer.innerHTML = `<div style="text-align:center; padding:2rem; color:var(--color-text-secondary);"><i class="fa-solid fa-spinner fa-spin"></i> Explorando el archivo...</div>`;
 
         try {
+            // Buscamos en título y descripción
             const { data: results, error } = await window.supabaseClient
                 .from('knowledge_base')
                 .select('*')
                 .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
                 .order('published_at', { ascending: false })
-                .limit(9);
+                .limit(10);
 
             if (error) throw error;
 
             if (!results || results.length === 0) {
-                resultsContainer.innerHTML = `<div style="text-align:center; padding:2rem;">No hay resultados para "${query}".</div>`;
+                resultsContainer.innerHTML = `<div style="text-align:center; padding:2rem;">No encontramos nada sobre "${query}".</div>`;
                 return;
             }
 
-            // Renderizar
-            const html = results.map(item => `
+            // Mapeo de tipos para traducción (Fix solicitado)
+            const typeLabels = {
+                'article': 'Artículo',
+                'podcast': 'Podcast',
+                'video': 'Video',
+                'paper': 'Paper'
+            };
+
+            const html = results.map(item => {
+                // Traducir etiqueta o usar la original capitalizada
+                let label = typeLabels[item.source_type] || item.source_type.charAt(0).toUpperCase() + item.source_type.slice(1);
+                
+                // Icono según tipo
+                let icon = item.source_type === 'podcast' ? '<i class="fa-solid fa-microphone"></i>' : '<i class="fa-solid fa-align-left"></i>';
+
+                return `
                 <a href="${item.url}" target="_blank" class="result-card">
                     <div class="result-img-wrapper">
-                        <img src="${item.image_url || 'https://placehold.co/600x400'}" onerror="this.style.display='none'">
-                        <span class="source-badge">${item.source_type}</span>
+                        <img src="${item.image_url || 'https://placehold.co/600x400'}" onerror="this.style.display='none'" loading="lazy">
+                        <span class="source-badge">${icon} ${label}</span>
                     </div>
                     <div class="result-info">
                         <h4>${item.title}</h4>
-                        <p>${item.description ? item.description.substring(0, 100) + '...' : ''}</p>
+                        <p>${item.description ? item.description.substring(0, 120) + '...' : 'Sin descripción.'}</p>
                     </div>
-                </a>
-            `).join('');
+                </a>`;
+            }).join('');
 
             resultsContainer.innerHTML = `<div class="results-grid-cine">${html}</div>`;
 
         } catch (err) {
             console.error(err);
-            resultsContainer.innerHTML = `<div style="text-align:center; color:red;">Error en la búsqueda.</div>`;
+            resultsContainer.innerHTML = `<div style="text-align:center; color:var(--color-accent);">Error de conexión.</div>`;
         }
     }
 
-    // Helper global para las etiquetas (hashtags)
+    // Helper global para etiquetas
     window.fillSearch = (term) => {
         searchInput.value = term;
         searchInput.focus();
         searchInput.dispatchEvent(new Event('input'));
     };
 
-})(); // Fin del Motor de Búsqueda
+})(); 
+
+
+// --- B. HERRAMIENTA DE SINCRONIZACIÓN (Admin) ---
+// Para usar: Abre la consola (F12) y escribe: window.syncContent()
+window.syncContent = async function() {
+    console.log("🚀 Iniciando sincronización masiva...");
+    
+    // Intentamos pedir 50 artículos para traer más historia
+    // Nota: rss2json gratuito a veces limita esto, pero intentamos forzarlo.
+    const articlesUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua&count=50';
+    const podcastUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fapi.substack.com%2Ffeed%2Fpodcast%2F2867518%2Fs%2F186951.rss&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua&count=50';
+
+    let added = 0;
+
+    const process = async (url, type) => {
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            if(data.status !== 'ok') return;
+            
+            for (const item of data.items) {
+                // Limpieza agresiva de HTML para guardar texto limpio en la DB
+                let cleanText = item.description || item.content || '';
+                cleanText = cleanText.replace(/<[^>]*>?/gm, ''); // Quitar etiquetas HTML
+                cleanText = cleanText.substring(0, 600); // Guardamos más texto para mejorar la búsqueda
+
+                // Detectar imagen (Thumbnail o Enclosure)
+                let img = item.thumbnail;
+                if(!img && item.enclosure?.link) img = item.enclosure.link;
+
+                const payload = {
+                    title: item.title,
+                    description: cleanText, // Guardamos el texto limpio extendido
+                    url: item.link,
+                    image_url: img,
+                    published_at: item.pubDate,
+                    author_name: item.author || 'Epistecnología',
+                    source_type: type // 'article' o 'podcast'
+                };
+
+                const { error } = await window.supabaseClient
+                    .from('knowledge_base')
+                    .upsert(payload, { onConflict: 'url' }); // Actualiza si ya existe
+                
+                if(!error) added++;
+            }
+        } catch (e) { console.error("Error sync:", e); }
+    };
+
+    await Promise.all([process(articlesUrl, 'article'), process(podcastUrl, 'podcast')]);
+    alert(`✅ Sincronización finalizada. ${added} elementos procesados/actualizados.`);
+    // Recargamos para que el buscador tenga los datos nuevos frescos en caché si es necesario
+    location.reload();
+};

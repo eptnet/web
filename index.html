@@ -167,24 +167,26 @@
             </div>
         </section>
 
-    </div> <section id="section-search">
+    </div> 
+    
+    <section id="section-search">
         <h2 class="search-prompt">¿Qué chispa de curiosidad<br>quieres encender hoy?</h2>
 
         <div class="search-bar-wrapper">
-            <input type="text" class="search-input-cine" placeholder="Busca por autor, tema o escribe una duda..." id="immersive-search-input">
+            <input type="text" class="search-input-cine" placeholder="Busca por autor, tema o escribe una duda..." id="main-search-input">
             <button class="search-btn-cine" aria-label="Buscar">
                 <i class="fa-solid fa-magnifying-glass"></i>
             </button>
         </div>
 
-        <div class="floating-tag tag-pos-1">#InteligenciaArtificial</div>
-        <div class="floating-tag tag-pos-2">#FilosofíaModerna</div>
-        <div class="floating-tag tag-pos-3">#Bioética</div>
-        <div class="floating-tag tag-pos-4">#HistoriaDelPerú</div>
-        <div class="floating-tag tag-pos-5">#SociologíaDigital</div>
-        <div class="floating-tag tag-pos-6">#CienciaAbierta</div>
+        <div class="floating-tag tag-1" onclick="window.fillSearch('Inteligencia Artificial')">#InteligenciaArtificial</div>
+        <div class="floating-tag tag-2" onclick="window.fillSearch('Filosofía')">#Filosofía</div>
+        <div class="floating-tag tag-3" onclick="window.fillSearch('Podcast')">#Bioética</div>
+        <div class="floating-tag tag-4" onclick="window.fillSearch('Historia')">#Historia</div>
+        <div class="floating-tag tag-5" onclick="window.fillSearch('Sociología')">#Sociología</div>
+        <div class="floating-tag tag-6" onclick="window.fillSearch('Tomás')">#Tomás de Aquino</div>
 
-        <div id="search-results-container" style="width: 100%; margin-top: 4rem; display: none;">
+        <div id="search-results-area" style="width: 100%; max-width: 1400px; margin-top: 4rem; display: none;">
             </div>
     </section>
 
