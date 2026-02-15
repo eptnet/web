@@ -896,15 +896,24 @@ document.addEventListener('mainReady', () => {
             }
         }
 
+        // Reemplaza la parte de "animate()" dentro de initPlexus en app.js
         function animate() {
             ctx.clearRect(0, 0, width, height);
             
-            // Actualizar y dibujar partículas
+            // Detectamos si es tema oscuro o claro para el color de las líneas
+            const isDark = document.body.classList.contains('dark-theme');
+            // Si es oscuro: blanco (0.2 opacidad). Si es claro: NEGRO (0.1 opacidad) <-- ESTO ARREGLA LA VISIBILIDAD
+            const baseColor = isDark ? '255,255,255' : '0,0,0'; 
+
             for (let i = 0; i < particles.length; i++) {
                 particles[i].update();
-                particles[i].draw();
+                // Dibujar partícula (círculo)
+                ctx.fillStyle = `rgba(${baseColor}, 0.3)`; 
+                ctx.beginPath();
+                ctx.arc(particles[i].x, particles[i].y, particles[i].size, 0, Math.PI * 2);
+                ctx.fill();
 
-                // Dibujar líneas
+                // Dibujar conexiones
                 for (let j = i; j < particles.length; j++) {
                     let dx = particles[i].x - particles[j].x;
                     let dy = particles[i].y - particles[j].y;
@@ -912,13 +921,9 @@ document.addEventListener('mainReady', () => {
 
                     if (distance < connectionDistance) {
                         ctx.beginPath();
-                        // Color de línea basado en el tema, con opacidad según distancia
+                        // La opacidad depende de la distancia
                         let opacity = 1 - (distance / connectionDistance);
-                        let color = getComputedStyle(document.body).classList.contains('dark-theme') ? 
-                                    `rgba(255,255,255,${opacity * 0.2})` : 
-                                    `rgba(0,0,0,${opacity * 0.1})`;
-                        
-                        ctx.strokeStyle = color;
+                        ctx.strokeStyle = `rgba(${baseColor}, ${opacity * 0.15})`; // Aumenté un poco la opacidad a 0.15
                         ctx.lineWidth = 1;
                         ctx.moveTo(particles[i].x, particles[i].y);
                         ctx.lineTo(particles[j].x, particles[j].y);
@@ -963,5 +968,16 @@ document.addEventListener('mainReady', () => {
     // Inicializar efectos visuales
     initPlexus();
     initParallax();
+
+    function fillSearch(term) {
+        const input = document.getElementById('main-search-input');
+        if(input) {
+            input.value = term;
+            input.focus();
+            // Aquí llamaremos a la función de búsqueda real más adelante
+        }
+    }
+    // Hacerla global
+    window.fillSearch = fillSearch;
 
 });
