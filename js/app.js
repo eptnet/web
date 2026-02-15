@@ -125,7 +125,7 @@ document.addEventListener('mainReady', () => {
             // Un bento estático para la llamada a la acción de Substack
             allPostsCTA: `
                 <div class="bento-box bento-box--4x3 bento-substack-featured mobile-full-width" 
-                    data-url="https://eptnews.substack.com/" 
+                    data-url="https://publicaciones.substack.com/" 
                     style="background-image: url('https://i.ibb.co/hJ5jsbv9/Leonardo-Phoenix-10-A-vibrant-and-dynamic-scene-depicting-the-2.jpg'); cursor: pointer;">
                     <div class="card-content">
                         <div class="featured-text">
@@ -777,7 +777,7 @@ document.addEventListener('mainReady', () => {
                         </div>
                         <div class="modal-cta-container">
                             <a href="${post.link}" target="_blank" class="modal-cta-button modal-cta-button--primary">Seguir leyendo en EPT News</a>
-                            <a href="https://eptnews.substack.com/" target="_blank" class="modal-cta-button">Suscribirse al Newsletter</a>
+                            <a href="https://publicaciones.epistecnologia.com/" target="_blank" class="modal-cta-button">Suscribirse al Newsletter</a>
                         </div>
                     </article>
                 </div>
@@ -979,5 +979,80 @@ document.addEventListener('mainReady', () => {
     }
     // Hacerla global
     window.fillSearch = fillSearch;
+
+    /* ==========================================================================
+        MOTOR DE CONOCIMIENTO (KNOWLEDGE BASE ENGINE)
+        Conecta: Substack (Artículos + Podcast) -> Supabase 'knowledge_base'
+        ========================================================================== */
+
+        // Ejecutar en consola: window.syncContent()
+        async function syncSubstackToSupabase() {
+            console.log("🚀 Iniciando motor de indexación...");
+            
+            // 1. URLs EXACTAS PROVISTAS POR TI
+            const articlesUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua&order_dir=desc&count=15';
+            const podcastUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fapi.substack.com%2Ffeed%2Fpodcast%2F2867518%2Fs%2F186951.rss&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua'; // Usamos la misma key por si acaso
+
+            let totalCount = 0;
+
+            // Función auxiliar para procesar un feed
+            const processFeed = async (url, type) => {
+                try {
+                    console.log(`📡 Conectando con feed de ${type}...`);
+                    const response = await fetch(url);
+                    const data = await response.json();
+
+                    if (data.status !== 'ok') throw new Error(`Error en feed ${type}: ${data.message}`);
+
+                    const items = data.items;
+                    console.log(`📦 Procesando ${items.length} elementos de ${type}...`);
+
+                    for (const item of items) {
+                        // Limpieza de descripción (quitar HTML tags excesivos para la búsqueda)
+                        let cleanDesc = item.description || '';
+                        cleanDesc = cleanDesc.replace(/<[^>]*>?/gm, '').substring(0, 220) + '...';
+
+                        // Intentar obtener la mejor imagen disponible
+                        let image = item.thumbnail; 
+                        if (!image && item.enclosure && item.enclosure.link) {
+                            image = item.enclosure.link; // A veces el podcast la tiene aquí
+                        }
+
+                        const payload = {
+                            title: item.title,
+                            description: cleanDesc,
+                            url: item.link,
+                            image_url: image, 
+                            published_at: item.pubDate,
+                            author_name: item.author || 'Epistecnología',
+                            source_type: type, // 'article' o 'podcast'
+                            tags: item.categories || []
+                        };
+
+                        // Guardar en Supabase (knowledge_base)
+                        const { error } = await window.supabaseClient
+                            .from('knowledge_base')
+                            .upsert(payload, { onConflict: 'url' });
+
+                        if (error) console.error(`❌ Error indexando ${item.title}:`, error);
+                        else totalCount++;
+                    }
+                } catch (err) {
+                    console.error(`Error procesando ${type}:`, err);
+                }
+            };
+
+            // 2. Ejecutar ambas sincronizaciones en paralelo
+            await Promise.all([
+                processFeed(articlesUrl, 'article'),
+                processFeed(podcastUrl, 'podcast')
+            ]);
+
+            alert(`✅ Sincronización Completada.\nSe han actualizado ${totalCount} items en la Base de Conocimiento.`);
+        }
+
+        // Exponer globalmente
+        window.syncContent = syncSubstackToSupabase;
+
 
 });
