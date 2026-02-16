@@ -1,5 +1,6 @@
 import { Navigation } from './manager-navegacion.js';
 import { Projects } from './manager-proyectos.js'; // <-- LÍNEA AÑADIDA
+import { CommunityManager } from './manager-comunidad.js'; // <--- AGREGA ESTA LÍNEA
 
 
 // Objeto global para compartir datos como supabase y userProfile
@@ -34,6 +35,11 @@ const App = {
         
         Header.init(this.userProfile);
         Navigation.init();
+
+        // --- AGREGA ESTA LÍNEA AQUÍ ---
+        // Inicializamos el gestor de comunidad pasando el cliente y el perfil
+        CommunityManager.init(this.supabase, this.userProfile); 
+        // -----------------------------
         
         this.checkBskyConnectionStatus();
 
