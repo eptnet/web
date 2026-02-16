@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil | Epistecnología</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    
+    <style>
+        /* ESTILOS LINKTREE / TARJETA DE PRESENTACIÓN */
+        body {
+            background-color: var(--color-background);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Alineado arriba para permitir scroll */
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .bio-wrapper {
+            width: 100%;
+            max-width: 500px;
+            background: var(--color-surface);
+            min-height: 100vh;
+            padding: 3rem 1.5rem;
+            box-shadow: 0 0 30px rgba(0,0,0,0.05);
+            text-align: center;
+            position: relative;
+        }
+
+        /* Avatar con anillo de estado */
+        .avatar-container {
+            position: relative;
+            width: 130px;
+            height: 130px;
+            margin: 0 auto 1.5rem auto;
+        }
+        
+        .bio-avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        /* Texto */
+        .bio-name {
+            font-family: var(--font-serif);
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            color: var(--color-text-primary);
+            line-height: 1.2;
+        }
+
+        .bio-role {
+            font-size: 0.9rem;
+            color: var(--color-accent);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+        }
+
+        .bio-text {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--color-text-secondary);
+            margin-bottom: 2rem;
+            padding: 0 1rem;
+        }
+
+        /* Botones Sociales (Usando tus columnas) */
+        .social-row {
+            display: flex;
+            justify-content: center;
+            gap: 1.2rem;
+            margin-bottom: 2.5rem;
+            flex-wrap: wrap;
+        }
+
+        .social-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .social-btn:hover {
+            background: var(--color-text-primary);
+            color: white;
+            transform: translateY(-3px);
+        }
+
+        .social-btn.orcid:hover { background: #A6CE39; color: white; }
+        .social-btn.bsky:hover { background: #0085ff; color: white; }
+        .social-btn.linkedin:hover { background: #0077b5; color: white; }
+
+        /* Lista de Contenidos (Artículos/Proyectos) */
+        .content-section-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.6;
+            margin-bottom: 1.5rem;
+            display: block;
+        }
+
+        .link-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: white;
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+            text-decoration: none;
+            color: var(--color-text-primary);
+            transition: all 0.2s;
+            text-align: left;
+        }
+
+        .link-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--color-accent);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        }
+
+        .card-icon {
+            font-size: 1.2rem;
+            color: var(--color-text-secondary);
+            margin-right: 15px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .card-text {
+            flex-grow: 1;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        /* Footer */
+        .bio-footer {
+            margin-top: 4rem;
+            border-top: 1px solid var(--color-border);
+            padding-top: 1.5rem;
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bio-wrapper">
+        <div id="loading" style="padding-top: 50%;">
+            <i class="fa-solid fa-spinner fa-spin fa-2x" style="color:var(--color-accent)"></i>
+        </div>
+
+        <div id="profile-content" style="display: none; animation: fadeIn 0.5s;">
+            
+            <div class="avatar-container">
+                <img src="" alt="Avatar" class="bio-avatar" id="p-avatar">
+            </div>
+            
+            <h1 class="bio-name" id="p-name"></h1>
+            <div class="bio-role" id="p-role"></div>
+            <p class="bio-text" id="p-bio"></p>
+            
+            <div class="social-row" id="p-socials"></div>
+
+            <hr style="border:0; border-top:1px solid #eee; margin: 2rem 0;">
+
+            <span class="content-section-title">Publicaciones Destacadas</span>
+            <div id="links-list">
+                </div>
+
+            <div class="bio-footer">
+                <p>Perfil verificado en</p>
+                <a href="/" style="text-decoration:none; color:inherit; font-weight:bold;">
+                    <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" height="18" style="vertical-align:middle;"> Epistecnología
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Esperar a que main.js inicialice Supabase
+            const checkSupabase = setInterval(() => {
+                if (window.supabaseClient) {
+                    clearInterval(checkSupabase);
+                    initProfile();
+                }
+            }, 100);
+        });
+
+        async function initProfile() {
+            // 1. Obtener usuario de la URL (?u=nombreusuario)
+            const params = new URLSearchParams(window.location.search);
+            let username = params.get('u');
+
+            if (!username) {
+                // Fallback: Si no hay usuario, mostrar mensaje de error simple
+                showError("Perfil no especificado.");
+                return;
+            }
+
+            // 2. Buscar perfil en la BD
+            try {
+                const { data: profile, error } = await window.supabaseClient
+                    .from('profiles')
+                    .select('*')
+                    .eq('username', username)
+                    .single();
+
+                if (error || !profile) throw new Error("Perfil no encontrado");
+
+                renderProfile(profile);
+                loadUserContent(profile.display_name); // Buscamos artículos por su nombre
+
+            } catch (err) {
+                console.error(err);
+                showError("No pudimos encontrar este perfil.");
+            }
+        }
+
+        function renderProfile(profile) {
+            // Textos
+            document.getElementById('p-name').textContent = profile.display_name || "Usuario Anónimo";
+            document.getElementById('p-role').textContent = profile.role || "Investigador";
+            // Usamos bio_short si existe, si no la bio normal recortada
+            document.getElementById('p-bio').textContent = profile.bio_short || (profile.bio ? profile.bio.substring(0, 150) + "..." : "Miembro de la comunidad.");
+            
+            // Avatar (con fallback)
+            const avatarUrl = profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
+            document.getElementById('p-avatar').src = avatarUrl;
+
+            // Redes Sociales (Mapeamos tus columnas exactas)
+            const socialContainer = document.getElementById('p-socials');
+            let socialHTML = '';
+
+            // ORCID
+            if (profile.orcid) {
+                // Limpiamos si viene con url completa o solo el ID
+                const orcidId = profile.orcid.replace('https://orcid.org/', '');
+                socialHTML += `<a href="https://orcid.org/${orcidId}" target="_blank" class="social-btn orcid" title="ORCID"><i class="fa-brands fa-orcid"></i></a>`;
+            }
+            // Bluesky (bsky_url)
+            if (profile.bsky_url) {
+                socialHTML += `<a href="${profile.bsky_url}" target="_blank" class="social-btn bsky" title="Bluesky"><i class="fa-brands fa-bluesky"></i></a>`;
+            }
+            // LinkedIn (linkedin_url)
+            if (profile.linkedin_url) {
+                socialHTML += `<a href="${profile.linkedin_url}" target="_blank" class="social-btn linkedin" title="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>`;
+            }
+            // X / Twitter (x_url)
+            if (profile.x_url) {
+                socialHTML += `<a href="${profile.x_url}" target="_blank" class="social-btn" title="X (Twitter)"><i class="fa-brands fa-x-twitter"></i></a>`;
+            }
+             // Website (website_url)
+             if (profile.website_url) {
+                socialHTML += `<a href="${profile.website_url}" target="_blank" class="social-btn" title="Web Personal"><i class="fa-solid fa-globe"></i></a>`;
+            }
+            // Substack (substack_url)
+            if (profile.substack_url) {
+                socialHTML += `<a href="${profile.substack_url}" target="_blank" class="social-btn" title="Substack" style="background:#FF6719; color:white;"><i class="fa-solid fa-bookmark"></i></a>`;
+            }
+
+            socialContainer.innerHTML = socialHTML;
+
+            // Mostrar todo
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('profile-content').style.display = 'block';
+            document.title = `${profile.display_name} | Epistecnología`;
+        }
+
+        async function loadUserContent(authorName) {
+            if (!authorName) return;
+
+            // Buscamos en la base de conocimientos donde el autor coincida
+            // Nota: Esto es una búsqueda aproximada. Idealmente vincularíamos por ID en el futuro.
+            const { data: posts } = await window.supabaseClient
+                .from('knowledge_base')
+                .select('*')
+                .ilike('author_name', `%${authorName}%`) 
+                .order('published_at', { ascending: false })
+                .limit(6);
+
+            const list = document.getElementById('links-list');
+
+            if (posts && posts.length > 0) {
+                posts.forEach(post => {
+                    const iconClass = post.source_type === 'podcast' ? 'fa-microphone' : 'fa-file-lines';
+                    const html = `
+                        <a href="${post.url}" target="_blank" class="link-card">
+                            <i class="fa-solid ${iconClass} card-icon"></i>
+                            <div class="card-text">${post.title}</div>
+                            <i class="fa-solid fa-chevron-right" style="font-size:0.8rem; color:#ccc;"></i>
+                        </a>
+                    `;
+                    list.insertAdjacentHTML('beforeend', html);
+                });
+            } else {
+                list.innerHTML = `<div style="padding:1rem; opacity:0.6;">Aún no hay publicaciones sincronizadas.</div>`;
+            }
+        }
+
+        function showError(msg) {
+            document.getElementById('loading').innerHTML = `<p style="padding:2rem;">${msg}</p><a href="/" class="cta-button">Ir al Inicio</a>`;
+        }
+    </script>
+</body>
+</html>
