@@ -1,16 +1,12 @@
 export const CommunityManager = {
     supabase: null,
     usersCache: [],
-    container: null, // Guardaremos referencia al contenedor principal
+    container: null,
 
     async init(supabaseClient, userProfile) {
         this.supabase = supabaseClient;
-        
-        // Buscamos el contenedor principal donde se pinta el contenido
-        // Intentamos los selectores más comunes en dashboards
         this.container = document.querySelector('main') || document.querySelector('.dashboard-content') || document.getElementById('main-content');
 
-        // 1. Verificación de Seguridad
         if (userProfile && userProfile.is_admin === true) {
             this.showAdminMenu();
             this.initListeners();
@@ -19,9 +15,7 @@ export const CommunityManager = {
 
     showAdminMenu() {
         const adminBtn = document.querySelector('.nav-link.admin-only');
-        if (adminBtn) {
-            adminBtn.style.display = 'flex';
-        }
+        if (adminBtn) adminBtn.style.display = 'flex';
     },
 
     initListeners() {
@@ -33,14 +27,15 @@ export const CommunityManager = {
             });
         }
 
-        // Delegación de eventos para el buscador (porque el input se crea dinámicamente)
         document.addEventListener('input', (e) => {
-            if (e.target.id === 'admin-user-search') {
-                this.filterUsers(e.target.value);
+            if (e.target.id === 'admin-user-search') this.filterUsers(e.target.value);
+            // Vista previa de avatar en tiempo real
+            if (e.target.id === 'edit-avatar-url') {
+                const img = document.getElementById('preview-avatar');
+                if(img) img.src = e.target.value || 'https://i.ibb.co/61fJv24/default-avatar.png';
             }
         });
 
-        // Delegación para el formulario del modal
         document.addEventListener('submit', (e) => {
             if (e.target.id === 'admin-user-form') {
                 e.preventDefault();
@@ -49,45 +44,34 @@ export const CommunityManager = {
         });
     },
 
-    // --- NUEVA FUNCIÓN: ENCARGADA DE PINTAR LA PANTALLA ---
     activateSection() {
-        if (!this.container) {
-            console.error("No se encontró el contenedor principal del dashboard.");
-            return;
-        }
+        if (!this.container) return;
 
-        // 1. Actualizar menú lateral (Visual)
+        // Visual menu active
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
         document.querySelector('.nav-link[data-section="community-section"]')?.classList.add('active');
 
-        // 2. Limpiar pantalla actual
+        // Render template
         this.container.innerHTML = '';
-
-        // 3. Clonar y pintar el Template
         const template = document.getElementById('template-community-section');
         if (template) {
-            const clone = template.content.cloneNode(true);
-            this.container.appendChild(clone);
-            
-            // 4. Una vez pintado el HTML, cargamos los datos
+            this.container.appendChild(template.content.cloneNode(true));
             this.loadUsers();
-        } else {
-            this.container.innerHTML = '<p style="padding:2rem; color:red;">Error: No se encontró el template-community-section en el HTML.</p>';
         }
     },
 
     async loadUsers() {
         const tableBody = document.getElementById('admin-users-list');
-        if (!tableBody) return; // Si no existe la tabla, salimos
+        if (!tableBody) return;
 
-        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem;">Cargando comunidad... <i class="fa-solid fa-spinner fa-spin"></i></td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:2rem;">Cargando base de datos... <i class="fa-solid fa-spinner fa-spin"></i></td></tr>';
 
         try {
-            // Traemos perfiles ordenados
             const { data, error } = await this.supabase
                 .from('profiles')
                 .select('*')
-                .order('display_name', { ascending: true });
+                // CAMBIO: Ordenamos por nombre en lugar de fecha de creación (que no existe)
+                .order('display_name', { ascending: true }); 
 
             if (error) throw error;
 
@@ -95,55 +79,50 @@ export const CommunityManager = {
             this.renderTable(data);
 
         } catch (err) {
-            console.error("Error:", err);
-            tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Error: ${err.message}</td></tr>`;
+            console.error(err);
+            tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">Error: ${err.message}</td></tr>`;
         }
     },
 
     renderTable(users) {
         const tableBody = document.getElementById('admin-users-list');
         if (!tableBody) return;
-        
         tableBody.innerHTML = '';
 
         if (!users || users.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1rem;">No hay usuarios registrados.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:1rem;">No hay usuarios.</td></tr>';
             return;
         }
 
         users.forEach(user => {
-            // Indicador visual de si tiene username
-            const hasUsername = user.username ? '<span style="color:green">● Listo</span>' : '<span style="color:orange">○ Pendiente</span>';
             const avatar = user.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
-
+            
             const row = document.createElement('tr');
             row.style.borderBottom = '1px solid var(--color-border)';
             row.innerHTML = `
                 <td style="padding:1rem;">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <img src="${avatar}" style="width:36px; height:36px; border-radius:50%; object-fit:cover;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <img src="${avatar}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:1px solid #eee;">
                         <div>
                             <div style="font-weight:600; color:var(--color-text-primary);">${user.display_name || 'Sin nombre'}</div>
-                            <div style="font-size:0.8rem; opacity:0.7;">${user.email || '...'}</div>
+                            <div style="font-size:0.8rem; opacity:0.6;">${user.email || ''}</div>
                         </div>
                     </div>
                 </td>
                 <td style="padding:1rem; font-size:0.9rem;">${user.role || 'researcher'}</td>
-                <td style="padding:1rem; font-family:monospace; color:var(--color-accent);">${user.username ? '@'+user.username : '-'}</td>
-                <td style="padding:1rem; font-size:0.85rem;">${hasUsername}</td>
+                <td style="padding:1rem;">
+                    ${user.username 
+                        ? `<a href="/bio.html?u=${user.username}" target="_blank" class="tag-link">@${user.username}</a>` 
+                        : '<span style="color:orange; font-size:0.8rem;">Sin URL</span>'}
+                </td>
                 <td style="padding:1rem; text-align:right;">
-                    <button class="btn-edit-user" title="Editar Perfil" style="padding:6px 10px; cursor:pointer; background:white; border:1px solid var(--color-border); border-radius:4px; margin-right:5px;">
-                        <i class="fa-solid fa-pen-to-square"></i>
+                    <button class="btn-edit-user" style="padding:8px 12px; cursor:pointer; background:var(--color-surface); border:1px solid var(--color-border); border-radius:6px; transition:all 0.2s;">
+                        <i class="fa-solid fa-pen-to-square"></i> Editar
                     </button>
-                    ${user.username ? `<a href="/bio.html?u=${user.username}" target="_blank" title="Ver Linktree" style="color:var(--color-text-primary);"><i class="fa-solid fa-external-link-alt"></i></a>` : ''}
                 </td>
             `;
 
-            // Click en editar
-            row.querySelector('.btn-edit-user').addEventListener('click', () => {
-                this.openEditModal(user);
-            });
-
+            row.querySelector('.btn-edit-user').addEventListener('click', () => this.openEditModal(user));
             tableBody.appendChild(row);
         });
     },
@@ -162,13 +141,30 @@ export const CommunityManager = {
         const modal = document.getElementById('admin-edit-modal');
         if(!modal) return;
 
-        // Llenar formulario
+        // IDs
         document.getElementById('edit-user-id').value = user.id;
+        
+        // Perfil Básico
         document.getElementById('edit-display-name').value = user.display_name || '';
         document.getElementById('edit-username').value = user.username || '';
         document.getElementById('edit-bio-short').value = user.bio_short || '';
-        document.getElementById('edit-x-url').value = user.x_url || '';
-        document.getElementById('edit-linkedin-url').value = user.linkedin_url || '';
+        document.getElementById('edit-orcid').value = user.orcid || ''; // ORCID Manual
+        
+        // Avatar
+        const avatarUrl = user.avatar_url || '';
+        document.getElementById('edit-avatar-url').value = avatarUrl;
+        document.getElementById('preview-avatar').src = avatarUrl || 'https://i.ibb.co/61fJv24/default-avatar.png';
+
+        // Redes Sociales (Mapeo completo)
+        document.getElementById('edit-website').value = user.website_url || '';
+        document.getElementById('edit-substack').value = user.substack_url || '';
+        document.getElementById('edit-linkedin').value = user.linkedin_url || '';
+        document.getElementById('edit-x').value = user.x_url || '';
+        document.getElementById('edit-bluesky').value = user.bsky_url || '';
+        document.getElementById('edit-instagram').value = user.instagram_url || '';
+        document.getElementById('edit-facebook').value = user.facebook_url || '';
+        document.getElementById('edit-youtube').value = user.youtube_url || '';
+        document.getElementById('edit-tiktok').value = user.tiktok_url || '';
 
         modal.style.display = 'flex';
     },
@@ -181,20 +177,29 @@ export const CommunityManager = {
         submitBtn.disabled = true;
         submitBtn.textContent = "Guardando...";
 
-        // Normalizamos el username (minúsculas y sin espacios)
-        let rawUsername = document.getElementById('edit-username').value.trim().toLowerCase();
-        rawUsername = rawUsername.replace(/\s+/g, '');
-
-        const updates = {
-            display_name: document.getElementById('edit-display-name').value,
-            username: rawUsername,
-            bio_short: document.getElementById('edit-bio-short').value,
-            x_url: document.getElementById('edit-x-url').value,
-            linkedin_url: document.getElementById('edit-linkedin-url').value,
-            updated_at: new Date()
-        };
-
         try {
+            // Construimos el objeto de actualización con TODOS los campos
+            const updates = {
+                display_name: document.getElementById('edit-display-name').value,
+                username: document.getElementById('edit-username').value.trim().toLowerCase().replace(/\s+/g, ''),
+                bio_short: document.getElementById('edit-bio-short').value,
+                orcid: document.getElementById('edit-orcid').value.trim(), // Aquí guardamos el ORCID manual
+                avatar_url: document.getElementById('edit-avatar-url').value.trim(),
+                
+                // Redes
+                website_url: document.getElementById('edit-website').value.trim(),
+                substack_url: document.getElementById('edit-substack').value.trim(),
+                linkedin_url: document.getElementById('edit-linkedin').value.trim(),
+                x_url: document.getElementById('edit-x').value.trim(),
+                bsky_url: document.getElementById('edit-bluesky').value.trim(),
+                instagram_url: document.getElementById('edit-instagram').value.trim(),
+                facebook_url: document.getElementById('edit-facebook').value.trim(),
+                youtube_url: document.getElementById('edit-youtube').value.trim(),
+                tiktok_url: document.getElementById('edit-tiktok').value.trim(),
+                
+                updated_at: new Date()
+            };
+
             const { error } = await this.supabase
                 .from('profiles')
                 .update(updates)
@@ -202,15 +207,13 @@ export const CommunityManager = {
 
             if (error) throw error;
 
-            alert("Perfil actualizado correctamente");
+            alert("✅ Perfil actualizado exitosamente.");
             document.getElementById('admin-edit-modal').style.display = 'none';
-            
-            // Actualizamos la caché local y la tabla sin recargar
-            this.loadUsers();
+            this.loadUsers(); // Recargar tabla
 
         } catch (err) {
-            console.error("Error al actualizar:", err);
-            alert("Error: " + err.message);
+            console.error("Error al guardar:", err);
+            alert("❌ Error: " + err.message);
         } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = originalText;
