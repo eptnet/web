@@ -366,31 +366,111 @@
             }
         }
 
-        // TAB C: Eventos (Desde tabla events)
+        // TAB C: Eventos y Sesiones (Corregido con URLs Reales)
         async function loadEvents(userId) {
             const list = document.getElementById('list-events');
+            
+            // 1. Traemos los EVENTOS (Captación de Leads)
             const { data: events } = await window.supabaseClient
                 .from('events')
                 .select('*')
                 .eq('user_id', userId)
-                .eq('is_public', true) // Solo eventos públicos
-                .order('created_at', { ascending: false });
+                .eq('is_public', true);
 
-            if (events && events.length > 0) {
-                list.innerHTML = events.map(evt => `
-                    <a href="/e/${evt.slug || evt.id}" target="_blank" class="link-card">
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            ${evt.cover_url ? `<img src="${evt.cover_url}" style="width:40px; height:40px; border-radius:4px; object-fit:cover;">` : '<i class="fa-solid fa-calendar-day" style="font-size:1.5rem; opacity:0.5;"></i>'}
-                            <div>
-                                <div style="font-weight:600;">${evt.title}</div>
-                                <span class="card-meta">Evento Público</span>
+            // 2. Traemos las SESIONES (Contenido Audiovisual)
+            const { data: sessions } = await window.supabaseClient
+                .from('sessions')
+                .select('*')
+                .eq('user_id', userId)
+                .neq('status', 'ARCHIVADO');
+
+            let mixedContent = [];
+
+            // --- PROCESAR EVENTOS (Landing Page) ---
+            if (events) {
+                events.forEach(evt => {
+                    // AHORA: Usamos tu estructura real de URL de evento
+                    // Si hay slug, usamos /evento?slug=... si no, fallback al ID
+                    const link = evt.slug 
+                        ? `/evento?slug=${evt.slug}` 
+                        : `/evento?slug=${evt.id}`;
+                    
+                    mixedContent.push({
+                        type: 'event',
+                        date: new Date(evt.created_at),
+                        title: evt.title,
+                        image: evt.cover_url,
+                        link: link,
+                        badgeText: 'Evento / Inscripción',
+                        badgeColor: '#e8f5e9', // Verde
+                        badgeTextColor: '#2e7d32',
+                        icon: 'fa-ticket',
+                        target: '_blank' // Se abre en nueva pestaña para ver la info
+                    });
+                });
+            }
+
+            // --- PROCESAR SESIONES (Streaming Room) ---
+            if (sessions) {
+                sessions.forEach(sess => {
+                    // AHORA: Usamos tu estructura real de sala en vivo
+                    const link = `/live.html?sesion=${sess.id}`;
+                    const isLive = sess.status === 'EN_VIVO';
+                    
+                    mixedContent.push({
+                        type: 'session',
+                        date: new Date(sess.scheduled_at || sess.created_at),
+                        title: sess.session_title || sess.project_title || 'Sesión de Divulgación',
+                        image: sess.thumbnail_url,
+                        link: link,
+                        badgeText: isLive ? '🔴 EN VIVO' : (sess.session_type || 'Sesión'),
+                        badgeColor: isLive ? '#ffebee' : '#f3e5f5', // Rojo vivo / Morado grabado
+                        badgeTextColor: isLive ? '#c62828' : '#7b1fa2',
+                        icon: isLive ? 'fa-tower-broadcast' : 'fa-video',
+                        target: '_self' // Misma pestaña para mantener al usuario en la app
+                    });
+                });
+            }
+
+            // 3. ORDENAR Y PINTAR
+            mixedContent.sort((a, b) => b.date - a.date);
+
+            if (mixedContent.length > 0) {
+                list.innerHTML = mixedContent.map(item => {
+                    const defaultImg = item.type === 'event' 
+                        ? 'https://placehold.co/100x100/e8f5e9/2e7d32?text=Evento' 
+                        : 'https://placehold.co/100x100/f3e5f5/7b1fa2?text=Video';
+                    
+                    const imgUrl = item.image || defaultImg;
+
+                    return `
+                    <a href="${item.link}" target="${item.target}" class="link-card">
+                        <div style="display:flex; align-items:center; gap:12px; width:100%;">
+                            <div style="width:60px; height:60px; flex-shrink:0; border-radius:8px; overflow:hidden; background:#eee; position:relative;">
+                                ${item.image 
+                                    ? `<img src="${item.image}" style="width:100%; height:100%; object-fit:cover;">` 
+                                    : `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center;"><i class="fa-solid ${item.icon}" style="font-size:1.5rem; color:${item.badgeTextColor}; opacity:0.7;"></i></div>`
+                                }
                             </div>
+                            
+                            <div style="flex-grow:1;">
+                                <div style="font-weight:600; line-height:1.2; margin-bottom:4px; font-size:0.95rem;">${item.title}</div>
+                                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                                    <span class="card-tag" style="background:${item.badgeColor}; color:${item.badgeTextColor}; border:1px solid ${item.badgeTextColor}20;">
+                                        ${item.badgeText}
+                                    </span>
+                                    <span class="card-meta" style="font-size:0.75rem;">
+                                        ${item.date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <i class="fa-solid fa-chevron-right" style="opacity:0.3; font-size:0.9rem;"></i>
                         </div>
-                        <i class="fa-solid fa-ticket" style="opacity:0.3;"></i>
-                    </a>
-                `).join('');
+                    </a>`;
+                }).join('');
             } else {
-                list.innerHTML = emptyState("No hay eventos públicos próximos.");
+                list.innerHTML = emptyState("No hay eventos ni sesiones programadas.");
             }
         }
 
