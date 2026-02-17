@@ -197,9 +197,37 @@
 
                 <div id="tab-identidad" class="profile-tab-content">
                     <div class="main-column">
+
+                        <div class="bento-box" style="background: linear-gradient(135deg, var(--color-surface) 0%, rgba(183, 42, 30, 0.03) 100%); border: 1px solid var(--color-accent); position: relative; overflow: hidden;">
+                            <div style="position: relative; z-index: 2;">
+                                <h3 style="color: var(--color-accent); margin-bottom: 0.5rem;"><i class="fa-solid fa-id-card"></i> Tu Link Académico</h3>
+                                <p style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 1.2rem; max-width: 600px;">
+                                    Este es tu enlace personal único. Compártelo en tus redes sociales, firma de correo o bio de Instagram para centralizar toda tu producción.
+                                </p>
+                                
+                                <div style="display: flex; gap: 0.8rem; flex-wrap: wrap; align-items: stretch;">
+                                    <div style="flex-grow: 1; background: var(--color-background); border: 2px solid var(--color-border); border-radius: 8px; padding: 0.8rem 1.2rem; display: flex; align-items: center; gap: 12px; transition: border-color 0.3s;">
+                                        <i class="fa-solid fa-globe" style="color: var(--color-text-secondary);"></i>
+                                        <span id="my-public-link-text" style="font-family: 'Courier New', monospace; font-weight: 600; font-size: 1.05rem; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                            epistecnologia.com/@usuario
+                                        </span>
+                                    </div>
+
+                                    <button id="btn-copy-link" class="btn btn-secondary" style="width: auto; min-width: 100px;" title="Copiar al portapapeles">
+                                        <i class="fa-regular fa-copy"></i> Copiar
+                                    </button>
+                                    <a id="btn-visit-link" href="#" target="_blank" class="btn btn-primary" style="width: auto;" title="Probar enlace">
+                                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Visitar
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <i class="fa-solid fa-fingerprint" style="position: absolute; right: -20px; top: -30px; font-size: 12rem; opacity: 0.04; transform: rotate(15deg); pointer-events: none; color: var(--color-accent);"></i>
+                        </div>
+
                         <div class="bento-box">
                             <h3><i class="fa-brands fa-orcid"></i> Publicaciones Sincronizadas</h3>
-                            <p class="form-hint">Aquí se encuentran listados tus proyectos (DOI) sincronizados desde tu ORCID y los que podrás sellecionar para la creación de contenidos.</p>
+                            <p class="form-hint">Aquí se encuentran listados tus proyectos (DOI) sincronizados desde tu ORCID y los que podrás seleccionar para la creación de contenidos.</p>
                             <div id="projects-list" class="projects-list"></div>
                             <div id="ept-doi-list">
                                 <p class="form-hint">Aquí aparecerán los proyectos que publiques a través de esta herramienta.</p>
@@ -236,43 +264,43 @@
                                 <div class="form-group">
                                     <label for="zenodo-title">Título de la Publicación</label>
                                     <input type="text" id="zenodo-title" name="title" required>
-                                </div>
+                                </div></br>
 
                                 <div class="form-group">
                                     <label for="zenodo-authors">Autores</label>
                                     <textarea id="zenodo-authors" name="authors" rows="3" placeholder="Un autor por línea. Ej: Márquez, H. A." required></textarea>
                                     <span class="form-hint">Tu nombre ya está incluido. Añade a tus coautores, uno por linea o edita según el formato que necesites.</span>
-                                </div>
+                                </div></br>
 
                                 <div class="form-group">
                                     <label for="zenodo-affiliations">Afiliación</label>
                                     <input type="text" id="zenodo-affiliations" name="affiliations" placeholder="Ej: Epistecnología A.C.">
-                                </div>
+                                </div></br>
                                 
                                 <div class="form-group">
                                     <label for="zenodo-description">Descripción / Abstract</label>
                                     <textarea id="zenodo-description" name="description" rows="5" required></textarea>
-                                </div>
+                                </div></br>
 
                                 <div class="form-group">
                                     <label for="zenodo-keywords">Palabras Clave</label>
                                     <input type="text" id="zenodo-keywords" name="keywords" placeholder="Separadas por comas. Ej: IA, Educación, Filosofía">
-                                </div>
+                                </div></br>
 
                                 <div class="form-group">
                                     <label for="zenodo-related-link">Enlace Relacionado (Opcional)</label>
                                     <input type="url" id="zenodo-related-link" name="related_link" placeholder="Ej: https://github.com/tu-usuario/tu-proyecto">
                                     <span class="form-hint">Un enlace a un repositorio de GitHub, sitio web del proyecto, etc.</span>
-                                </div>
+                                </div></br>
 
                                 <div class="form-group">
-                                    <label for="zenodo-license">Licencia</label>
+                                    <label for="zenodo-license">Licencias - Creative Commons</label>
                                     <select id="zenodo-license" name="license" required>
-                                        <option value="cc-by-4.0" selected>Creative Commons Attribution 4.0</option>
-                                        <option value="cc-by-sa-4.0">Creative Commons Attribution-ShareAlike 4.0</option>
-                                        <option value="cc0-1.0">Creative Commons Zero (Dominio Público)</option>
-                                        <option value="mit">MIT License (Para software)</option>
-                                    </select>
+                                        <option value="cc-by-sa-4.0" selected>Creative Commons Attribution-ShareAlike 4.0 (CC BY SA 4.0)</option>
+                                        <option value="cc-by-4.0">Creative Commons Attribution 4.0 (CC BY 4.0)</option>
+                                        <option value="cc0-1.0">Creative Commons Zero (Dominio Público - CC0 1.0)</option>
+                                        <option value="mit">MIT License (Para software - MIT)</option>
+                                    </select></br>
                                     <span class="form-hint">Define cómo otros pueden usar tu trabajo.</span>
                                 </div>
                                 
@@ -287,7 +315,7 @@
                                         <a href="https://zenodo.org/uploads/new?community=epistecnologia" target="_blank">subirlo directamente en Zenodo</a> 
                                         y luego registrar el DOI en tu perfil.
                                     </span>
-                                </div>
+                                </div></br>
                                 
                                 <button type="submit" class="btn btn-primary">Publicar y Obtener DOI</button>
                                 <div id="zenodo-message" class="form-message" style="margin-top: 1rem;"></div>
@@ -331,33 +359,6 @@
 
                 <div id="tab-invitados" class="profile-tab-content">
                     <div class="main-column">
-                        <div class="bento-box" style="background: linear-gradient(135deg, var(--color-surface) 0%, rgba(183, 42, 30, 0.03) 100%); border: 1px solid var(--color-accent); position: relative; overflow: hidden;">
-                            <div style="position: relative; z-index: 2;">
-                                <h3 style="color: var(--color-accent); margin-bottom: 0.5rem;"><i class="fa-solid fa-id-card"></i> Tu Linktree Académico</h3>
-                                <p style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 1.2rem; max-width: 600px;">
-                                    Este es tu enlace personal único. Compártelo en tus redes sociales, firma de correo o bio de Instagram para centralizar toda tu producción.
-                                </p>
-                                
-                                <div style="display: flex; gap: 0.8rem; flex-wrap: wrap; align-items: stretch;">
-                                    <div style="flex-grow: 1; background: var(--color-background); border: 2px solid var(--color-border); border-radius: 8px; padding: 0.8rem 1.2rem; display: flex; align-items: center; gap: 12px; transition: border-color 0.3s;">
-                                        <i class="fa-solid fa-globe" style="color: var(--color-text-secondary);"></i>
-                                        <span id="my-public-link-text" style="font-family: 'Courier New', monospace; font-weight: 600; font-size: 1.05rem; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                            epistecnologia.com/@usuario
-                                        </span>
-                                    </div>
-
-                                    <button id="btn-copy-link" class="btn btn-secondary" style="width: auto; min-width: 100px;" title="Copiar al portapapeles">
-                                        <i class="fa-regular fa-copy"></i> Copiar
-                                    </button>
-                                    <a id="btn-visit-link" href="#" target="_blank" class="btn btn-primary" style="width: auto;" title="Probar enlace">
-                                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Visitar
-                                    </a>
-                                </div>
-                            </div>
-                            
-                            <i class="fa-solid fa-fingerprint" style="position: absolute; right: -20px; top: -30px; font-size: 12rem; opacity: 0.04; transform: rotate(15deg); pointer-events: none; color: var(--color-accent);"></i>
-                        </div>
-                        
                         <div class="bento-box">
                             <h3><i class="fa-solid fa-user-plus"></i> Invitar a un Colega</h3>
                             <p class="form-hint">
