@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epistecnología</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    
+    <style>
+        /* ESTILOS LINKTREE (Igual que bio.html) */
+        body {
+            background-color: var(--color-background);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .bio-wrapper {
+            width: 100%;
+            max-width: 500px;
+            background: var(--color-surface);
+            min-height: 100vh;
+            padding: 3rem 1.5rem;
+            box-shadow: 0 0 30px rgba(0,0,0,0.05);
+            text-align: center;
+            position: relative;
+        }
+
+        /* Diseño de Error 404 (Por si la URL está mal de verdad) */
+        #error-view {
+            display: none;
+            padding-top: 20%;
+        }
+        .error-code { font-size: 5rem; font-weight: 900; color: var(--color-border); line-height: 1; }
+        .error-msg { font-size: 1.5rem; font-family: var(--font-serif); margin-bottom: 2rem; }
+
+        /* Estilos del Perfil (Reutilizados) */
+        .avatar-container { position: relative; width: 130px; height: 130px; margin: 0 auto 1.5rem auto; }
+        .bio-avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 4px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .bio-name { font-family: var(--font-serif); font-size: 1.8rem; margin-bottom: 0.5rem; color: var(--color-text-primary); line-height: 1.2; }
+        .bio-role { font-size: 0.9rem; color: var(--color-accent); text-transform: uppercase; font-weight: 700; letter-spacing: 1px; margin-bottom: 1rem; }
+        .bio-text { font-size: 1rem; line-height: 1.6; color: var(--color-text-secondary); margin-bottom: 2rem; padding: 0 1rem; }
+        
+        .social-row { display: flex; justify-content: center; gap: 1.2rem; margin-bottom: 2.5rem; flex-wrap: wrap; }
+        .social-btn { width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #f8f9fa; color: var(--color-text-secondary); text-decoration: none; font-size: 1.2rem; transition: all 0.3s ease; border: 1px solid transparent; }
+        .social-btn:hover { background: var(--color-text-primary); color: white; transform: translateY(-3px); }
+        .social-btn.orcid:hover { background: #A6CE39; color: white; }
+        .social-btn.bsky:hover { background: #0085ff; color: white; }
+        .social-btn.linkedin:hover { background: #0077b5; color: white; }
+
+        .content-section-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.6; margin-bottom: 1.5rem; display: block; }
+        .link-card { display: flex; align-items: center; justify-content: space-between; background: white; border: 1px solid var(--color-border); border-radius: 12px; padding: 1.2rem; margin-bottom: 1rem; text-decoration: none; color: var(--color-text-primary); transition: all 0.2s; text-align: left; }
+        .link-card:hover { transform: translateY(-2px); border-color: var(--color-accent); box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
+        .card-icon { font-size: 1.2rem; color: var(--color-text-secondary); margin-right: 15px; width: 20px; text-align: center; }
+        .card-text { flex-grow: 1; font-weight: 600; font-size: 0.95rem; }
+        
+        .bio-footer { margin-top: 4rem; border-top: 1px solid var(--color-border); padding-top: 1.5rem; font-size: 0.8rem; color: var(--color-text-secondary); }
+    </style>
+</head>
+<body>
+
+    <div class="bio-wrapper">
+        <div id="loading" style="padding-top: 50%;">
+            <i class="fa-solid fa-spinner fa-spin fa-2x" style="color:var(--color-accent)"></i>
+        </div>
+
+        <div id="profile-content" style="display: none; animation: fadeIn 0.5s;">
+            <div class="avatar-container">
+                <img src="" alt="Avatar" class="bio-avatar" id="p-avatar">
+            </div>
+            
+            <h1 class="bio-name" id="p-name"></h1>
+            <div class="bio-role" id="p-role"></div>
+            <p class="bio-text" id="p-bio"></p>
+            
+            <div class="social-row" id="p-socials"></div>
+
+            <hr style="border:0; border-top:1px solid #eee; margin: 2rem 0;">
+
+            <span class="content-section-title">Publicaciones Destacadas</span>
+            <div id="links-list"></div>
+
+            <div class="bio-footer">
+                <p>Perfil verificado en</p>
+                <a href="/" style="text-decoration:none; color:inherit; font-weight:bold;">
+                    <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" height="18" style="vertical-align:middle;"> Epistecnología
+                </a>
+            </div>
+        </div>
+
+        <div id="error-view">
+            <div class="error-code">404</div>
+            <h2 class="error-msg">Página no encontrada</h2>
+            <p style="color:var(--color-text-secondary); margin-bottom:2rem;">Lo sentimos, la ruta que buscas no existe o el enlace está roto.</p>
+            <a href="/" class="btn-primary" style="background:var(--color-accent); color:white; padding:10px 20px; text-decoration:none; border-radius:50px;">Volver al Inicio</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/main.js"></script> <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Esperar a que main.js inicialice Supabase
+            const checkSupabase = setInterval(() => {
+                if (window.supabaseClient) {
+                    clearInterval(checkSupabase);
+                    routerLogic();
+                }
+            }, 100);
+        });
+
+        async function routerLogic() {
+            // Lógica Maestra: ¿Es una URL de usuario?
+            const path = window.location.pathname; // Ej: /@henry
+            
+            // Caso 1: Viene con parámetro clásico (?u=henry) - Retrocompatibilidad
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('u')) {
+                loadProfile(params.get('u'));
+                return;
+            }
+
+            // Caso 2: Viene como ruta bonita (/@henry)
+            // Buscamos si hay un "@" en la ruta
+            if (path.includes('/@')) {
+                // Extraemos lo que hay después del @
+                const parts = path.split('/@');
+                if (parts.length > 1) {
+                    // Limpiamos barras finales o espacios (ej: henry/ -> henry)
+                    let username = parts[1].replace(/\/$/, '').trim(); 
+                    if (username) {
+                        loadProfile(username);
+                        return;
+                    }
+                }
+            }
+
+            // Caso 3: No es nada conocido -> Mostrar 404 Real
+            show404();
+        }
+
+        async function loadProfile(username) {
+            try {
+                // Buscar perfil en la BD
+                const { data: profile, error } = await window.supabaseClient
+                    .from('profiles')
+                    .select('*')
+                    .eq('username', username)
+                    .single();
+
+                if (error || !profile) {
+                    console.warn("Usuario no encontrado en BD");
+                    show404(); // Si el usuario no existe, mostramos 404
+                    return;
+                }
+
+                renderProfile(profile);
+                loadUserContent(profile.display_name);
+
+            } catch (err) {
+                console.error(err);
+                show404();
+            }
+        }
+
+        function renderProfile(profile) {
+            // Mismo renderizador que bio.html
+            document.getElementById('p-name').textContent = profile.display_name || "Usuario";
+            document.getElementById('p-role').textContent = profile.role || "Investigador";
+            document.getElementById('p-bio').textContent = profile.bio_short || (profile.bio ? profile.bio.substring(0, 150) + "..." : "Miembro de la comunidad.");
+            document.getElementById('p-avatar').src = profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
+
+            // Redes Sociales
+            const socialContainer = document.getElementById('p-socials');
+            let socialHTML = '';
+
+            if (profile.orcid) socialHTML += `<a href="https://orcid.org/${profile.orcid}" target="_blank" class="social-btn orcid" title="ORCID"><i class="fa-brands fa-orcid"></i></a>`;
+            if (profile.bsky_url) socialHTML += `<a href="${profile.bsky_url}" target="_blank" class="social-btn bsky"><i class="fa-brands fa-bluesky"></i></a>`;
+            if (profile.linkedin_url) socialHTML += `<a href="${profile.linkedin_url}" target="_blank" class="social-btn linkedin"><i class="fa-brands fa-linkedin-in"></i></a>`;
+            if (profile.x_url) socialHTML += `<a href="${profile.x_url}" target="_blank" class="social-btn"><i class="fa-brands fa-x-twitter"></i></a>`;
+            if (profile.website_url) socialHTML += `<a href="${profile.website_url}" target="_blank" class="social-btn"><i class="fa-solid fa-globe"></i></a>`;
+            if (profile.substack_url) socialHTML += `<a href="${profile.substack_url}" target="_blank" class="social-btn" style="background:#FF6719; color:white;"><i class="fa-solid fa-bookmark"></i></a>`;
+
+            // Agregar otros iconos (YouTube, Instagram) si los tienes llenos
+            if (profile.youtube_url) socialHTML += `<a href="${profile.youtube_url}" target="_blank" class="social-btn" style="color:red;"><i class="fa-brands fa-youtube"></i></a>`;
+
+            socialContainer.innerHTML = socialHTML;
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('profile-content').style.display = 'block';
+            document.title = `${profile.display_name} | Epistecnología`;
+        }
+
+        async function loadUserContent(authorName) {
+            if (!authorName) return;
+            const { data: posts } = await window.supabaseClient
+                .from('knowledge_base')
+                .select('*')
+                .ilike('author_name', `%${authorName}%`) 
+                .order('published_at', { ascending: false })
+                .limit(6);
+
+            const list = document.getElementById('links-list');
+            if (posts && posts.length > 0) {
+                posts.forEach(post => {
+                    const iconClass = post.source_type === 'podcast' ? 'fa-microphone' : 'fa-file-lines';
+                    list.insertAdjacentHTML('beforeend', `
+                        <a href="${post.url}" target="_blank" class="link-card">
+                            <i class="fa-solid ${iconClass} card-icon"></i>
+                            <div class="card-text">${post.title}</div>
+                            <i class="fa-solid fa-chevron-right" style="font-size:0.8rem; color:#ccc;"></i>
+                        </a>
+                    `);
+                });
+            } else {
+                list.innerHTML = `<div style="padding:1rem; opacity:0.6;">Aún no hay publicaciones sincronizadas.</div>`;
+            }
+        }
+
+        function show404() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('profile-content').style.display = 'none';
+            document.getElementById('error-view').style.display = 'block';
+            document.title = "404 No encontrado | Epistecnología";
+        }
+    </script>
+</body>
+</html>
