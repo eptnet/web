@@ -4,16 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Perfil | Epistecnología</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link id="dynamic-favicon" rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
+    
+    <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     
     <style>
-        /* ESTILOS LINKTREE / TARJETA DE PRESENTACIÓN */
+        /* ESTILOS LINKTREE / TARJETA */
         body {
             background-color: var(--color-background);
             display: flex;
             justify-content: center;
-            align-items: flex-start; /* Alineado arriba para permitir scroll */
+            align-items: flex-start;
             min-height: 100vh;
             margin: 0;
             font-family: 'Inter', sans-serif;
@@ -25,141 +27,51 @@
             background: var(--color-surface);
             min-height: 100vh;
             padding: 3rem 1.5rem;
-            box-shadow: 0 0 30px rgba(0,0,0,0.05);
+            box-shadow: 0 0 40px rgba(0,0,0,0.08);
             text-align: center;
             position: relative;
         }
 
-        /* Avatar con anillo de estado */
-        .avatar-container {
-            position: relative;
-            width: 130px;
-            height: 130px;
-            margin: 0 auto 1.5rem auto;
-        }
+        /* Avatar */
+        .avatar-container { position: relative; width: 140px; height: 140px; margin: 0 auto 1.5rem auto; }
+        .bio-avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 4px solid white; box-shadow: 0 8px 20px rgba(0,0,0,0.15); transition: transform 0.3s; }
+        .bio-avatar:hover { transform: scale(1.05); }
+
+        /* Textos */
+        .bio-name { font-family: var(--font-serif); font-size: 2rem; margin-bottom: 0.2rem; color: var(--color-text-primary); line-height: 1.1; font-weight: 700; }
+        .bio-role { font-size: 0.85rem; color: var(--color-text-secondary); text-transform: uppercase; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 1rem; }
         
-        .bio-avatar {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 4px solid white;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        /* Texto */
-        .bio-name {
-            font-family: var(--font-serif);
-            font-size: 1.8rem;
-            margin-bottom: 0.5rem;
-            color: var(--color-text-primary);
-            line-height: 1.2;
-        }
-
-        .bio-role {
-            font-size: 0.9rem;
+        /* NUEVO: Slogan Destacado */
+        .bio-slogan {
+            font-size: 1.1rem;
+            font-weight: 500;
             color: var(--color-accent);
-            text-transform: uppercase;
-            font-weight: 700;
-            letter-spacing: 1px;
-            margin-bottom: 1rem;
-        }
-
-        .bio-text {
-            font-size: 1rem;
-            line-height: 1.6;
-            color: var(--color-text-secondary);
-            margin-bottom: 2rem;
+            margin: 1rem 0;
+            font-style: italic;
+            line-height: 1.4;
             padding: 0 1rem;
         }
 
-        /* Botones Sociales (Usando tus columnas) */
-        .social-row {
-            display: flex;
-            justify-content: center;
-            gap: 1.2rem;
-            margin-bottom: 2.5rem;
-            flex-wrap: wrap;
-        }
-
-        .social-btn {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #f8f9fa;
-            color: var(--color-text-secondary);
-            text-decoration: none;
-            font-size: 1.2rem;
-            transition: all 0.3s ease;
-            border: 1px solid transparent;
-        }
-
-        .social-btn:hover {
-            background: var(--color-text-primary);
-            color: white;
-            transform: translateY(-3px);
-        }
-
+        /* Bio Extendida */
+        .bio-text { font-size: 0.95rem; line-height: 1.6; color: var(--color-text-secondary); margin-bottom: 2rem; padding: 0 1rem; opacity: 0.9; }
+        
+        /* Redes Sociales */
+        .social-row { display: flex; justify-content: center; gap: 1rem; margin-bottom: 2.5rem; flex-wrap: wrap; }
+        .social-btn { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #f0f2f5; color: #555; text-decoration: none; font-size: 1.1rem; transition: all 0.3s ease; border: 1px solid transparent; }
+        .social-btn:hover { background: var(--color-text-primary); color: white; transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .social-btn.orcid { color: #A6CE39; background: white; border-color: #A6CE39; }
         .social-btn.orcid:hover { background: #A6CE39; color: white; }
-        .social-btn.bsky:hover { background: #0085ff; color: white; }
-        .social-btn.linkedin:hover { background: #0077b5; color: white; }
-
-        /* Lista de Contenidos (Artículos/Proyectos) */
-        .content-section-title {
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            opacity: 0.6;
-            margin-bottom: 1.5rem;
-            display: block;
-        }
-
-        .link-card {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: white;
-            border: 1px solid var(--color-border);
-            border-radius: 12px;
-            padding: 1.2rem;
-            margin-bottom: 1rem;
-            text-decoration: none;
-            color: var(--color-text-primary);
-            transition: all 0.2s;
-            text-align: left;
-        }
-
-        .link-card:hover {
-            transform: translateY(-2px);
-            border-color: var(--color-accent);
-            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
-        }
-
-        .card-icon {
-            font-size: 1.2rem;
-            color: var(--color-text-secondary);
-            margin-right: 15px;
-            width: 20px;
-            text-align: center;
-        }
-
-        .card-text {
-            flex-grow: 1;
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
-
+        
+        /* Links / Cards */
+        .content-section-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; opacity: 0.5; margin-bottom: 1.5rem; display: block; font-weight: bold; }
+        .link-card { display: flex; align-items: center; justify-content: space-between; background: white; border: 1px solid var(--color-border); border-radius: 16px; padding: 1.2rem; margin-bottom: 1rem; text-decoration: none; color: var(--color-text-primary); transition: all 0.2s; text-align: left; position: relative; overflow: hidden; }
+        .link-card:hover { transform: translateY(-3px); border-color: var(--color-accent); box-shadow: 0 10px 25px rgba(0,0,0,0.06); }
+        
         /* Footer */
-        .bio-footer {
-            margin-top: 4rem;
-            border-top: 1px solid var(--color-border);
-            padding-top: 1.5rem;
-            font-size: 0.8rem;
-            color: var(--color-text-secondary);
-        }
+        .bio-footer { margin-top: 4rem; border-top: 1px solid var(--color-border); padding-top: 2rem; font-size: 0.8rem; color: var(--color-text-secondary); }
+        
+        /* 404 View */
+        #error-view { display: none; padding-top: 20%; }
     </style>
 </head>
 <body>
@@ -169,58 +81,71 @@
             <i class="fa-solid fa-spinner fa-spin fa-2x" style="color:var(--color-accent)"></i>
         </div>
 
-        <div id="profile-content" style="display: none; animation: fadeIn 0.5s;">
-            
+        <div id="profile-content" style="display: none; animation: fadeIn 0.6s;">
             <div class="avatar-container">
                 <img src="" alt="Avatar" class="bio-avatar" id="p-avatar">
             </div>
             
             <h1 class="bio-name" id="p-name"></h1>
             <div class="bio-role" id="p-role"></div>
-            <p class="bio-text" id="p-bio"></p>
-            
-            <div class="social-row" id="p-socials"></div>
 
-            <hr style="border:0; border-top:1px solid #eee; margin: 2rem 0;">
+            <div id="p-orcid-container" style="margin-bottom: 1rem;"></div>
+
+            <p class="bio-slogan" id="p-slogan"></p> <p class="bio-text" id="p-bio"></p>     <div class="social-row" id="p-socials"></div>
+
+            <hr style="border:0; border-top:1px solid rgba(0,0,0,0.05); margin: 2.5rem 0;">
 
             <span class="content-section-title">Publicaciones Destacadas</span>
-            <div id="links-list">
-                </div>
+            <div id="links-list"></div>
 
             <div class="bio-footer">
-                <p>Perfil verificado en</p>
-                <a href="/" style="text-decoration:none; color:inherit; font-weight:bold;">
-                    <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" height="18" style="vertical-align:middle;"> Epistecnología
+                <p style="margin-bottom:5px;">Perfil de Investigador</p>
+                <a href="/" style="text-decoration:none; color:inherit; font-weight:700; display:inline-flex; align-items:center; gap:5px;">
+                    <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" height="20"> Epistecnología
                 </a>
             </div>
+        </div>
+
+        <div id="error-view">
+            <h1 style="font-size:4rem; margin:0; color:var(--color-border);">404</h1>
+            <h2>Perfil no encontrado</h2>
+            <p>El enlace que buscas no existe o ha cambiado.</p>
+            <a href="/" class="social-btn" style="width:auto; padding:0 20px; margin:20px auto; border-radius:50px;">Ir al Inicio</a>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/main.js"></script>
+    <script src="/js/main.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            // Esperar a que main.js inicialice Supabase
             const checkSupabase = setInterval(() => {
                 if (window.supabaseClient) {
                     clearInterval(checkSupabase);
-                    initProfile();
+                    routerLogic();
                 }
             }, 100);
         });
 
-        async function initProfile() {
-            // 1. Obtener usuario de la URL (?u=nombreusuario)
+        async function routerLogic() {
+            // Lógica unificada para bio.html y 404.html
+            const path = window.location.pathname;
             const params = new URLSearchParams(window.location.search);
-            let username = params.get('u');
+            
+            let username = params.get('u'); // Caso ?u=henry
 
-            if (!username) {
-                // Fallback: Si no hay usuario, mostrar mensaje de error simple
-                showError("Perfil no especificado.");
-                return;
+            if (!username && path.includes('/@')) { // Caso /@henry
+                const parts = path.split('/@');
+                if (parts.length > 1) username = parts[1].replace(/\/$/, '').trim();
             }
 
-            // 2. Buscar perfil en la BD
+            if (username) {
+                loadProfile(username);
+            } else {
+                show404();
+            }
+        }
+
+        async function loadProfile(username) {
             try {
                 const { data: profile, error } = await window.supabaseClient
                     .from('profiles')
@@ -228,100 +153,105 @@
                     .eq('username', username)
                     .single();
 
-                if (error || !profile) throw new Error("Perfil no encontrado");
+                if (error || !profile) { show404(); return; }
 
                 renderProfile(profile);
-                loadUserContent(profile.display_name); // Buscamos artículos por su nombre
+                loadUserContent(profile.display_name);
 
-            } catch (err) {
-                console.error(err);
-                showError("No pudimos encontrar este perfil.");
-            }
+            } catch (err) { console.error(err); show404(); }
         }
 
         function renderProfile(profile) {
-            // Textos
-            document.getElementById('p-name').textContent = profile.display_name || "Usuario Anónimo";
+            // 1. Datos Básicos
+            document.getElementById('p-name').textContent = profile.display_name || "Usuario";
             document.getElementById('p-role').textContent = profile.role || "Investigador";
-            // Usamos bio_short si existe, si no la bio normal recortada
-            document.getElementById('p-bio').textContent = profile.bio_short || (profile.bio ? profile.bio.substring(0, 150) + "..." : "Miembro de la comunidad.");
             
-            // Avatar (con fallback)
+            // 2. Avatar y Favicon Dinámico (Magia aquí ✨)
             const avatarUrl = profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
             document.getElementById('p-avatar').src = avatarUrl;
+            document.getElementById('dynamic-favicon').href = avatarUrl; // Cambia el icono de la pestaña
 
-            // Redes Sociales (Mapeamos tus columnas exactas)
+            // 3. Slogan (Bio Short) vs Bio Completa
+            const sloganEl = document.getElementById('p-slogan');
+            const bioEl = document.getElementById('p-bio');
+
+            if (profile.bio_short) {
+                sloganEl.textContent = `"${profile.bio_short}"`;
+                sloganEl.style.display = 'block';
+            } else {
+                sloganEl.style.display = 'none';
+            }
+
+            bioEl.textContent = profile.bio || "Miembro de la comunidad científica de Epistecnología.";
+
+            // 4. ORCID Destacado (Debajo del rol)
+            const orcidContainer = document.getElementById('p-orcid-container');
+            orcidContainer.innerHTML = '';
+            if (profile.orcid) {
+                // Limpiamos el ID por si pegan la url completa
+                let orcidId = profile.orcid.replace('https://orcid.org/', '').trim();
+                orcidContainer.innerHTML = `
+                    <a href="https://orcid.org/${orcidId}" target="_blank" style="display:inline-flex; align-items:center; gap:5px; background:#A6CE39; color:white; padding:4px 10px; border-radius:50px; text-decoration:none; font-size:0.8rem; font-weight:bold;">
+                        <i class="fa-brands fa-orcid"></i> ${orcidId}
+                    </a>
+                `;
+            }
+
+            // 5. Redes Sociales
             const socialContainer = document.getElementById('p-socials');
             let socialHTML = '';
+            // Si quieres poner el ORCID también en los botones redondos, descomenta esto:
+            // if (profile.orcid) socialHTML += ... 
 
-            // ORCID
-            if (profile.orcid) {
-                // Limpiamos si viene con url completa o solo el ID
-                const orcidId = profile.orcid.replace('https://orcid.org/', '');
-                socialHTML += `<a href="https://orcid.org/${orcidId}" target="_blank" class="social-btn orcid" title="ORCID"><i class="fa-brands fa-orcid"></i></a>`;
-            }
-            // Bluesky (bsky_url)
-            if (profile.bsky_url) {
-                socialHTML += `<a href="${profile.bsky_url}" target="_blank" class="social-btn bsky" title="Bluesky"><i class="fa-brands fa-bluesky"></i></a>`;
-            }
-            // LinkedIn (linkedin_url)
-            if (profile.linkedin_url) {
-                socialHTML += `<a href="${profile.linkedin_url}" target="_blank" class="social-btn linkedin" title="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>`;
-            }
-            // X / Twitter (x_url)
-            if (profile.x_url) {
-                socialHTML += `<a href="${profile.x_url}" target="_blank" class="social-btn" title="X (Twitter)"><i class="fa-brands fa-x-twitter"></i></a>`;
-            }
-             // Website (website_url)
-             if (profile.website_url) {
-                socialHTML += `<a href="${profile.website_url}" target="_blank" class="social-btn" title="Web Personal"><i class="fa-solid fa-globe"></i></a>`;
-            }
-            // Substack (substack_url)
-            if (profile.substack_url) {
-                socialHTML += `<a href="${profile.substack_url}" target="_blank" class="social-btn" title="Substack" style="background:#FF6719; color:white;"><i class="fa-solid fa-bookmark"></i></a>`;
-            }
+            if (profile.website_url) socialHTML += `<a href="${profile.website_url}" target="_blank" class="social-btn" title="Web"><i class="fa-solid fa-globe"></i></a>`;
+            if (profile.substack_url) socialHTML += `<a href="${profile.substack_url}" target="_blank" class="social-btn" title="Substack" style="color:#FF6719"><i class="fa-solid fa-bookmark"></i></a>`;
+            if (profile.bsky_url) socialHTML += `<a href="${profile.bsky_url}" target="_blank" class="social-btn" title="Bluesky" style="color:#0085ff"><i class="fa-brands fa-bluesky"></i></a>`;
+            if (profile.linkedin_url) socialHTML += `<a href="${profile.linkedin_url}" target="_blank" class="social-btn" title="LinkedIn" style="color:#0077b5"><i class="fa-brands fa-linkedin-in"></i></a>`;
+            if (profile.x_url) socialHTML += `<a href="${profile.x_url}" target="_blank" class="social-btn"><i class="fa-brands fa-x-twitter"></i></a>`;
+            if (profile.youtube_url) socialHTML += `<a href="${profile.youtube_url}" target="_blank" class="social-btn" style="color:red"><i class="fa-brands fa-youtube"></i></a>`;
+            if (profile.instagram_url) socialHTML += `<a href="${profile.instagram_url}" target="_blank" class="social-btn" style="color:#E1306C"><i class="fa-brands fa-instagram"></i></a>`;
 
             socialContainer.innerHTML = socialHTML;
 
-            // Mostrar todo
+            // Titulo de la página
+            document.title = `${profile.display_name} (@${profile.username || 'user'})`;
+            
             document.getElementById('loading').style.display = 'none';
             document.getElementById('profile-content').style.display = 'block';
-            document.title = `${profile.display_name} | Epistecnología`;
         }
 
         async function loadUserContent(authorName) {
             if (!authorName) return;
-
-            // Buscamos en la base de conocimientos donde el autor coincida
-            // Nota: Esto es una búsqueda aproximada. Idealmente vincularíamos por ID en el futuro.
             const { data: posts } = await window.supabaseClient
                 .from('knowledge_base')
                 .select('*')
                 .ilike('author_name', `%${authorName}%`) 
                 .order('published_at', { ascending: false })
-                .limit(6);
+                .limit(5);
 
             const list = document.getElementById('links-list');
-
             if (posts && posts.length > 0) {
                 posts.forEach(post => {
-                    const iconClass = post.source_type === 'podcast' ? 'fa-microphone' : 'fa-file-lines';
-                    const html = `
+                    const iconClass = post.source_type === 'podcast' ? 'fa-microphone' : 'fa-align-left';
+                    list.insertAdjacentHTML('beforeend', `
                         <a href="${post.url}" target="_blank" class="link-card">
-                            <i class="fa-solid ${iconClass} card-icon"></i>
-                            <div class="card-text">${post.title}</div>
-                            <i class="fa-solid fa-chevron-right" style="font-size:0.8rem; color:#ccc;"></i>
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <i class="fa-solid ${iconClass}" style="color:var(--color-text-secondary)"></i>
+                                <span style="font-weight:600; font-size:0.9rem">${post.title}</span>
+                            </div>
+                            <i class="fa-solid fa-arrow-right" style="opacity:0.3; font-size:0.8rem"></i>
                         </a>
-                    `;
-                    list.insertAdjacentHTML('beforeend', html);
+                    `);
                 });
             } else {
-                list.innerHTML = `<div style="padding:1rem; opacity:0.6;">Aún no hay publicaciones sincronizadas.</div>`;
+                list.innerHTML = `<div style="text-align:center; opacity:0.5; font-size:0.9rem;">Sin publicaciones recientes.</div>`;
             }
         }
 
-        function showError(msg) {
-            document.getElementById('loading').innerHTML = `<p style="padding:2rem;">${msg}</p><a href="/" class="cta-button">Ir al Inicio</a>`;
+        function show404() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('profile-content').style.display = 'none';
+            document.getElementById('error-view').style.display = 'block';
         }
     </script>
 </body>
