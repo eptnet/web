@@ -246,6 +246,47 @@ const ProfileApp = {
                 this.toggleEditMode(document.getElementById('platforms-form').closest('.bento-box'), false);
             }
 
+        // --- INICIO: LÓGICA DEL LINKTREE PÚBLICO ---
+        if (isEditable) {
+            const publicLinkText = document.getElementById('my-public-link-text');
+            const btnCopy = document.getElementById('btn-copy-link');
+            const btnVisit = document.getElementById('btn-visit-link');
+
+            if (publicLinkText && btnCopy && btnVisit) {
+                // 1. Construir la URL
+                // Si no tiene username, usamos el ID como fallback temporal, pero idealmente debe tener username
+                const username = profile.username || `?id=${profile.id}`; 
+                const fullUrl = `https://epistecnologia.com/@${profile.username || 'usuario'}`; // Ajusta el dominio si estás en local
+                const displayUrl = `epistecnologia.com/@${profile.username || 'usuario'}`;
+
+                // 2. Pintar en el HTML
+                publicLinkText.textContent = displayUrl;
+                btnVisit.href = fullUrl;
+
+                // 3. Lógica del Botón Copiar
+                // Clonamos el botón para eliminar listeners anteriores si se vuelve a renderizar
+                const newBtnCopy = btnCopy.cloneNode(true);
+                btnCopy.parentNode.replaceChild(newBtnCopy, btnCopy);
+
+                newBtnCopy.addEventListener('click', () => {
+                    navigator.clipboard.writeText(fullUrl).then(() => {
+                        // Feedback Visual
+                        const originalHTML = newBtnCopy.innerHTML;
+                        newBtnCopy.innerHTML = '<i class="fa-solid fa-check"></i> ¡Copiado!';
+                        newBtnCopy.classList.add('btn-success'); // Opcional: añade clase verde si tienes
+                        
+                        setTimeout(() => {
+                            newBtnCopy.innerHTML = originalHTML;
+                            newBtnCopy.classList.remove('btn-success');
+                        }, 2000);
+                    }).catch(err => {
+                        console.error('Error al copiar:', err);
+                        alert('No se pudo copiar el enlace.');
+                    });
+                });
+            }
+        }
+        // --- FIN LÓGICA LINKTREE ---
             
         } catch (error) {
             console.error('Error en renderProfileData:', error);

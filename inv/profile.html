@@ -331,6 +331,33 @@
 
                 <div id="tab-invitados" class="profile-tab-content">
                     <div class="main-column">
+                        <div class="bento-box" style="background: linear-gradient(135deg, var(--color-surface) 0%, rgba(183, 42, 30, 0.03) 100%); border: 1px solid var(--color-accent); position: relative; overflow: hidden;">
+                            <div style="position: relative; z-index: 2;">
+                                <h3 style="color: var(--color-accent); margin-bottom: 0.5rem;"><i class="fa-solid fa-id-card"></i> Tu Linktree Académico</h3>
+                                <p style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 1.2rem; max-width: 600px;">
+                                    Este es tu enlace personal único. Compártelo en tus redes sociales, firma de correo o bio de Instagram para centralizar toda tu producción.
+                                </p>
+                                
+                                <div style="display: flex; gap: 0.8rem; flex-wrap: wrap; align-items: stretch;">
+                                    <div style="flex-grow: 1; background: var(--color-background); border: 2px solid var(--color-border); border-radius: 8px; padding: 0.8rem 1.2rem; display: flex; align-items: center; gap: 12px; transition: border-color 0.3s;">
+                                        <i class="fa-solid fa-globe" style="color: var(--color-text-secondary);"></i>
+                                        <span id="my-public-link-text" style="font-family: 'Courier New', monospace; font-weight: 600; font-size: 1.05rem; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                            epistecnologia.com/@usuario
+                                        </span>
+                                    </div>
+
+                                    <button id="btn-copy-link" class="btn btn-secondary" style="width: auto; min-width: 100px;" title="Copiar al portapapeles">
+                                        <i class="fa-regular fa-copy"></i> Copiar
+                                    </button>
+                                    <a id="btn-visit-link" href="#" target="_blank" class="btn btn-primary" style="width: auto;" title="Probar enlace">
+                                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Visitar
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <i class="fa-solid fa-fingerprint" style="position: absolute; right: -20px; top: -30px; font-size: 12rem; opacity: 0.04; transform: rotate(15deg); pointer-events: none; color: var(--color-accent);"></i>
+                        </div>
+                        
                         <div class="bento-box">
                             <h3><i class="fa-solid fa-user-plus"></i> Invitar a un Colega</h3>
                             <p class="form-hint">
