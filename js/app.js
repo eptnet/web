@@ -776,7 +776,7 @@ document.addEventListener('mainReady', () => {
                             ${fullContent}
                         </div>
                         <div class="modal-cta-container">
-                            <a href="${post.link}" target="_blank" class="modal-cta-button modal-cta-button--primary">Seguir leyendo en EPT News</a>
+                            <a href="${post.link}" target="_blank" class="modal-cta-button modal-cta-button--primary">Seguir leyendo</a>
                             <a href="https://publicaciones.epistecnologia.com/" target="_blank" class="modal-cta-button">Suscribirse al Newsletter</a>
                         </div>
                     </article>

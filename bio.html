@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     
     <style>
-        /* ESTILOS LINKTREE / TARJETA */
+        /* ESTILOS BASE */
         body {
             background-color: var(--color-background);
             display: flex;
@@ -23,7 +23,7 @@
 
         .bio-wrapper {
             width: 100%;
-            max-width: 500px;
+            max-width: 600px; /* Un poco más ancho para las pestañas */
             background: var(--color-surface);
             min-height: 100vh;
             padding: 3rem 1.5rem;
@@ -32,46 +32,90 @@
             position: relative;
         }
 
-        /* Avatar */
+        /* HEADER DEL PERFIL */
         .avatar-container { position: relative; width: 140px; height: 140px; margin: 0 auto 1.5rem auto; }
-        .bio-avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 4px solid white; box-shadow: 0 8px 20px rgba(0,0,0,0.15); transition: transform 0.3s; }
-        .bio-avatar:hover { transform: scale(1.05); }
-
-        /* Textos */
-        .bio-name { font-family: var(--font-serif); font-size: 2rem; margin-bottom: 0.2rem; color: var(--color-text-primary); line-height: 1.1; font-weight: 700; }
-        .bio-role { font-size: 0.85rem; color: var(--color-text-secondary); text-transform: uppercase; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 1rem; }
+        .bio-avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 4px solid white; box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+        .bio-name { font-family: var(--font-serif); font-size: 2rem; margin-bottom: 0.2rem; color: var(--color-text-primary); font-weight: 700; line-height: 1.1; }
+        .bio-role { font-size: 0.85rem; color: var(--color-accent); text-transform: uppercase; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 1rem; }
+        .bio-slogan { font-size: 1.1rem; font-weight: 500; color: var(--color-text-primary); margin: 1rem 0; font-style: italic; opacity: 0.8; }
+        .bio-text { font-size: 0.95rem; line-height: 1.6; color: var(--color-text-secondary); margin-bottom: 1.5rem; padding: 0 1rem; }
         
-        /* NUEVO: Slogan Destacado */
-        .bio-slogan {
-            font-size: 1.1rem;
-            font-weight: 500;
-            color: var(--color-accent);
-            margin: 1rem 0;
-            font-style: italic;
-            line-height: 1.4;
-            padding: 0 1rem;
+        /* REDES SOCIALES */
+        .social-row { display: flex; justify-content: center; gap: 0.8rem; margin-bottom: 2rem; flex-wrap: wrap; }
+        .social-btn { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #f0f2f5; color: #555; text-decoration: none; font-size: 1.1rem; transition: all 0.3s ease; }
+        .social-btn:hover { background: var(--color-text-primary); color: white; transform: translateY(-3px); }
+        
+        /* SISTEMA DE PESTAÑAS (TABS) */
+        .tabs-container {
+            display: flex;
+            justify-content: center;
+            border-bottom: 1px solid var(--color-border);
+            margin-bottom: 2rem;
+            gap: 1rem;
         }
 
-        /* Bio Extendida */
-        .bio-text { font-size: 0.95rem; line-height: 1.6; color: var(--color-text-secondary); margin-bottom: 2rem; padding: 0 1rem; opacity: 0.9; }
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 0.8rem 1rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            position: relative;
+            transition: color 0.3s;
+        }
+
+        .tab-btn.active {
+            color: var(--color-accent);
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--color-accent);
+            border-radius: 3px 3px 0 0;
+        }
+
+        .tab-content { display: none; animation: fadeIn 0.4s ease; }
+        .tab-content.active { display: block; }
+
+        /* TARJETAS DE CONTENIDO */
+        .link-card { 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            background: white; 
+            border: 1px solid var(--color-border); 
+            border-radius: 12px; 
+            padding: 1rem 1.2rem; 
+            margin-bottom: 1rem; 
+            text-decoration: none; 
+            color: var(--color-text-primary); 
+            transition: all 0.2s; 
+            text-align: left; 
+        }
+        .link-card:hover { transform: translateY(-3px); border-color: var(--color-accent); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
         
-        /* Redes Sociales */
-        .social-row { display: flex; justify-content: center; gap: 1rem; margin-bottom: 2.5rem; flex-wrap: wrap; }
-        .social-btn { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #f0f2f5; color: #555; text-decoration: none; font-size: 1.1rem; transition: all 0.3s ease; border: 1px solid transparent; }
-        .social-btn:hover { background: var(--color-text-primary); color: white; transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-        .social-btn.orcid { color: #A6CE39; background: white; border-color: #A6CE39; }
-        .social-btn.orcid:hover { background: #A6CE39; color: white; }
-        
-        /* Links / Cards */
-        .content-section-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; opacity: 0.5; margin-bottom: 1.5rem; display: block; font-weight: bold; }
-        .link-card { display: flex; align-items: center; justify-content: space-between; background: white; border: 1px solid var(--color-border); border-radius: 16px; padding: 1.2rem; margin-bottom: 1rem; text-decoration: none; color: var(--color-text-primary); transition: all 0.2s; text-align: left; position: relative; overflow: hidden; }
-        .link-card:hover { transform: translateY(-3px); border-color: var(--color-accent); box-shadow: 0 10px 25px rgba(0,0,0,0.06); }
-        
-        /* Footer */
-        .bio-footer { margin-top: 4rem; border-top: 1px solid var(--color-border); padding-top: 2rem; font-size: 0.8rem; color: var(--color-text-secondary); }
-        
+        .card-meta { font-size: 0.75rem; color: var(--color-text-secondary); margin-top: 4px; display: block; }
+        .card-tag { 
+            background: #eee; 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            font-size: 0.7rem; 
+            font-weight: bold; 
+            text-transform: uppercase;
+            margin-right: 8px;
+        }
+
         /* 404 View */
         #error-view { display: none; padding-top: 20%; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -81,35 +125,60 @@
             <i class="fa-solid fa-spinner fa-spin fa-2x" style="color:var(--color-accent)"></i>
         </div>
 
-        <div id="profile-content" style="display: none; animation: fadeIn 0.6s;">
+        <div id="profile-content" style="display: none;">
+            
             <div class="avatar-container">
                 <img src="" alt="Avatar" class="bio-avatar" id="p-avatar">
             </div>
-            
             <h1 class="bio-name" id="p-name"></h1>
             <div class="bio-role" id="p-role"></div>
-
+            
             <div id="p-orcid-container" style="margin-bottom: 1rem;"></div>
 
-            <p class="bio-slogan" id="p-slogan"></p> <p class="bio-text" id="p-bio"></p>     <div class="social-row" id="p-socials"></div>
+            <p class="bio-slogan" id="p-slogan"></p>
+            <p class="bio-text" id="p-bio"></p>
+            
+            <div class="social-row" id="p-socials"></div>
 
-            <hr style="border:0; border-top:1px solid rgba(0,0,0,0.05); margin: 2.5rem 0;">
+            <div class="tabs-container">
+                <button class="tab-btn active" onclick="switchTab('tab-publicaciones')">Publicaciones</button>
+                <button class="tab-btn" onclick="switchTab('tab-proyectos')">Proyectos</button>
+                <button class="tab-btn" onclick="switchTab('tab-eventos')">Eventos</button>
+            </div>
 
-            <span class="content-section-title">Publicaciones Destacadas</span>
-            <div id="links-list"></div>
+            <div id="tab-publicaciones" class="tab-content active">
+                <div id="list-publications"></div>
+            </div>
 
-            <div class="bio-footer">
-                <p style="margin-bottom:5px;">Perfil de Investigador</p>
-                <a href="/" style="text-decoration:none; color:inherit; font-weight:700; display:inline-flex; align-items:center; gap:5px;">
-                    <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" height="20"> Epistecnología
+            <div id="tab-proyectos" class="tab-content">
+                <div id="list-projects"></div>
+            </div>
+
+            <div id="tab-eventos" class="tab-content">
+                <div id="list-events"></div>
+            </div>
+
+            <div class="share-section" style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px dashed var(--color-border);">
+                <p style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem; opacity: 0.7;">Compartir perfil</p>
+                <div style="display: flex; justify-content: center; gap: 10px;">
+                    <button onclick="shareProfile('whatsapp')" style="background:#25D366; color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer; font-size:1.2rem;"><i class="fa-brands fa-whatsapp"></i></button>
+                    <button onclick="shareProfile('twitter')" style="background:black; color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer; font-size:1.1rem;"><i class="fa-brands fa-x-twitter"></i></button>
+                    <button onclick="shareProfile('linkedin')" style="background:#0077b5; color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer; font-size:1.1rem;"><i class="fa-brands fa-linkedin-in"></i></button>
+                    <button onclick="shareProfile('copy')" style="background:#f0f2f5; color:#333; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer; font-size:1.1rem;"><i class="fa-solid fa-link"></i></button>
+                </div>
+            </div>
+
+            <div class="bio-footer" style="margin-top: 3rem; border-top: 1px solid #eee; padding-top: 2rem; font-size: 0.8rem; color: #888;">
+                <p>Perfil Académico en</p>
+                <a href="/" style="text-decoration:none; color:inherit; font-weight:700;">
+                    <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" height="16" style="vertical-align:middle;"> Epistecnología
                 </a>
             </div>
         </div>
 
         <div id="error-view">
-            <h1 style="font-size:4rem; margin:0; color:var(--color-border);">404</h1>
-            <h2>Perfil no encontrado</h2>
-            <p>El enlace que buscas no existe o ha cambiado.</p>
+            <h1>404</h1>
+            <p>Perfil no encontrado.</p>
             <a href="/" class="social-btn" style="width:auto; padding:0 20px; margin:20px auto; border-radius:50px;">Ir al Inicio</a>
         </div>
     </div>
@@ -117,6 +186,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/js/main.js"></script>
     <script>
+        // --- 1. LÓGICA DE INICIALIZACIÓN ---
         document.addEventListener('DOMContentLoaded', async () => {
             const checkSupabase = setInterval(() => {
                 if (window.supabaseClient) {
@@ -127,26 +197,23 @@
         });
 
         async function routerLogic() {
-            // Lógica unificada para bio.html y 404.html
             const path = window.location.pathname;
             const params = new URLSearchParams(window.location.search);
             
-            let username = params.get('u'); // Caso ?u=henry
-
-            if (!username && path.includes('/@')) { // Caso /@henry
+            let username = params.get('u'); 
+            if (!username && path.includes('/@')) {
                 const parts = path.split('/@');
                 if (parts.length > 1) username = parts[1].replace(/\/$/, '').trim();
             }
 
-            if (username) {
-                loadProfile(username);
-            } else {
-                show404();
-            }
+            if (username) loadProfile(username);
+            else show404();
         }
 
+        // --- 2. CARGA DE PERFIL ---
         async function loadProfile(username) {
             try {
+                // Buscamos el perfil
                 const { data: profile, error } = await window.supabaseClient
                     .from('profiles')
                     .select('*')
@@ -155,54 +222,42 @@
 
                 if (error || !profile) { show404(); return; }
 
-                renderProfile(profile);
-                loadUserContent(profile.display_name);
+                renderProfileHeader(profile);
+                
+                // Cargamos el contenido de las 3 pestañas en paralelo
+                loadPublications(profile.display_name);
+                loadProjects(profile.id);
+                loadEvents(profile.id);
 
             } catch (err) { console.error(err); show404(); }
         }
 
-        function renderProfile(profile) {
-            // 1. Datos Básicos
+        // --- 3. RENDERIZADO VISUAL ---
+        function renderProfileHeader(profile) {
             document.getElementById('p-name').textContent = profile.display_name || "Usuario";
             document.getElementById('p-role').textContent = profile.role || "Investigador";
-            
-            // 2. Avatar y Favicon Dinámico (Magia aquí ✨)
-            const avatarUrl = profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
-            document.getElementById('p-avatar').src = avatarUrl;
-            document.getElementById('dynamic-favicon').href = avatarUrl; // Cambia el icono de la pestaña
+            document.getElementById('p-avatar').src = profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
+            document.getElementById('dynamic-favicon').href = profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
 
-            // 3. Slogan (Bio Short) vs Bio Completa
             const sloganEl = document.getElementById('p-slogan');
-            const bioEl = document.getElementById('p-bio');
-
             if (profile.bio_short) {
                 sloganEl.textContent = `"${profile.bio_short}"`;
                 sloganEl.style.display = 'block';
-            } else {
-                sloganEl.style.display = 'none';
-            }
+            } else { sloganEl.style.display = 'none'; }
 
-            bioEl.textContent = profile.bio || "Miembro de la comunidad científica de Epistecnología.";
+            document.getElementById('p-bio').textContent = profile.bio || "";
 
-            // 4. ORCID Destacado (Debajo del rol)
+            // ORCID
             const orcidContainer = document.getElementById('p-orcid-container');
             orcidContainer.innerHTML = '';
             if (profile.orcid) {
-                // Limpiamos el ID por si pegan la url completa
                 let orcidId = profile.orcid.replace('https://orcid.org/', '').trim();
-                orcidContainer.innerHTML = `
-                    <a href="https://orcid.org/${orcidId}" target="_blank" style="display:inline-flex; align-items:center; gap:5px; background:#A6CE39; color:white; padding:4px 10px; border-radius:50px; text-decoration:none; font-size:0.8rem; font-weight:bold;">
-                        <i class="fa-brands fa-orcid"></i> ${orcidId}
-                    </a>
-                `;
+                orcidContainer.innerHTML = `<a href="https://orcid.org/${orcidId}" target="_blank" style="background:#A6CE39; color:white; padding:4px 12px; border-radius:50px; text-decoration:none; font-size:0.8rem; font-weight:bold;"><i class="fa-brands fa-orcid"></i> ${orcidId}</a>`;
             }
 
-            // 5. Redes Sociales
+            // Redes
             const socialContainer = document.getElementById('p-socials');
             let socialHTML = '';
-            // Si quieres poner el ORCID también en los botones redondos, descomenta esto:
-            // if (profile.orcid) socialHTML += ... 
-
             if (profile.website_url) socialHTML += `<a href="${profile.website_url}" target="_blank" class="social-btn" title="Web"><i class="fa-solid fa-globe"></i></a>`;
             if (profile.substack_url) socialHTML += `<a href="${profile.substack_url}" target="_blank" class="social-btn" title="Substack" style="color:#FF6719"><i class="fa-solid fa-bookmark"></i></a>`;
             if (profile.bsky_url) socialHTML += `<a href="${profile.bsky_url}" target="_blank" class="social-btn" title="Bluesky" style="color:#0085ff"><i class="fa-brands fa-bluesky"></i></a>`;
@@ -210,48 +265,149 @@
             if (profile.x_url) socialHTML += `<a href="${profile.x_url}" target="_blank" class="social-btn"><i class="fa-brands fa-x-twitter"></i></a>`;
             if (profile.youtube_url) socialHTML += `<a href="${profile.youtube_url}" target="_blank" class="social-btn" style="color:red"><i class="fa-brands fa-youtube"></i></a>`;
             if (profile.instagram_url) socialHTML += `<a href="${profile.instagram_url}" target="_blank" class="social-btn" style="color:#E1306C"><i class="fa-brands fa-instagram"></i></a>`;
-
+            
             socialContainer.innerHTML = socialHTML;
-
-            // Titulo de la página
-            document.title = `${profile.display_name} (@${profile.username || 'user'})`;
+            document.title = `${profile.display_name} | Perfil Académico`;
             
             document.getElementById('loading').style.display = 'none';
             document.getElementById('profile-content').style.display = 'block';
         }
 
-        async function loadUserContent(authorName) {
-            if (!authorName) return;
+        // --- 4. CARGA DE CONTENIDOS (TABS) ---
+
+        // TAB A: Publicaciones (Desde Knowledge Base)
+        async function loadPublications(authorName) {
+            const list = document.getElementById('list-publications');
+            if (!authorName) {
+                list.innerHTML = emptyState("No hay nombre asociado para buscar publicaciones.");
+                return;
+            }
+
+            // Búsqueda aproximada por nombre
             const { data: posts } = await window.supabaseClient
                 .from('knowledge_base')
                 .select('*')
                 .ilike('author_name', `%${authorName}%`) 
                 .order('published_at', { ascending: false })
-                .limit(5);
+                .limit(10);
 
-            const list = document.getElementById('links-list');
             if (posts && posts.length > 0) {
-                posts.forEach(post => {
-                    const iconClass = post.source_type === 'podcast' ? 'fa-microphone' : 'fa-align-left';
-                    list.insertAdjacentHTML('beforeend', `
-                        <a href="${post.url}" target="_blank" class="link-card">
-                            <div style="display:flex; align-items:center; gap:10px;">
-                                <i class="fa-solid ${iconClass}" style="color:var(--color-text-secondary)"></i>
-                                <span style="font-weight:600; font-size:0.9rem">${post.title}</span>
-                            </div>
-                            <i class="fa-solid fa-arrow-right" style="opacity:0.3; font-size:0.8rem"></i>
-                        </a>
-                    `);
-                });
+                list.innerHTML = posts.map(post => `
+                    <a href="${post.url}" target="_blank" class="link-card">
+                        <div>
+                            <span class="card-tag">${post.source_type || 'Artículo'}</span>
+                            <div style="font-weight:600; margin-top:5px;">${post.title}</div>
+                        </div>
+                        <i class="fa-solid fa-arrow-up-right-from-square" style="opacity:0.3;"></i>
+                    </a>
+                `).join('');
             } else {
-                list.innerHTML = `<div style="text-align:center; opacity:0.5; font-size:0.9rem;">Sin publicaciones recientes.</div>`;
+                list.innerHTML = emptyState("No se encontraron publicaciones sincronizadas.");
             }
+        }
+
+        // TAB B: Proyectos (Desde tabla projects)
+        async function loadProjects(userId) {
+            const list = document.getElementById('list-projects');
+            // Buscamos proyectos asociados a este usuario
+            const { data: projects } = await window.supabaseClient
+                .from('projects')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false });
+
+            if (projects && projects.length > 0) {
+                list.innerHTML = projects.map(proj => {
+                    // Si tiene microsite público, el link va al microsite, si no, al DOI o a nada
+                    let link = '#';
+                    if (proj.slug) link = `/p/${proj.slug}`; // Asumiendo estructura futura
+                    else if (proj.doi) link = `https://doi.org/${proj.doi}`;
+
+                    return `
+                    <a href="${link}" target="${link === '#' ? '_self' : '_blank'}" class="link-card" style="${link === '#' ? 'cursor:default;' : ''}">
+                        <div>
+                            <div style="font-weight:600;">${proj.title || 'Proyecto sin título'}</div>
+                            ${proj.doi ? `<span class="card-meta"><i class="fa-solid fa-barcode"></i> DOI: ${proj.doi}</span>` : ''}
+                        </div>
+                        ${link !== '#' ? '<i class="fa-solid fa-arrow-right" style="opacity:0.3;"></i>' : ''}
+                    </a>`;
+                }).join('');
+            } else {
+                list.innerHTML = emptyState("Este investigador aún no ha publicado proyectos.");
+            }
+        }
+
+        // TAB C: Eventos (Desde tabla events)
+        async function loadEvents(userId) {
+            const list = document.getElementById('list-events');
+            const { data: events } = await window.supabaseClient
+                .from('events')
+                .select('*')
+                .eq('user_id', userId)
+                .eq('is_public', true) // Solo eventos públicos
+                .order('created_at', { ascending: false });
+
+            if (events && events.length > 0) {
+                list.innerHTML = events.map(evt => `
+                    <a href="/e/${evt.slug || evt.id}" target="_blank" class="link-card">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            ${evt.cover_url ? `<img src="${evt.cover_url}" style="width:40px; height:40px; border-radius:4px; object-fit:cover;">` : '<i class="fa-solid fa-calendar-day" style="font-size:1.5rem; opacity:0.5;"></i>'}
+                            <div>
+                                <div style="font-weight:600;">${evt.title}</div>
+                                <span class="card-meta">Evento Público</span>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-ticket" style="opacity:0.3;"></i>
+                    </a>
+                `).join('');
+            } else {
+                list.innerHTML = emptyState("No hay eventos públicos próximos.");
+            }
+        }
+
+        // --- UTILIDADES ---
+        window.switchTab = (tabId) => {
+            // Ocultar todos
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            // Mostrar seleccionado
+            document.getElementById(tabId).classList.add('active');
+            
+            // Activar botón
+            // (Truco simple: buscamos el botón que llama a esta función con ese ID)
+            const btns = document.querySelectorAll('.tab-btn');
+            btns.forEach(btn => {
+                if(btn.getAttribute('onclick').includes(tabId)) btn.classList.add('active');
+            });
+        };
+
+        function emptyState(msg) {
+            return `<div style="padding:2rem; text-align:center; opacity:0.6; font-size:0.9rem;">
+                <i class="fa-regular fa-folder-open" style="font-size:1.5rem; margin-bottom:10px; display:block;"></i>
+                ${msg}
+            </div>`;
         }
 
         function show404() {
             document.getElementById('loading').style.display = 'none';
             document.getElementById('profile-content').style.display = 'none';
             document.getElementById('error-view').style.display = 'block';
+        }
+
+        // Función para compartir
+        function shareProfile(platform) {
+            const url = window.location.href;
+            const text = `Mira el perfil académico de ${document.getElementById('p-name').textContent} en Epistecnología:`;
+            
+            if (platform === 'whatsapp') window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`);
+            if (platform === 'twitter') window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`);
+            if (platform === 'linkedin') window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`);
+            
+            if (platform === 'copy') {
+                navigator.clipboard.writeText(url);
+                alert('¡Enlace copiado al portapapeles!');
+            }
         }
     </script>
 </body>
