@@ -27,7 +27,7 @@ export const CommunityManager = {
             });
         }
 
-        // Delegación de eventos (Inputs y Submit)
+        // Delegación de eventos (Inputs)
         document.addEventListener('input', (e) => {
             if (e.target.id === 'admin-user-search') this.filterUsers(e.target.value);
             
@@ -38,9 +38,12 @@ export const CommunityManager = {
             }
         });
 
-        // Escuchar el envío del formulario
-        document.addEventListener('submit', (e) => {
-            if (e.target.id === 'admin-user-form') {
+        // Escuchar el envío del formulario (Botón Guardar)
+        // Usamos delegación global para atrapar el evento sin importar dónde esté el botón
+        document.addEventListener('click', (e) => {
+            // Verificamos si el click fue en el botón de guardar del modal de admin
+            const submitBtn = e.target.closest('button[form="admin-user-form"]');
+            if (submitBtn) {
                 e.preventDefault();
                 this.saveUserProfile();
             }
@@ -60,6 +63,8 @@ export const CommunityManager = {
         if (template) {
             this.container.appendChild(template.content.cloneNode(true));
             this.loadUsers();
+        } else {
+            console.error("No se encontró el template 'template-community-section'");
         }
     },
 
@@ -73,7 +78,7 @@ export const CommunityManager = {
             const { data, error } = await this.supabase
                 .from('profiles')
                 .select('*')
-                .order('display_name', { ascending: true }); // Orden alfabético (seguro)
+                .order('display_name', { ascending: true });
 
             if (error) throw error;
 
@@ -102,7 +107,7 @@ export const CommunityManager = {
             const row = document.createElement('tr');
             row.style.borderBottom = '1px solid var(--color-border)';
             
-            // Botón de Link externo (Bio)
+            // Botón de Link externo
             const externalLink = user.username 
                 ? `<a href="/bio.html?u=${user.username}" target="_blank" title="Ver Perfil Público" style="margin-left:8px; color:var(--color-accent); font-size:1.1rem; text-decoration:none;">
                      <i class="fa-solid fa-arrow-up-right-from-square"></i>
@@ -126,13 +131,22 @@ export const CommunityManager = {
                         : '<span style="color:orange; font-size:0.8rem;">Sin URL</span>'}
                 </td>
                 <td style="padding:1rem; text-align:right;">
-                    <button class="btn-edit-user" style="padding:8px 12px; cursor:pointer; background:var(--color-surface); border:1px solid var(--color-border); border-radius:6px; transition:all 0.2s;">
+                    <button class="btn-edit-user" type="button" style="padding:8px 12px; cursor:pointer; background:var(--color-surface); border:1px solid var(--color-border); border-radius:6px; transition:all 0.2s;">
                         <i class="fa-solid fa-pen-to-square"></i> Editar
                     </button>
-                    ${externalLink} </td>
+                    ${externalLink}
+                </td>
             `;
 
-            row.querySelector('.btn-edit-user').addEventListener('click', () => this.openEditModal(user));
+            // ASIGNACIÓN DEL EVENTO CLICK
+            const editBtn = row.querySelector('.btn-edit-user');
+            if (editBtn) {
+                editBtn.addEventListener('click', () => {
+                    console.log("Click detectado en editar usuario:", user.display_name); // Debug para consola
+                    this.openEditModal(user);
+                });
+            }
+
             tableBody.appendChild(row);
         });
     },
@@ -147,74 +161,90 @@ export const CommunityManager = {
         this.renderTable(filtered);
     },
 
+    // --- FUNCIÓN BLINDADA PARA ABRIR MODAL ---
     openEditModal(user) {
         const modal = document.getElementById('admin-edit-modal');
-        if(!modal) return;
+        if(!modal) {
+            console.error("No se encontró el modal con ID 'admin-edit-modal'");
+            return;
+        }
 
-        // IDs
-        document.getElementById('edit-user-id').value = user.id;
+        // Helper seguro: Si el input no existe en el HTML, no da error, solo avisa en consola
+        const safeSet = (id, val) => {
+            const el = document.getElementById(id);
+            if(el) {
+                el.value = val || ''; // Si val es null/undefined, pone string vacío
+            } else {
+                console.warn(`⚠️ Aviso: No encontré el input '${id}' en el HTML. Verifica tu template.`);
+            }
+        };
+
+        // IDs Clave
+        safeSet('edit-user-id', user.id);
         
         // Perfil Básico
-        document.getElementById('edit-display-name').value = user.display_name || '';
-        document.getElementById('edit-username').value = user.username || '';
-        document.getElementById('edit-bio-short').value = user.bio_short || '';
-        document.getElementById('edit-orcid').value = user.orcid || ''; 
+        safeSet('edit-display-name', user.display_name);
+        safeSet('edit-username', user.username);
+        safeSet('edit-bio-short', user.bio_short);
+        safeSet('edit-orcid', user.orcid);
         
-        // Avatar
-        const avatarUrl = user.avatar_url || '';
-        document.getElementById('edit-avatar-url').value = avatarUrl;
-        document.getElementById('preview-avatar').src = avatarUrl || 'https://i.ibb.co/61fJv24/default-avatar.png';
+        // Avatar (y vista previa)
+        safeSet('edit-avatar-url', user.avatar_url);
+        const imgPreview = document.getElementById('preview-avatar');
+        if(imgPreview) imgPreview.src = user.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
 
         // Redes Sociales
-        document.getElementById('edit-website').value = user.website_url || '';
-        document.getElementById('edit-substack').value = user.substack_url || '';
-        document.getElementById('edit-linkedin').value = user.linkedin_url || '';
-        document.getElementById('edit-x').value = user.x_url || '';
-        document.getElementById('edit-bluesky').value = user.bsky_url || '';
-        document.getElementById('edit-instagram').value = user.instagram_url || '';
-        document.getElementById('edit-facebook').value = user.facebook_url || '';
-        document.getElementById('edit-youtube').value = user.youtube_url || '';
-        document.getElementById('edit-tiktok').value = user.tiktok_url || '';
+        safeSet('edit-website', user.website_url);
+        safeSet('edit-substack', user.substack_url);
+        safeSet('edit-linkedin', user.linkedin_url);
+        safeSet('edit-x', user.x_url);
+        safeSet('edit-bluesky', user.bsky_url);
+        safeSet('edit-instagram', user.instagram_url);
+        safeSet('edit-facebook', user.facebook_url);
+        safeSet('edit-youtube', user.youtube_url);
+        safeSet('edit-tiktok', user.tiktok_url);
 
+        // Mostrar Modal
         modal.style.display = 'flex';
     },
 
     async saveUserProfile() {
-        const userId = document.getElementById('edit-user-id').value;
+        const userIdField = document.getElementById('edit-user-id');
+        if (!userIdField) return; 
+        const userId = userIdField.value;
+
+        const submitBtn = document.querySelector('button[form="admin-user-form"]');
+        const originalText = submitBtn ? submitBtn.textContent : 'Guardar';
         
-        // --- CORRECCIÓN AQUÍ ---
-        // Buscamos el botón por el atributo 'form' ya que está fuera del <form>
-        const submitBtn = document.querySelector('button[form="admin-user-form"]'); 
-        
-        // Validación de seguridad por si el botón no se encuentra
-        if (!submitBtn) {
-            console.error("No se encontró el botón de guardar");
-            return;
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Guardando...";
         }
 
-        const originalText = submitBtn.textContent;
-        submitBtn.disabled = true;
-        submitBtn.textContent = "Guardando...";
-
         try {
-            // Construimos el objeto de actualización
+            // Helper para leer valor seguro
+            const getVal = (id) => {
+                const el = document.getElementById(id);
+                return el ? el.value.trim() : '';
+            };
+
             const updates = {
-                display_name: document.getElementById('edit-display-name').value,
-                username: document.getElementById('edit-username').value.trim().toLowerCase().replace(/\s+/g, ''),
-                bio_short: document.getElementById('edit-bio-short').value,
-                orcid: document.getElementById('edit-orcid').value.trim(),
-                avatar_url: document.getElementById('edit-avatar-url').value.trim(),
+                display_name: getVal('edit-display-name'),
+                username: getVal('edit-username').toLowerCase().replace(/\s+/g, ''),
+                bio_short: getVal('edit-bio-short'),
+                orcid: getVal('edit-orcid'),
+                avatar_url: getVal('edit-avatar-url'),
                 
                 // Redes
-                website_url: document.getElementById('edit-website').value.trim(),
-                substack_url: document.getElementById('edit-substack').value.trim(),
-                linkedin_url: document.getElementById('edit-linkedin').value.trim(),
-                x_url: document.getElementById('edit-x').value.trim(),
-                bsky_url: document.getElementById('edit-bluesky').value.trim(),
-                instagram_url: document.getElementById('edit-instagram').value.trim(),
-                facebook_url: document.getElementById('edit-facebook').value.trim(),
-                youtube_url: document.getElementById('edit-youtube').value.trim(),
-                tiktok_url: document.getElementById('edit-tiktok').value.trim(),
+                website_url: getVal('edit-website'),
+                substack_url: getVal('edit-substack'),
+                linkedin_url: getVal('edit-linkedin'),
+                x_url: getVal('edit-x'),
+                bsky_url: getVal('edit-bluesky'),
+                instagram_url: getVal('edit-instagram'),
+                facebook_url: getVal('edit-facebook'),
+                youtube_url: getVal('edit-youtube'),
+                tiktok_url: getVal('edit-tiktok'),
                 
                 updated_at: new Date()
             };
@@ -228,7 +258,7 @@ export const CommunityManager = {
 
             alert("✅ Perfil actualizado exitosamente.");
             document.getElementById('admin-edit-modal').style.display = 'none';
-            this.loadUsers(); // Recargar tabla
+            this.loadUsers(); 
 
         } catch (err) {
             console.error("Error al guardar:", err);
