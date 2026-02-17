@@ -19,15 +19,19 @@
             min-height: 100vh;
             margin: 0;
             font-family: 'Inter', sans-serif;
+            padding-bottom: 2rem;
         }
 
         .bio-wrapper {
             width: 100%;
-            max-width: 600px; /* Un poco más ancho para las pestañas */
-            background: var(--color-surface);
+            max-width: 600px;
+            /* DEGRADADO PREMIUM (Coherente con Dashboard) */
+            background: linear-gradient(135deg, #ffffff 0%, rgba(183, 42, 30, 0.04) 100%);
+            border: 1px solid rgba(183, 42, 30, 0.1);
+            
             min-height: 100vh;
             padding: 3rem 1.5rem;
-            box-shadow: 0 0 40px rgba(0,0,0,0.08);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
             text-align: center;
             position: relative;
         }
@@ -42,18 +46,17 @@
         
         /* REDES SOCIALES */
         .social-row { display: flex; justify-content: center; gap: 0.8rem; margin-bottom: 2rem; flex-wrap: wrap; }
-        .social-btn { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #f0f2f5; color: #555; text-decoration: none; font-size: 1.1rem; transition: all 0.3s ease; }
-        .social-btn:hover { background: var(--color-text-primary); color: white; transform: translateY(-3px); }
+        .social-btn { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: white; color: #555; text-decoration: none; font-size: 1.1rem; transition: all 0.3s ease; border: 1px solid var(--color-border); }
+        .social-btn:hover { background: var(--color-text-primary); color: white; transform: translateY(-3px); border-color: var(--color-text-primary); }
         
-        /* SISTEMA DE PESTAÑAS (TABS) */
+        /* TABS */
         .tabs-container {
             display: flex;
             justify-content: center;
-            border-bottom: 1px solid var(--color-border);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
             margin-bottom: 2rem;
             gap: 1rem;
         }
-
         .tab-btn {
             background: none;
             border: none;
@@ -65,34 +68,18 @@
             position: relative;
             transition: color 0.3s;
         }
-
-        .tab-btn.active {
-            color: var(--color-accent);
-        }
-
-        .tab-btn.active::after {
-            content: '';
-            position: absolute;
-            bottom: -1px;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: var(--color-accent);
-            border-radius: 3px 3px 0 0;
-        }
-
+        .tab-btn.active { color: var(--color-accent); }
+        .tab-btn.active::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 3px; background: var(--color-accent); border-radius: 3px 3px 0 0; }
         .tab-content { display: none; animation: fadeIn 0.4s ease; }
         .tab-content.active { display: block; }
 
         /* TARJETAS DE CONTENIDO */
         .link-card { 
-            display: flex; 
-            align-items: center; 
-            justify-content: space-between; 
+            display: flex; align-items: flex-start; gap: 12px;
             background: white; 
             border: 1px solid var(--color-border); 
             border-radius: 12px; 
-            padding: 1rem 1.2rem; 
+            padding: 1rem; 
             margin-bottom: 1rem; 
             text-decoration: none; 
             color: var(--color-text-primary); 
@@ -101,20 +88,30 @@
         }
         .link-card:hover { transform: translateY(-3px); border-color: var(--color-accent); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
         
-        .card-meta { font-size: 0.75rem; color: var(--color-text-secondary); margin-top: 4px; display: block; }
-        .card-tag { 
-            background: #eee; 
-            padding: 2px 6px; 
-            border-radius: 4px; 
-            font-size: 0.7rem; 
-            font-weight: bold; 
-            text-transform: uppercase;
-            margin-right: 8px;
-        }
+        .card-tag { padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; display: inline-flex; align-items: center; gap: 4px; }
+        .card-meta { font-size: 0.75rem; color: #888; }
 
-        /* 404 View */
+        /* NUEVA SECCIÓN: JOIN CTA */
+        .join-cta-card {
+            margin-top: 3rem;
+            background: var(--color-text-primary);
+            color: white;
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .join-cta-card h3 { margin: 0 0 0.5rem 0; font-family: var(--font-serif); }
+        .join-cta-card p { font-size: 0.9rem; opacity: 0.8; margin-bottom: 1.5rem; }
+        .cta-btn-group { display: flex; gap: 10px; justify-content: center; }
+        .btn-cta { padding: 8px 20px; border-radius: 50px; font-size: 0.9rem; font-weight: 600; text-decoration: none; transition: transform 0.2s; }
+        .btn-cta-primary { background: white; color: var(--color-text-primary); }
+        .btn-cta-secondary { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); }
+        .btn-cta:hover { transform: scale(1.05); }
+
+        /* 404 */
         #error-view { display: none; padding-top: 20%; }
-        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
@@ -129,7 +126,7 @@
             
             <div class="avatar-container">
                 <img src="" alt="Avatar" class="bio-avatar" id="p-avatar">
-            </div>
+                </div>
             <h1 class="bio-name" id="p-name"></h1>
             <div class="bio-role" id="p-role"></div>
             
@@ -146,47 +143,45 @@
                 <button class="tab-btn" onclick="switchTab('tab-eventos')">Eventos</button>
             </div>
 
-            <div id="tab-publicaciones" class="tab-content active">
-                <div id="list-publications"></div>
-            </div>
+            <div id="tab-publicaciones" class="tab-content active"><div id="list-publications"></div></div>
+            <div id="tab-proyectos" class="tab-content"><div id="list-projects"></div></div>
+            <div id="tab-eventos" class="tab-content"><div id="list-events"></div></div>
 
-            <div id="tab-proyectos" class="tab-content">
-                <div id="list-projects"></div>
-            </div>
-
-            <div id="tab-eventos" class="tab-content">
-                <div id="list-events"></div>
-            </div>
-
-            <div class="share-section" style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px dashed var(--color-border);">
-                <p style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem; opacity: 0.7;">Compartir perfil</p>
+            <div class="share-section" style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px dashed rgba(0,0,0,0.1);">
+                <p style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem; opacity: 0.5; font-weight:bold;">Compartir perfil</p>
                 <div style="display: flex; justify-content: center; gap: 10px;">
-                    <button onclick="shareProfile('whatsapp')" style="background:#25D366; color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer; font-size:1.2rem;"><i class="fa-brands fa-whatsapp"></i></button>
-                    <button onclick="shareProfile('twitter')" style="background:black; color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer; font-size:1.1rem;"><i class="fa-brands fa-x-twitter"></i></button>
-                    <button onclick="shareProfile('linkedin')" style="background:#0077b5; color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer; font-size:1.1rem;"><i class="fa-brands fa-linkedin-in"></i></button>
-                    <button onclick="shareProfile('copy')" style="background:#f0f2f5; color:#333; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer; font-size:1.1rem;"><i class="fa-solid fa-link"></i></button>
+                    <button onclick="shareProfile('whatsapp')" style="background:#25D366; color:white; border:none; width:36px; height:36px; border-radius:50%; cursor:pointer;"><i class="fa-brands fa-whatsapp"></i></button>
+                    <button onclick="shareProfile('twitter')" style="background:black; color:white; border:none; width:36px; height:36px; border-radius:50%; cursor:pointer;"><i class="fa-brands fa-x-twitter"></i></button>
+                    <button onclick="shareProfile('linkedin')" style="background:#0077b5; color:white; border:none; width:36px; height:36px; border-radius:50%; cursor:pointer;"><i class="fa-brands fa-linkedin-in"></i></button>
+                    <button onclick="shareProfile('copy')" style="background:#eee; color:#333; border:none; width:36px; height:36px; border-radius:50%; cursor:pointer;"><i class="fa-solid fa-link"></i></button>
                 </div>
             </div>
 
-            <div class="bio-footer" style="margin-top: 3rem; border-top: 1px solid #eee; padding-top: 2rem; font-size: 0.8rem; color: #888;">
-                <p>Perfil Académico en</p>
-                <a href="/" style="text-decoration:none; color:inherit; font-weight:700;">
-                    <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" height="16" style="vertical-align:middle;"> Epistecnología
-                </a>
+            <div class="join-cta-card">
+                <i class="fa-solid fa-atom" style="position: absolute; top: -10px; right: -10px; font-size: 5rem; opacity: 0.05; transform: rotate(15deg);"></i>
+                <h3>Únete a la Comunidad</h3>
+                <p>¿Eres investigador o divulgador? Crea tu perfil académico, gestiona tus proyectos y conecta con la ciencia y la cultura.</p>
+                <div class="cta-btn-group">
+                    <a href="/inv/login.html" class="btn-cta btn-cta-primary">Registrarse</a>
+                    <a href="/" class="btn-cta btn-cta-secondary">+ Info</a>
+                </div>
+            </div>
+
+            <div class="bio-footer" style="margin-top: 2rem; font-size: 0.8rem; color: #888;">
+                <p>Powered by <a href="/" style="text-decoration:none; color:inherit; font-weight:700;">Epistecnología</a></p>
             </div>
         </div>
 
         <div id="error-view">
             <h1>404</h1>
             <p>Perfil no encontrado.</p>
-            <a href="/" class="social-btn" style="width:auto; padding:0 20px; margin:20px auto; border-radius:50px;">Ir al Inicio</a>
+            <a href="/" class="btn-cta btn-cta-primary" style="background:var(--color-accent);">Ir al Inicio</a>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/js/main.js"></script>
     <script>
-        // --- 1. LÓGICA DE INICIALIZACIÓN ---
         document.addEventListener('DOMContentLoaded', async () => {
             const checkSupabase = setInterval(() => {
                 if (window.supabaseClient) {
@@ -199,21 +194,16 @@
         async function routerLogic() {
             const path = window.location.pathname;
             const params = new URLSearchParams(window.location.search);
-            
             let username = params.get('u'); 
             if (!username && path.includes('/@')) {
                 const parts = path.split('/@');
                 if (parts.length > 1) username = parts[1].replace(/\/$/, '').trim();
             }
-
-            if (username) loadProfile(username);
-            else show404();
+            if (username) loadProfile(username); else show404();
         }
 
-        // --- 2. CARGA DE PERFIL ---
         async function loadProfile(username) {
             try {
-                // Buscamos el perfil
                 const { data: profile, error } = await window.supabaseClient
                     .from('profiles')
                     .select('*')
@@ -223,8 +213,6 @@
                 if (error || !profile) { show404(); return; }
 
                 renderProfileHeader(profile);
-                
-                // Cargamos el contenido de las 3 pestañas en paralelo
                 loadPublications(profile.display_name);
                 loadProjects(profile.id);
                 loadEvents(profile.id);
@@ -232,12 +220,16 @@
             } catch (err) { console.error(err); show404(); }
         }
 
-        // --- 3. RENDERIZADO VISUAL ---
         function renderProfileHeader(profile) {
             document.getElementById('p-name').textContent = profile.display_name || "Usuario";
-            document.getElementById('p-role').textContent = profile.role || "Investigador";
+            
+            // --- CORRECCIÓN DE ROL ---
+            // Si eres Admin, mostramos "Investigador". Si eres otro rol, mostramos ese rol.
+            let displayRole = profile.role === 'admin' ? 'Investigador' : (profile.role || 'Miembro');
+            document.getElementById('p-role').textContent = displayRole;
+
             document.getElementById('p-avatar').src = profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
-            document.getElementById('dynamic-favicon').href = profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
+            document.getElementById('dynamic-favicon').href = profile.avatar_url;
 
             const sloganEl = document.getElementById('p-slogan');
             if (profile.bio_short) {
@@ -273,17 +265,11 @@
             document.getElementById('profile-content').style.display = 'block';
         }
 
-        // --- 4. CARGA DE CONTENIDOS (TABS) ---
-
-        // TAB A: Publicaciones (Desde Knowledge Base)
+        // --- PUBLICACIONES (Con Imagen) ---
         async function loadPublications(authorName) {
             const list = document.getElementById('list-publications');
-            if (!authorName) {
-                list.innerHTML = emptyState("No hay nombre asociado para buscar publicaciones.");
-                return;
-            }
+            if (!authorName) { list.innerHTML = emptyState("Sin nombre asociado."); return; }
 
-            // Búsqueda aproximada por nombre
             const { data: posts } = await window.supabaseClient
                 .from('knowledge_base')
                 .select('*')
@@ -292,231 +278,115 @@
                 .limit(10);
 
             if (posts && posts.length > 0) {
-                list.innerHTML = posts.map(post => `
+                list.innerHTML = posts.map(post => {
+                    const isPodcast = post.source_type === 'podcast';
+                    const badgeText = isPodcast ? 'Podcast' : 'Publicación';
+                    const badgeColor = isPodcast ? '#e3f2fd' : '#f5f5f5';
+                    const badgeTextColor = isPodcast ? '#1565c0' : '#616161';
+                    const icon = isPodcast ? 'fa-microphone' : 'fa-align-left';
+                    const defaultImg = isPodcast ? 'https://placehold.co/100x100/e3f2fd/1565c0?text=Audio' : 'https://placehold.co/100x100/f5f5f5/616161?text=Post';
+                    const imgUrl = post.image_url || defaultImg;
+
+                    return `
                     <a href="${post.url}" target="_blank" class="link-card">
-                        <div>
-                            <span class="card-tag">${post.source_type || 'Artículo'}</span>
-                            <div style="font-weight:600; margin-top:5px;">${post.title}</div>
+                        <div style="display:flex; align-items:flex-start; gap:12px; width:100%;">
+                            <div style="width:60px; height:60px; flex-shrink:0; border-radius:8px; overflow:hidden; background:#eee; margin-top:4px;">
+                                <img src="${imgUrl}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='${defaultImg}'">
+                            </div>
+                            <div style="flex-grow:1;">
+                                <div style="font-weight:600; line-height:1.3; margin-bottom:6px; font-size:0.95rem;">${post.title}</div>
+                                ${post.description ? `<div style="font-size:0.8rem; color:#666; margin-bottom:8px; line-height:1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${post.description}</div>` : ''}
+                                <div style="display:flex; align-items:center; gap:6px;">
+                                    <span class="card-tag" style="background:${badgeColor}; color:${badgeTextColor}; border:1px solid ${badgeTextColor}20;">
+                                        <i class="fa-solid ${icon}" style="font-size:0.7rem; margin-right:4px;"></i> ${badgeText}
+                                    </span>
+                                    <span class="card-meta">${new Date(post.published_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                </div>
+                            </div>
                         </div>
-                        <i class="fa-solid fa-arrow-up-right-from-square" style="opacity:0.3;"></i>
-                    </a>
-                `).join('');
-            } else {
-                list.innerHTML = emptyState("No se encontraron publicaciones sincronizadas.");
-            }
+                    </a>`;
+                }).join('');
+            } else { list.innerHTML = emptyState("No hay publicaciones recientes."); }
         }
 
-        // TAB B: Proyectos (Desde tabla projects)
+        // --- PROYECTOS ---
         async function loadProjects(userId) {
             const list = document.getElementById('list-projects');
-            
-            // Buscamos proyectos de este usuario
-            const { data: projects } = await window.supabaseClient
-                .from('projects')
-                .select('*')
-                .eq('user_id', userId)
-                .order('created_at', { ascending: false });
+            const { data: projects } = await window.supabaseClient.from('projects').select('*').eq('user_id', userId).order('created_at', { ascending: false });
 
             if (projects && projects.length > 0) {
                 list.innerHTML = projects.map(proj => {
-                    let link = '#';
-                    let badge = '';
-                    let icon = 'fa-folder'; // Icono por defecto
-                    let target = '_self';
-
-                    // Lógica de Enlaces según tu Schema
+                    let link = '#'; let badge = ''; let icon = 'fa-folder'; let target = '_self';
                     if (proj.microsite_is_public && proj.slug) {
-                        // Caso A: Tiene Microsite público -> Vamos a la URL interna
-                        link = `/site?slug=${proj.slug}`;
-                        badge = '<span class="card-tag" style="background:#e3f2fd; color:#0d47a1;">Microsite</span>';
-                        icon = 'fa-laptop-code';
-                        target = '_blank';
+                        link = `/site?slug=${proj.slug}`; badge = '<span class="card-tag" style="background:#e3f2fd; color:#0d47a1;">Microsite</span>'; icon = 'fa-laptop-code'; target = '_blank';
                     } else if (proj.doi) {
-                        // Caso B: Solo tiene DOI -> Vamos a la web del DOI
-                        link = `https://doi.org/${proj.doi}`;
-                        badge = '<span class="card-tag" style="background:#fff3e0; color:#e65100;">DOI</span>';
-                        icon = 'fa-barcode';
-                        target = '_blank';
-                    } else {
-                        // Caso C: Borrador o sin datos públicos
-                        badge = '<span class="card-tag">Borrador</span>';
-                    }
-
-                    // Estilo si no tiene enlace (cursor default)
-                    const cursorStyle = link === '#' ? 'cursor:default;' : '';
-                    const arrowIcon = link !== '#' ? '<i class="fa-solid fa-arrow-up-right-from-square" style="opacity:0.3;"></i>' : '';
-
-                    return `
-                    <a href="${link}" target="${target}" class="link-card" style="${cursorStyle}">
-                        <div style="display:flex; align-items:center; gap:10px; width: 100%;">
+                        link = `https://doi.org/${proj.doi}`; badge = '<span class="card-tag" style="background:#fff3e0; color:#e65100;">DOI</span>'; icon = 'fa-barcode'; target = '_blank';
+                    } else { badge = '<span class="card-tag">Borrador</span>'; }
+                    return `<a href="${link}" target="${target}" class="link-card" style="${link==='#'?'cursor:default':''}">
+                        <div style="display:flex; align-items:center; gap:10px; width:100%;">
                             <i class="fa-solid ${icon}" style="font-size:1.2rem; opacity:0.5; min-width:25px; text-align:center;"></i>
-                            <div style="flex-grow:1;">
-                                <div style="font-weight:600; line-height:1.2; margin-bottom:4px;">${proj.title || 'Sin título'}</div>
-                                <div style="display:flex; align-items:center; gap:5px;">
-                                    ${badge}
-                                    ${proj.publication_year ? `<span class="card-meta">${proj.publication_year}</span>` : ''}
-                                </div>
-                            </div>
-                            ${arrowIcon}
-                        </div>
-                    </a>`;
+                            <div style="flex-grow:1;"><div style="font-weight:600; line-height:1.2; margin-bottom:4px;">${proj.title || 'Sin título'}</div>${badge}</div>
+                            ${link!=='#'?'<i class="fa-solid fa-chevron-right" style="opacity:0.3; font-size:0.8rem;"></i>':''}
+                        </div></a>`;
                 }).join('');
-            } else {
-                list.innerHTML = emptyState("Este investigador aún no tiene proyectos públicos.");
-            }
+            } else { list.innerHTML = emptyState("Sin proyectos públicos."); }
         }
 
-        // TAB C: Eventos y Sesiones (Corregido con URLs Reales)
+        // --- EVENTOS ---
         async function loadEvents(userId) {
             const list = document.getElementById('list-events');
-            
-            // 1. Traemos los EVENTOS (Captación de Leads)
-            const { data: events } = await window.supabaseClient
-                .from('events')
-                .select('*')
-                .eq('user_id', userId)
-                .eq('is_public', true);
-
-            // 2. Traemos las SESIONES (Contenido Audiovisual)
-            const { data: sessions } = await window.supabaseClient
-                .from('sessions')
-                .select('*')
-                .eq('user_id', userId)
-                .neq('status', 'ARCHIVADO');
-
+            const { data: events } = await window.supabaseClient.from('events').select('*').eq('user_id', userId).eq('is_public', true);
+            const { data: sessions } = await window.supabaseClient.from('sessions').select('*').eq('user_id', userId).neq('status', 'ARCHIVADO');
             let mixedContent = [];
 
-            // --- PROCESAR EVENTOS (Landing Page) ---
-            if (events) {
-                events.forEach(evt => {
-                    // AHORA: Usamos tu estructura real de URL de evento
-                    // Si hay slug, usamos /evento?slug=... si no, fallback al ID
-                    const link = evt.slug 
-                        ? `/evento?slug=${evt.slug}` 
-                        : `/evento?slug=${evt.id}`;
-                    
-                    mixedContent.push({
-                        type: 'event',
-                        date: new Date(evt.created_at),
-                        title: evt.title,
-                        image: evt.cover_url,
-                        link: link,
-                        badgeText: 'Evento / Inscripción',
-                        badgeColor: '#e8f5e9', // Verde
-                        badgeTextColor: '#2e7d32',
-                        icon: 'fa-ticket',
-                        target: '_blank' // Se abre en nueva pestaña para ver la info
-                    });
-                });
-            }
+            if (events) events.forEach(evt => mixedContent.push({
+                type: 'event', date: new Date(evt.created_at), title: evt.title, image: evt.cover_url,
+                link: evt.slug ? `/evento?slug=${evt.slug}` : `/evento?slug=${evt.id}`,
+                badgeText: 'Evento / Inscripción', badgeColor: '#e8f5e9', badgeTextColor: '#2e7d32', icon: 'fa-ticket', target: '_blank'
+            }));
 
-            // --- PROCESAR SESIONES (Streaming Room) ---
-            if (sessions) {
-                sessions.forEach(sess => {
-                    // AHORA: Usamos tu estructura real de sala en vivo
-                    const link = `/live.html?sesion=${sess.id}`;
-                    const isLive = sess.status === 'EN_VIVO';
-                    
-                    mixedContent.push({
-                        type: 'session',
-                        date: new Date(sess.scheduled_at || sess.created_at),
-                        title: sess.session_title || sess.project_title || 'Sesión de Divulgación',
-                        image: sess.thumbnail_url,
-                        link: link,
-                        badgeText: isLive ? '🔴 EN VIVO' : (sess.session_type || 'Sesión'),
-                        badgeColor: isLive ? '#ffebee' : '#f3e5f5', // Rojo vivo / Morado grabado
-                        badgeTextColor: isLive ? '#c62828' : '#7b1fa2',
-                        icon: isLive ? 'fa-tower-broadcast' : 'fa-video',
-                        target: '_self' // Misma pestaña para mantener al usuario en la app
-                    });
-                });
-            }
+            if (sessions) sessions.forEach(sess => mixedContent.push({
+                type: 'session', date: new Date(sess.scheduled_at || sess.created_at), title: sess.session_title || sess.project_title, image: sess.thumbnail_url,
+                link: `/live.html?sesion=${sess.id}`,
+                badgeText: sess.status === 'EN_VIVO' ? '🔴 EN VIVO' : 'Sesión', badgeColor: sess.status === 'EN_VIVO'?'#ffebee':'#f3e5f5', badgeTextColor: sess.status === 'EN_VIVO'?'#c62828':'#7b1fa2', icon: sess.status === 'EN_VIVO'?'fa-tower-broadcast':'fa-video', target: '_self'
+            }));
 
-            // 3. ORDENAR Y PINTAR
             mixedContent.sort((a, b) => b.date - a.date);
 
             if (mixedContent.length > 0) {
-                list.innerHTML = mixedContent.map(item => {
-                    const defaultImg = item.type === 'event' 
-                        ? 'https://placehold.co/100x100/e8f5e9/2e7d32?text=Evento' 
-                        : 'https://placehold.co/100x100/f3e5f5/7b1fa2?text=Video';
-                    
-                    const imgUrl = item.image || defaultImg;
-
-                    return `
+                list.innerHTML = mixedContent.map(item => `
                     <a href="${item.link}" target="${item.target}" class="link-card">
                         <div style="display:flex; align-items:center; gap:12px; width:100%;">
-                            <div style="width:60px; height:60px; flex-shrink:0; border-radius:8px; overflow:hidden; background:#eee; position:relative;">
-                                ${item.image 
-                                    ? `<img src="${item.image}" style="width:100%; height:100%; object-fit:cover;">` 
-                                    : `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center;"><i class="fa-solid ${item.icon}" style="font-size:1.5rem; color:${item.badgeTextColor}; opacity:0.7;"></i></div>`
-                                }
+                            <div style="width:60px; height:60px; flex-shrink:0; border-radius:8px; overflow:hidden; background:#eee; display:flex; align-items:center; justify-content:center;">
+                                ${item.image ? `<img src="${item.image}" style="width:100%; height:100%; object-fit:cover;">` : `<i class="fa-solid ${item.icon}" style="font-size:1.5rem; color:${item.badgeTextColor}; opacity:0.7;"></i>`}
                             </div>
-                            
                             <div style="flex-grow:1;">
                                 <div style="font-weight:600; line-height:1.2; margin-bottom:4px; font-size:0.95rem;">${item.title}</div>
-                                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                                    <span class="card-tag" style="background:${item.badgeColor}; color:${item.badgeTextColor}; border:1px solid ${item.badgeTextColor}20;">
-                                        ${item.badgeText}
-                                    </span>
-                                    <span class="card-meta" style="font-size:0.75rem;">
-                                        ${item.date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })}
-                                    </span>
-                                </div>
+                                <span class="card-tag" style="background:${item.badgeColor}; color:${item.badgeTextColor}; border:1px solid ${item.badgeTextColor}20;">${item.badgeText}</span>
                             </div>
-                            
                             <i class="fa-solid fa-chevron-right" style="opacity:0.3; font-size:0.9rem;"></i>
-                        </div>
-                    </a>`;
-                }).join('');
-            } else {
-                list.innerHTML = emptyState("No hay eventos ni sesiones programadas.");
-            }
+                        </div></a>`).join('');
+            } else { list.innerHTML = emptyState("No hay eventos recientes."); }
         }
 
         // --- UTILIDADES ---
         window.switchTab = (tabId) => {
-            // Ocultar todos
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            
-            // Mostrar seleccionado
             document.getElementById(tabId).classList.add('active');
-            
-            // Activar botón
-            // (Truco simple: buscamos el botón que llama a esta función con ese ID)
-            const btns = document.querySelectorAll('.tab-btn');
-            btns.forEach(btn => {
-                if(btn.getAttribute('onclick').includes(tabId)) btn.classList.add('active');
-            });
+            document.querySelectorAll('.tab-btn').forEach(btn => { if(btn.getAttribute('onclick').includes(tabId)) btn.classList.add('active'); });
         };
-
-        function emptyState(msg) {
-            return `<div style="padding:2rem; text-align:center; opacity:0.6; font-size:0.9rem;">
-                <i class="fa-regular fa-folder-open" style="font-size:1.5rem; margin-bottom:10px; display:block;"></i>
-                ${msg}
-            </div>`;
-        }
-
-        function show404() {
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('profile-content').style.display = 'none';
-            document.getElementById('error-view').style.display = 'block';
-        }
-
-        // Función para compartir
-        function shareProfile(platform) {
+        function emptyState(msg) { return `<div style="padding:2rem; text-align:center; opacity:0.6; font-size:0.9rem;"><i class="fa-regular fa-folder-open" style="font-size:1.5rem; margin-bottom:10px; display:block;"></i>${msg}</div>`; }
+        function show404() { document.getElementById('loading').style.display='none'; document.getElementById('profile-content').style.display='none'; document.getElementById('error-view').style.display='block'; }
+        
+        // Compartir
+        window.shareProfile = (platform) => {
             const url = window.location.href;
             const text = `Mira el perfil académico de ${document.getElementById('p-name').textContent} en Epistecnología:`;
-            
             if (platform === 'whatsapp') window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`);
             if (platform === 'twitter') window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`);
             if (platform === 'linkedin') window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`);
-            
-            if (platform === 'copy') {
-                navigator.clipboard.writeText(url);
-                alert('¡Enlace copiado al portapapeles!');
-            }
+            if (platform === 'copy') { navigator.clipboard.writeText(url); alert('¡Enlace copiado!'); }
         }
     </script>
 </body>
