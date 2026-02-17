@@ -309,7 +309,8 @@
         // TAB B: Proyectos (Desde tabla projects)
         async function loadProjects(userId) {
             const list = document.getElementById('list-projects');
-            // Buscamos proyectos asociados a este usuario
+            
+            // Buscamos proyectos de este usuario
             const { data: projects } = await window.supabaseClient
                 .from('projects')
                 .select('*')
@@ -318,22 +319,50 @@
 
             if (projects && projects.length > 0) {
                 list.innerHTML = projects.map(proj => {
-                    // Si tiene microsite público, el link va al microsite, si no, al DOI o a nada
                     let link = '#';
-                    if (proj.slug) link = `/p/${proj.slug}`; // Asumiendo estructura futura
-                    else if (proj.doi) link = `https://doi.org/${proj.doi}`;
+                    let badge = '';
+                    let icon = 'fa-folder'; // Icono por defecto
+                    let target = '_self';
+
+                    // Lógica de Enlaces según tu Schema
+                    if (proj.microsite_is_public && proj.slug) {
+                        // Caso A: Tiene Microsite público -> Vamos a la URL interna
+                        link = `/site?slug=${proj.slug}`;
+                        badge = '<span class="card-tag" style="background:#e3f2fd; color:#0d47a1;">Microsite</span>';
+                        icon = 'fa-laptop-code';
+                        target = '_blank';
+                    } else if (proj.doi) {
+                        // Caso B: Solo tiene DOI -> Vamos a la web del DOI
+                        link = `https://doi.org/${proj.doi}`;
+                        badge = '<span class="card-tag" style="background:#fff3e0; color:#e65100;">DOI</span>';
+                        icon = 'fa-barcode';
+                        target = '_blank';
+                    } else {
+                        // Caso C: Borrador o sin datos públicos
+                        badge = '<span class="card-tag">Borrador</span>';
+                    }
+
+                    // Estilo si no tiene enlace (cursor default)
+                    const cursorStyle = link === '#' ? 'cursor:default;' : '';
+                    const arrowIcon = link !== '#' ? '<i class="fa-solid fa-arrow-up-right-from-square" style="opacity:0.3;"></i>' : '';
 
                     return `
-                    <a href="${link}" target="${link === '#' ? '_self' : '_blank'}" class="link-card" style="${link === '#' ? 'cursor:default;' : ''}">
-                        <div>
-                            <div style="font-weight:600;">${proj.title || 'Proyecto sin título'}</div>
-                            ${proj.doi ? `<span class="card-meta"><i class="fa-solid fa-barcode"></i> DOI: ${proj.doi}</span>` : ''}
+                    <a href="${link}" target="${target}" class="link-card" style="${cursorStyle}">
+                        <div style="display:flex; align-items:center; gap:10px; width: 100%;">
+                            <i class="fa-solid ${icon}" style="font-size:1.2rem; opacity:0.5; min-width:25px; text-align:center;"></i>
+                            <div style="flex-grow:1;">
+                                <div style="font-weight:600; line-height:1.2; margin-bottom:4px;">${proj.title || 'Sin título'}</div>
+                                <div style="display:flex; align-items:center; gap:5px;">
+                                    ${badge}
+                                    ${proj.publication_year ? `<span class="card-meta">${proj.publication_year}</span>` : ''}
+                                </div>
+                            </div>
+                            ${arrowIcon}
                         </div>
-                        ${link !== '#' ? '<i class="fa-solid fa-arrow-right" style="opacity:0.3;"></i>' : ''}
                     </a>`;
                 }).join('');
             } else {
-                list.innerHTML = emptyState("Este investigador aún no ha publicado proyectos.");
+                list.innerHTML = emptyState("Este investigador aún no tiene proyectos públicos.");
             }
         }
 
