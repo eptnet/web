@@ -27,8 +27,10 @@ export const CommunityManager = {
             });
         }
 
+        // Delegación de eventos (Inputs y Submit)
         document.addEventListener('input', (e) => {
             if (e.target.id === 'admin-user-search') this.filterUsers(e.target.value);
+            
             // Vista previa de avatar en tiempo real
             if (e.target.id === 'edit-avatar-url') {
                 const img = document.getElementById('preview-avatar');
@@ -36,6 +38,7 @@ export const CommunityManager = {
             }
         });
 
+        // Escuchar el envío del formulario
         document.addEventListener('submit', (e) => {
             if (e.target.id === 'admin-user-form') {
                 e.preventDefault();
@@ -70,8 +73,7 @@ export const CommunityManager = {
             const { data, error } = await this.supabase
                 .from('profiles')
                 .select('*')
-                // CAMBIO: Ordenamos por nombre en lugar de fecha de creación (que no existe)
-                .order('display_name', { ascending: true }); 
+                .order('display_name', { ascending: true }); // Orden alfabético (seguro)
 
             if (error) throw error;
 
@@ -99,6 +101,14 @@ export const CommunityManager = {
             
             const row = document.createElement('tr');
             row.style.borderBottom = '1px solid var(--color-border)';
+            
+            // Botón de Link externo (Bio)
+            const externalLink = user.username 
+                ? `<a href="/bio.html?u=${user.username}" target="_blank" title="Ver Perfil Público" style="margin-left:8px; color:var(--color-accent); font-size:1.1rem; text-decoration:none;">
+                     <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                   </a>`
+                : '<span style="color:#ccc; margin-left:8px; cursor:not-allowed;"><i class="fa-solid fa-ban"></i></span>';
+
             row.innerHTML = `
                 <td style="padding:1rem;">
                     <div style="display:flex; align-items:center; gap:12px;">
@@ -112,14 +122,14 @@ export const CommunityManager = {
                 <td style="padding:1rem; font-size:0.9rem;">${user.role || 'researcher'}</td>
                 <td style="padding:1rem;">
                     ${user.username 
-                        ? `<a href="/bio.html?u=${user.username}" target="_blank" class="tag-link">@${user.username}</a>` 
+                        ? `<span class="tag-link" style="background:#eee; padding:2px 6px; border-radius:4px; font-size:0.85rem;">@${user.username}</span>` 
                         : '<span style="color:orange; font-size:0.8rem;">Sin URL</span>'}
                 </td>
                 <td style="padding:1rem; text-align:right;">
                     <button class="btn-edit-user" style="padding:8px 12px; cursor:pointer; background:var(--color-surface); border:1px solid var(--color-border); border-radius:6px; transition:all 0.2s;">
                         <i class="fa-solid fa-pen-to-square"></i> Editar
                     </button>
-                </td>
+                    ${externalLink} </td>
             `;
 
             row.querySelector('.btn-edit-user').addEventListener('click', () => this.openEditModal(user));
@@ -148,14 +158,14 @@ export const CommunityManager = {
         document.getElementById('edit-display-name').value = user.display_name || '';
         document.getElementById('edit-username').value = user.username || '';
         document.getElementById('edit-bio-short').value = user.bio_short || '';
-        document.getElementById('edit-orcid').value = user.orcid || ''; // ORCID Manual
+        document.getElementById('edit-orcid').value = user.orcid || ''; 
         
         // Avatar
         const avatarUrl = user.avatar_url || '';
         document.getElementById('edit-avatar-url').value = avatarUrl;
         document.getElementById('preview-avatar').src = avatarUrl || 'https://i.ibb.co/61fJv24/default-avatar.png';
 
-        // Redes Sociales (Mapeo completo)
+        // Redes Sociales
         document.getElementById('edit-website').value = user.website_url || '';
         document.getElementById('edit-substack').value = user.substack_url || '';
         document.getElementById('edit-linkedin').value = user.linkedin_url || '';
@@ -171,19 +181,28 @@ export const CommunityManager = {
 
     async saveUserProfile() {
         const userId = document.getElementById('edit-user-id').value;
-        const submitBtn = document.querySelector('#admin-user-form button[type="submit"]');
-        const originalText = submitBtn.textContent;
         
+        // --- CORRECCIÓN AQUÍ ---
+        // Buscamos el botón por el atributo 'form' ya que está fuera del <form>
+        const submitBtn = document.querySelector('button[form="admin-user-form"]'); 
+        
+        // Validación de seguridad por si el botón no se encuentra
+        if (!submitBtn) {
+            console.error("No se encontró el botón de guardar");
+            return;
+        }
+
+        const originalText = submitBtn.textContent;
         submitBtn.disabled = true;
         submitBtn.textContent = "Guardando...";
 
         try {
-            // Construimos el objeto de actualización con TODOS los campos
+            // Construimos el objeto de actualización
             const updates = {
                 display_name: document.getElementById('edit-display-name').value,
                 username: document.getElementById('edit-username').value.trim().toLowerCase().replace(/\s+/g, ''),
                 bio_short: document.getElementById('edit-bio-short').value,
-                orcid: document.getElementById('edit-orcid').value.trim(), // Aquí guardamos el ORCID manual
+                orcid: document.getElementById('edit-orcid').value.trim(),
                 avatar_url: document.getElementById('edit-avatar-url').value.trim(),
                 
                 // Redes
@@ -215,8 +234,10 @@ export const CommunityManager = {
             console.error("Error al guardar:", err);
             alert("❌ Error: " + err.message);
         } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = originalText;
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
         }
     }
 };
