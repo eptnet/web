@@ -4,8 +4,8 @@ import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.24.1"
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
-// CORRECCIÓN: Usamos el alias '-latest' para evitar el error 404 de Google
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+// ¡ACTUALIZACIÓN CRÍTICA! Usamos el modelo más reciente: Gemini 2.5 Flash
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -35,7 +35,7 @@ serve(async (req) => {
       throw new Error("Tipo de prompt no válido.");
     }
     
-    console.log("Enviando prompt a Gemini 1.5 Flash Latest...");
+    console.log("Enviando prompt a Gemini 2.5 Flash...");
     const result = await model.generateContent(prompt);
     const response = result.response;
     
