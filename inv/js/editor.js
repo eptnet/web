@@ -1,348 +1,445 @@
 // =================================================================
-// ARCHIVO COMPLETO: /inv/js/editor.js (Versión Definitiva 2.0)
+// ARCHIVO COMPLETO: /inv/js/editor-studio.js (Hub Omnicanal V3)
 // =================================================================
 
+// --- 1. CONFIGURACIÓN DEL SISTEMA (Línea Editorial de Epistecnología) ---
+const SYSTEM_PROMPT = `Actúa como el editor principal de Epistecnología, un "puente sociotécnico" que conecta el rigor científico con la sabiduría cultural. 
+Tu tono debe ser divulgativo, accesible, pedagógico y cercano, pero siempre manteniendo el rigor ético y científico. Evita el clickbait, el facilismo comercial o el tono elitista excluyente. Recuerda que construimos archivos permanentes diseñados para "durar siglos, no segundos". Promueve la interdisciplinariedad y el respeto por la dignidad humana.`;
+
+// Prompts Específicos (Incluyendo tus agentes expertos)
 const agentPrompts = {
     'text': {
         label: 'Redactar Artículo de Divulgación',
-        prompt: 'Actúa como un experto en comunicación científica. Usando el texto base proporcionado, redacta un artículo de entre 500 y 800 palabras. El tono debe ser de divulgación: accesible para un público general pero manteniendo el rigor científico. Estructura el contenido siguiendo la estructura de un articulo de opinión y la piramide invertida.'
-    },
-    'social': {
-        label: 'Crear Hilo para Redes Sociales',
-        prompt: 'Actúa como un community manager científico. Genera un hilo de 3 a 5 tweets (o posts para LinkedIn) sobre el texto base. El primer post debe ser un gancho potente. Los siguientes deben desarrollar la idea de forma concisa. El último debe incluir un llamado a la acción o una pregunta para generar debate. Usa hashtags relevantes.'
+        prompt: `${SYSTEM_PROMPT}
+Actúa como un Asistente Experto en Comunicación Científica. Tu tarea principal es generar artículos de opinión con un tono de divulgación basado en el texto proporcionado.
+Reglas estrictas:
+1. Claridad y Sencillez: Simplifica el lenguaje complejo y la jerga técnica.
+2. Estructura de Pirámide Invertida: Reorganiza el contenido. La información más crucial (el "quién, qué, cuándo, dónde, por qué y cómo") debe estar en el primer párrafo.
+3. Tono: Atractivo, informativo y accesible, despertando curiosidad.
+Estructura la salida con un Título Atractivo, un Lead (Entradilla potente) y el Cuerpo del artículo organizado de mayor a menor relevancia.`
     },
     'script': {
-        label: 'Desarrollar Guion para Video Corto',
-        prompt: 'Actúa como guionista de contenido educativo. Desarrolla un guion para un video corto (formato reel/short de ~60 segundos). Estructura el guion en tres partes claras: 1) Un gancho inicial de 10 segundos que plantee una pregunta o dato sorprendente. 2) El desarrollo del tema principal de forma muy visual y directa. 3) Un cierre que resuma la idea y pida al espectador que comente o siga la cuenta.'
+        label: 'Guion para Video (Reel/Short)',
+        prompt: `${SYSTEM_PROMPT}
+Actúa como Guionista de Contenido Educativo. Elabora un guion breve (menos de 1 minuto) para un reel de divulgación científica que explique, de forma clara y atractiva, la investigación proporcionada.
+Estructura el guion en tres partes:
+[Inicio - 0:00 a 0:10]: Un gancho atractivo o pregunta que despierte curiosidad.
+[Desarrollo - 0:10 a 0:40]: Explicación sencilla del impacto social/humano y ejemplos concretos. Evita tecnicismos.
+[Cierre - 0:40 a 0:60]: Cierre inspirador que vincule la labor científica con el bienestar humano. Termina con una frase memorable.`
+    },
+    'social': {
+        label: 'Hilo para Comunidad / Redes',
+        prompt: `${SYSTEM_PROMPT}
+Genera un hilo de 3 posts concisos basados en el texto base. El primero debe ser un gancho potente y ético. Los siguientes desarrollan la idea. El último invita a la reflexión alturada. No uses lenguaje sensacionalista.`
     },
     'summary': {
-        label: 'Crear Resumen (Abstract)',
-        prompt: 'Actúa como un comunicador científico. Crea un resumen conciso y técnico (máximo 150 palabras) del siguiente texto, adecuado para un abstract o entradilla de una publicación formal.'
-    },
-    'event': {
-        label: 'Redactar Invitación a Evento',
-        prompt: 'Actúa como organizador de eventos académicos. Redacta un email de invitación formal pero cercano para un evento (virtual, presencial o híbrido). El texto debe ser claro e incluir campos evidentes para [Nombre del Evento], [Fecha y Hora], [Lugar o Enlace de Conexión], [Breve descripción del propósito] y [Nombre del Ponente o Anfitrión]. Anima a los destinatarios a registrarse o confirmar su asistencia.'
+        label: 'Resumen (Abstract Divulgativo)',
+        prompt: `${SYSTEM_PROMPT}
+Crea un resumen técnico pero accesible (máximo 150 palabras) del texto proporcionado, ideal para ser el abstract público de una investigación indexada.`
     }
 };
 
-const EditorApp = {
+const StudioApp = {
     supabase: null,
     editorInstance: null,
     currentPost: { id: null, projectId: null },
     userId: null,
+    currentUserProfile: null,
+    saveTimeout: null, // Para el autoguardado silencioso
 
     async init() {
         const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
         this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // --- INICIO DE LA CORRECCIÓN ---
-        // 1. Verificamos la sesión y obtenemos el ID de usuario.
         const { data: { session } } = await this.supabase.auth.getSession();
         if (!session) { window.location.href = '/'; return; }
         this.userId = session.user.id;
         
-        // 2. Cargamos el perfil completo del usuario y sus credenciales de Bluesky.
         const { data: profile } = await this.supabase.from('profiles').select('*').eq('id', this.userId).single();
         this.currentUserProfile = profile;
 
-        const { data: creds } = await this.supabase.from('bsky_credentials').select('*').eq('user_id', this.userId).single();
-        this.bskyCreds = creds;
-        // --- FIN DE LA CORRECCIÓN ---
+        await this.initializeEditor();
+        this.addEventListeners();
+        await this.loadUserProjects();
 
+        // Lógica de URL para mantener trazabilidad
         const urlParams = new URLSearchParams(window.location.search);
         const projectId = urlParams.get('projectId');
         const postId = urlParams.get('postId');
 
-        if (!projectId && !postId) {
-            document.querySelector('.main-content').innerHTML = '<h2>Error de Contexto</h2><p>No se ha especificado un proyecto o borrador.</p>';
-            return;
-        }
-
-        await this.initializeEditor();
-        this.populateAgentDropdown();
-        // Movemos los listeners aquí para que se adjunten después de crear la UI básica.
-        this.addEventListeners();
-
         if (postId) {
             await this.loadPost(postId);
         } else if (projectId) {
-            await this.loadProjectData(projectId);
-        }
-        
-        const agent = urlParams.get('agent');
-        if (agent) this.setupAIAgent(agent);
-    },
-
-    async loadDraftsList(projectId) {
-        const container = document.getElementById('drafts-list-container');
-        if (!container) return;
-
-        const currentPostId = new URLSearchParams(window.location.search).get('postId');
-
-        try {
-            // --- INICIO DE LA CORRECIÓN ---
-            const [draftsResponse, projectResponse] = await Promise.all([
-                // Esta consulta ya estaba bien
-                this.supabase.from('posts').select('id, title, updated_at').eq('user_id', this.userId).eq('project_id', projectId).eq('status', 'draft'),
-                
-                // Aquí cambiamos 'updated_at' por 'created_at' para que coincida con tu tabla
-                this.supabase.from('projects').select('title, created_at').eq('id', projectId).single()
-            ]);
-            // --- FIN DE LA CORRECIÓN ---
-
-            if (draftsResponse.error) throw draftsResponse.error;
-            if (projectResponse.error) throw projectResponse.error;
-            
-            const drafts = draftsResponse.data || [];
-            const project = projectResponse.data;
-
-            const projectAsDraft = {
-                id: projectId,
-                title: `✍️ Proyecto Base: ${project.title}`,
-                // Usamos 'created_at' del proyecto, pero lo guardamos en la clave 'updated_at'
-                // para que la lógica de ordenamiento por fecha siga funcionando sin problemas.
-                updated_at: project.created_at, 
-                isProject: true
-            };
-
-            const allItems = [projectAsDraft, ...drafts].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
-
-            container.innerHTML = allItems.map(item => {
-                const updatedDate = new Date(item.updated_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-                
-                let isActive = false;
-                let href = '';
-
-                if (item.isProject) {
-                    isActive = !currentPostId;
-                    href = `/inv/editor.html?projectId=${item.id}`;
-                } else {
-                    isActive = item.id === currentPostId;
-                    href = `/inv/editor.html?postId=${item.id}`;
-                }
-
-                return `
-                    <a href="${href}" class="draft-card ${isActive ? 'active' : ''}">
-                        <span class="draft-title">${item.title || 'Borrador sin título'}</span>
-                        <span class="draft-date">Últ. ed. ${updatedDate}</span>
-                    </a>
-                `;
-            }).join('');
-
-        } catch (error) {
-            container.innerHTML = '<p>Error al cargar la lista de puntos de partida.</p>';
-            console.error("Error al unificar borradores y proyecto:", error);
+            this.setProjectFocus(projectId);
         }
     },
-    
-    populateAgentDropdown() {
-        const dropdown = document.getElementById('ai-task-dropdown');
-        if (!dropdown) return;
-        Object.keys(agentPrompts).forEach(key => {
-            const option = document.createElement('option');
-            option.value = key;
-            option.textContent = agentPrompts[key].label;
-            dropdown.appendChild(option);
-        });
-    },
 
+    // --- 2. CONFIGURACIÓN DE LA INTERFAZ Y PESTAÑAS ---
     addEventListeners() {
-        document.getElementById('ai-task-dropdown')?.addEventListener('change', (e) => {
-            const selectedKey = e.target.value;
-            const promptText = selectedKey ? agentPrompts[selectedKey].prompt : '';
-            document.getElementById('ai-custom-prompt').value = promptText;
+        // Selector de Tareas IA (Texto)
+        const taskDropdown = document.getElementById('ai-task-dropdown');
+        const customPromptArea = document.getElementById('ai-custom-prompt');
+        
+        if (taskDropdown && customPromptArea) {
+            // Llenar dinámicamente el menú desde nuestro objeto agentPrompts
+            taskDropdown.innerHTML = '';
+            Object.keys(agentPrompts).forEach(key => {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = agentPrompts[key].label;
+                taskDropdown.appendChild(option);
+            });
+
+            taskDropdown.addEventListener('change', (e) => {
+                const selectedKey = e.target.value;
+                // Mostramos el prompt al usuario para que vea las reglas, pero puede editarlo
+                customPromptArea.value = agentPrompts[selectedKey].prompt;
+            });
+            // Disparar el primer evento para llenar el cuadro
+            taskDropdown.dispatchEvent(new Event('change'));
+        }
+
+        // Pestañas (Tabs) de la IA
+        document.querySelectorAll('.ai-tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                if(btn.classList.contains('disabled')) return;
+                
+                // Remover active de todos
+                document.querySelectorAll('.ai-tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.ai-tab-content').forEach(c => c.classList.remove('active'));
+                
+                // Activar el clickeado
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.target).classList.add('active');
+            });
         });
 
-        document.getElementById('ai-generate-btn')?.addEventListener('click', () => this.callAI('generate_from_instructions'));
-        document.getElementById('ai-suggest-titles-btn')?.addEventListener('click', () => this.callAI('suggest_titles'));
-        document.getElementById('save-draft-btn')?.addEventListener('click', () => this.saveDraft());
-         document.getElementById('publish-btn')?.addEventListener('click', () => this.handlePublish());
-    },
+        // Botones de Acción
+        document.getElementById('ai-generate-text-btn')?.addEventListener('click', () => this.callTextAI());
+        document.getElementById('ai-generate-image-btn')?.addEventListener('click', () => this.callImageAI());
+        document.getElementById('save-draft-btn')?.addEventListener('click', () => this.saveDraft(false));
+        document.getElementById('publish-btn')?.addEventListener('click', () => this.handlePublish());
 
-    async loadPost(postId) {
-        const { data, error } = await this.supabase.from('posts').select('*, project_id(id)').eq('id', postId).eq('user_id', this.userId).single();
-        if (error || !data) { alert('No se pudo cargar el borrador.'); console.error(error); return; }
+        // Selector de Proyecto (Cambio manual)
+        document.getElementById('active-project-select')?.addEventListener('change', (e) => {
+            if(e.target.value) this.setProjectFocus(e.target.value);
+        });
+
+        // Autoguardado al escribir (Debounce)
+        const titleInput = document.getElementById('post-title');
+        titleInput?.addEventListener('input', () => this.triggerAutoSave());
         
-        this.currentPost = { id: data.id, projectId: data.project_id.id };
-        document.getElementById('post-title').value = data.title;
-        this.editorInstance.setContent(data.content);
-        await this.loadDraftsList(data.project_id.id);
+        // Redes Sociales - Contador de caracteres
+        const socialText = document.getElementById('social-post-text');
+        const charCount = document.getElementById('social-char-count');
+        if(socialText && charCount) {
+            socialText.addEventListener('input', () => {
+                const length = socialText.value.length;
+                charCount.textContent = length;
+                if(length > 300) charCount.classList.add('limit-reached');
+                else charCount.classList.remove('limit-reached');
+            });
+        }
     },
 
-    async loadProjectData(projectId) {
+    // --- 3. TRAZABILIDAD Y PROYECTOS (Punto de Enfoque) ---
+    async loadUserProjects() {
+        const { data: projects, error } = await this.supabase.from('projects').select('id, title, doi').eq('user_id', this.userId);
+        if (error) return console.error("Error cargando proyectos:", error);
+
+        const select = document.getElementById('active-project-select');
+        select.innerHTML = '<option value="">Selecciona un proyecto base...</option>';
+        projects.forEach(p => {
+            const option = document.createElement('option');
+            option.value = p.id;
+            // Guardamos el DOI como un atributo del option para accederlo fácil
+            option.dataset.doi = p.doi || ''; 
+            option.textContent = p.title.length > 40 ? p.title.substring(0, 40) + '...' : p.title;
+            select.appendChild(option);
+        });
+    },
+
+    async setProjectFocus(projectId) {
         this.currentPost.projectId = projectId;
-        const { data, error } = await this.supabase.from('projects').select('title, description').eq('id', projectId).single();
-        if (error) { 
-            alert('No se pudieron cargar los datos del proyecto.'); 
-            console.error(error); 
-            return; 
-        }
-        document.getElementById('post-title').value = `Borrador basado en: ${data.title}`;
-        this.editorInstance.setContent(data.description || '');
+        const select = document.getElementById('active-project-select');
+        select.value = projectId;
 
-        // --- LÍNEA CLAVE AÑADIDA ---
-        // Refrescamos la lista de borradores para que se muestre correctamente al iniciar desde un proyecto.
-        await this.loadDraftsList(projectId);
+        // Verificar DOI para mostrar el Badge de trazabilidad
+        const selectedOption = select.options[select.selectedIndex];
+        const doiBadge = document.getElementById('doi-badge');
+        if (selectedOption && selectedOption.dataset.doi) {
+            doiBadge.classList.remove('badge-hidden');
+            doiBadge.title = `DOI: ${selectedOption.dataset.doi}`;
+        } else {
+            doiBadge.classList.add('badge-hidden');
+        }
+
+        // Si no hay post activo, cargamos la descripción del proyecto al editor como base
+        if (!this.currentPost.id && this.editorInstance.getContent() === '') {
+            const { data } = await this.supabase.from('projects').select('description').eq('id', projectId).single();
+            if(data && data.description) {
+                this.editorInstance.setContent(`<blockquote><strong>Contexto del Proyecto:</strong><br>${data.description}</blockquote><p><br></p>`);
+            }
+        }
     },
 
-    async saveDraft() {
-        if (!this.editorInstance || !this.userId || !this.currentPost.projectId) { 
-            alert('Error: Falta información de proyecto. No se puede guardar.'); 
-            return; 
-        }
-        const saveButton = document.getElementById('save-draft-btn');
-        saveButton.disabled = true;
-        saveButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
-
-        try {
-            // 1. Creamos el objeto de datos base SIN el 'id'.
-            const postData = {
-                project_id: this.currentPost.projectId,
-                user_id: this.userId,
-                title: document.getElementById('post-title').value,
-                content: this.editorInstance.getContent(),
-                status: 'draft'
-            };
-
-            // --- INICIO DE LA CORRECCIÓN ---
-            // 2. Solo añadimos la propiedad 'id' si estamos ACTUALIZANDO un borrador que ya existe.
-            if (this.currentPost.id) {
-                postData.id = this.currentPost.id;
-            }
-            // --- FIN DE LA CORRECCIÓN ---
-
-            // 3. Enviamos el objeto a Supabase. 'upsert' sabrá si debe crear o actualizar.
-            const { data, error } = await this.supabase
-                .from('posts')
-                .upsert(postData)
-                .select()
-                .single();
-                
-            if (error) throw error;
-            
-            alert('¡Borrador guardado con éxito!');
-
-            if (!this.currentPost.id) {
-                this.currentPost.id = data.id;
-                const newUrl = `${window.location.pathname}?postId=${data.id}`;
-                history.pushState({ path: newUrl }, '', newUrl);
-                this.loadDraftsList(this.currentPost.projectId);
-            } else {
-                this.loadDraftsList(this.currentPost.projectId);
-            }
-
-        } catch (error) {
-            alert('No se pudo guardar el borrador. Revisa la consola para más detalles.');
-            console.error('Error al guardar:', error);
-        } finally {
-            saveButton.disabled = false;
-            saveButton.innerHTML = 'Guardar Borrador';
-        }
-    },
-    
+    // --- 4. EDITOR MULTIMODAL (TinyMCE) ---
     initializeEditor() {
         return new Promise(resolve => {
             tinymce.init({
                 selector: '#rich-text-editor',
                 plugins: 'lists link image autoresize wordcount',
-                toolbar: 'undo redo | blocks | bold italic | bullist numlist | link image',
-                autoresize_bottom_margin: 20,
-                height: 400,
+                toolbar: 'undo redo | formatselect | bold italic | bullist numlist | link image | removeformat',
+                autoresize_bottom_margin: 50,
+                min_height: 500,
                 skin: document.body.classList.contains('dark-theme') ? 'oxide-dark' : 'oxide',
                 content_css: document.body.classList.contains('dark-theme') ? 'dark' : 'default',
-                placeholder: 'El contenido de tu proyecto aparecerá aquí como punto de partida...',
-                setup: (editor) => { editor.on('init', () => { this.editorInstance = editor; resolve(); }); }
+                placeholder: 'Escribe aquí tu artículo. Puedes arrastrar imágenes generadas directamente a este espacio...',
+                setup: (editor) => { 
+                    editor.on('init', () => { 
+                        this.editorInstance = editor; 
+                        resolve(); 
+                    });
+                    // Disparar autoguardado al cambiar contenido
+                    editor.on('input change undo redo', () => this.triggerAutoSave());
+                }
             });
         });
     },
 
-    async callAI(promptType) {
-        if (!this.editorInstance) { alert('El editor no está listo.'); return; }
-        const textContent = this.editorInstance.getContent({ format: 'text' });
-        const customPrompt = document.getElementById('ai-custom-prompt')?.value.trim() || "";
-
-        if (textContent.trim().length < 20) {
-            alert('El editor principal debe contener un texto base de al menos 20 caracteres para que la IA trabaje.');
-            return;
-        }
-        if (promptType === 'generate_from_instructions' && customPrompt.length < 20) {
-            alert('Las instrucciones para la IA deben tener al menos 20 caracteres.');
-            return;
-        }
-
-        const resultsContainer = document.getElementById('ai-results');
-        resultsContainer.innerHTML = '<p class="ai-loading-indicator">Pensando...</p>';
+    async loadPost(postId) {
+        const { data, error } = await this.supabase.from('posts').select('*, project_id(id, doi)').eq('id', postId).eq('user_id', this.userId).single();
+        if (error || !data) { alert('No se pudo cargar el borrador.'); return; }
         
+        this.currentPost = { id: data.id, projectId: data.project_id.id };
+        document.getElementById('post-title').value = data.title;
+        this.editorInstance.setContent(data.content);
+        
+        // Actualizar UI
+        this.setProjectFocus(data.project_id.id);
+        
+        // Simular que cargamos el texto de la red social (Si lo estuviéramos guardando en BD)
+        // Por ahora, como es nuevo, lo dejamos en blanco para que el usuario redacte.
+    },
+
+    // --- 5. LOGICA DE AUTOGUARDADO (Silencioso) ---
+    triggerAutoSave() {
+        if(!this.currentPost.projectId) return; // No guardar si no hay proyecto
+        
+        clearTimeout(this.saveTimeout);
+        const statusEl = document.getElementById('save-status');
+        statusEl.innerHTML = '<i class="fa-solid fa-pen"></i> Editando...';
+        
+        this.saveTimeout = setTimeout(() => {
+            this.saveDraft(true);
+        }, 3000); // Guarda 3 segundos después de dejar de escribir
+    },
+
+    async saveDraft(isSilent = false) {
+        if (!this.editorInstance || !this.currentPost.projectId) { 
+            if(!isSilent) alert('Selecciona un Proyecto Activo en la barra superior antes de guardar.');
+            return; 
+        }
+
+        const statusEl = document.getElementById('save-status');
+        if(!isSilent) {
+            const btn = document.getElementById('save-draft-btn');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+            btn.disabled = true;
+        } else {
+            statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+        }
+
         try {
-            const { data, error } = await this.supabase.functions.invoke('generate-text', { 
-                body: { textContent, promptType, customPrompt } 
-            });
+            const postData = {
+                project_id: this.currentPost.projectId,
+                user_id: this.userId,
+                title: document.getElementById('post-title').value || 'Borrador sin título',
+                content: this.editorInstance.getContent(),
+                status: 'draft',
+                updated_at: new Date().toISOString()
+            };
+
+            if (this.currentPost.id) postData.id = this.currentPost.id;
+
+            const { data, error } = await this.supabase.from('posts').upsert(postData).select().single();
             if (error) throw error;
-            const formattedResult = data.result.replace(/\n/g, '<br>');
-            resultsContainer.insertAdjacentHTML('beforeend', `<div class="ai-result-box">${formattedResult}</div>`);
+            
+            this.currentPost.id = data.id;
+            
+            // Actualizar URL sin recargar para mantener trazabilidad
+            const newUrl = `/inv/editor.html?postId=${data.id}`;
+            window.history.replaceState({ path: newUrl }, '', newUrl);
+
+            statusEl.innerHTML = '<i class="fa-solid fa-cloud-check" style="color:#2ecc71"></i> Guardado';
+            setTimeout(() => { statusEl.innerHTML = '<i class="fa-solid fa-cloud"></i> Sincronizado'; }, 3000);
+
+            if(!isSilent) alert('Borrador guardado manualmente con éxito.');
+
         } catch (error) {
-            console.error('Error al llamar a la función de IA:', error);
-            resultsContainer.innerHTML = '<p style="color: red;">Hubo un error al contactar a la IA.</p>';
+            console.error('Error guardando:', error);
+            statusEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:#e74c3c"></i> Error al guardar';
         } finally {
-            const loadingIndicator = document.querySelector('.ai-loading-indicator');
-            if (loadingIndicator) loadingIndicator.remove();
+            if(!isSilent) {
+                const btn = document.getElementById('save-draft-btn');
+                btn.innerHTML = '<i class="fa-regular fa-floppy-disk"></i> Guardar Borrador';
+                btn.disabled = false;
+            }
         }
     },
 
+    // --- 6. CONEXIÓN CON INTELIGENCIA ARTIFICIAL ---
+    async callTextAI() {
+        const textContent = this.editorInstance.getContent({ format: 'text' });
+        const customPrompt = document.getElementById('ai-custom-prompt').value.trim();
+        const resultsContainer = document.getElementById('ai-text-results');
+
+        if (textContent.trim().length < 20 && customPrompt.length < 20) {
+            resultsContainer.innerHTML = '<p style="color: red; font-size:0.85rem;">Escribe algo en el editor central o da instrucciones más largas a la IA.</p>';
+            return;
+        }
+
+        const btn = document.getElementById('ai-generate-text-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generando...';
+        resultsContainer.innerHTML = '';
+
+        try {
+            // Utilizamos el endpoint que ya tienes configurado
+            const { data, error } = await this.supabase.functions.invoke('generate-text', { 
+                body: { 
+                    textContent: textContent, 
+                    promptType: 'generate_from_instructions', 
+                    customPrompt: customPrompt 
+                } 
+            });
+            if (error) throw error;
+            
+            const formattedResult = data.result.replace(/\n/g, '<br>');
+            
+            // Mostramos el resultado con un botón para insertarlo fácilmente en el editor
+            resultsContainer.innerHTML = `
+                <div class="ai-result-box" style="background: var(--color-surface); padding: 1rem; border-radius: 8px; border: 1px solid var(--color-border); margin-top: 1rem; font-size:0.9rem;">
+                    ${formattedResult}
+                    <button onclick="StudioApp.insertIntoEditor()" class="btn-secondary w-100" style="margin-top: 1rem;">
+                        <i class="fa-solid fa-arrow-right-to-bracket"></i> Añadir al Editor
+                    </button>
+                </div>
+                <div id="hidden-ai-result" style="display:none;">${formattedResult}</div>
+            `;
+        } catch (error) {
+            resultsContainer.innerHTML = '<p style="color: red; font-size:0.85rem;">Hubo un error al contactar a la IA de texto.</p>';
+            console.error(error);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generar Texto';
+        }
+    },
+
+    // Función auxiliar global para el botón HTML inyectado arriba
+    insertIntoEditor() {
+        const content = document.getElementById('hidden-ai-result').innerHTML;
+        this.editorInstance.insertContent(`<p><br></p>${content}<p><br></p>`);
+        this.triggerAutoSave();
+    },
+
+    async callImageAI() {
+        const prompt = document.getElementById('ai-image-prompt').value.trim();
+        const style = document.getElementById('ai-image-style').value;
+        const resultsContainer = document.getElementById('ai-image-results');
+
+        if (prompt.length < 10) {
+            resultsContainer.innerHTML = '<p style="color: red; font-size:0.85rem;">Describe la imagen con al menos 10 caracteres.</p>';
+            return;
+        }
+
+        const btn = document.getElementById('ai-generate-image-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creando...';
+        resultsContainer.innerHTML = '';
+
+        // NOTA: Aquí preparamos la llamada a la FUTURA Edge Function de Imágenes
+        try {
+            /* const { data, error } = await this.supabase.functions.invoke('generate-image', { 
+                body: { prompt: prompt, style: style } 
+            });
+            if (error) throw error;
+            const imageUrl = data.url;
+            */
+            
+            // Simulación temporal para ver cómo funciona la UI y el Drag&Drop
+            await new Promise(r => setTimeout(r, 2000));
+            const dummyImageUrl = `https://picsum.photos/seed/${Math.random()}/400/300`; 
+
+            // Añadir a la bandeja multimedia (Drag & Drop)
+            const tray = document.getElementById('media-gallery');
+            const emptyText = tray.querySelector('.empty-tray-text');
+            if(emptyText) emptyText.remove();
+
+            const imgHtml = `
+                <div style="position:relative; width: 120px; height: 90px; flex-shrink: 0; border-radius: 6px; overflow: hidden; border: 1px solid var(--color-border); cursor: grab;">
+                    <img src="${dummyImageUrl}" style="width:100%; height:100%; object-fit:cover;" draggable="true" ondragstart="event.dataTransfer.setData('text/html', '<img src=\\'${dummyImageUrl}\\' style=\\'max-width:100%; border-radius:8px;\\'>')">
+                </div>
+            `;
+            tray.insertAdjacentHTML('afterbegin', imgHtml);
+            
+            resultsContainer.innerHTML = '<p style="color: #2ecc71; font-size:0.85rem; margin-top: 1rem;"><i class="fa-solid fa-check"></i> Imagen enviada a tu bandeja. Arrástrala al editor.</p>';
+
+        } catch (error) {
+            resultsContainer.innerHTML = '<p style="color: red; font-size:0.85rem;">Error al generar imagen.</p>';
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-palette"></i> Generar Imagen';
+        }
+    },
+
+    // --- 7. PUBLICACIÓN OMNICANAL ---
     async handlePublish() {
-        if (!confirm("¿Estás seguro de que quieres publicar este contenido en la comunidad?")) return;
+        if (!this.currentPost.projectId) {
+            alert('Por favor, selecciona un Proyecto Activo antes de publicar.');
+            return;
+        }
+
+        // 1. Guardar el estado actual como borrador primero por seguridad
+        await this.saveDraft(true);
+
+        const socialText = document.getElementById('social-post-text').value.trim();
+        const postToCommunity = document.getElementById('dest-epistecnologia').checked; // Siempre true en UI, pero validamos
+
+        if (postToCommunity && socialText.length === 0) {
+            alert("Escribe un mensaje en la caja de Redes Sociales para acompañar tu publicación.");
+            document.getElementById('social-post-text').focus();
+            return;
+        }
+
+        if (socialText.length > 300) {
+            alert("El texto para redes no puede exceder los 300 caracteres.");
+            return;
+        }
 
         const publishButton = document.getElementById('publish-btn');
         publishButton.disabled = true;
         publishButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Publicando...';
 
         try {
-            const urlParams = new URLSearchParams(window.location.search);
-            const agent = urlParams.get('agent') || 'social';
-            const content = this.editorInstance.getContent({ format: 'text' }).trim();
-            let textForCommunity = '';
+            // El artículo largo ya se guardó en this.saveDraft(). 
+            // Ahora procesamos la publicación en la Comunidad (Bluesky)
+            const finalUrl = `https://epistecnologia.com/proyectos/${this.currentPost.projectId}/posts/${this.currentPost.id}`;
+            const textForCommunity = `${socialText}\n\n📖 Lee el artículo completo: ${finalUrl}`;
 
-            if (agent === 'social') {
-                if (content.length > 300) {
-                    alert('El contenido para un post social no puede exceder los 300 caracteres.');
-                    throw new Error("Contenido demasiado largo.");
-                }
-                textForCommunity = content;
-            } else {
-                publishButton.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Creando resumen...';
-                
-                // --- INICIO DE LA CORRECCIÓN 1: Instrucciones más estrictas para la IA ---
-                const customPromptForSocial = "Crea un resumen muy corto y atractivo para redes sociales, de no más de 40 palabras, que genere curiosidad e invite a hacer clic en un enlace.";
-                const { data: summaryData, error: summaryError } = await this.supabase.functions.invoke('generate-text', {
-                    body: { textContent: content, promptType: 'create_summary', customPrompt: customPromptForSocial }
-                });
-                if (summaryError) throw summaryError;
-                
-                const finalUrl = `https://epistecnologia.com/proyectos/${this.currentPost.projectId}/posts/${this.currentPost.id}`;
-                let summaryWithLink = `${summaryData.result}\n\nLee el artículo completo aquí: ${finalUrl}`;
-
-                // --- INICIO DE LA CORRECCIÓN 2: Recorte de seguridad ---
-                // Dejamos un margen de ~50 caracteres para la atribución que añade el bot.
-                if (summaryWithLink.length > 250) {
-                    console.warn("El resumen + enlace de la IA era demasiado largo. Se ha truncado.");
-                    summaryWithLink = summaryWithLink.substring(0, 247) + "...";
-                }
-                textForCommunity = summaryWithLink;
-                // --- FIN DE LAS CORRECCIONES ---
-            }
-
-            if (this.bskyCreds) {
-                console.log("Invocando bsky-create-post para el usuario...");
+            // Verificamos credenciales (Como en el código original)
+            const { data: creds } = await this.supabase.from('bsky_credentials').select('*').eq('user_id', this.userId).single();
+            
+            if (creds) {
                 const { error } = await this.supabase.functions.invoke('bsky-create-post', {
                     body: { postText: textForCommunity },
                 });
                 if (error) throw error;
             } else {
-                console.log("Invocando bot-create-post...");
                 const authorInfo = {
                     displayName: this.currentUserProfile.display_name,
-                    handle: this.bskyCreds?.handle || null,
+                    handle: null,
                     orcid: this.currentUserProfile.orcid
                 };
                 const { error: botError } = await this.supabase.functions.invoke('bot-create-post', {
@@ -351,24 +448,26 @@ const EditorApp = {
                 if (botError) throw botError;
             }
 
-            await this.supabase
-                .from('posts')
-                .update({ status: 'published', published_at: new Date().toISOString() })
-                .eq('id', this.currentPost.id);
+            // Cambiar estado en BD a publicado
+            await this.supabase.from('posts').update({ status: 'published', published_at: new Date().toISOString() }).eq('id', this.currentPost.id);
             
-            alert("¡Publicado con éxito en la comunidad!");
-            console.log("Próximo paso: Activar interfaz de multiposting.");
+            alert("¡Contenido publicado con éxito! Ya es visible en la comunidad.");
+            // Opcional: Redirigir al dashboard
+            // window.location.href = '/inv/dashboard.html';
             
         } catch (error) {
-            console.error("Error final en el proceso de publicación:", error);
-            alert(`No se pudo completar la publicación: ${error.message}`);
+            console.error("Error publicando:", error);
+            alert(`Hubo un error al publicar: ${error.message}`);
         } finally {
             publishButton.disabled = false;
-            publishButton.innerHTML = 'Publicar';
+            publishButton.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Publicar Ahora';
         }
-    },
+    }
 };
 
+// Exponer la función auxiliar al scope global para que el botón HTML la encuentre
+window.StudioApp = StudioApp;
+
 document.addEventListener('DOMContentLoaded', () => {
-    EditorApp.init();
+    StudioApp.init();
 });
