@@ -2,40 +2,34 @@
 // ARCHIVO COMPLETO: /inv/js/editor-studio.js (Hub Omnicanal V3)
 // =================================================================
 
-// --- 1. CONFIGURACIÓN DEL SISTEMA (Línea Editorial de Epistecnología) ---
-const SYSTEM_PROMPT = `Actúa como el editor principal de Epistecnología, un "puente sociotécnico" que conecta el rigor científico con la sabiduría cultural. 
-Tu tono debe ser divulgativo, accesible, pedagógico y cercano, pero siempre manteniendo el rigor ético y científico. Evita el clickbait, el facilismo comercial o el tono elitista excluyente. Recuerda que construimos archivos permanentes diseñados para "durar siglos, no segundos". Promueve la interdisciplinariedad y el respeto por la dignidad humana.`;
+// --- 1. CONFIGURACIÓN DEL SISTEMA (Formato Quirúrgico y Directo) ---
+const SYSTEM_PROMPT = `Eres un Asistente Experto en Comunicación Científica de Epistecnología. 
+REGLA ABSOLUTA: NO saludes, NO te despidas, NO uses frases introductorias (ej. "Aquí tienes tu texto"). Devuelve ÚNICAMENTE el contenido solicitado.
 
-// Prompts Específicos (Incluyendo tus agentes expertos)
+ESTRUCTURA OBLIGATORIA: Siempre divide tu respuesta exactamente en estas dos partes usando etiquetas HTML:
+
+<h3><span style="color: #b72a1e;">[PROPUESTA PARA REDES]</span></h3>
+<p><em>(Escribe aquí un gancho breve, máximo 280 caracteres, que el usuario pueda copiar y pegar en la caja de redes sociales de la derecha).</em></p>
+<hr>
+<h3>[CONTENIDO PRINCIPAL]</h3>
+(Escribe aquí el cuerpo principal: el artículo, el hilo o el guion, usando formato HTML básico como <h2>, <p>, <strong>, <ul> para que se vea bien en el editor).`;
+
 const agentPrompts = {
     'text': {
         label: 'Redactar Artículo de Divulgación',
-        prompt: `${SYSTEM_PROMPT}
-Actúa como un Asistente Experto en Comunicación Científica. Tu tarea principal es generar artículos de opinión con un tono de divulgación basado en el texto proporcionado.
-Reglas estrictas:
-1. Claridad y Sencillez: Simplifica el lenguaje complejo y la jerga técnica.
-2. Estructura de Pirámide Invertida: Reorganiza el contenido. La información más crucial (el "quién, qué, cuándo, dónde, por qué y cómo") debe estar en el primer párrafo.
-3. Tono: Atractivo, informativo y accesible, despertando curiosidad.
-Estructura la salida con un Título Atractivo, un Lead (Entradilla potente) y el Cuerpo del artículo organizado de mayor a menor relevancia.`
+        prompt: `${SYSTEM_PROMPT}\n\nEscribe un artículo de divulgación basado en el texto base. Mantén un tono 100% humano, cercano y empático. Usa la Pirámide Invertida. Simplifica conceptos complejos con analogías.`
     },
     'script': {
         label: 'Guion para Video (Reel/Short)',
-        prompt: `${SYSTEM_PROMPT}
-Actúa como Guionista de Contenido Educativo. Elabora un guion breve (menos de 1 minuto) para un reel de divulgación científica que explique, de forma clara y atractiva, la investigación proporcionada.
-Estructura el guion en tres partes:
-[Inicio - 0:00 a 0:10]: Un gancho atractivo o pregunta que despierte curiosidad.
-[Desarrollo - 0:10 a 0:40]: Explicación sencilla del impacto social/humano y ejemplos concretos. Evita tecnicismos.
-[Cierre - 0:40 a 0:60]: Cierre inspirador que vincule la labor científica con el bienestar humano. Termina con una frase memorable.`
+        prompt: `${SYSTEM_PROMPT}\n\nElabora un guion natural para un video corto (menos de 1 minuto). Estructura: [Inicio] Gancho, [Desarrollo] Explicación sencilla, [Cierre] Mensaje inspirador y llamado a la acción.`
     },
     'social': {
         label: 'Hilo para Comunidad / Redes',
-        prompt: `${SYSTEM_PROMPT}
-Genera un hilo de 3 posts concisos basados en el texto base. El primero debe ser un gancho potente y ético. Los siguientes desarrollan la idea. El último invita a la reflexión alturada. No uses lenguaje sensacionalista.`
+        prompt: `${SYSTEM_PROMPT}\n\nGenera un hilo de 3 posts para redes. El tono debe ser entusiasta y en primera persona. El primer post es el gancho, los siguientes explican el valor, y el último invita a la reflexión.`
     },
     'summary': {
         label: 'Resumen (Abstract Divulgativo)',
-        prompt: `${SYSTEM_PROMPT}
-Crea un resumen técnico pero accesible (máximo 150 palabras) del texto proporcionado, ideal para ser el abstract público de una investigación indexada.`
+        prompt: `${SYSTEM_PROMPT}\n\nCrea un resumen breve (máximo 150 palabras) del texto base. Fácil de entender para un ciudadano sin formación técnica, pero exacto científicamente.`
     }
 };
 
@@ -161,28 +155,40 @@ const StudioApp = {
     },
 
     async setProjectFocus(projectId) {
-        this.currentPost.projectId = projectId;
-        const select = document.getElementById('active-project-select');
-        select.value = projectId;
+            this.currentPost.projectId = projectId;
+            const select = document.getElementById('active-project-select');
+            select.value = projectId;
 
-        // Verificar DOI para mostrar el Badge de trazabilidad
-        const selectedOption = select.options[select.selectedIndex];
-        const doiBadge = document.getElementById('doi-badge');
-        if (selectedOption && selectedOption.dataset.doi) {
-            doiBadge.classList.remove('badge-hidden');
-            doiBadge.title = `DOI: ${selectedOption.dataset.doi}`;
-        } else {
-            doiBadge.classList.add('badge-hidden');
-        }
-
-        // Si no hay post activo, cargamos la descripción del proyecto al editor como base
-        if (!this.currentPost.id && this.editorInstance.getContent() === '') {
-            const { data } = await this.supabase.from('projects').select('description').eq('id', projectId).single();
-            if(data && data.description) {
-                this.editorInstance.setContent(`<blockquote><strong>Contexto del Proyecto:</strong><br>${data.description}</blockquote><p><br></p>`);
+            // Verificar DOI 
+            const selectedOption = select.options[select.selectedIndex];
+            const doiBadge = document.getElementById('doi-badge');
+            let projectDoi = null;
+            
+            if (selectedOption && selectedOption.dataset.doi && selectedOption.dataset.doi !== 'null') {
+                projectDoi = selectedOption.dataset.doi;
+                doiBadge.classList.remove('badge-hidden');
+                doiBadge.title = `DOI: ${projectDoi}`;
+            } else {
+                doiBadge.classList.add('badge-hidden');
             }
-        }
-    },
+
+            // AUTO-COMPLETAR EL ENLACE DE REDES
+            const linkInput = document.getElementById('social-post-link');
+            if (linkInput) {
+                if (projectDoi) {
+                    linkInput.value = `https://doi.org/${projectDoi}`;
+                } else if (this.currentUserProfile) {
+                    linkInput.value = `https://epistecnologia.com/@${this.currentUserProfile.username}`;
+                }
+            }
+
+            if (!this.currentPost.id && this.editorInstance.getContent() === '') {
+                const { data } = await this.supabase.from('projects').select('description').eq('id', projectId).single();
+                if(data && data.description) {
+                    this.editorInstance.setContent(`<blockquote><strong>Contexto del Proyecto:</strong><br>${data.description}</blockquote><p><br></p>`);
+                }
+            }
+        },
 
     // --- 4. EDITOR MULTIMODAL (TinyMCE) ---
     initializeEditor() {
@@ -306,30 +312,23 @@ const StudioApp = {
         resultsContainer.innerHTML = '';
 
         try {
-            // Utilizamos el endpoint que ya tienes configurado
             const { data, error } = await this.supabase.functions.invoke('generate-text', { 
-                body: { 
-                    textContent: textContent, 
-                    promptType: 'generate_from_instructions', 
-                    customPrompt: customPrompt 
-                } 
+                body: { textContent, promptType: 'generate_from_instructions', customPrompt } 
             });
             if (error) throw error;
             
+            // TODO EL CONTENIDO (sea artículo o hilo) VA AL EDITOR PRINCIPAL
+            // Ya no lo enviamos a la caja de redes.
             const formattedResult = data.result.replace(/\n/g, '<br>');
+            this.editorInstance.setContent(formattedResult);
             
-            // Mostramos el resultado con un botón para insertarlo fácilmente en el editor
-            resultsContainer.innerHTML = `
-                <div class="ai-result-box" style="background: var(--color-surface); padding: 1rem; border-radius: 8px; border: 1px solid var(--color-border); margin-top: 1rem; font-size:0.9rem;">
-                    ${formattedResult}
-                    <button onclick="StudioApp.insertIntoEditor()" class="btn-secondary w-100" style="margin-top: 1rem;">
-                        <i class="fa-solid fa-arrow-right-to-bracket"></i> Añadir al Editor
-                    </button>
-                </div>
-                <div id="hidden-ai-result" style="display:none;">${formattedResult}</div>
-            `;
+            // Disparamos autoguardado
+            this.triggerAutoSave();
+            
+            resultsContainer.innerHTML = '<p style="color: #2ecc71; font-size:0.85rem;"><i class="fa-solid fa-check"></i> Contenido generado en el editor principal. Corta y pega la propuesta de redes en la columna derecha.</p>';
+
         } catch (error) {
-            resultsContainer.innerHTML = '<p style="color: red; font-size:0.85rem;">Hubo un error al contactar a la IA de texto.</p>';
+            resultsContainer.innerHTML = '<p style="color: red; font-size:0.85rem;">Hubo un error al contactar a la IA.</p>';
             console.error(error);
         } finally {
             btn.disabled = false;
@@ -401,20 +400,14 @@ const StudioApp = {
             return;
         }
 
-        // 1. Guardar el estado actual como borrador primero por seguridad
         await this.saveDraft(true);
 
         const socialText = document.getElementById('social-post-text').value.trim();
-        const postToCommunity = document.getElementById('dest-epistecnologia').checked; // Siempre true en UI, pero validamos
+        const postLink = document.getElementById('social-post-link').value.trim();
+        const postToCommunity = document.getElementById('dest-epistecnologia').checked; 
 
         if (postToCommunity && socialText.length === 0) {
             alert("Escribe un mensaje en la caja de Redes Sociales para acompañar tu publicación.");
-            document.getElementById('social-post-text').focus();
-            return;
-        }
-
-        if (socialText.length > 300) {
-            alert("El texto para redes no puede exceder los 300 caracteres.");
             return;
         }
 
@@ -423,18 +416,13 @@ const StudioApp = {
         publishButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Publicando...';
 
         try {
-            // El artículo largo ya se guardó en this.saveDraft(). 
-            // Ahora procesamos la publicación en la Comunidad (Bluesky)
-            const finalUrl = `https://epistecnologia.com/proyectos/${this.currentPost.projectId}/posts/${this.currentPost.id}`;
-            const textForCommunity = `${socialText}\n\n📖 Lee el artículo completo: ${finalUrl}`;
+            // Construimos el texto final con el enlace personalizado
+            const textForCommunity = `${socialText}\n\n📖 Enlace: ${postLink}`;
 
-            // Verificamos credenciales (Como en el código original)
             const { data: creds } = await this.supabase.from('bsky_credentials').select('*').eq('user_id', this.userId).single();
             
             if (creds) {
-                const { error } = await this.supabase.functions.invoke('bsky-create-post', {
-                    body: { postText: textForCommunity },
-                });
+                const { error } = await this.supabase.functions.invoke('bsky-create-post', { body: { postText: textForCommunity }});
                 if (error) throw error;
             } else {
                 const authorInfo = {
@@ -442,18 +430,14 @@ const StudioApp = {
                     handle: null,
                     orcid: this.currentUserProfile.orcid
                 };
-                const { error: botError } = await this.supabase.functions.invoke('bot-create-post', {
-                    body: { postText: textForCommunity, authorInfo },
-                });
+                const { error: botError } = await this.supabase.functions.invoke('bot-create-post', { body: { postText: textForCommunity, authorInfo }});
                 if (botError) throw botError;
             }
 
-            // Cambiar estado en BD a publicado
+            // Cambiar estado a publicado en la BD
             await this.supabase.from('posts').update({ status: 'published', published_at: new Date().toISOString() }).eq('id', this.currentPost.id);
             
-            alert("¡Contenido publicado con éxito! Ya es visible en la comunidad.");
-            // Opcional: Redirigir al dashboard
-            // window.location.href = '/inv/dashboard.html';
+            alert("¡Contenido publicado con éxito en la comunidad!");
             
         } catch (error) {
             console.error("Error publicando:", error);

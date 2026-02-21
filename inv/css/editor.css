@@ -413,3 +413,26 @@ body.dark-theme .distribution-section { border: 1px solid var(--color-border); }
     }
     .col-editor { order: -1; min-height: 500px; } 
 }
+/* --- Ajustes TinyMCE y Móvil --- */
+.col-editor {
+    min-width: 0; /* CRÍTICO: Permite que el contenedor se encoja en móviles */
+    max-width: 100vw;
+    overflow-x: hidden;
+}
+
+/* Forzar que el editor de TinyMCE no desborde */
+.tox-tinymce {
+    width: 100% !important;
+    max-width: 100%;
+}
+
+/* Estilo para el aviso del Editor en Jefe */
+.publish-disclaimer {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    text-align: center;
+    margin-top: 0.8rem;
+    line-height: 1.4;
+    padding: 0 0.5rem;
+}
+.publish-disclaimer i { color: var(--color-accent); margin-right: 0.3rem; }
