@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { encode } from "https://deno.land/std@0.168.0/encoding/base64.ts"
 
 const HF_TOKEN = Deno.env.get("HUGGINGFACE_API_KEY");
 
@@ -9,56 +10,50 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const { prompt, style } = await req.json();
+    const { prompt, style, ratio } = await req.json();
 
-    // Enriquecemos el prompt según el estilo elegido en el editor
+    // 1. Inyección de Estilo (Tu Iluminista Visual)
     let styleModifier = "";
-    if (style === "realistic") styleModifier = "photorealistic, highly detailed, 8k resolution, scientific photography, masterpiece";
-    if (style === "infographic") styleModifier = "clean vector infographic style, flat colors, educational illustration, white background";
-    if (style === "minimalist") styleModifier = "minimalist abstract, clean background, simple shapes, scientific concept";
+    if (style === "editorial") styleModifier = "oil painting masterpiece, museum quality, visible brushstrokes, canvas texture, classical art style (Baroque/Neoclassicism/Romanticism), emotional lighting, chiaroscuro, no digital generic look, highly artistic";
+    if (style === "realistic") styleModifier = "photorealistic, highly detailed, 8k resolution, scientific photography, macro lens";
+    if (style === "vector") styleModifier = "clean vector infographic style, flat colors, sharp edges, 2d educational illustration";
+    if (style === "cinematic") styleModifier = "cinematic lighting, movie still, dramatic shadows, epic composition, 35mm lens";
     
-    const finalPrompt = `${prompt}, ${styleModifier}`;
+    // 2. Control de Proporciones (Aspect Ratio)
+    let width = 1024, height = 1024;
+    let ratioPrompt = "";
+    if (ratio === "16:9") { width = 1024; height = 576; ratioPrompt = "wide angle, horizontal format"; }
+    if (ratio === "9:16") { width = 576; height = 1024; ratioPrompt = "vertical portrait format"; }
 
-    console.log("Enviando petición a Hugging Face...");
-    
+    const finalPrompt = `${prompt}, ${styleModifier}, ${ratioPrompt}`;
+
     const response = await fetch(
-      "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
+      "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell",
       {
-        headers: { 
-            Authorization: `Bearer ${HF_TOKEN}`, 
-            "Content-Type": "application/json" 
-        },
+        headers: { Authorization: `Bearer ${HF_TOKEN}`, "Content-Type": "application/json" },
         method: "POST",
-        body: JSON.stringify({ inputs: finalPrompt }),
+        body: JSON.stringify({ 
+            inputs: finalPrompt,
+            parameters: { width: width, height: height } // Le pedimos a la IA el tamaño exacto
+        }),
       }
     );
 
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Error de Hugging Face: ${errorText}`);
-    }
+    if (!response.ok) throw new Error(await response.text());
 
-    // Convertimos la imagen recibida a Base64 para enviarla al navegador
     const imageBlob = await response.blob();
     const arrayBuffer = await imageBlob.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-    const imageBase64 = `data:image/jpeg;base64,${base64}`;
+    const base64 = encode(new Uint8Array(arrayBuffer)); 
 
-    return new Response(JSON.stringify({ image: imageBase64 }), {
+    return new Response(JSON.stringify({ image: `data:image/jpeg;base64,${base64}` }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 
   } catch (error) {
-    console.error('Error en Edge Function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
-    });
+    return new Response(JSON.stringify({ error: error.message }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 });
   }
 })

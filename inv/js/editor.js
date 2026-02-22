@@ -4,15 +4,24 @@
 
 // --- 1. CONFIGURACIÓN DEL SISTEMA (Formato Quirúrgico y Directo) ---
 const SYSTEM_PROMPT = `Eres un Asistente Experto en Comunicación Científica de Epistecnología. 
-REGLA ABSOLUTA: NO saludes, NO te despidas, NO uses frases introductorias (ej. "Aquí tienes tu texto"). Devuelve ÚNICAMENTE el contenido solicitado.
+REGLA ABSOLUTA: NO saludes, NO te despidas. Devuelve ÚNICAMENTE el contenido solicitado.
 
-ESTRUCTURA OBLIGATORIA: Siempre divide tu respuesta exactamente en estas dos partes usando etiquetas HTML:
+ESTRUCTURA OBLIGATORIA: Siempre divide tu respuesta exactamente en estas TRES partes usando etiquetas HTML:
 
 <h3><span style="color: #b72a1e;">[PROPUESTA PARA REDES]</span></h3>
-<p><em>(Escribe aquí un gancho breve, máximo 280 caracteres, que el usuario pueda copiar y pegar en la caja de redes sociales de la derecha).</em></p>
+<p><em>(Escribe aquí un gancho breve, máximo 250 caracteres, para copiar en redes).</em></p>
 <hr>
 <h3>[CONTENIDO PRINCIPAL]</h3>
-(Escribe aquí el cuerpo principal: el artículo, el hilo o el guion, usando formato HTML básico como <h2>, <p>, <strong>, <ul> para que se vea bien en el editor).`;
+(Escribe aquí el cuerpo principal usando formato HTML básico como <h2>, <p>, <strong>).
+<hr>
+<h3>[SUGERENCIAS VISUALES PARA LA IA]</h3>
+<p><em>(Crea 2 sugerencias de Prompts muy descriptivos en INGLÉS para generar imágenes que acompañen este texto).</em></p>
+<ul>
+<li><strong>Prompt 1:</strong> [Escribe el prompt en inglés aquí]</li>
+<li><strong>Prompt 2:</strong> [Escribe el prompt en inglés aquí]</li>
+</ul>`;
+
+// Mantén tu objeto agentPrompts tal cual lo tienes.
 
 const agentPrompts = {
     'text': {
@@ -42,6 +51,10 @@ const StudioApp = {
     saveTimeout: null, // Para el autoguardado silencioso
 
     async init() {
+        // Respetar tema guardado o del sistema, sin forzar
+        const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        if (savedTheme === 'dark') document.body.classList.add('dark-theme');
+
         const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
         this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -57,16 +70,9 @@ const StudioApp = {
         this.addEventListeners();
         await this.loadUserProjects();
 
-        // Lógica de URL para mantener trazabilidad
         const urlParams = new URLSearchParams(window.location.search);
-        const projectId = urlParams.get('projectId');
-        const postId = urlParams.get('postId');
-
-        if (postId) {
-            await this.loadPost(postId);
-        } else if (projectId) {
-            this.setProjectFocus(projectId);
-        }
+        if (urlParams.get('postId')) await this.loadPost(urlParams.get('postId'));
+        else if (urlParams.get('projectId')) this.setProjectFocus(urlParams.get('projectId'));
     },
 
     // --- 2. CONFIGURACIÓN DE LA INTERFAZ Y PESTAÑAS ---
@@ -120,6 +126,15 @@ const StudioApp = {
             if(e.target.value) this.setProjectFocus(e.target.value);
         });
 
+        document.getElementById('theme-toggle')?.addEventListener('click', () => {
+            document.body.classList.toggle('dark-theme');
+            const isDark = document.body.classList.contains('dark-theme');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            
+            // Nota: TinyMCE requiere recargar la página para cambiar su estilo interno (iframe),
+            // pero el resto de tu plataforma web sí cambiará inmediatamente.
+        });
+
         // Autoguardado al escribir (Debounce)
         const titleInput = document.getElementById('post-title');
         titleInput?.addEventListener('input', () => this.triggerAutoSave());
@@ -168,40 +183,32 @@ const StudioApp = {
     },
 
     async setProjectFocus(projectId) {
-            this.currentPost.projectId = projectId;
-            const select = document.getElementById('active-project-select');
-            select.value = projectId;
+        this.currentPost.projectId = projectId;
+        const select = document.getElementById('active-project-select');
+        select.value = projectId;
 
-            // Verificar DOI 
-            const selectedOption = select.options[select.selectedIndex];
-            const doiBadge = document.getElementById('doi-badge');
-            let projectDoi = null;
-            
-            if (selectedOption && selectedOption.dataset.doi && selectedOption.dataset.doi !== 'null') {
-                projectDoi = selectedOption.dataset.doi;
-                doiBadge.classList.remove('badge-hidden');
-                doiBadge.title = `DOI: ${projectDoi}`;
-            } else {
-                doiBadge.classList.add('badge-hidden');
-            }
+        // Mostrar Badge de DOI
+        const selectedOption = select.options[select.selectedIndex];
+        const doiBadge = document.getElementById('doi-badge');
+        let projectDoi = null;
+        if (selectedOption && selectedOption.dataset.doi && selectedOption.dataset.doi !== 'null') {
+            projectDoi = selectedOption.dataset.doi;
+            doiBadge.classList.remove('badge-hidden');
+            doiBadge.title = `DOI: ${projectDoi}`;
+        } else {
+            doiBadge.classList.add('badge-hidden');
+        }
 
-            // AUTO-COMPLETAR EL ENLACE DE REDES
-            const linkInput = document.getElementById('social-post-link');
-            if (linkInput) {
-                if (projectDoi) {
-                    linkInput.value = `https://doi.org/${projectDoi}`;
-                } else if (this.currentUserProfile) {
-                    linkInput.value = `https://epistecnologia.com/@${this.currentUserProfile.username}`;
-                }
-            }
+        // AUTO-COMPLETAR REDES
+        const linkInput = document.getElementById('social-post-link');
+        if (linkInput) linkInput.value = projectDoi ? `https://doi.org/${projectDoi}` : `https://epistecnologia.com/@${this.currentUserProfile?.username || ''}`;
 
-            if (!this.currentPost.id && this.editorInstance.getContent() === '') {
-                const { data } = await this.supabase.from('projects').select('description').eq('id', projectId).single();
-                if(data && data.description) {
-                    this.editorInstance.setContent(`<blockquote><strong>Contexto del Proyecto:</strong><br>${data.description}</blockquote><p><br></p>`);
-                }
-            }
-        },
+        // CORRECCIÓN: Si cambias de proyecto, cargar el nuevo contexto en el editor
+        const { data } = await this.supabase.from('projects').select('description').eq('id', projectId).single();
+        if(data && data.description) {
+            this.editorInstance.setContent(`<blockquote><strong>Contexto del Proyecto:</strong><br>${data.description}</blockquote><p><br></p>`);
+        }
+    },
 
     // --- 4. EDITOR MULTIMODAL (TinyMCE) ---
     initializeEditor() {
@@ -359,77 +366,111 @@ const StudioApp = {
     async callImageAI() {
         const promptInput = document.getElementById('ai-image-prompt').value.trim();
         const style = document.getElementById('ai-image-style').value;
+        const ratio = document.getElementById('ai-image-ratio').value; // NUEVO
         const resultsContainer = document.getElementById('ai-image-results');
 
         if (promptInput.length < 10) {
-            resultsContainer.innerHTML = '<p style="color: red; font-size:0.85rem;">Describe la imagen con al menos 10 caracteres.</p>';
-            return;
+            resultsContainer.innerHTML = '<p style="color: red; font-size:0.85rem;">Describe la imagen con al menos 10 caracteres.</p>'; return;
         }
 
         const btn = document.getElementById('ai-generate-image-btn');
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Pintando...';
+        btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Pintando...';
         resultsContainer.innerHTML = '';
 
         try {
-            // 1. Llamamos a nuestra propia Edge Function (Segura)
+            // Pasamos el nuevo parámetro ratio a la Edge Function
             const { data, error } = await this.supabase.functions.invoke('generate-image', { 
-                body: { prompt: promptInput, style: style } 
+                body: { prompt: promptInput, style: style, ratio: ratio } 
             });
             if (error) throw error;
 
-            // 2. Cargamos la imagen base64 devuelta por Hugging Face y le estampamos la marca
             const watermarkedImageData = await new Promise((resolve, reject) => {
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
+                    canvas.width = img.width; canvas.height = img.height;
                     const ctx = canvas.getContext('2d');
-
-                    // Dibujar la imagen
                     ctx.drawImage(img, 0, 0);
 
-                    // Sello de Agua "IA EPT"
-                    const watermarkText = "IA EPT";
+                    // NUEVA MARCA DE AGUA CON EMOJI ✨
+                    const watermarkText = "IA EPT ✨";
                     ctx.font = "bold 28px Arial";
-                    ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
-                    ctx.textAlign = "right";
-                    ctx.textBaseline = "bottom";
-                    ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
-                    ctx.shadowBlur = 8;
-                    ctx.shadowOffsetX = 2;
-                    ctx.shadowOffsetY = 2;
+                    ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+                    ctx.textAlign = "right"; ctx.textBaseline = "bottom";
+                    ctx.shadowColor = "rgba(0, 0, 0, 0.9)"; ctx.shadowBlur = 8; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2;
 
                     ctx.fillText(watermarkText, canvas.width - 20, canvas.height - 20);
                     resolve(canvas.toDataURL('image/jpeg', 0.9));
                 };
-                img.onerror = () => reject(new Error("Error procesando la imagen descargada."));
-                img.src = data.image; // Usamos el base64 devuelto por la función
+                img.onerror = () => reject(new Error("Error procesando imagen."));
+                img.src = data.image; 
             });
 
-            // 3. Añadir a la bandeja
             const tray = document.getElementById('media-gallery');
-            const emptyText = tray.querySelector('.empty-tray-text');
-            if(emptyText) emptyText.remove();
+            if(tray.querySelector('.empty-tray-text')) tray.querySelector('.empty-tray-text').remove();
 
+            // NUEVO: onclick para abrir en grande (Lightbox)
             const imgHtml = `
                 <div style="position:relative; width: 120px; height: 90px; flex-shrink: 0; border-radius: 6px; overflow: hidden; border: 1px solid var(--color-border); cursor: grab;">
                     <img src="${watermarkedImageData}" style="width:100%; height:100%; object-fit:cover;" 
+                         onclick="document.getElementById('lightbox-img').src=this.src; document.getElementById('lightbox-modal').style.display='flex';"
                          draggable="true" 
                          ondragstart="event.dataTransfer.setData('text/html', '<img src=\\'${watermarkedImageData}\\' style=\\'max-width:100%; border-radius:8px;\\'>')">
                 </div>
             `;
             tray.insertAdjacentHTML('afterbegin', imgHtml);
-            
-            resultsContainer.innerHTML = '<p style="color: #2ecc71; font-size:0.85rem; margin-top: 1rem;"><i class="fa-solid fa-check"></i> Imagen generada. Arrástrala al editor.</p>';
+            resultsContainer.innerHTML = '<p style="color: #2ecc71; font-size:0.85rem; margin-top: 1rem;"><i class="fa-solid fa-check"></i> ¡Lista! Haz clic para ampliar o arrástrala al editor.</p>';
 
         } catch (error) {
-            console.error(error);
             resultsContainer.innerHTML = `<p style="color: red; font-size:0.85rem;">Error al generar imagen. Intenta de nuevo.</p>`;
         } finally {
+            btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-palette"></i> Pintar Imagen';
+        }
+    },
+
+    // --- NUEVAS FUNCIONES DE LA GALERÍA ---
+    downloadLocalImage() {
+        const imgSrc = document.getElementById('lightbox-img').src;
+        const a = document.createElement('a');
+        a.href = imgSrc;
+        a.download = `EPT_Generado_${Date.now()}.jpg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    },
+
+    async uploadToImgBB() {
+        const btn = document.getElementById('upload-imgbb-btn');
+        const imgSrc = document.getElementById('lightbox-img').src; // Es la imagen Base64
+        
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Subiendo...';
+
+        try {
+            const base64Data = imgSrc.split(',')[1];
+            const formData = new FormData();
+            formData.append("image", base64Data);
+            
+            const IMGBB_API_KEY = "89d606fc7588367140913f93a4c89785"; // Reemplaza esto
+            const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+                method: "POST",
+                body: formData
+            });
+            
+            if (!response.ok) throw new Error("Fallo al subir a ImgBB");
+            const data = await response.json();
+            const cleanUrl = data.data.url;
+
+            // Incrustamos la imagen limpia en el editor
+            this.editorInstance.insertContent(`<p><img src="${cleanUrl}" alt="Imagen generada por IA EPT" style="max-width: 100%; border-radius: 8px;"/></p>`);
+            
+            alert("¡Imagen subida e insertada en tu artículo con éxito!");
+            document.getElementById('lightbox-modal').style.display='none';
+        } catch (error) {
+            alert(`Error al subir la imagen: ${error.message}`);
+        } finally {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-palette"></i> Generar Imagen';
+            btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Usar en el Artículo (Subir a la nube)';
         }
     },
 
@@ -493,7 +534,7 @@ const StudioApp = {
                     const { data: creds } = await this.supabase.from('bsky_credentials').select('*').eq('user_id', this.userId).single();
                     
                     if (creds) {
-                        const { error } = await this.supabase.functions.invoke('bsky-create-post', { body: { postText: textForCommunity }});
+                        const { error } = await this.supabase.functions.invoke('bsky-create-post', { body: { postText: textForCommunity, postLink: postLink }});
                         if (error) throw error;
                     } else {
                         const authorInfo = {
@@ -501,7 +542,7 @@ const StudioApp = {
                             handle: null,
                             orcid: this.currentUserProfile.orcid
                         };
-                        const { error: botError } = await this.supabase.functions.invoke('bot-create-post', { body: { postText: textForCommunity, authorInfo }});
+                        const { error: botError } = await this.supabase.functions.invoke('bot-create-post', { body: { postText: textForCommunity, authorInfo, postLink: postLink }});
                         if (botError) throw botError;
                     }
                 } catch (bskyErr) {
