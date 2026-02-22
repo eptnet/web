@@ -357,49 +357,76 @@ const StudioApp = {
     },
 
     async callImageAI() {
-        const prompt = document.getElementById('ai-image-prompt').value.trim();
+        const promptInput = document.getElementById('ai-image-prompt').value.trim();
         const style = document.getElementById('ai-image-style').value;
         const resultsContainer = document.getElementById('ai-image-results');
 
-        if (prompt.length < 10) {
+        if (promptInput.length < 10) {
             resultsContainer.innerHTML = '<p style="color: red; font-size:0.85rem;">Describe la imagen con al menos 10 caracteres.</p>';
             return;
         }
 
         const btn = document.getElementById('ai-generate-image-btn');
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creando...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Pintando...';
         resultsContainer.innerHTML = '';
 
-        // NOTA: Aquí preparamos la llamada a la FUTURA Edge Function de Imágenes
         try {
-            /* const { data, error } = await this.supabase.functions.invoke('generate-image', { 
-                body: { prompt: prompt, style: style } 
+            // 1. Llamamos a nuestra propia Edge Function (Segura)
+            const { data, error } = await this.supabase.functions.invoke('generate-image', { 
+                body: { prompt: promptInput, style: style } 
             });
             if (error) throw error;
-            const imageUrl = data.url;
-            */
-            
-            // Simulación temporal para ver cómo funciona la UI y el Drag&Drop
-            await new Promise(r => setTimeout(r, 2000));
-            const dummyImageUrl = `https://picsum.photos/seed/${Math.random()}/400/300`; 
 
-            // Añadir a la bandeja multimedia (Drag & Drop)
+            // 2. Cargamos la imagen base64 devuelta por Hugging Face y le estampamos la marca
+            const watermarkedImageData = await new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+
+                    // Dibujar la imagen
+                    ctx.drawImage(img, 0, 0);
+
+                    // Sello de Agua "IA EPT"
+                    const watermarkText = "IA EPT";
+                    ctx.font = "bold 28px Arial";
+                    ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+                    ctx.textAlign = "right";
+                    ctx.textBaseline = "bottom";
+                    ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
+                    ctx.shadowBlur = 8;
+                    ctx.shadowOffsetX = 2;
+                    ctx.shadowOffsetY = 2;
+
+                    ctx.fillText(watermarkText, canvas.width - 20, canvas.height - 20);
+                    resolve(canvas.toDataURL('image/jpeg', 0.9));
+                };
+                img.onerror = () => reject(new Error("Error procesando la imagen descargada."));
+                img.src = data.image; // Usamos el base64 devuelto por la función
+            });
+
+            // 3. Añadir a la bandeja
             const tray = document.getElementById('media-gallery');
             const emptyText = tray.querySelector('.empty-tray-text');
             if(emptyText) emptyText.remove();
 
             const imgHtml = `
                 <div style="position:relative; width: 120px; height: 90px; flex-shrink: 0; border-radius: 6px; overflow: hidden; border: 1px solid var(--color-border); cursor: grab;">
-                    <img src="${dummyImageUrl}" style="width:100%; height:100%; object-fit:cover;" draggable="true" ondragstart="event.dataTransfer.setData('text/html', '<img src=\\'${dummyImageUrl}\\' style=\\'max-width:100%; border-radius:8px;\\'>')">
+                    <img src="${watermarkedImageData}" style="width:100%; height:100%; object-fit:cover;" 
+                         draggable="true" 
+                         ondragstart="event.dataTransfer.setData('text/html', '<img src=\\'${watermarkedImageData}\\' style=\\'max-width:100%; border-radius:8px;\\'>')">
                 </div>
             `;
             tray.insertAdjacentHTML('afterbegin', imgHtml);
             
-            resultsContainer.innerHTML = '<p style="color: #2ecc71; font-size:0.85rem; margin-top: 1rem;"><i class="fa-solid fa-check"></i> Imagen enviada a tu bandeja. Arrástrala al editor.</p>';
+            resultsContainer.innerHTML = '<p style="color: #2ecc71; font-size:0.85rem; margin-top: 1rem;"><i class="fa-solid fa-check"></i> Imagen generada. Arrástrala al editor.</p>';
 
         } catch (error) {
-            resultsContainer.innerHTML = '<p style="color: red; font-size:0.85rem;">Error al generar imagen.</p>';
+            console.error(error);
+            resultsContainer.innerHTML = `<p style="color: red; font-size:0.85rem;">Error al generar imagen. Intenta de nuevo.</p>`;
         } finally {
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-solid fa-palette"></i> Generar Imagen';
