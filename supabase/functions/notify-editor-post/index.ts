@@ -11,6 +11,7 @@ serve(async (req) => {
   }
 
   try {
+    console.log("¡Ding dong! El Webhook ha tocado la puerta.");
     // Supabase Webhooks envían la información dentro de 'record' (nuevo) y 'old_record' (viejo)
     const payload = await req.json()
     const newPost = payload.record

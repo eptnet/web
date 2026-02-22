@@ -124,16 +124,29 @@ const StudioApp = {
         const titleInput = document.getElementById('post-title');
         titleInput?.addEventListener('input', () => this.triggerAutoSave());
         
-        // Redes Sociales - Contador de caracteres
+        // Redes Sociales - Contador de caracteres inteligente
         const socialText = document.getElementById('social-post-text');
         const charCount = document.getElementById('social-char-count');
+        const linkInput = document.getElementById('social-post-link');
+        
         if(socialText && charCount) {
-            socialText.addEventListener('input', () => {
-                const length = socialText.value.length;
-                charCount.textContent = length;
-                if(length > 300) charCount.classList.add('limit-reached');
-                else charCount.classList.remove('limit-reached');
-            });
+            const updateCounter = () => {
+                // Calculamos el tamaño del enlace + el texto adicional ("\n\n📖 Enlace: " son aprox 14 caracteres)
+                const linkLen = (linkInput && linkInput.value.trim().length > 0) ? linkInput.value.trim().length + 14 : 0;
+                const totalLength = socialText.value.length + linkLen;
+                
+                charCount.textContent = totalLength;
+                
+                if(totalLength > 300) {
+                    charCount.classList.add('limit-reached');
+                } else {
+                    charCount.classList.remove('limit-reached');
+                }
+            };
+
+            // Escuchamos ambos inputs para que el contador sea preciso en todo momento
+            socialText.addEventListener('input', updateCounter);
+            if(linkInput) linkInput.addEventListener('input', updateCounter);
         }
     },
 
@@ -400,10 +413,8 @@ const StudioApp = {
             return;
         }
 
-        await this.saveDraft(true);
-
         const socialText = document.getElementById('social-post-text').value.trim();
-        const postLink = document.getElementById('social-post-link').value.trim();
+        const postLink = document.getElementById('social-post-link')?.value.trim() || "";
         const postToCommunity = document.getElementById('dest-epistecnologia').checked; 
 
         if (postToCommunity && socialText.length === 0) {
@@ -411,37 +422,77 @@ const StudioApp = {
             return;
         }
 
+        // --- SOLUCIÓN AL BUG DE LOS 300 CARACTERES ---
+        // Construimos el texto final antes para medirlo completo
+        let textForCommunity = socialText;
+        if (postLink) {
+            textForCommunity += `\n\n📖 Enlace: ${postLink}`;
+        }
+
+        // Verificamos el límite real de Bluesky (300 caracteres)
+        if (postToCommunity && textForCommunity.length > 300) {
+            const overflow = textForCommunity.length - 300;
+            alert(`⚠️ El texto para redes (incluyendo el enlace automático) supera el límite de 300 caracteres de Bluesky.\n\nTe pasaste por ${overflow} caracteres. Por favor, acorta tu mensaje en la columna derecha.`);
+            return; // Detenemos la ejecución aquí, sin lanzar errores al servidor
+        }
+
+        // Guardamos primero
+        await this.saveDraft(true);
+
         const publishButton = document.getElementById('publish-btn');
         publishButton.disabled = true;
         publishButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Publicando...';
 
         try {
-            // Construimos el texto final con el enlace personalizado
-            const textForCommunity = `${socialText}\n\n📖 Enlace: ${postLink}`;
-
-            const { data: creds } = await this.supabase.from('bsky_credentials').select('*').eq('user_id', this.userId).single();
-            
-            if (creds) {
-                const { error } = await this.supabase.functions.invoke('bsky-create-post', { body: { postText: textForCommunity }});
-                if (error) throw error;
-            } else {
-                const authorInfo = {
-                    displayName: this.currentUserProfile.display_name,
-                    handle: null,
-                    orcid: this.currentUserProfile.orcid
-                };
-                const { error: botError } = await this.supabase.functions.invoke('bot-create-post', { body: { postText: textForCommunity, authorInfo }});
-                if (botError) throw botError;
+            // Construimos el texto final antes para medirlo completo
+            let textForCommunity = socialText;
+            if (postLink) {
+                textForCommunity += `\n\n📖 Enlace: ${postLink}`;
             }
 
-            // Cambiar estado a publicado en la BD
-            await this.supabase.from('posts').update({ status: 'published', published_at: new Date().toISOString() }).eq('id', this.currentPost.id);
-            
-            alert("¡Contenido publicado con éxito en la comunidad!");
+            // PASO 1: PRIMERO ACTUALIZAMOS LA BASE DE DATOS
+            // CORRECCIÓN: Usamos 'updated_at' porque 'published_at' no existe en tu tabla posts
+            const { error: dbError } = await this.supabase.from('posts').update({ 
+                status: 'published', 
+                updated_at: new Date().toISOString() 
+            }).eq('id', this.currentPost.id);
+
+            if (dbError) throw dbError; // Si falla la BD, saltamos al catch principal
+
+            // PASO 2: INTENTAMOS PUBLICAR EN BLUESKY (Aislado para no romper la app si falla)
+            let bskyErrorMsg = null;
+            if (postToCommunity) {
+                try {
+                    const { data: creds } = await this.supabase.from('bsky_credentials').select('*').eq('user_id', this.userId).single();
+                    
+                    if (creds) {
+                        const { error } = await this.supabase.functions.invoke('bsky-create-post', { body: { postText: textForCommunity }});
+                        if (error) throw error;
+                    } else {
+                        const authorInfo = {
+                            displayName: this.currentUserProfile.display_name,
+                            handle: null,
+                            orcid: this.currentUserProfile.orcid
+                        };
+                        const { error: botError } = await this.supabase.functions.invoke('bot-create-post', { body: { postText: textForCommunity, authorInfo }});
+                        if (botError) throw botError;
+                    }
+                } catch (bskyErr) {
+                    console.error("Fallo interno en Bluesky:", bskyErr);
+                    bskyErrorMsg = bskyErr.message || "La función bsky-create-post falló.";
+                }
+            }
+
+            // PASO 3: INFORMAR AL USUARIO
+            if (bskyErrorMsg) {
+                alert(`⚠️ El artículo fue publicado y enviado al Editor, PERO falló la publicación en redes. Motivo: ${bskyErrorMsg}`);
+            } else {
+                alert("¡Contenido publicado con éxito en la comunidad y enviado al Editor!");
+            }
             
         } catch (error) {
-            console.error("Error publicando:", error);
-            alert(`Hubo un error al publicar: ${error.message}`);
+            console.error("Error crítico publicando:", error);
+            alert(`Hubo un error crítico al guardar la publicación: ${error.message}`);
         } finally {
             publishButton.disabled = false;
             publishButton.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Publicar Ahora';
