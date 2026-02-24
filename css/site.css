@@ -1,356 +1,338 @@
+/* =================================================================
+ * ARCHIVO ACTUALIZADO: /css/site.css (Bento CV Inmersivo)
+ * ================================================================= */
+
 :root {
-    --primary-color: #3B82F6;
-    --text-color: #1e293b;
-    --background-color: #f8fafc;
-    --surface-color: #ffffff;
-    --border-color: #e2e8f0;
+    --primary-color: #b72a1e;
+    --primary-hover: #d83526;
+    --background-color: #0a0a0a; /* Negro profundo cinematográfico */
+    --surface-color: #141414; /* Gris muy oscuro para las cajas Bento */
+    --surface-hover: #1f1f1f;
+    --text-color: #f3f4f6;
+    --text-muted: #9ca3af;
+    --border-color: rgba(255, 255, 255, 0.05);
+    --border-radius-bento: 24px;
+    --transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    margin: 0;
-    background-color: var(--background-color);
+    font-family: 'Inter', sans-serif;
     color: var(--text-color);
+    background-color: var(--background-color);
+    margin: 0; line-height: 1.6;
+    overflow-x: hidden;
 }
 
-/* --- NUEVO: ESTILOS PARA EL MENÚ DE NAVEGACIÓN --- */
+.text-accent { color: var(--primary-color); }
+a { text-decoration: none; color: inherit; }
+
+/* --- NAVEGACIÓN FLOTANTE INTELIGENTE --- */
 .site-nav {
-    position: sticky;
-    top: 0;
-    background-color: rgba(123, 121, 121, 0.296);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--border-color);
-    z-index: 999;
-    padding: 0 2rem;
+    position: fixed; top: 0; width: 100%; z-index: 1000;
+    padding: 1.5rem 0; transition: all var(--transition);
+    background: transparent;
 }
-.nav-content {
-    max-width: 900px;
-    margin: 0 auto;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    height: 60px;
+.site-nav.scrolled {
+    background-color: rgba(10, 10, 10, 0.85); backdrop-filter: blur(15px);
+    padding: 1rem 0; border-bottom: 1px solid var(--border-color);
 }
-.nav-project-title {
-    font-weight: 600;
-}
-.site-nav ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    gap: 1.5rem;
-}
-.site-nav a {
-    text-decoration: none;
-    color: var(--text-light-color);
-    font-weight: 500;
-    padding: 0.5rem 0;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
-}
-.site-nav a:hover,
-.site-nav a.active {
-    color: var(--primary-color);
-    border-bottom-color: var(--primary-color);
-}
+.nav-content { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 2rem;}
+.nav-project-title { font-weight: 700; font-size: 1.2rem; opacity: 0; transition: opacity var(--transition); }
+.site-nav.scrolled .nav-project-title { opacity: 1; }
+.site-nav ul { display: flex; gap: 2rem; list-style: none; margin: 0; padding: 0; }
+.site-nav a { color: var(--text-muted); font-weight: 500; font-size: 0.95rem; transition: var(--transition); }
+.site-nav a:hover, .site-nav a.active { color: #fff; }
 
-/* IMPORTANTE: Ajuste para que el menú no tape los títulos */
-.site-section {
-    scroll-margin-top: 80px; /* Altura del menú + un margen */
+/* --- PORTADA CINEMÁTICA --- */
+.cover-cinematic {
+    height: 100vh; width: 100%; position: relative;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 0 2rem 5rem 2rem; box-sizing: border-box;
+    background-size: cover; background-position: center; background-attachment: fixed;
 }
-
-/* --- SECCIÓN DE PORTADA (Sin cambios) --- */
-.cover { height: 60vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 2rem; background-size: cover; background-position: center; color: white; position: relative; }
-.cover::before { 
-    content: ''; 
-    position: absolute; 
-    top: 0; 
-    left: 0; 
-    right: 0; 
-    bottom: 0; 
-    background-color: rgba(0, 0, 0, 0.5);
-    border-radius: 40px; 
+.cover-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(0deg, var(--background-color) 0%, rgba(10,10,10,0.6) 40%, rgba(10,10,10,0.2) 100%);
 }
-.cover-content { position: relative; max-width: 800px; }
-#cover-headline { font-size: clamp(2rem, 5vw, 3.5rem); margin: 0; }
+.cover-content { position: relative; z-index: 2; max-width: 1200px; margin: 0 auto; width: 100%; }
+.hero-badge .badge { background: rgba(255,255,255,0.1); backdrop-filter: blur(5px); padding: 8px 16px; border-radius: 50px; font-size: 0.85rem; font-weight: 600; display: inline-block; margin-bottom: 1.5rem; border: 1px solid rgba(255,255,255,0.1); }
+#cover-headline { font-family: 'Playfair Display', serif; font-size: clamp(3rem, 6vw, 5.5rem); font-weight: 700; line-height: 1.1; margin: 0 0 1rem 0; letter-spacing: -1px; text-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+.lead-text { font-size: 1.2rem; color: var(--text-muted); max-width: 600px; margin-bottom: 2.5rem; }
 
-/* --- CONTENIDO PRINCIPAL (Sin cambios) --- */
-.site-container {
-    max-width: 900px;
-    margin: -5rem auto 2rem auto;
-    background-color: var(--surface-color); /* Usamos la variable para que funcione con el modo oscuro */
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    padding: 2rem;
-    position: relative;
-    z-index: 10;
-}
-.site-section { padding: 2.5rem 0; border-bottom: 1px solid var(--border-color); }
-.site-section:last-of-type { border-bottom: none; }
-.site-section h2 { font-size: 1.8rem; margin-bottom: 1.5rem; }
-.prose { line-height: 1.7; font-size: 1.1rem; }
-.prose p { margin-top: 0; }
+/* BOTONES */
+.btn { display: inline-flex; align-items: center; justify-content: center; padding: 14px 32px; border-radius: 50px; font-weight: 600; transition: var(--transition); border: none; cursor: pointer; gap: 8px; }
+.btn-primary { background-color: var(--primary-color); color: #fff; }
+.btn-primary:hover { background-color: var(--primary-hover); transform: translateY(-3px); box-shadow: 0 10px 25px rgba(183, 42, 30, 0.4); }
 
-/* --- GRIDS PARA TARJETAS (Actualizado) --- */
-.team-grid, .card-grid {
+/* --- BENTO GRID ORGÁNICA --- */
+.container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+.bento-grid {
     display: grid;
+    grid-template-columns: repeat(12, 1fr);
     gap: 1.5rem;
+    margin-top: -2rem; /* Sube ligeramente sobre la portada */
+    position: relative; z-index: 10;
 }
-.team-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
-.card-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.bento-box {
+    background-color: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-bento);
+    padding: 2.5rem;
+    display: flex; flex-direction: column;
+    transition: var(--transition);
+}
+.bento-box:hover { border-color: rgba(255,255,255,0.15); box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+.span-4 { grid-column: span 4; }
+.span-6 { grid-column: span 6; }
+.span-8 { grid-column: span 8; }
+.span-12 { grid-column: span 12; }
 
-/* --- ESTILOS DE TARJETAS (Actualizado) --- */
-.card, .researcher-card-btn { 
-    border: 1px solid var(--border-color); 
-    border-radius: 8px; 
-    transition: box-shadow 0.2s, transform 0.2s; 
-    background-color: white; 
-}
-.card:hover, .researcher-card-btn:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.08); transform: translateY(-3px); }
+.bento-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.5rem; }
+.bento-header h2 { font-size: 1.5rem; font-weight: 600; margin: 0; }
+.bento-header i { font-size: 1.5rem; }
 
-/* Tarjeta de Sesión (Nueva y Mejorada) */
-.session-card {
-    display: block;
-    text-decoration: none;
-    color: inherit;
-}
-.session-card-image {
-    width: 100%;
-    height: 180px;
-    object-fit: cover;
-    border-radius: 8px 8px 0 0;
-    background-color: #e2e8f0;
-}
-.session-card-content {
-    padding: 1.5rem;
-}
-.session-card-content h3 { margin: 0 0 0.5rem 0; }
-.session-card-content p { margin: 0; color: #64748b; }
+/* Tipografía de contenido */
+.prose { font-size: 1.1rem; color: var(--text-muted); line-height: 1.8; }
+.prose p { margin-top: 0; }
+.prose strong { color: var(--text-color); }
+.prose img { max-width: 100%; border-radius: 12px; margin: 1rem 0; }
 
-/* Tarjeta de Investigador (Ahora es un botón) */
-.researcher-card-btn {
-    padding: 1.5rem;
+/* --- COMPONENTES DEL BENTO --- */
+
+/* Evento Principal (Tarjeta Gigante) */
+.main-event-card {
+    position: relative; overflow: hidden; padding: 0; min-height: 350px;
+    display: flex; align-items: flex-end; cursor: pointer;
+}
+.main-event-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s ease; opacity: 0.6; }
+.main-event-card:hover .main-event-bg { transform: scale(1.05); opacity: 0.8; }
+.main-event-content { position: relative; z-index: 2; padding: 2.5rem; background: linear-gradient(0deg, rgba(20,20,20,0.9) 0%, transparent 100%); width: 100%; }
+.main-event-content h3 { font-family: 'Playfair Display', serif; font-size: 2.5rem; margin: 0 0 10px 0; color: #fff; }
+
+/* Lista de Equipo */
+.team-list { display: flex; flex-direction: column; gap: 1rem; }
+.team-member { display: flex; align-items: center; gap: 15px; padding: 10px; border-radius: 12px; transition: var(--transition); cursor: pointer; }
+.team-member:hover { background-color: var(--surface-hover); }
+.team-member img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; }
+.team-member h4 { margin: 0; font-size: 1rem; color: #fff; }
+.team-member span { font-size: 0.85rem; color: var(--text-muted); }
+
+/* Sesiones Secundarias (Carrusel horizontal) */
+.sessions-carousel { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 1rem; scroll-snap-type: x mandatory; }
+.sessions-carousel::-webkit-scrollbar { height: 6px; }
+.sessions-carousel::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+.session-mini-card { flex: 0 0 280px; scroll-snap-align: start; background: var(--surface-hover); border-radius: 16px; overflow: hidden; transition: var(--transition); }
+.session-mini-card:hover { transform: translateY(-5px); }
+.session-mini-card img { width: 100%; height: 150px; object-fit: cover; }
+.session-mini-card div { padding: 1.2rem; }
+.session-mini-card h4 { margin: 0 0 5px 0; font-size: 1.1rem; line-height: 1.3;}
+
+/* Artículos (Publicados) */
+.posts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+.post-card { background: var(--surface-hover); padding: 1.5rem; border-radius: 16px; cursor: pointer; transition: var(--transition); border: 1px solid transparent; }
+.post-card:hover { border-color: var(--primary-color); transform: translateY(-5px); }
+.post-card-meta { font-size: 0.8rem; color: var(--primary-color); font-weight: 600; text-transform: uppercase; margin-bottom: 10px; display: block; }
+.post-card h3 { margin: 0; font-size: 1.2rem; line-height: 1.4; color: #fff; }
+
+/* --- MARQUEE DE PATROCINADORES (Animación Continua) --- */
+.marquee-wrapper { overflow: hidden; width: 100%; white-space: nowrap; position: relative; display: flex; align-items: center; padding: 2rem 0; }
+.marquee-wrapper::before, .marquee-wrapper::after { content: ''; position: absolute; top: 0; width: 150px; height: 100%; z-index: 2; }
+.marquee-wrapper::before { left: 0; background: linear-gradient(to right, var(--surface-color), transparent); }
+.marquee-wrapper::after { right: 0; background: linear-gradient(to left, var(--surface-color), transparent); }
+.marquee-content { display: inline-flex; animation: marquee 30s linear infinite; gap: 4rem; padding-left: 4rem; }
+.marquee-wrapper:hover .marquee-content { animation-play-state: paused; }
+@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+.sponsor-logo { height: 50px; max-width: 150px; object-fit: contain; filter: grayscale(100%) opacity(0.5); transition: var(--transition); }
+.sponsor-logo:hover { filter: grayscale(0%) opacity(1); }
+
+/* --- MODALES --- */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; z-index: 2000; opacity: 0; visibility: hidden; transition: var(--transition); padding: 2rem; box-sizing: border-box;}
+.modal-overlay.is-visible { opacity: 1; visibility: visible; }
+.modal-content { background: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--border-radius-bento); width: 100%; position: relative; transform: translateY(20px); transition: var(--transition); display: flex; flex-direction: column;}
+.modal-overlay.is-visible .modal-content { transform: translateY(0); }
+.modal-close-btn { position: absolute; top: 1.5rem; right: 1.5rem; background: var(--surface-hover); border: none; width: 40px; height: 40px; border-radius: 50%; color: #fff; cursor: pointer; z-index: 10;}
+.modal-close-btn:hover { background: var(--primary-color); }
+
+/* Modal de Artículo */
+.article-modal { max-width: 800px; max-height: 90vh; }
+.article-modal-header { padding: 3rem 3rem 1.5rem 3rem; border-bottom: 1px solid var(--border-color); }
+.article-badge { background: rgba(183,42,30,0.1); color: var(--primary-color); padding: 5px 12px; border-radius: 50px; font-size: 0.8rem; font-weight: 600; }
+#modal-article-title { font-family: 'Playfair Display', serif; font-size: 2.2rem; margin: 1rem 0; color: #fff; line-height: 1.2;}
+.doi-badge { display: inline-flex; align-items: center; gap: 5px; background: var(--surface-hover); padding: 6px 12px; border-radius: 6px; font-family: monospace; font-size: 0.9rem;}
+.article-body { padding: 2rem 3rem; overflow-y: auto; flex-grow: 1; }
+.article-modal-footer { padding: 1.5rem 3rem; border-top: 1px solid var(--border-color); background: var(--surface-hover); border-radius: 0 0 var(--border-radius-bento) var(--border-radius-bento); }
+
+/* Modal de Perfil */
+.profile-modal { max-width: 500px; padding: 3rem; text-align: center; }
+
+/* Animaciones de Scroll */
+.scroll-animate { opacity: 0; transform: translateY(30px); transition: opacity 0.8s ease, transform 0.8s ease; }
+.scroll-animate.is-visible { opacity: 1; transform: translateY(0); }
+
+/* --- RESPONSIVE --- */
+.mobile-menu-btn { display: none; background: none; border: none; font-size: 1.5rem; color: #fff; }
+.w-100 { width: 100%; text-align: center;}
+@media (max-width: 992px) {
+    .span-4, .span-6, .span-8 { grid-column: span 12; }
+    .bento-grid { display: flex; flex-direction: column; }
+}
+@media (max-width: 768px) {
+    .nav-project-title, .site-nav ul { display: none; }
+    .mobile-menu-btn { display: block; }
+    .site-nav.scrolled { padding: 1rem 0; }
+    #cover-headline { font-size: 2.5rem; }
+    .bento-box { padding: 1.5rem; }
+    .article-modal-header, .article-body, .article-modal-footer { padding: 1.5rem; }
+}
+.footer { text-align: center; padding: 4rem; color: var(--text-muted); font-size: 0.9rem; }
+/* --- CORRECCIONES BENTO CV --- */
+
+/* 1. Evento Principal Inmersivo (Corrección de altura y texto) */
+.main-event-card {
+    min-height: 450px !important; /* Más alto y majestuoso */
     display: flex;
     flex-direction: column;
-    align-items: center;
-    text-align: center;
-    cursor: pointer;
-    border: 1px solid var(--border-color);
-    font-family: inherit;
+    justify-content: flex-end;
 }
-.researcher-card-btn img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin-bottom: 1rem; }
-.researcher-card-btn h3 { font-size: 1.1rem; margin: 0; }
+.main-event-content {
+    background: linear-gradient(0deg, rgba(10,10,10,0.95) 0%, rgba(10,10,10,0.6) 60%, transparent 100%) !important;
+    padding: 3rem 2.5rem !important; /* Más espacio para respirar */
+}
+.main-event-content h3 { font-size: clamp(1.8rem, 4vw, 3rem) !important; line-height: 1.1; }
 
-/* Tarjeta de Post de Bluesky (Nueva) */
-.post-card { padding: 1.5rem; }
-.post-card .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
-.post-card .post-avatar { width: 40px; height: 40px; border-radius: 50%; }
-.post-card .post-author strong { display: block; }
-.post-card .post-author span { font-size: 0.9rem; color: #64748b; }
-.post-card .post-body { font-size: 0.95rem; }
+/* 2. Flechas del Carrusel y Scrollbar más grueso */
+.carousel-wrapper { position: relative; }
+.sessions-carousel { scroll-behavior: smooth; }
+.sessions-carousel::-webkit-scrollbar { height: 10px; } /* Scrollbar más grueso */
+.sessions-carousel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+.sessions-carousel::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; margin: 0 20px;}
 
-/* --- MODAL (Nuevo) --- */
-.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
-.modal-overlay.is-visible { opacity: 1; visibility: visible; }
-.modal-content { background: white; padding: 2rem; border-radius: 12px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; position: relative; transform: scale(0.9); transition: transform 0.3s; }
-.modal-overlay.is-visible .modal-content { transform: scale(1); }
-.modal-close-btn { position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; }
-#modal-profile-content .profile-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
-#modal-profile-content .profile-avatar { width: 80px; height: 80px; border-radius: 50%; }
-#modal-profile-content .profile-name { font-size: 1.5rem; margin: 0; }
-#modal-profile-content .profile-orcid { font-size: 0.9rem; color: #64748b; }
-#modal-profile-content .profile-socials { display: flex; gap: 1rem; font-size: 1.5rem; margin-top: 1rem; }
-#modal-profile-content .profile-socials a { color: var(--text-color); }
+.carousel-arrow {
+    position: absolute; top: 40%; transform: translateY(-50%);
+    background: var(--primary-color); color: white; border: none;
+    width: 44px; height: 44px; border-radius: 50%; cursor: pointer;
+    display: flex; justify-content: center; align-items: center;
+    z-index: 10; box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: var(--transition);
+}
+.carousel-arrow:hover { background: var(--primary-hover); transform: translateY(-50%) scale(1.1); }
+.carousel-arrow.left { left: -22px; }
+.carousel-arrow.right { right: -22px; }
 
-/* --- ANIMACIONES DE SCROLL (Sin cambios) --- */
-.scroll-animate { opacity: 0; transform: translateY(40px); transition: opacity 0.8s ease-out, transform 0.8s ease-out; }
-.scroll-animate.is-visible { opacity: 1; transform: translateY(0); }
-.site-footer { text-align: center; padding: 2rem; color: #64748b; font-size: 0.9rem; }
-/* --- NUEVO: ESTILOS PARA EL MÓDULO DE SUSCRIPCIÓN --- */
-.btn-subscribe {
-    display: inline-block;
-    background-color: var(--primary-color);
-    color: white;
-    padding: 12px 24px;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 600;
-    margin-top: 1rem;
-    transition: background-color 0.2s;
+/* 3. Miniatura de Autor en Publicaciones */
+.post-card-author {
+    display: flex; align-items: center; gap: 10px; margin-top: 15px;
+    padding-top: 15px; border-top: 1px solid var(--border-color);
 }
-.btn-subscribe:hover {
-    background-color: #2563EB; /* Un azul un poco más oscuro */
-}
-/* --- NUEVO: ESTILOS PARA LA SECCIÓN DE PATROCINADORES --- */
-.sponsors-grid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center; /* Centra los logos */
-    align-items: center;
-    gap: 2rem;
-    margin-top: 1rem;
-}
-.sponsor-link {
-    display: inline-block;
-}
-.sponsor-logo {
-    height: 60px; /* Altura uniforme para todos los logos */
-    max-width: 180px;
-    object-fit: contain;
-    filter: grayscale(100%); /* Efecto elegante en blanco y negro */
-    opacity: 0.8;
-    transition: all 0.3s;
-}
-.sponsor-logo:hover {
-    filter: grayscale(0%);
-    opacity: 1;
-}
-/* --- NUEVO: ESTILOS PARA LA SECCIÓN DE TIMELINE --- */
-.timeline {
-    position: relative;
-    max-width: 700px;
-    margin: 2rem auto;
-    padding-left: 2rem;
-}
-/* La línea vertical del timeline */
-.timeline::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    height: 100%;
-    width: 3px;
-    background-color: var(--border-color);
-}
-.timeline-item {
-    position: relative;
-    margin-bottom: 2.5rem;
-}
-.timeline-item:last-child {
-    margin-bottom: 0;
-}
-/* El punto en la línea */
-.timeline-point {
-    position: absolute;
-    left: -2.7rem; /* (Ancho del padding + mitad del punto) */
-    top: 5px;
-    width: 1rem;
-    height: 1rem;
-    background-color: var(--primary-color);
-    border-radius: 50%;
-    border: 3px solid var(--surface-color);
-}
-.timeline-content {
-    padding-left: 1rem;
-}
-.timeline-date {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--primary-color);
-    margin-bottom: 0.5rem;
-}
-.timeline-title {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.25rem;
-}
-.timeline-description {
-    margin: 0;
-    color: #64748b;
-}
-/* ====================================================== */
-/* ===== NUEVO: SISTEMA DE PLANTILLAS Y PALETAS ===== */
-/* ====================================================== */
+.post-card-author img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+.post-card-author span { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
 
-/* --- 1. Definición de Paletas de Colores --- */
-/* Paleta Oscura */
-.palette-dark {
-    --primary-color: #58A6FF; /* Azul brillante */
-    --text-color: #c9d1d9;
-    --background-color: #0d1117;
-    --surface-color: #161b22;
-    --border-color: #30363d;
+/* 4. Estilos para el Video Embed (16:9) */
+.embed-responsive {
+    position: relative; padding-bottom: 56.25%; /* Ratio 16:9 */
+    height: 0; overflow: hidden; border-radius: 12px;
 }
-/* Paleta Arena */
-.palette-sand {
-    --primary-color: #C05621; /* Naranja quemado */
-    --text-color: #4A4A4A;
-    --background-color: #FDFCFB;
-    --surface-color: #FFFFFF;
-    --border-color: #EAEAEA;
+.embed-responsive iframe {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;
 }
 
-/* --- 2. Estilos Específicos por Plantilla --- */
+/* 5. Estilos de Línea de Tiempo (¡Reintegrados!) */
+.timeline { position: relative; max-width: 800px; margin: 1rem 0; padding-left: 2rem; border-left: 2px solid var(--border-color); }
+.timeline-item { position: relative; margin-bottom: 2.5rem; }
+.timeline-item:last-child { margin-bottom: 0; }
+.timeline-point { position: absolute; left: -2.4rem; top: 5px; width: 14px; height: 14px; background-color: var(--primary-color); border-radius: 50%; box-shadow: 0 0 0 4px var(--surface-color); }
+.timeline-date { font-size: 0.9rem; color: var(--primary-color); font-weight: 700; margin-bottom: 5px; }
+.timeline-title { margin: 0 0 8px 0; font-size: 1.3rem; color: #fff; }
+.timeline-description { margin: 0; color: var(--text-muted); line-height: 1.6; }
 
-/* ---- PLANTILLA: CLÁSICA (Default) ---- */
-/* La plantilla clásica usa los estilos que ya teníamos, no necesita reglas nuevas. */
+/* --- CORRECCIONES Y MODO CLARO --- */
 
+/* 1. Botón de Tema */
+.btn-theme {
+    background: rgba(255,255,255,0.1); border: 1px solid var(--border-color);
+    color: var(--text-color); width: 36px; height: 36px; border-radius: 50%;
+    display: flex; justify-content: center; align-items: center; cursor: pointer; transition: var(--transition);
+}
+.btn-theme:hover { background: var(--primary-color); color: white; border-color: var(--primary-color); }
 
-/* ---- PLANTILLA: MODERNA (Inspirada en BioNova) ---- */
-.template-modern .site-container {
-    max-width: 100%;
-    margin-top: 0;
-    border-radius: 40px 40px 0 0; /* <-- LA MAGIA ESTÁ AQUÍ */
-    box-shadow: none;
-    padding-top: 4rem; /* Añadimos más espacio al principio */
+/* 2. Reparación del Evento Principal */
+.main-event-card {
+    min-height: 400px !important;
+    height: auto !important; /* Permite que crezca si el texto es muy largo */
 }
-.template-modern .cover {
-    height: 70vh;
-    border-radius: 0 0 40px 40px;
-    /* Efecto gradiente sutil */
-    background-image: linear-gradient(135deg, rgba(88, 166, 255, 0.1), rgba(88, 166, 255, 0) 70%), 
-                      var(--cover-bg-image); /* Usamos una variable para la imagen */
+.main-event-content {
+    padding: 2.5rem !important;
+    word-wrap: break-word; /* Evita que palabras largas rompan la caja */
 }
-.template-modern #cover-section {
-    background-image: var(--cover-bg-image);
-}
-.template-modern .site-section {
-    max-width: 900px;
-    margin: 0 auto; /* Centramos el contenido de las secciones */
-}
-.template-modern .card {
-    background-color: transparent;
-    border: 1px solid var(--border-color);
-    box-shadow: none;
-}
-/* Cambiamos el color de fondo en la paleta oscura para que las tarjetas resalten */
-.template-modern.palette-dark .card {
-    background-color: var(--surface-color);
-}
-/* --- NUEVO: ESTILOS PARA MENÚ RESPONSIVE --- */
-.mobile-menu-btn {
-    display: none; /* Oculto en escritorio */
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: var(--text-color);
+.main-event-content h3 {
+    font-size: clamp(1.6rem, 3.5vw, 2.5rem) !important; /* Tamaño ligeramente ajustado */
+    line-height: 1.2 !important;
 }
 
-/* Media Query: Estilos que se aplican solo en pantallas de 768px o menos */
-@media (max-width: 768px) {
-    .nav-project-title {
-        display: none; /* Ocultamos el título para dar espacio */
-    }
-    .mobile-menu-btn {
-        display: block; /* Mostramos el botón hamburguesa */
-        z-index: 1001; /* Nos aseguramos que esté por encima de todo */
-    }
-    .nav-content {
-        justify-content: flex-end; /* Alineamos el botón a la derecha */
-    }
-    .site-nav ul {
-        display: none; /* Ocultamos la lista de enlaces por defecto */
-        position: absolute;
-        top: 60px; /* Debajo de la barra de navegación */
-        left: 0;
-        right: 0;
-        background-color: var(--surface-color);
-        flex-direction: column;
-        padding: 1rem 2rem;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    .site-nav ul.is-open {
-        display: flex; /* La mostramos cuando tenga la clase 'is-open' */
-    }
+/* 3. MODO CLARO (Para la plantilla Bento) */
+body.palette-light {
+    --background-color: #f3f4f6; /* Gris muy clarito */
+    --surface-color: #ffffff; /* Cajas blancas */
+    --surface-hover: #f9fafb;
+    --text-color: #111827;
+    --text-muted: #4b5563;
+    --border-color: rgba(0, 0, 0, 0.08);
+}
+/* Ajustes específicos para cuando está en Modo Claro */
+.palette-light .site-nav.scrolled { background-color: rgba(255, 255, 255, 0.9); }
+.palette-light .main-event-content {
+    background: linear-gradient(0deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.8) 50%, transparent 100%) !important;
+}
+.palette-light .main-event-content h3, 
+.palette-light .main-event-content p { color: var(--text-color) !important; }
+.palette-light .team-member h4 { color: var(--text-color); }
+.palette-light .post-card h3 { color: var(--text-color); }
+.palette-light .timeline-title { color: var(--text-color); }
+
+/* --- CORRECCIONES FINALES: EVENTO PRINCIPAL Y CONTRASTE --- */
+
+/* 1. Centrado absoluto y corrección de desbordamiento (Overflow) */
+.main-event-card {
+    position: relative !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-end !important;
+    align-items: center !important; /* Centra horizontalmente */
+    text-align: center !important; /* Texto centrado */
+    padding: 0 !important;
+}
+
+.main-event-content {
+    position: absolute !important; /* Lo ancla al fondo sin romper el ancho */
+    bottom: 0; left: 0; right: 0;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 3rem 2rem 2rem 2rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important; /* Centra los elementos internos (como el badge) */
+    
+    /* 2. Forzamos el degradado oscuro SIEMPRE para garantizar lectura */
+    background: linear-gradient(0deg, rgba(10,10,10,0.95) 0%, rgba(10,10,10,0.7) 50%, transparent 100%) !important;
+}
+
+/* 3. Forzamos que el texto sea blanco SIEMPRE, incluso en Modo Claro */
+.main-event-content h3 {
+    color: #ffffff !important;
+    font-size: clamp(1.8rem, 4vw, 2.5rem) !important; 
+    line-height: 1.2 !important;
+    margin-bottom: 10px !important;
+    max-width: 900px; /* Evita que una línea sea infinitamente larga */
+}
+
+.main-event-content p {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Neutralizamos la regla defectuosa del modo claro que rompía la lectura */
+body.palette-light .main-event-content {
+    background: linear-gradient(0deg, rgba(10,10,10,0.95) 0%, rgba(10,10,10,0.7) 50%, transparent 100%) !important;
+}
+body.palette-light .main-event-content h3, 
+body.palette-light .main-event-content p { 
+    color: #ffffff !important; 
 }

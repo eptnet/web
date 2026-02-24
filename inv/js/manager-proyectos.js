@@ -1,3 +1,7 @@
+// =================================================================
+// ARCHIVO ACTUALIZADO: /inv/js/manager-proyectos.js 
+// BUG SOLUCIONADO: Lectura segura de datos en JSON
+// =================================================================
 import { Studio } from './manager-estudio.js';
 
 export const Projects = {
@@ -12,13 +16,17 @@ export const Projects = {
         
         const projects = window.App.userProfile?.projects || [];
         
-        // Creamos tarjetas seleccionables en lugar de un dropdown
+        // SOLUCIÓN: Solo guardamos el 'index' en el value, es 100% a prueba de fallos
         let projectsHTML = projects.map((p, index) => `
             <label class="project-card" for="project-${index}">
-                <input type="radio" name="project-selector" id="project-${index}" value='${JSON.stringify(p)}'>
+                <input type="radio" name="project-selector" id="project-${index}" value="${index}">
                 <div class="project-card-content">
-                    <h5>${p.title}</h5>
-                    <span>DOI: ${p.doi}</span>
+                    <div class="project-icon-wrapper"><i class="fa-solid fa-folder-open"></i></div>
+                    <div class="project-info">
+                        <h5>${p.title}</h5>
+                        <span><i class="fa-solid fa-fingerprint"></i> DOI: ${p.doi || 'No asignado'}</span>
+                    </div>
+                    <div class="check-indicator"><i class="fa-solid fa-circle-check"></i></div>
                 </div>
             </label>
         `).join('');
@@ -26,66 +34,82 @@ export const Projects = {
         container.innerHTML = `<div class="project-grid">${projectsHTML}</div>`;
     },
 
-    // REEMPLAZA ESTA FUNCIÓN COMPLETA EN manager-proyectos.js
+    addEventListeners() {
+        const homeSection = document.getElementById('home-section');
+        if (!homeSection) return;
 
-addEventListeners() {
-    // Ponemos un ÚNICO listener en la sección principal que siempre está visible.
-    const homeSection = document.getElementById('home-section');
-    if (!homeSection) return;
-
-    homeSection.addEventListener('click', (e) => {
-        // Buscamos si el clic fue en una tarjeta de proyecto
-        const projectCard = e.target.closest('.project-card');
-        if (projectCard) {
-            // Esta lógica es para SELECCIONAR un proyecto
-            const radioInput = projectCard.querySelector('input[type="radio"]');
-            if (radioInput && !radioInput.checked) {
-                radioInput.checked = true;
-                // Disparamos un evento 'change' manualmente para que se guarde en sessionStorage
-                radioInput.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-            return; // Terminamos aquí si fue un clic para seleccionar proyecto
-        }
-
-        // Buscamos si el clic fue en una tarjeta de acción (divulgar, microsite, etc.)
-        const creationCard = e.target.closest('.creation-card');
-        if (creationCard) {
-            // Esta lógica es para EJECUTAR una acción
-            if (creationCard.classList.contains('disabled')) {
-                alert("Por favor, selecciona un proyecto del Paso 1 para activar esta opción.");
-                return;
+        homeSection.addEventListener('click', (e) => {
+            // 1. Clic para seleccionar proyecto
+            const projectCard = e.target.closest('.project-card');
+            if (projectCard) {
+                const radioInput = projectCard.querySelector('input[type="radio"]');
+                if (radioInput && !radioInput.checked) {
+                    radioInput.checked = true;
+                    radioInput.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                return; 
             }
 
-            const action = creationCard.dataset.studioAction;
-            const activeProject = JSON.parse(sessionStorage.getItem('activeProject'));
+            // 2. Clic para usar una herramienta
+            const creationCard = e.target.closest('.creation-card');
+            if (creationCard) {
+                const action = creationCard.dataset.studioAction;
 
-            // Doble verificación de que un proyecto está activo
-            if (!activeProject) {
-                alert("Error: No hay un proyecto activo. Por favor, selecciona uno.");
-                return;
+                // ACCIÓN QUE NO REQUIERE PROYECTO (Ver la lista de sesiones)
+                if (action === 'view-live') {
+                    const studioLink = document.querySelector('.nav-link[data-section="studio-section"]');
+                    if (studioLink) studioLink.click();
+                    return;
+                }
+
+                // ACCIONES QUE SÍ REQUIEREN PROYECTO (Crear, Redactar, Microsite)
+                if (creationCard.classList.contains('disabled')) {
+                    alert("⚠️ Por favor, selecciona un proyecto del Paso 1 para desbloquear esta herramienta.");
+                    return;
+                }
+
+                let activeProject = null;
+                
+                try {
+                    activeProject = JSON.parse(sessionStorage.getItem('activeProject'));
+                } catch(err) {
+                    console.error("Error leyendo caché:", err);
+                }
+
+                if (!activeProject || !activeProject.id) {
+                    alert("Error: Proyecto no válido. Por favor vuelve a seleccionarlo.");
+                    return;
+                }
+
+                // REDIRECCIONES SEGURAS
+                if (action === 'create-live') {
+                    window.location.href = '/inv/configurar-sesion.html';
+                } else if (action === 'text' || action === 'social' || action === 'script') {
+                    window.location.href = `/inv/editor.html?projectId=${activeProject.id}&agent=${action}`;
+                } else if (action === 'microsite') {
+                    window.location.href = '/inv/microsite-editor.html';
+                }
             }
+        });
 
-            // Aquí va toda la lógica de redirección
-            if (action === 'text' || action === 'social' || action === 'script') {
-                window.location.href = `/inv/editor.html?projectId=${activeProject.id}&agent=${action}`;
-            } else if (action === 'image') {
-                alert("La generación de imágenes con IA se implementará próximamente.");
-            } else if (action === 'live' || action === 'podcast' || action === 'presentation' || action === 'interview') {
-                Studio.openModal();
-            } else if (action === 'microsite') {
-                window.location.href = '/inv/microsite-editor.html';
+        homeSection.addEventListener('change', (e) => {
+            if (e.target.name === 'project-selector') {
+                // SOLUCIÓN: Buscamos el proyecto real desde el array usando el índice
+                const selectedIndex = parseInt(e.target.value, 10);
+                const projects = window.App.userProfile?.projects || [];
+                const selectedProject = projects[selectedIndex];
+                
+                if (selectedProject) {
+                    // Ahora guardamos el objeto perfecto y limpio
+                    sessionStorage.setItem('activeProject', JSON.stringify(selectedProject));
+                    
+                    document.querySelectorAll('.project-card').forEach(card => card.classList.remove('selected'));
+                    e.target.closest('.project-card').classList.add('selected');
+                    
+                    // Desbloqueamos las herramientas
+                    document.querySelectorAll('.creation-card').forEach(card => card.classList.remove('disabled'));
+                }
             }
-        }
-    });
-
-    // Mantenemos este listener aparte, ya que se asocia con el input de radio directamente
-    homeSection.addEventListener('change', (e) => {
-        if (e.target.name === 'project-selector') {
-            sessionStorage.setItem('activeProject', e.target.value);
-            document.querySelectorAll('.project-card').forEach(card => card.classList.remove('selected'));
-            e.target.closest('.project-card').classList.add('selected');
-            document.querySelectorAll('.creation-card').forEach(card => card.classList.remove('disabled'));
-        }
-    });
-}
+        });
+    }
 };

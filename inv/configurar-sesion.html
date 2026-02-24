@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurar Sesión - Epistecnología</title>
+    <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="/inv/css/configurar-sesion.css">
+</head>
+<body class="dark-theme"> 
+
+    <header class="studio-header">
+        <div class="header-left">
+            <a href="/inv/dashboard.html" class="btn-back"><i class="fa-solid fa-arrow-left"></i> Volver al Dashboard</a>
+            <div class="divider"></div>
+            <span class="project-badge" id="active-project-name"><i class="fa-solid fa-spinner fa-spin"></i> Cargando...</span>
+        </div>
+        <div class="header-right" style="display: flex; gap: 10px;">
+            <button id="btn-save-session" class="btn-primary"><i class="fa-solid fa-save"></i> Guardar Sesión</button>
+            <button id="btn-enter-studio" class="btn-secondary hidden" style="background: #10b981; color: white; border: none;"><i class="fa-solid fa-headset"></i> Ir a Sala de Control</button>
+        </div>
+    </header>
+
+    <div id="session-links-panel" class="form-section hidden" style="border-color: #38bdf8; background: rgba(56, 189, 248, 0.05);">
+                    <h3 style="color: #38bdf8;"><i class="fa-solid fa-link"></i> Enlaces de la Sala</h3>
+                    
+                    <div class="form-group">
+                        <label>Enlace para Invitados (Compartir por interno)</label>
+                        <input type="text" id="link-guest" readonly style="color: #10b981; border-color: #10b981;">
+                    </div>
+                    <div class="form-group">
+                        <label>Enlace de Espectador (Vista limpia / OBS)</label>
+                        <input type="text" id="link-viewer" readonly style="color: #f59e0b; border-color: #f59e0b;">
+                    </div>
+                    <div class="form-group">
+                        <label>Página Pública del Evento (Para la audiencia)</label>
+                        <input type="text" id="link-public" readonly style="color: #38bdf8; border-color: #38bdf8;">
+                    </div>
+                </div>
+
+            </form>
+
+    <main class="studio-container">
+        <section class="config-panel">
+            <div class="panel-header">
+                <h1>Configurar Transmisión</h1>
+                <p>Prepara los detalles de tu sala antes de salir en vivo.</p>
+            </div>
+
+            <form id="session-form">
+                <div class="form-section">
+                    <h3>1. Destino de Transmisión</h3>
+                    <div class="platform-grid">
+                        <label class="platform-card selected">
+                            <input type="radio" name="platform" value="vdo_ninja" checked>
+                            <i class="fa-solid fa-tower-broadcast"></i>
+                            <span>EPT Live</span>
+                            <small>Nativo</small>
+                        </label>
+                        <label class="platform-card">
+                            <input type="radio" name="platform" value="youtube">
+                            <i class="fa-brands fa-youtube"></i>
+                            <span>YouTube</span>
+                            <small>Externo</small>
+                        </label>
+                        <label class="platform-card">
+                            <input type="radio" name="platform" value="twitch">
+                            <i class="fa-brands fa-twitch"></i>
+                            <span>Twitch</span>
+                            <small>Externo</small>
+                        </label>
+                        <label class="platform-card">
+                            <input type="radio" name="platform" value="substack">
+                            <i class="fa-solid fa-bookmark"></i>
+                            <span>Substack</span>
+                            <small>Externo</small>
+                        </label>
+                    </div>
+                    
+                    <div id="platform-id-container" class="form-group hidden mt-3">
+                        <label for="platform-id">ID de la Transmisión / Video:</label>
+                        <input type="text" id="platform-id" placeholder="Ej: dQw4w9WgXcQ (ID de YouTube)">
+                        <p class="form-hint" id="platform-hint">Pega aquí el ID o enlace directo proporcionado por la plataforma externa.</p>
+                    </div>
+                    <div id="ept-live-hint" class="form-group mt-3">
+                        <p class="form-hint" style="color: #10b981; background: rgba(16,185,129,0.1); padding: 10px; border-radius: 8px;">
+                            <i class="fa-solid fa-circle-check"></i> EPT Live generará automáticamente una sala privada encriptada. No necesitas configurar nada más aquí.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>2. Detalles del Evento</h3>
+                    <div class="form-group">
+                        <label for="session-title">Título de la Sesión</label>
+                        <input type="text" id="session-title" required placeholder="Ej: Entrevista sobre Inteligencia Artificial">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="session-start">Fecha y Hora de Inicio</label>
+                            <input type="datetime-local" id="session-start" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="session-end">Fecha y Hora de Fin (Opcional)</label>
+                            <input type="datetime-local" id="session-end">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="session-description">Descripción Corta</label>
+                        <textarea id="session-description" rows="3" placeholder="De qué tratará esta sesión..."></textarea>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>3. Elementos Visuales</h3>
+                    <div class="form-group">
+                        <label>Miniatura (Thumbnail)</label>
+                        <div class="upload-group">
+                            <input type="text" id="session-thumbnail" placeholder="URL de la imagen o súbela...">
+                            <input type="file" id="file-thumbnail" accept="image/*" style="display:none;">
+                            <button type="button" class="btn-upload" onclick="document.getElementById('file-thumbnail').click()">
+                                <i class="fa-solid fa-cloud-arrow-up"></i> Subir
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="session-more-info">URL para "Saber Más" (Opcional)</label>
+                        <input type="url" id="session-more-info" placeholder="https://...">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>4. Investigadores Participantes</h3>
+                    <div class="search-participant-group">
+                        <input type="text" id="participant-search" placeholder="Buscar usuario por nombre o username...">
+                        <button type="button" id="search-participant-btn" class="btn-secondary"><i class="fa-solid fa-search"></i></button>
+                    </div>
+                    <div id="participant-search-results" class="search-results"></div>
+                    
+                    <div class="participants-list-box">
+                        <h5>Invitados a la sala:</h5>
+                        <ul id="added-participants-ul" class="participants-ul">
+                            </ul>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <section class="preview-panel">
+            <div class="sticky-preview">
+                <h3>Vista Previa del Evento</h3>
+                <div class="event-preview-card">
+                    <div class="preview-image-wrapper">
+                        <img id="preview-image" src="https://i.ibb.co/Vt9tv2D/default-placeholder.png" alt="Miniatura">
+                        <div class="preview-platform-badge" id="preview-badge"><i class="fa-solid fa-tower-broadcast"></i> EPT Live</div>
+                    </div>
+                    <div class="preview-content">
+                        <h2 id="preview-title">Título de la Sesión</h2>
+                        <p id="preview-date"><i class="fa-regular fa-calendar"></i> Fecha por definir</p>
+                        <p id="preview-desc" class="preview-desc">La descripción de tu evento aparecerá aquí...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/inv/js/configurar-sesion.js"></script>
+</body>
+</html>

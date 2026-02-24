@@ -38,7 +38,15 @@ export const Studio = {
             const sessionId = button.dataset.sessionId;
 
             if (action === 'open-session') this.openSession(sessionData);
-            else if (action === 'edit-session') this.openModal(JSON.parse(decodeURIComponent(sessionData)));
+            else if (action === 'edit-session') {
+                // Obtenemos el ID de manera segura y redirigimos a la nueva página de configuración
+                const id = sessionId || (sessionData ? JSON.parse(decodeURIComponent(sessionData)).id : null);
+                if (id) {
+                    window.location.href = `/inv/configurar-sesion.html?edit=${id}`;
+                } else {
+                    alert('No se pudo encontrar el ID de la sesión para editar.');
+                }
+            }
             else if (action === 'delete-session') this.deleteSession(sessionId);
             else if (action === 'save-recording-url') this.saveRecordingUrl(sessionId);
             else if (action === 'copy-guest-link') {

@@ -1,271 +1,328 @@
 // =================================================================
-// ARCHIVO DEFINITIVO Y CORREGIDO v3: /inv/js/microsite-editor.js
-// AÑADE CARGA DE DATOS RELACIONADOS (INVESTIGADORES, SESIONES, POSTS)
+// ARCHIVO ACTUALIZADO: /inv/js/microsite-editor.js (Constructor SaaS)
+// Funciones: Drag&Drop (Flechas), ImgBB Nativo, IA y Gestor de Slug.
 // =================================================================
 
 const MicrositeEditorApp = {
     supabase: null,
     user: null,
     currentProject: null,
+    IMGBB_API_KEY: "89d606fc7588367140913f93a4c89785", // <-- ¡Reemplaza con tu Key de ImgBB!
 
     async init() {
-        // 1. INICIALIZAR SUPABASE Y VERIFICAR SESIÓN
         const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
         this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         const { data: { session } } = await this.supabase.auth.getSession();
-        if (!session) {
-            this.showError('No has iniciado sesión. Por favor, <a href="/">inicia sesión</a> y vuelve a intentarlo.');
-            return;
-        }
+        if (!session) { alert('Debes iniciar sesión.'); window.location.href='/'; return; }
         this.user = session.user;
 
-        // 2. OBTENER EL PROYECTO ACTIVO DESDE sessionStorage
         const activeProjectString = sessionStorage.getItem('activeProject');
-        if (!activeProjectString) {
-            this.showError('No se ha seleccionado ningún proyecto. Por favor, vuelve al <a href="/inv/dashboard.html">Dashboard</a> y elige un proyecto.');
-            return;
-        }
+        if (!activeProjectString) { alert('Selecciona un proyecto primero.'); window.location.href='/inv/dashboard.html'; return; }
         this.currentProject = JSON.parse(activeProjectString);
 
-        // 3. Cargamos los datos del microsite y los datos relacionados
         await this.loadMicrositeData();
-        // Una vez que tenemos los datos del proyecto, cargamos el resto
         await this.loadRelatedData();
         await this.populateEventSelector();
 
-        // 4. Inicializamos el editor de texto y los listeners
-        this.initializeEditor();
         this.setupEventListeners();
     },
 
-    // --- NUEVA FUNCIÓN PARA CARGAR DATOS RELACIONADOS ---
     async loadRelatedData() {
         const [researchers, sessions, posts] = await Promise.all([
-            this.fetchResearchers(),
-            this.fetchSessions(),
-            this.fetchPosts() // <-- Esta función cambia
+            this.fetchResearchers(), this.fetchSessions(), this.fetchPosts()
         ]);
         this.renderResearchers(researchers);
         this.renderSessions(sessions);
-        this.renderPosts(posts); // <-- Esta función cambia
+        this.renderPosts(posts);
     },
 
-    // --- NUEVAS FUNCIONES DE FETCH ---
     async fetchResearchers() {
         if (!this.currentProject.authors || this.currentProject.authors.length === 0) return [];
-        // Buscamos perfiles que coincidan con los nombres en el array de autores del proyecto
-        const { data, error } = await this.supabase
-            .from('profiles')
-            .select('display_name, avatar_url')
-            .in('display_name', this.currentProject.authors);
-        if (error) console.error("Error fetching researchers:", error);
+        const { data } = await this.supabase.from('profiles').select('display_name, avatar_url').in('display_name', this.currentProject.authors);
         return data || [];
     },
 
     async fetchSessions() {
-        // Añadimos el 'id' a la selección
-        const { data, error } = await this.supabase
-            .from('sessions')
-            .select('id, session_title, scheduled_at, thumbnail_url')
-            .eq('project_title', this.currentProject.title);
-        if (error) console.error("Error fetching sessions:", error);
+        const { data } = await this.supabase.from('sessions').select('id, session_title').eq('project_title', this.currentProject.title);
         return data || [];
     },
 
     async fetchPosts() {
-        // CORRECCIÓN: Ahora consultamos la tabla 'posts'
-        const { data, error } = await this.supabase
-            .from('posts')
+        const { data, error } = await this.supabase.from('posts')
             .select('title, status')
-            .eq('project_id', this.currentProject.id);
-        if (error) { console.error("Error fetching posts:", error); return []; }
+            .eq('project_id', this.currentProject.id)
+            .eq('status', 'published');
+        
+        if (error) console.error("Error al cargar artículos:", error);
         return data || [];
     },
 
-    // --- NUEVAS FUNCIONES DE RENDER ---
     renderResearchers(profiles) {
         const container = document.getElementById('researchers-preview-container');
         const authorNames = this.currentProject.authors || [];
-        if (authorNames.length === 0) {
-            container.innerHTML = '<p>No hay autores definidos en este proyecto.</p>';
-            return;
-        }
-
+        if (authorNames.length === 0) { container.innerHTML = '<p>No hay autores.</p>'; return; }
         container.innerHTML = authorNames.map(name => {
             const profile = profiles.find(p => p.display_name === name);
-            const avatarUrl = profile?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'; // Avatar por defecto
-            return `
-                <div class="preview-card researcher-card">
-                    <img src="${avatarUrl}" alt="Avatar de ${name}">
-                    <h5>${name}</h5>
-                </div>
-            `;
+            const avatarUrl = profile?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
+            return `<div class="preview-card"><img src="${avatarUrl}" alt="Avatar"><h5>${name}</h5></div>`;
         }).join('');
     },
 
     renderSessions(sessions) {
         const container = document.getElementById('sessions-preview-container');
-        if (!sessions || sessions.length === 0) { container.innerHTML = '<p>No hay sesiones asociadas.</p>'; return; }
+        if (!container) return; // <-- Este es el seguro de vida que evita el cuelgue
         
-        // Construimos la URL del evento de la misma forma que en la página pública
-        container.innerHTML = sessions.map(s => `
-            <a href="/live.html?sesion=${s.id}" target="_blank" class="card session-card" style="text-decoration:none; color:inherit;">
-                <img src="${s.thumbnail_url || 'https://i.ibb.co/Vt9tv2D/default-placeholder.png'}" alt="Miniatura" style="width:100%; height:100px; object-fit:cover; border-radius: 8px 8px 0 0;">
-                <div style="padding:1rem;">
-                    <h5 style="margin:0;">${s.session_title}</h5>
-                </div>
-            </a>
-        `).join('');
+        if (!sessions || sessions.length === 0) { 
+            container.innerHTML = '<p class="form-hint" style="margin:0;">No hay sesiones grabadas.</p>'; 
+            return; 
+        }
+        container.innerHTML = `
+            <div class="preview-card">
+                <i class="fa-solid fa-video text-accent" style="font-size: 1.2rem;"></i> 
+                <h5 style="margin:0; font-size:0.85rem;">${sessions.length} sesión(es) detectada(s)</h5>
+            </div>
+        `;
     },
 
     renderPosts(posts) {
-        // CORRECCIÓN: Adaptamos el renderizado a los datos de la tabla 'posts'
         const container = document.getElementById('posts-preview-container');
-        if (!posts || posts.length === 0) {
-            container.innerHTML = '<p>No hay publicaciones asociadas a este proyecto.</p>';
-            return;
+        if (!container) return;
+
+        if (!posts || posts.length === 0) { 
+            container.innerHTML = '<p class="form-hint" style="margin:0;">No hay artículos publicados.</p>'; 
+            return; 
         }
-        container.innerHTML = posts.map(post => `
+        // Dibuja tarjetitas hermosas por cada artículo encontrado
+        container.innerHTML = posts.map(p => `
             <div class="preview-card">
-                <h5>${post.title}</h5>
-                <p>Estado: ${post.status}</p>
+                <i class="fa-solid fa-file-lines text-accent" style="font-size: 1.2rem;"></i> 
+                <h5 style="margin:0; font-size:0.85rem;">${p.title}</h5>
             </div>
         `).join('');
     },
 
+    // 1. SELECTOR DE EVENTOS (Blindaje de tipos de datos)
     async populateEventSelector() {
         const select = document.getElementById('associated-event-select');
-        const { data: events, error } = await this.supabase
-            .from('events')
+        if (!select) return;
+        
+        select.innerHTML = '<option value="">-- Ningún evento asociado --</option>'; 
+        
+        const { data: events, error } = await this.supabase.from('events')
             .select('id, title')
             .eq('user_id', this.user.id);
-        
-        if (events) {
+            
+        if (error) console.error("Error al cargar eventos:", error);
+
+        if (events && events.length > 0) {
             events.forEach(event => {
-                const option = document.createElement('option');
-                option.value = event.id;
-                option.textContent = event.title;
+                const option = document.createElement('option'); 
+                option.value = event.id.toString(); 
+                option.textContent = event.title; 
                 select.appendChild(option);
             });
         }
-        // Seleccionamos el valor guardado
-        select.value = this.currentProject.associated_event_id || '';
-    },
 
-    /**
-     * Muestra un mensaje de error en el panel de edición.
-     */
-    showError(message) {
-        const editorPanel = document.querySelector('.editor-panel');
-        if (editorPanel) {
-            editorPanel.innerHTML = `<h1>Error</h1><p>${message}</p>`;
+        // Si el proyecto ya tenía un evento guardado, lo seleccionamos
+        if (this.currentProject && this.currentProject.associated_event_id) {
+            select.value = this.currentProject.associated_event_id.toString();
         }
     },
 
-    /**
-     * Carga los datos del microsite desde Supabase.
-     */
     async loadMicrositeData() {
-        const { data, error } = await this.supabase
-            .from('projects')
-            .select('microsite_content, microsite_is_public, associated_event_id')
-            .eq('id', this.currentProject.id)
-            .eq('user_id', this.user.id) // ¡Importante! Aseguramos que el proyecto pertenezca al usuario
-            .single();
-
-        if (error) {
-            console.error("Error al cargar datos del microsite:", error);
-            alert("No se pudieron cargar los datos del microsite. Es posible que no tengas permiso para editar este proyecto.");
-            return;
-        }
+        // Traemos también el slug para editarlo
+        const { data, error } = await this.supabase.from('projects').select('microsite_content, microsite_is_public, associated_event_id, template_style, color_palette, slug').eq('id', this.currentProject.id).single();
+        if (error) return alert("Error cargando datos.");
         
         this.currentProject.microsite_content = data.microsite_content;
         this.currentProject.microsite_is_public = data.microsite_is_public;
         this.currentProject.associated_event_id = data.associated_event_id;
+        this.currentProject.slug = data.slug;
+        this.currentProject.template_style = data.template_style;
+        this.currentProject.color_palette = data.color_palette;
         this.populateForm();
     },
 
-    /**
-     * Rellena el formulario con los datos cargados.
-     */
+    // 2. POBLAR FORMULARIO (Evitamos inyecciones nulas y marcamos el select)
     populateForm() {
         const content = this.currentProject.microsite_content || {};
-        document.getElementById('cover-headline').value = content.cover?.headline || `Un microsite para: ${this.currentProject.title}`;
+        document.getElementById('cover-headline').value = content.cover?.headline || '';
         document.getElementById('cover-image-url').value = content.cover?.imageUrl || '';
         document.getElementById('seo-image-url').value = content.seo?.imageUrl || '';
-        document.getElementById('summary-content').value = content.summary?.content || this.currentProject.description || '';
         document.getElementById('microsite-is-public').checked = this.currentProject.microsite_is_public || false; 
-        document.getElementById('template-style-select').value = this.currentProject.template_style || 'classic';
-        document.getElementById('color-palette-select').value = this.currentProject.color_palette || 'default';
+        document.getElementById('template-style-select').value = this.currentProject.template_style || 'modern';
+        document.getElementById('color-palette-select').value = this.currentProject.color_palette || 'dark';
+        document.getElementById('project-slug').value = this.currentProject.slug || '';
         
+        // Selección de Evento Segura
+        if (this.currentProject.associated_event_id) {
+            document.getElementById('associated-event-select').value = this.currentProject.associated_event_id.toString();
+        }
+
+        // Cargar módulos personalizados
         const modulesContainer = document.getElementById('custom-modules-container');
         modulesContainer.innerHTML = '';
         if (content.custom_modules && Array.isArray(content.custom_modules)) {
-            content.custom_modules.forEach(moduleData => {
-                this.createModule(moduleData.type, moduleData);
+            content.custom_modules.forEach(moduleData => this.createModule(moduleData.type, moduleData));
+        }
+
+        // Dejar el texto listo para TinyMCE
+        document.getElementById('summary-content').value = content.summary?.content || '';
+        this.updatePublicStatusText();
+        
+        // ¡IMPORTANTE! Iniciamos TinyMCE justo DESPUÉS de poblar el contenido
+        this.initializeEditor();
+    },
+
+    updatePublicStatusText() {
+        const checkbox = document.getElementById('microsite-is-public');
+        const text = document.getElementById('public-status-text');
+        if (checkbox.checked) { text.textContent = "Público y Visible"; text.className = "status-text public"; } 
+        else { text.textContent = "Borrador Privado"; text.className = "status-text"; }
+    },
+
+    // 3. INICIO DE TINYMCE (A prueba de balas)
+    initializeEditor() {
+        if (typeof tinymce === 'undefined') {
+            console.error("TinyMCE no cargó correctamente desde el CDN.");
+            return;
+        }
+
+        tinymce.remove(); 
+        
+        tinymce.init({
+            selector: '#summary-content', 
+            // Eliminamos 'textcolor' de aquí porque ya es nativo en la v6
+            plugins: 'autolink lists link charmap', 
+            // 'forecolor' se encarga de pintar el texto
+            toolbar: 'undo redo | bold italic | alignleft aligncenter alignright | bullist numlist | forecolor', 
+            menubar: false, 
+            height: 300, 
+            placeholder: 'Desarrolla el contenido central de tu investigación...',
+            skin: document.body.classList.contains('dark-theme') ? 'oxide-dark' : 'oxide',
+            content_css: document.body.classList.contains('dark-theme') ? 'dark' : 'default',
+            setup: function (editor) {
+                editor.on('change', function () {
+                    editor.save(); 
+                });
+            }
+        });
+    },
+
+    setupEventListeners() {
+        // --- BOTÓN PUBLICAR / GUARDAR ---
+        const saveBtn = document.getElementById('save-btn-header');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', (e) => this.handleFormSubmit(e));
+        }
+
+        // --- BOTÓN PREVISUALIZAR ---
+        const previewBtn = document.getElementById('preview-btn-header');
+        if (previewBtn) {
+            previewBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const slug = document.getElementById('project-slug').value.trim();
+                if (!slug) {
+                    alert("⚠️ Por favor, asigna un enlace (Slug) y guarda el proyecto antes de previsualizar.");
+                    return;
+                }
+                // ¡AQUÍ ESTÁ EL CAMBIO! Ahora usa la ruta limpia
+                window.open(`/p/${encodeURIComponent(slug)}`, '_blank');
             });
+        }
+
+        document.getElementById('microsite-is-public')?.addEventListener('change', () => this.updatePublicStatusText());
+
+        // Botones Agregar Módulos
+        document.querySelectorAll('.btn-add-mod').forEach(btn => {
+            btn.addEventListener('click', (e) => this.createModule(e.target.closest('button').dataset.type));
+        });
+
+        // Eventos para subida de imágenes (ImgBB)
+        this.setupImageUploads();
+
+        // Eventos de IA (Simulada para Texto/Títulos)
+        document.querySelectorAll('.ai-button, .ai-button-text').forEach(btn => {
+            btn.addEventListener('click', (e) => this.handleAIGeneration(e));
+        });
+    },
+
+    // --- MAGIA 1: SUBIDA A IMGBB ---
+    setupImageUploads() {
+        const fileInputs = [
+            { id: 'file-cover-image', target: 'cover-image-url' },
+            { id: 'file-seo-image', target: 'seo-image-url' }
+        ];
+
+        fileInputs.forEach(inputObj => {
+            const el = document.getElementById(inputObj.id);
+            if (el) {
+                el.addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    
+                    const btn = el.nextElementSibling;
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                    btn.disabled = true;
+
+                    try {
+                        const formData = new FormData();
+                        formData.append("image", file);
+                        const response = await fetch(`https://api.imgbb.com/1/upload?key=${this.IMGBB_API_KEY}`, { method: "POST", body: formData });
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            document.getElementById(inputObj.target).value = data.data.url;
+                        } else {
+                            throw new Error("Error en ImgBB");
+                        }
+                    } catch (error) {
+                        alert("Hubo un error subiendo la imagen.");
+                    } finally {
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                        el.value = ''; // Reset
+                    }
+                });
+            }
+        });
+    },
+
+    // --- MAGIA 2: ASISTENCIA IA ---
+    async handleAIGeneration(e) {
+        const btn = e.target.closest('button');
+        const targetId = btn.dataset.target;
+        
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        
+        try {
+            // Aquí puedes conectar a tu edge function real (ej: 'generate-text').
+            // Por ahora extraemos el contexto para enviárselo.
+            const context = this.currentProject.description || "Un proyecto de investigación.";
+            const prompt = targetId === 'cover-headline' ? `Genera un título corto y publicitario para este proyecto: ${context}` : `Resume de forma accesible este proyecto: ${context}`;
+            
+            const { data, error } = await this.supabase.functions.invoke('generate-text', { body: { prompt } });
+            
+            if (error) throw error;
+            
+            if (targetId === 'summary-content') {
+                tinymce.get('summary-content').setContent(data.text);
+            } else {
+                document.getElementById(targetId).value = data.text.replace(/"/g, '');
+            }
+        } catch (error) {
+            console.error("AI Error:", error);
+            alert("El servicio de IA no está disponible en este momento.");
+        } finally {
+            if (btn.classList.contains('ai-button-text')) btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Mejorar con IA';
+            else btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i>';
         }
     },
 
-    /**
-     * Inicializa el editor TinyMCE.
-     */
-    initializeEditor() {
-        tinymce.init({
-            selector: '.tinymce-editor',
-            plugins: 'autolink lists link image charmap preview anchor pagebreak',
-            toolbar_mode: 'floating',
-            height: 200,
-            placeholder: 'Explica tu proyecto de forma sencilla...'
-        });
-    },
-
-    /**
-     * Configura todos los listeners de la página.
-     */
-    setupEventListeners() {
-        const form = document.getElementById('microsite-form');
-        const addTextModuleBtn = document.getElementById('add-text-module-btn');
-        const addEmbedModuleBtn = document.getElementById('add-embed-module-btn');
-        const previewBtn = document.getElementById('preview-btn');
-        const addSubscriptionModuleBtn = document.getElementById('add-subscription-module-btn');
-        const addSponsorsModuleBtn = document.getElementById('add-sponsors-module-btn'); 
-        const addTimelineModuleBtn = document.getElementById('add-timeline-module-btn'); 
-
-        
-        if (addTextModuleBtn) addTextModuleBtn.addEventListener('click', () => this.createModule('text'));
-        if (addEmbedModuleBtn) addEmbedModuleBtn.addEventListener('click', () => this.createModule('embed'));
-        if (addSubscriptionModuleBtn) addSubscriptionModuleBtn.addEventListener('click', () => this.createModule('subscription')); 
-        if (addSponsorsModuleBtn) addSponsorsModuleBtn.addEventListener('click', () => this.createModule('sponsors')); 
-        if (addTimelineModuleBtn) addTimelineModuleBtn.addEventListener('click', () => this.createModule('timeline')); 
-        if (form) form.addEventListener('submit', (e) => this.handleFormSubmit(e));
-        
-        document.querySelectorAll('.ai-button').forEach(button => {
-            button.addEventListener('click', () => alert('✨ ¡Función de IA en desarrollo!'));
-        });
-
-        // --- INICIO DE LA LÓGICA AÑADIDA ---
-            if (previewBtn) {
-                previewBtn.addEventListener('click', () => {
-                    if (!this.currentProject || !this.currentProject.slug) {
-                        alert("El proyecto no tiene un slug generado para previsualizar.");
-                        return;
-                    }
-
-                    // CORRECCIÓN: Codificamos el slug para que sea seguro en una URL
-                    const safeSlug = encodeURIComponent(this.currentProject.slug);
-                    const publicUrl = `/site.html?slug=${safeSlug}`;
-                    
-                    window.open(publicUrl, '_blank');
-                });
-            }
-        },
-
-    /**
-     * Crea un nuevo módulo de contenido en el DOM.
-     */
+    // --- MAGIA 3: DRAG & DROP Y CONSTRUCTOR DE MÓDULOS ---
     createModule(type, initialData = null) {
         const modulesContainer = document.getElementById('custom-modules-container');
         const moduleId = initialData ? initialData.id : `module-${Date.now()}`;
@@ -273,215 +330,179 @@ const MicrositeEditorApp = {
         moduleCard.classList.add('module-card');
         moduleCard.setAttribute('data-module-id', moduleId);
         moduleCard.setAttribute('data-module-type', type);
+        
         let contentHtml = '';
         let headerTitle = 'Módulo';
+        let iconHtml = '';
         const data = initialData || {};
 
         if (type === 'text') {
-            headerTitle = 'Módulo de Texto';
+            headerTitle = 'Módulo de Texto'; iconHtml = '<i class="fa-solid fa-align-left text-accent"></i>';
             contentHtml = `
-                <label for="title-${moduleId}">Título del Módulo:</label>
-                <input type="text" id="title-${moduleId}" class="module-title" placeholder="Ej: Metodología..." value="${initialData?.title || ''}">
-                <label for="content-${moduleId}" style="margin-top:10px;">Contenido:</label>
-                <textarea id="content-${moduleId}" class="module-content" placeholder="Desarrolla el contenido...">${initialData?.content || ''}</textarea>
+                <div class="form-group mb-2"><label>Título de la Sección:</label><input type="text" class="module-title" value="${data.title || ''}"></div>
+                <div class="form-group"><label>Contenido HTML:</label><textarea class="module-content">${data.content || ''}</textarea></div>
             `;
         } else if (type === 'embed') {
-            headerTitle = 'Módulo de Enlace/Embed';
+            headerTitle = 'Módulo de Video / Enlace'; iconHtml = '<i class="fa-solid fa-play text-accent"></i>';
             contentHtml = `
-                <label for="title-${moduleId}">Título del Módulo:</label>
-                <input type="text" id="title-${moduleId}" class="module-title" placeholder="Ej: Video Explicativo..." value="${initialData?.title || ''}">
-                <label for="url-${moduleId}" style="margin-top:10px;">URL para incrustar:</label>
-                <input type="text" id="url-${moduleId}" class="module-content" placeholder="Pega un enlace de YouTube, Substack (embed), etc." value="${initialData?.content || ''}">
+                <div class="form-group mb-2"><label>Título:</label><input type="text" class="module-title" value="${data.title || ''}"></div>
+                <div class="form-group"><label>URL (YouTube, Vimeo):</label><input type="text" class="module-content" value="${data.content || ''}"></div>
             `;
-        } else if (type === 'subscription') { // --- NUEVA LÓGICA ---
-            headerTitle = 'Módulo de Suscripción';
-            const data = initialData || {};
+        } else if (type === 'subscription') {
+            headerTitle = 'Módulo de Suscripción'; iconHtml = '<i class="fa-solid fa-envelope text-accent"></i>';
             contentHtml = `
-                <label for="title-${moduleId}">Título (ej: "Suscríbete a nuestro boletín"):</label>
-                <input type="text" id="title-${moduleId}" class="module-title" value="${data.title || ''}">
-                
-                <label for="text-${moduleId}" style="margin-top:10px;">Texto descriptivo:</label>
-                <textarea id="text-${moduleId}" class="module-text" rows="3">${data.text || ''}</textarea>
-                
-                <label for="url-${moduleId}" style="margin-top:10px;">Enlace de Suscripción (ej: URL de Substack):</label>
-                <input type="text" id="url-${moduleId}" class="module-url" value="${data.url || ''}">
+                <div class="form-group mb-2"><label>Título principal:</label><input type="text" class="module-title" value="${data.title || ''}"></div>
+                <div class="form-group mb-2"><label>Mensaje motivador:</label><input type="text" class="module-text" value="${data.text || ''}"></div>
+                <div class="form-group"><label>Enlace externo (Substack, Mailchimp):</label><input type="text" class="module-url" value="${data.url || ''}"></div>
             `;
-        }
-        // --- NUEVA LÓGICA PARA PATROCINADORES ---
-        else if (type === 'sponsors') {
-            headerTitle = 'Módulo de Patrocinadores';
+        } else if (type === 'sponsors') {
+            headerTitle = 'Módulo de Apoyos / Patrocinadores'; iconHtml = '<i class="fa-solid fa-handshake text-accent"></i>';
             contentHtml = `
-                <label for="title-${moduleId}">Título de la sección (ej: "Con el apoyo de"):</label>
-                <input type="text" id="title-${moduleId}" class="module-title" value="${data.title || ''}">
-                <div id="sponsors-list-${moduleId}" class="sponsors-list-editor">
-                    </div>
+                <div class="form-group mb-2"><label>Título de sección:</label><input type="text" class="module-title" value="${data.title || 'Con el apoyo de'}"></div>
+                <div class="sponsors-list-editor"></div>
                 <button type="button" class="btn-add-item"><i class="fa-solid fa-plus"></i> Añadir Patrocinador</button>
             `;
-        }
-        // --- NUEVA LÓGICA PARA TIMELINE ---
-        else if (type === 'timeline') {
-            headerTitle = 'Módulo de Timeline';
+        } else if (type === 'timeline') {
+            headerTitle = 'Módulo de Línea de Tiempo (Hitos)'; iconHtml = '<i class="fa-solid fa-stream text-accent"></i>';
             contentHtml = `
-                <label for="title-${moduleId}">Título de la sección (ej: "Hitos de la Investigación"):</label>
-                <input type="text" id="title-${moduleId}" class="module-title" value="${data.title || ''}">
-                <div id="timeline-list-${moduleId}" class="timeline-list-editor">
-                    </div>
+                <div class="form-group mb-2"><label>Título de sección:</label><input type="text" class="module-title" value="${data.title || 'Hitos del Proyecto'}"></div>
+                <div class="timeline-list-editor"></div>
                 <button type="button" class="btn-add-item"><i class="fa-solid fa-plus"></i> Añadir Hito</button>
             `;
         }
 
+        // Estructura del card con botones de orden, ACORDEÓN y cuerpo separado
         moduleCard.innerHTML = `
-            <div class="module-header"><h4>${headerTitle}</h4><div class="module-card-actions"><button type="button" class="delete-module-btn" title="Eliminar Módulo"><i class="fa-solid fa-trash"></i></button></div></div>
-            ${contentHtml}
+            <div class="module-header" onclick="MicrositeEditorApp.toggleModuleCollapse(this)">
+                <h4 style="pointer-events:none;"><i class="fa-solid fa-chevron-down toggle-collapse-icon"></i> ${iconHtml} ${headerTitle}</h4>
+                <div class="module-card-actions" onclick="event.stopPropagation();"> <button type="button" class="mod-btn" onclick="MicrositeEditorApp.moveModule(this, 'up')" title="Subir"><i class="fa-solid fa-arrow-up"></i></button>
+                    <button type="button" class="mod-btn" onclick="MicrositeEditorApp.moveModule(this, 'down')" title="Bajar"><i class="fa-solid fa-arrow-down"></i></button>
+                    <div style="width:1px; background:#e5e7eb; margin:0 5px;"></div>
+                    <button type="button" class="mod-btn delete" onclick="this.closest('.module-card').remove()" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            </div>
+            <div class="module-body">
+                ${contentHtml}
+            </div>
         `;
-        modulesContainer.appendChild(moduleCard);
-        moduleCard.querySelector('.delete-module-btn').addEventListener('click', () => moduleCard.remove());
         
-        // Si es un módulo de patrocinadores, configuramos su lógica interna
+        modulesContainer.appendChild(moduleCard);
+        
+        // Inicializar sub-ítems si aplica
         if (type === 'sponsors') {
-            const sponsorsListContainer = moduleCard.querySelector('.sponsors-list-editor');
-            const addSponsorBtn = moduleCard.querySelector('.btn-add-item');
-            
-            addSponsorBtn.addEventListener('click', () => this.addSponsorFields(sponsorsListContainer));
-            
-            // Si estamos cargando datos existentes, los renderizamos
-            if (data.sponsors && data.sponsors.length > 0) {
-                data.sponsors.forEach(sponsor => this.addSponsorFields(sponsorsListContainer, sponsor));
-            }
+            const listContainer = moduleCard.querySelector('.sponsors-list-editor');
+            moduleCard.querySelector('.btn-add-item').addEventListener('click', () => this.addSponsorFields(listContainer));
+            if (data.sponsors) data.sponsors.forEach(s => this.addSponsorFields(listContainer, s));
+        } else if (type === 'timeline') {
+            const listContainer = moduleCard.querySelector('.timeline-list-editor');
+            moduleCard.querySelector('.btn-add-item').addEventListener('click', () => this.addTimelineFields(listContainer));
+            if (data.milestones) data.milestones.forEach(m => this.addTimelineFields(listContainer, m));
         }
-        // Si es un módulo de timeline, configuramos su lógica interna
-        if (type === 'timeline') {
-            const milestonesListContainer = moduleCard.querySelector('.timeline-list-editor');
-            const addMilestoneBtn = moduleCard.querySelector('.btn-add-item');
-            
-            addMilestoneBtn.addEventListener('click', () => this.addTimelineMilestoneFields(milestonesListContainer));
-            
-            if (data.milestones && data.milestones.length > 0) {
-                data.milestones.forEach(milestone => this.addTimelineMilestoneFields(milestonesListContainer, milestone));
-            }
+    },
+
+    // --- NUEVA FUNCIÓN PARA COLAPSAR MÓDULOS ---
+    toggleModuleCollapse(headerElement) {
+        const card = headerElement.closest('.module-card');
+        if (card) {
+            card.classList.toggle('collapsed');
+        }
+    },
+
+    // Funciones de Reordenamiento Visual
+    moveModule(btn, direction) {
+        const card = btn.closest('.module-card');
+        const container = card.parentNode;
+        if (direction === 'up' && card.previousElementSibling) {
+            container.insertBefore(card, card.previousElementSibling);
+        } else if (direction === 'down' && card.nextElementSibling) {
+            container.insertBefore(card.nextElementSibling, card);
         }
     },
 
     addSponsorFields(container, data = {}) {
-        const sponsorId = `sponsor-${Date.now()}`;
-        const fieldset = document.createElement('fieldset');
-        fieldset.classList.add('item-fieldset');
-        fieldset.innerHTML = `
-            <legend>Patrocinador</legend>
-            <button type="button" class="btn-remove-item">&times;</button>
-            <label for="logo-${sponsorId}">URL del Logo:</label>
-            <input type="text" id="logo-${sponsorId}" class="sponsor-logo-url" value="${data.logoUrl || ''}">
-            <label for="url-${sponsorId}">URL del Sitio Web:</label>
-            <input type="text" id="url-${sponsorId}" class="sponsor-site-url" value="${data.siteUrl || ''}">
+        const id = `sp-${Date.now()}`;
+        const div = document.createElement('div'); div.className = 'item-fieldset';
+        div.innerHTML = `
+            <button type="button" class="btn-remove-item" onclick="this.parentElement.remove()">&times;</button>
+            <div class="form-group mb-2"><label>URL del Logo:</label><input type="text" class="sponsor-logo-url" value="${data.logoUrl || ''}"></div>
+            <div class="form-group"><label>Enlace Web:</label><input type="text" class="sponsor-site-url" value="${data.siteUrl || ''}"></div>
         `;
-        container.appendChild(fieldset);
-        fieldset.querySelector('.btn-remove-item').addEventListener('click', () => fieldset.remove());
+        container.appendChild(div);
     },
 
-    addTimelineMilestoneFields(container, data = {}) {
-        const milestoneId = `milestone-${Date.now()}`;
-        const fieldset = document.createElement('fieldset');
-        fieldset.classList.add('item-fieldset');
-        fieldset.innerHTML = `
-            <legend>Hito</legend>
-            <button type="button" class="btn-remove-item">&times;</button>
-            <label for="date-${milestoneId}">Fecha o Periodo (ej: "Q1 2024"):</label>
-            <input type="text" id="date-${milestoneId}" class="milestone-date" value="${data.date || ''}">
-            <label for="title-${milestoneId}">Título del Hito:</label>
-            <input type="text" id="title-${milestoneId}" class="milestone-title" value="${data.title || ''}">
-            <label for="desc-${milestoneId}">Descripción:</label>
-            <textarea id="desc-${milestoneId}" class="milestone-description" rows="3">${data.description || ''}</textarea>
+    addTimelineFields(container, data = {}) {
+        const id = `tm-${Date.now()}`;
+        const div = document.createElement('div'); div.className = 'item-fieldset';
+        div.innerHTML = `
+            <button type="button" class="btn-remove-item" onclick="this.parentElement.remove()">&times;</button>
+            <div class="form-group mb-2"><label>Fecha (Ej: Mayo 2024):</label><input type="text" class="milestone-date" value="${data.date || ''}"></div>
+            <div class="form-group mb-2"><label>Título:</label><input type="text" class="milestone-title" value="${data.title || ''}"></div>
+            <div class="form-group"><label>Descripción:</label><textarea class="milestone-description" style="min-height:60px;">${data.description || ''}</textarea></div>
         `;
-        container.appendChild(fieldset);
-        fieldset.querySelector('.btn-remove-item').addEventListener('click', () => fieldset.remove());
+        container.appendChild(div);
     },
 
-    /**
-     * Recopila los datos del formulario y los guarda en Supabase.
-     */
+    // --- GUARDADO FINAL ---
     async handleFormSubmit(event) {
         event.preventDefault();
         tinymce.triggerSave();
-        const saveButton = document.getElementById('save-btn');
-        saveButton.disabled = true;
-        saveButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
         
+        const saveBtn = document.getElementById('save-btn-header');
+        const originalText = saveBtn.innerHTML;
+        saveBtn.disabled = true; saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+        
+        // Validar Slug (Regex básico para URLs limpias)
+        let slugInput = document.getElementById('project-slug').value.trim();
+        slugInput = slugInput.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
+        document.getElementById('project-slug').value = slugInput;
+
         const micrositeData = {
-            cover: {
-                headline: document.getElementById('cover-headline').value,
-                imageUrl: document.getElementById('cover-image-url').value,
-            },
-            seo: {
-                imageUrl: document.getElementById('seo-image-url').value,
-            },
-            summary: {
-                content: document.getElementById('summary-content').value,
-            },
+            cover: { headline: document.getElementById('cover-headline').value, imageUrl: document.getElementById('cover-image-url').value },
+            seo: { imageUrl: document.getElementById('seo-image-url').value },
+            summary: { content: document.getElementById('summary-content').value },
             custom_modules: []
         };
 
+        // Recorrer los módulos en el orden visual actual
         document.querySelectorAll('#custom-modules-container .module-card').forEach(moduleEl => {
-            const moduleType = moduleEl.dataset.moduleType;
-            let moduleData = {
-                id: moduleEl.dataset.moduleId,
-                type: moduleType,
-                title: moduleEl.querySelector('.module-title').value,
-            };
+            const type = moduleEl.dataset.moduleType;
+            let moduleData = { id: moduleEl.dataset.moduleId, type: type, title: moduleEl.querySelector('.module-title').value };
 
-            if (moduleType === 'text' || moduleType === 'embed') {
-                moduleData.content = moduleEl.querySelector('.module-content').value;
-            } else if (moduleType === 'subscription') { // --- NUEVA LÓGICA ---
-                moduleData.text = moduleEl.querySelector('.module-text').value;
-                moduleData.url = moduleEl.querySelector('.module-url').value;
-            }
-            else if (moduleType === 'sponsors') {
-                moduleData.sponsors = [];
-                moduleEl.querySelectorAll('.item-fieldset').forEach(sponsorEl => {
-                    moduleData.sponsors.push({
-                        logoUrl: sponsorEl.querySelector('.sponsor-logo-url').value,
-                        siteUrl: sponsorEl.querySelector('.sponsor-site-url').value
-                    });
-                });
-            }
-            else if (moduleType === 'timeline') {
-                moduleData.milestones = [];
-                moduleEl.querySelectorAll('.item-fieldset').forEach(milestoneEl => {
-                    moduleData.milestones.push({
-                        date: milestoneEl.querySelector('.milestone-date').value,
-                        title: milestoneEl.querySelector('.milestone-title').value,
-                        description: milestoneEl.querySelector('.milestone-description').value
-                    });
-                });
+            if (type === 'text' || type === 'embed') { moduleData.content = moduleEl.querySelector('.module-content').value; } 
+            else if (type === 'subscription') {
+                moduleData.text = moduleEl.querySelector('.module-text').value; moduleData.url = moduleEl.querySelector('.module-url').value;
+            } 
+            else if (type === 'sponsors') {
+                moduleData.sponsors = Array.from(moduleEl.querySelectorAll('.item-fieldset')).map(el => ({
+                    logoUrl: el.querySelector('.sponsor-logo-url').value, siteUrl: el.querySelector('.sponsor-site-url').value
+                }));
+            } 
+            else if (type === 'timeline') {
+                moduleData.milestones = Array.from(moduleEl.querySelectorAll('.item-fieldset')).map(el => ({
+                    date: el.querySelector('.milestone-date').value, title: el.querySelector('.milestone-title').value, description: el.querySelector('.milestone-description').value
+                }));
             }
             micrositeData.custom_modules.push(moduleData);
         });
 
-        const isPublic = document.getElementById('microsite-is-public').checked;
-        const associatedEventId = document.getElementById('associated-event-select').value;
-        const templateStyle = document.getElementById('template-style-select').value;
-        const colorPalette = document.getElementById('color-palette-select').value; 
+        const updates = { 
+            microsite_content: micrositeData, 
+            microsite_is_public: document.getElementById('microsite-is-public').checked, 
+            template_style: document.getElementById('template-style-select').value, 
+            color_palette: document.getElementById('color-palette-select').value,
+            associated_event_id: document.getElementById('associated-event-select').value || null,
+            slug: slugInput
+        };
 
-        const { error } = await this.supabase
-            .from('projects')
-            .update({ 
-                microsite_content: micrositeData, 
-                microsite_is_public: isPublic, 
-                template_style: templateStyle, 
-                color_palette: colorPalette,
-                associated_event_id: associatedEventId || null
-            })
-            .eq('id', this.currentProject.id);
-        if (error) {
-            console.error("Error al guardar:", error);
-            alert("Hubo un error al guardar. Revisa la consola.");
-        } else {
-            alert("¡Microsite guardado con éxito!");
+        const { error } = await this.supabase.from('projects').update(updates).eq('id', this.currentProject.id);
+        
+        saveBtn.disabled = false; saveBtn.innerHTML = originalText;
+        if (error) { console.error("Error al guardar:", error); alert("Hubo un error al guardar. Revisa la consola."); } 
+        else { 
+            this.currentProject.slug = slugInput; // Actualizamos memoria local
+            alert("¡Microsite publicado y guardado con éxito!"); 
         }
-        saveButton.disabled = false;
-        saveButton.innerHTML = '<i class="fa-solid fa-save"></i> Guardar Cambios';
     }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-    MicrositeEditorApp.init();
-});
+document.addEventListener('DOMContentLoaded', () => MicrositeEditorApp.init());

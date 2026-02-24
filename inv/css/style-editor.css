@@ -1,315 +1,166 @@
-/* --- Variables y Estilos Globales --- */
+/* =================================================================
+ * ARCHIVO ACTUALIZADO: /inv/css/style-editor.css (SaaS Builder UI)
+ * ================================================================= */
+
 :root {
-    --primary-color: #3B82F6;
-    --background-color: #f4f7f9;
-    --panel-background: #FFFFFF;
-    --border-color: #e2e8f0;
-    --text-color: #334155;
-    --text-light-color: #64748b;
-    --success-color: #10B981;
+    --primary-color: #b72a1e;
+    --primary-hover: #962218;
+    --background-color: #f3f4f6;
+    --panel-background: #ffffff;
+    --border-color: #e5e7eb;
+    --text-color: #1f2937;
+    --text-light-color: #6b7280;
+    --success-color: #10b981;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    --transition: 0.2s ease;
 }
 
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: var(--background-color);
-    color: var(--text-color);
-    margin: 0;
-    line-height: 1.6;
+body { font-family: 'Inter', -apple-system, sans-serif; background-color: var(--background-color); color: var(--text-color); margin: 0; }
+.text-accent { color: var(--primary-color); }
+.mb-2 { margin-bottom: 0.5rem; } .mb-3 { margin-bottom: 1rem; } .mt-2 { margin-top: 0.5rem; } .mt-3 { margin-top: 1rem; }
+
+/* --- HEADER FLOTANTE --- */
+.editor-main-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem; background: var(--panel-background); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1000; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+.header-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--text-color); font-weight: 700; font-size: 1.1rem; }
+.header-logo img { height: 32px; }
+.header-nav { display: flex; gap: 1rem; align-items: center; }
+.header-nav a { text-decoration: none; color: var(--text-light-color); font-weight: 500; transition: var(--transition); }
+.header-nav a:hover { color: var(--primary-color); }
+
+/* Botones Superiores */
+.btn-header-secondary { background: #f3f4f6; border: none; padding: 8px 16px; border-radius: 50px; color: var(--text-color); font-weight: 600; cursor: pointer; transition: var(--transition); }
+.btn-header-secondary:hover { background: #e5e7eb; }
+.btn-header-primary { background: var(--primary-color); border: none; padding: 8px 20px; border-radius: 50px; color: white; font-weight: 600; cursor: pointer; transition: var(--transition); box-shadow: 0 4px 10px rgba(183, 42, 30, 0.2); }
+.btn-header-primary:hover { background: var(--primary-hover); transform: translateY(-2px); }
+
+/* --- CONTENEDOR CENTRAL --- */
+.editor-panel { max-width: 950px; margin: 2rem auto; }
+.editor-hero { text-align: center; margin-bottom: 2rem; }
+.editor-hero h1 { font-size: 2rem; margin: 0 0 0.5rem 0; font-weight: 800; }
+.editor-hero p { color: var(--text-light-color); margin: 0; }
+
+/* --- SECCIONES TIPO BUILDER --- */
+.builder-section { background: var(--panel-background); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 2rem; margin-bottom: 2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
+.builder-section legend { display: none; /* Ocultamos el legend nativo feo */ }
+.builder-section > legend { display: block; font-size: 1.2rem; font-weight: 700; padding: 0 10px; background: var(--panel-background); margin-left: -10px; color: var(--text-color); }
+.readonly-section { background: #fafafa; border: 1px dashed #d1d5db; }
+.bg-light-panel { background: #f8fafc; }
+
+/* --- FORMULARIOS --- */
+.form-group { margin-bottom: 1.5rem; }
+label { display: block; font-weight: 600; font-size: 0.95rem; margin-bottom: 8px; color: #374151; }
+.form-hint { font-size: 0.85rem; color: var(--text-light-color); }
+.flex-between { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px; }
+
+input[type="text"], textarea, .modern-select { width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.95rem; font-family: inherit; transition: var(--transition); background: #f9fafb; }
+input[type="text"]:focus, textarea:focus, .modern-select:focus { outline: none; border-color: var(--primary-color); background: white; box-shadow: 0 0 0 3px rgba(183, 42, 30, 0.1); }
+textarea { min-height: 100px; resize: vertical; }
+
+/* Upload & AI Inputs */
+.input-with-upload, .input-with-ai { display: flex; gap: 10px; }
+.btn-upload, .ai-button { background: white; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0 20px; font-weight: 600; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; white-space: nowrap; color: var(--text-color); }
+.btn-upload:hover { border-color: var(--primary-color); color: var(--primary-color); background: #fff5f5; }
+.ai-button { color: #8b5cf6; border-color: #ddd6fe; background: #f5f3ff; }
+.ai-button:hover { background: #ede9fe; border-color: #8b5cf6; }
+.ai-button-text { background: none; border: none; color: #8b5cf6; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+.ai-button-text:hover { text-decoration: underline; }
+
+/* Slug Editor */
+.slug-editor { display: flex; align-items: center; background: #f9fafb; border: 1px solid var(--border-color); border-radius: var(--radius-sm); overflow: hidden; }
+.slug-prefix { padding: 12px 16px; background: #e5e7eb; color: #4b5563; font-weight: 500; font-size: 0.95rem; border-right: 1px solid var(--border-color); }
+.slug-editor input { border: none; border-radius: 0; background: transparent; padding-left: 10px; box-shadow: none !important; font-weight: 600; color: var(--primary-color); }
+
+/* --- MÓDULOS DRAG & DROP --- */
+.modules-canvas { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem; }
+.module-card { background: white; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1.5rem; position: relative; transition: var(--transition); box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+.module-card:hover { border-color: #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+.module-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #f3f4f6; }
+.module-header h4 { margin: 0; font-size: 1rem; color: #4b5563; display: flex; align-items: center; gap: 8px; }
+
+/* Botones de Reordenamiento */
+.module-card-actions { display: flex; gap: 5px; }
+.mod-btn { background: #f3f4f6; border: none; width: 30px; height: 30px; border-radius: 6px; color: #6b7280; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; }
+.mod-btn:hover { background: #e5e7eb; color: #1f2937; }
+.mod-btn.delete:hover { background: #fee2e2; color: #ef4444; }
+
+.module-actions-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: #f8fafc; padding: 10px 15px; border-radius: var(--radius-sm); border: 1px dashed #cbd5e1; }
+.module-actions-bar span { font-size: 0.9rem; font-weight: 600; color: #6b7280; margin-right: 10px; }
+.btn-add-mod { background: white; border: 1px solid var(--border-color); border-radius: 50px; padding: 6px 15px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: var(--transition); color: var(--text-color); }
+.btn-add-mod:hover { border-color: var(--primary-color); color: var(--primary-color); }
+
+/* --- ELEMENTOS DINÁMICOS Y SWITCHES --- */
+.sync-grids { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.mini-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.preview-card { background: white; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 12px; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+.preview-card img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
+.preview-card h5 { margin: 0; font-weight: 500; }
+
+.settings-grid { display: grid; grid-template-columns: 1fr 1fr 150px; gap: 1.5rem; align-items: start; }
+.setting-box { display: flex; flex-direction: column; }
+.flex-center-col { align-items: center; justify-content: center; border-left: 1px solid #e5e7eb; padding-left: 1.5rem; }
+.status-text { font-size: 0.85rem; font-weight: 600; color: var(--text-light-color); }
+.status-text.public { color: var(--success-color); }
+
+/* Modern Switch */
+.switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 34px; }
+.slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+input:checked + .slider { background-color: var(--success-color); }
+input:checked + .slider:before { transform: translateX(22px); }
+
+/* Repetición de Items (Patrocinadores/Timeline) */
+.item-fieldset { padding: 15px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fafafa; margin-top: 10px; position: relative; }
+.btn-remove-item { position: absolute; top: 10px; right: 10px; background: none; border: none; color: #ef4444; font-size: 1.2rem; cursor: pointer; }
+.btn-add-item { background: white; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 10px; width: 100%; text-align: center; color: var(--text-light-color); font-weight: 600; margin-top: 10px; cursor: pointer; transition: var(--transition); }
+.btn-add-item:hover { border-color: var(--primary-color); color: var(--primary-color); background: #fff5f5; }
+/* --- CORRECCIONES DE DESBORDAMIENTO (BOX-SIZING GLOBAL) --- */
+* { box-sizing: border-box; } /* CRÍTICO para que los inputs no se salgan de sus cajas */
+
+input[type="text"], textarea, .modern-select { 
+    max-width: 100%; /* Evita que crezcan más allá de su contenedor padre */
 }
 
-/* --- NUEVO: ESTILOS PARA EL MENÚ SUPERIOR DEL EDITOR --- */
-.editor-main-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 2rem;
-    background-color: var(--panel-background);
-    border-bottom: 1px solid var(--border-color);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-}
-.header-logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    text-decoration: none;
-    color: var(--text-color);
-    font-weight: 600;
-}
-.header-logo img {
-    height: 30px;
-}
-.header-nav {
-    display: flex;
-    gap: 1.5rem;
-}
-.header-nav a {
-    text-decoration: none;
-    color: var(--text-light-color);
-    transition: color 0.2s;
-}
-.header-nav a:hover {
-    color: var(--primary-color);
-}
-
-/* --- Contenedor Principal --- */
-.editor-panel {
-    max-width: 900px;
-    margin: 2rem auto; /* Esto centra el panel horizontalmente */
-    padding: 40px;
-    background-color: var(--panel-background);
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-}
-/* --- Cabecera y Formulario --- */
-.editor-header {
-    margin-bottom: 40px;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 20px;
-}
-.editor-header h1 {
-    margin: 0;
-    font-size: 28px;
-}
-.editor-header p {
-    margin: 0;
-    color: var(--text-light-color);
-}
-
-fieldset {
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 30px;
-}
-legend {
-    font-weight: 600;
-    padding: 0 10px;
-}
-legend i {
-    margin-right: 8px;
-    color: var(--primary-color);
-}
-
-label {
-    display: block;
-    font-weight: 500;
-    margin-bottom: 8px;
-}
-
-input[type="text"], textarea {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    font-size: 16px;
-    box-sizing: border-box; /* Asegura que el padding no afecte el ancho total */
-}
-
-textarea {
-    min-height: 120px;
-    resize: vertical;
-}
-
-/* --- Botones --- */
-button {
-    padding: 12px 20px;
-    border: none;
-    border-radius: 6px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-button i {
-    margin-right: 8px;
-}
-
-#save-btn {
-    background-color: var(--primary-color);
-    color: white;
-}
-#save-btn:hover {
-    background-color: #2563EB;
-}
-
-.secondary-button, .module-actions button {
-    background-color: #e2e8f0;
-    color: var(--text-color);
-}
-.secondary-button:hover, .module-actions button:hover {
-    background-color: #cbd5e1;
-}
-
-.final-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 15px;
-}
-
-/* --- Elementos con IA --- */
-.input-with-ai {
-    position: relative;
-    display: flex;
-}
-.ai-button {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: linear-gradient(135deg, #60A5FA, #3B82F6);
-    color: white;
-    padding: 6px 10px;
-    border-radius: 5px;
-    font-size: 14px;
-}
-.ai-button-textarea {
-    top: 20px; /* Ajuste para textareas */
-    transform: none;
-}
-.ai-button:hover {
-    opacity: 0.9;
-}
-
-/* --- Módulos de Contenido Dinámicos --- */
-#custom-modules-container {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
+/* --- MÓDULOS COLAPSABLES (ACORDEONES) --- */
 .module-card {
-    background-color: #f8fafc;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 20px;
+    overflow: hidden; /* Evita desbordes cuando está colapsado */
 }
 .module-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
+    cursor: pointer; /* Indica que toda la cabecera es clickeable */
+    background: #f9fafb;
+    margin: -1.5rem -1.5rem 1rem -1.5rem; /* Extiende el header hasta los bordes de la tarjeta */
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    transition: background var(--transition);
 }
-.module-header h4 {
-    margin: 0;
+.module-header:hover {
+    background: #f3f4f6;
 }
-.module-card-actions button {
-    background: none;
-    border: none;
-    cursor: pointer;
+.module-body {
+    transition: max-height 0.3s ease-out, opacity 0.3s ease-out, padding 0.3s ease-out;
+    max-height: 2000px; /* Un valor alto suficiente para el contenido desplegado */
+    opacity: 1;
+}
+
+/* Estado Colapsado */
+.module-card.collapsed .module-body {
+    max-height: 0;
+    opacity: 0;
+    margin-bottom: -1rem; /* Compensa el padding inferior para ocultarlo por completo */
+    pointer-events: none; /* Evita clics accidentales mientras está oculto */
+}
+.module-card.collapsed .module-header {
+    margin-bottom: -1.5rem; /* Quita el margen inferior cuando está colapsado */
+    border-bottom: none;
+}
+/* Icono indicador (Flecha rotatoria) */
+.toggle-collapse-icon {
+    transition: transform var(--transition);
     color: var(--text-light-color);
-    padding: 5px;
-}
-.module-card-actions button:hover {
-    color: var(--text-color);
-}
-.module-actions {
-    margin-top: 20px;
-    display: flex;
-    gap: 10px;
-}
-/* --- Añadir al final de style-editor.css --- */
-.publish-toggle { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; }
-.form-hint { color: var(--text-light-color); font-size: 14px; margin: 0; flex-basis: 100%; }
-.switch { position: relative; display: inline-block; width: 60px; height: 34px; }
-.switch input { opacity: 0; width: 0; height: 0; }
-.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; }
-.slider.round { border-radius: 34px; }
-.slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
-input:checked + .slider { background-color: var(--primary-color); }
-input:checked + .slider:before { transform: translateX(26px); }
-
-/* --- Añadir a tus estilos del editor --- */
-.preview-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-top: 1rem;
-}
-
-.preview-card {
-    background-color: #f8fafc;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 1rem;
     font-size: 0.9rem;
+    margin-right: 10px;
 }
-.preview-card h5 {
-    margin: 0 0 0.5rem 0;
-}
-.preview-card p {
-    margin: 0;
-    color: var(--text-light-color);
-    font-size: 0.8rem;
-}
-.researcher-card {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.researcher-card img {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    object-fit: cover;
-}
-/* --- NUEVO: ESTILOS PARA MÓDULOS CON ITEMS (PATROCINADORES) --- */
-.sponsors-list-editor {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin-top: 1rem;
-    border-left: 2px solid var(--border-color);
-    padding-left: 1rem;
-}
-.item-fieldset {
-    padding: 1rem !important;
-    position: relative;
-    border-style: dashed !important;
-}
-.btn-add-item {
-    margin-top: 1rem;
-    background-color: var(--background-color) !important;
-}
-.btn-remove-item {
-    position: absolute;
-    top: -10px;
-    right: 5px;
-    background: none !important;
-    font-size: 1.5rem;
-    padding: 0 5px;
-    color: var(--text-light-color);
-}
-/* --- NUEVO: ESTILOS PARA FORMULARIOS Y SELECTORES DE DISEÑO --- */
-.form-group {
-    margin-bottom: 1.5rem;
-}
-.form-group:last-child {
-    margin-bottom: 0;
-}
-
-select {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    font-size: 16px;
-    box-sizing: border-box;
-    font-family: inherit;
-    background-color: white;
-    cursor: pointer;
-
-    /* Estilos para quitar la flecha por defecto y poner una personalizada */
-    -webkit-appearance: none;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-    background-position: right 0.75rem center;
-    background-repeat: no-repeat;
-    background-size: 1.5em 1.5em;
-}
-
-.design-selectors {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
+.module-card.collapsed .toggle-collapse-icon {
+    transform: rotate(-90deg); /* La flecha apunta a la derecha cuando está cerrado */
 }

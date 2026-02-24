@@ -3,78 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conoce más el proyecto...</title>
+    <title>Proyecto - Epistecnología</title>
 
-    <meta property="og:type" content="website">
-    <meta property="og:title" id="og-title" content="Epistecnología">
-    <meta property="og:description" id="og-description" content="Una plataforma para la divulgación científica y cultural.">
-    <meta property="og:image" id="og-image" content="https://i.ibb.co/x8JbV61H/a-futuristic-digital-artwork-depicting-a-k9-Jb0c-3-R0u8by-Ev-GGOrw-x-Ait-Jamg-RCat9-GLc-O810jg.jpg">
-    <meta property="og:url" id="og-url" content="">
-    <meta name="twitter:card" content="summary_large_image">
-
+    <link href="https://fonts.googleapis.com" rel="preconnect">
+    <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
     <link rel="stylesheet" href="/css/site.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 </head>
-<body>
+<body class="palette-dark">
 
-    <nav class="site-nav">
+    <nav class="site-nav" id="site-nav">
         <div class="nav-content">
             <span id="nav-project-title" class="nav-project-title"></span>
-            <button id="mobile-menu-btn" class="mobile-menu-btn">
-                <i class="fa-solid fa-bars"></i>
-            </button>
-            <ul id="nav-link-list">
-                <li><a href="#summary-section">Resumen</a></li>
-                <li><a href="#team-section">Equipo</a></li>
-                <li><a href="#sessions-section">Eventos</a></li>
-                <li><a href="#posts-section">Publicaciones</a></li>
-            </ul>
+            
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <ul id="nav-link-list">
+                    <li><a href="#summary-bento">Resumen</a></li>
+                    <li><a href="#team-bento">Equipo</a></li>
+                    <li><a href="#events-container">Eventos</a></li>
+                    <li><a href="#posts-bento">Artículos y más</a></li>
+                </ul>
+                <button id="theme-switcher-btn" class="btn-theme" title="Cambiar Tema"><i class="fa-solid fa-sun"></i></button>
+                <button id="mobile-menu-btn" class="mobile-menu-btn"><i class="fa-solid fa-bars"></i></button>
+            </div>
         </div>
     </nav>
 
-    <header id="cover-section" class="cover">
-        <div class="cover-content">
-            <h1 id="cover-headline"></h1>
-            <p id="project-authors-list"></p>
+    <header id="cover-section" class="cover-cinematic">
+        <div class="cover-overlay"></div>
+        <div class="cover-content scroll-animate">
+            <div class="hero-badge"><span class="badge">✨ Proyecto de Investigación</span></div>
+            <h1 id="cover-headline">Cargando...</h1>
+            <p id="project-authors-list" class="lead-text"></p>
+            <div class="hero-buttons">
+                <a href="#bento-main-grid" class="btn btn-primary">Explorar Proyecto <i class="fa-solid fa-arrow-down"></i></a>
+            </div>
         </div>
     </header>
 
-    <main class="site-container">
-        <section id="summary-section" class="site-section scroll-animate">
-            <h2 id="summary-title"></h2>
-            <div id="summary-content" class="prose"></div>
-        </section>
-
-        <section id="team-section" class="site-section scroll-animate">
-            <h2>Los Investigadores</h2>
-            <div id="researchers-container" class="team-grid"></div>
-        </section>
-
-        <section id="sessions-section" class="site-section scroll-animate">
-            <h2>Eventos y Actividades</h2>
-            <div id="sessions-container" class="card-grid"></div>
-        </section>
-
-        <section id="posts-section" class="site-section scroll-animate">
-            <h2>Artículos y Resultados</h2>
-            <div id="posts-container" class="card-grid"></div>
-        </section>
-
-        <div id="custom-modules-container">
+    <main class="container">
+        <div id="bento-main-grid" class="bento-grid">
+            
+            <div id="summary-bento" class="bento-box span-8 scroll-animate">
+                <div class="bento-header">
+                    <i class="fa-solid fa-book-open text-accent"></i>
+                    <h2>Acerca del Proyecto</h2>
+                </div>
+                <div id="summary-content" class="prose"></div>
             </div>
 
+            <div id="team-bento" class="bento-box span-4 scroll-animate">
+                <div class="bento-header">
+                    <i class="fa-solid fa-users text-accent"></i>
+                    <h2>El Equipo</h2>
+                </div>
+                <div id="researchers-container" class="team-list"></div>
+            </div>
+
+            <div id="events-container" style="display: contents;"></div>
+
+            <div id="posts-bento" class="bento-box span-12 scroll-animate" style="display: none;">
+                <div class="bento-header">
+                    <i class="fa-solid fa-newspaper text-accent"></i>
+                    <h2>Publicaciones y Resultados</h2>
+                </div>
+                <div id="posts-container" class="posts-grid"></div>
+            </div>
+
+            <div id="custom-modules-container" style="display: contents;"></div>
+
+        </div>
     </main>
 
-    <footer class="site-footer">
-        <p>Publicado a través de la plataforma Epistecnología</p>
+    <footer class="footer">
+        <p>© Epistecnología. Todos los derechos reservados.</p>
     </footer>
 
-    <div id="researcher-modal-overlay" class="modal-overlay">
-        <div class="modal-content">
-            <button id="modal-close-btn" class="modal-close-btn">&times;</button>
-            <div id="modal-profile-content">
+    <div id="article-modal-overlay" class="modal-overlay">
+        <div class="modal-content article-modal">
+            <button class="modal-close-btn" onclick="document.getElementById('article-modal-overlay').classList.remove('is-visible')">&times;</button>
+            <div class="article-modal-header">
+                <span class="article-badge">Artículo Publicado</span>
+                <h2 id="modal-article-title">Título</h2>
+                <div class="article-meta">
+                    <span id="modal-article-doi" class="doi-badge"><i class="fa-solid fa-fingerprint"></i> DOI</span>
                 </div>
+            </div>
+            <div id="modal-article-content" class="prose article-body"></div>
+            <div class="article-modal-footer">
+                <a id="modal-article-link" href="#" target="_blank" class="btn btn-primary w-100"><i class="fa-solid fa-book-open"></i> Leer en la Revista Oficial</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="researcher-modal-overlay" class="modal-overlay">
+        <div class="modal-content profile-modal">
+            <button class="modal-close-btn" onclick="document.getElementById('researcher-modal-overlay').classList.remove('is-visible')">&times;</button>
+            <div id="modal-profile-content"></div>
         </div>
     </div>
 

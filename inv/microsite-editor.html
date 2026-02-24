@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editor de Microsite del Proyecto</title>
+    <title>Editor de Microsite - Epistecnología</title>
     
     <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
     <link rel="stylesheet" href="/inv/css/style-editor.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script src="https://cdn.tiny.cloud/1/wac03ii8izevsozn0if0ssfme0syw62i0zw7szp05f8trx3o/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 </head>
 <body>
@@ -15,131 +15,145 @@
     <header class="editor-main-header">
         <a href="/inv/dashboard.html" class="header-logo">
             <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo">
-            <span>Editor de Microsite</span>
+            <span>Editor Visual</span>
         </a>
         <nav class="header-nav">
             <a href="/inv/dashboard.html"><i class="fa-solid fa-table-columns"></i> Dashboard</a>
-            <a href="/inv/profile.html"><i class="fa-solid fa-user"></i> Mi Perfil</a>
+            <button id="preview-btn-header" class="btn-header-secondary"><i class="fa-solid fa-eye"></i> Previsualizar</button>
+            <button id="save-btn-header" class="btn-header-primary"><i class="fa-solid fa-cloud-arrow-up"></i> Publicar Cambios</button>
         </nav>
     </header>
 
     <div class="editor-container">
         <div class="editor-panel">
-            <header class="editor-header">
-                <h1>Editor del Microsite</h1>
-                <p>Construye la página pública de tu proyecto.</p>
-            </header>
+            <div class="editor-hero">
+                <h1>Construye tu Legado</h1>
+                <p>Diseña la experiencia inmersiva de tu proyecto científico.</p>
+            </div>
 
             <form id="microsite-form">
                 
-                <fieldset>
-                    <legend><i class="fa-solid fa-image"></i> Portada</legend>
-                    <label for="cover-headline">Titular Principal:</label>
-                    <div class="input-with-ai">
-                        <input type="text" id="cover-headline" name="cover-headline" placeholder="Un titular breve y potente...">
-                        <button type="button" class="ai-button" data-target="cover-headline" data-prompt="generate_microsite_headline" title="Generar con IA">✨</button>
+                <fieldset class="builder-section">
+                    <legend><i class="fa-solid fa-image text-accent"></i> 1. Impacto Visual (Portada)</legend>
+                    
+                    <div class="form-group">
+                        <label for="cover-headline">Titular Principal:</label>
+                        <div class="input-with-ai">
+                            <input type="text" id="cover-headline" placeholder="Un titular breve y potente...">
+                            <button type="button" class="ai-button" data-target="cover-headline" title="Generar Título con IA"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
+                        </div>
                     </div>
                     
-                    <label for="cover-image-url">URL de Imagen de Fondo:</label>
-                    <input type="text" id="cover-image-url" name="cover-image-url" placeholder="https://ejemplo.com/imagen.jpg">
+                    <div class="form-group">
+                        <label for="cover-image-url">Imagen de Fondo (Cinemática):</label>
+                        <div class="input-with-upload">
+                            <input type="text" id="cover-image-url" placeholder="Sube una imagen o pega una URL...">
+                            <input type="file" id="file-cover-image" accept="image/*" style="display:none;">
+                            <button type="button" class="btn-upload" onclick="document.getElementById('file-cover-image').click()"><i class="fa-solid fa-cloud-arrow-up"></i> Subir</button>
+                        </div>
+                    </div>
 
-                    <label for="seo-image-url">URL de Miniatura para Redes (SEO):</label>
-                    <p class="form-hint">Esta imagen se mostrará cuando compartas el enlace. Si lo dejas en blanco, se usará la imagen de fondo.</p>
-                    <input type="text" id="seo-image-url" name="seo-image-url" placeholder="URL de imagen cuadrada o 1200x630px">
-                </fieldset>
-
-                <fieldset>
-                    <legend><i class="fa-solid fa-bullseye"></i> Resumen / El Problema</legend>
-                    <label for="summary-content">Contenido del Resumen:</label>
-                    <div class="input-with-ai">
-                        <textarea id="summary-content" name="summary-content" class="tinymce-editor" placeholder="Explica tu proyecto de forma sencilla..."></textarea>
-                        <button type="button" class="ai-button ai-button-textarea" data-target="summary-content" data-prompt="generate_accessible_summary" title="Reformular con IA">✨</button>
+                    <div class="form-group">
+                        <label for="seo-image-url">Miniatura para Redes Sociales (SEO):</label>
+                        <div class="input-with-upload">
+                            <input type="text" id="seo-image-url" placeholder="Imagen que se verá al compartir en WhatsApp/Bluesky...">
+                            <input type="file" id="file-seo-image" accept="image/*" style="display:none;">
+                            <button type="button" class="btn-upload" onclick="document.getElementById('file-seo-image').click()"><i class="fa-solid fa-cloud-arrow-up"></i> Subir</button>
+                        </div>
                     </div>
                 </fieldset>
 
-                <fieldset>
-                    <legend><i class="fa-solid fa-users"></i> Equipo de Investigadores</legend>
-                    <p class="form-hint">Esta sección se llena automáticamente con los autores de tu proyecto. Los perfiles con cuenta en la plataforma se mostrarán con más detalle.</p>
-                    <div id="researchers-preview-container" class="preview-grid">
-                        <p>Cargando investigadores...</p>
+                <fieldset class="builder-section">
+                    <legend><i class="fa-solid fa-bullseye text-accent"></i> 2. La Esencia (Resumen)</legend>
+                    <div class="form-group">
+                        <div class="flex-between">
+                            <label for="summary-content">Contenido del Proyecto:</label>
+                            <button type="button" class="ai-button-text" id="ai-rewrite-summary" title="Simplificar y mejorar redacción con IA"><i class="fa-solid fa-wand-magic-sparkles"></i> Mejorar con IA</button>
+                        </div>
+                        <textarea id="summary-content" class="tinymce-editor" placeholder="Desarrolla la idea central de tu investigación..."></textarea>
                     </div>
                 </fieldset>
 
-                <fieldset>
-                    <legend><i class="fa-solid fa-podcast"></i> Eventos y Sesiones</legend>
-                    <p class="form-hint">Aquí aparecerán todas las sesiones de divulgación asociadas a este proyecto.</p>
-                    <div id="sessions-preview-container" class="preview-grid">
-                        <p>Cargando sesiones...</p>
+                <fieldset class="builder-section readonly-section">
+                    <legend><i class="fa-solid fa-database text-accent"></i> 3. Datos Sincronizados</legend>
+                    <p class="form-hint mb-3">Estos datos se extraen automáticamente de tu base de datos central.</p>
+                    
+                    <div class="sync-grids" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem;">
+                        <div class="sync-col">
+                            <h5><i class="fa-solid fa-users"></i> Equipo</h5>
+                            <div id="researchers-preview-container" class="preview-grid mini-grid"></div>
+                        </div>
+                        <div class="sync-col">
+                            <h5><i class="fa-solid fa-video"></i> Sesiones</h5>
+                            <div id="sessions-preview-container" class="preview-grid mini-grid"></div>
+                        </div>
+                        <div class="sync-col">
+                            <h5><i class="fa-solid fa-newspaper"></i> Artículos Públicos</h5>
+                            <div id="posts-preview-container" class="preview-grid mini-grid"></div>
+                        </div>
                     </div>
-                </fieldset>
 
-                <fieldset>
-                    <legend><i class="fa-solid fa-file-alt"></i> Artículos y Publicaciones</legend>
-                    <p class="form-hint">Aquí aparecerán todos los posts y borradores asociados a este proyecto.</p>
-                    <div id="posts-preview-container" class="preview-grid">
-                        <p>Cargando publicaciones...</p>
-                    </div>
-                </fieldset>
-
-                <fieldset>
-                    <legend><i class="fa-solid fa-calendar-star"></i> Evento Principal Asociado</legend>
-                    <p class="form-hint">Si este proyecto tiene un evento principal (congreso, foro, etc.), selecciónalo aquí para mostrar una tarjeta destacada en el microsite.</p>
-                    <select id="associated-event-select">
-                        <option value="">Ninguno</option>
+                    <div class="form-group mt-3">
+                        <label for="associated-event-select">Asignar Evento Principal:</label>
+                        <select id="associated-event-select" class="modern-select">
+                            <option value="">-- Ningún evento asociado --</option>
                         </select>
-                </fieldset>
-
-                <fieldset>
-                    <legend><i class="fa-solid fa-layer-group"></i> Módulos de Contenido</legend>
-                    <p class="form-hint">Para video YouTube, pegar solo el url, para otras plataformas incrustar usar SOLO el link de incrustar no el código ni el link directo.</p>
-                    <div id="custom-modules-container">
-                        </div>
-                    <div class="module-actions">
-                        <button type="button" id="add-text-module-btn"><i class="fa-solid fa-plus"></i> Añadir Módulo de Texto</button>
-                        <button type="button" id="add-embed-module-btn"><i class="fa-solid fa-plus"></i> Añadir Módulo de Enlace/Embed</button>
-                        <button type="button" id="add-subscription-module-btn"><i class="fa-solid fa-envelope-open-text"></i> Añadir Módulo de Suscripción</button>
-                        <button type="button" id="add-sponsors-module-btn"><i class="fa-solid fa-handshake-angle"></i> Añadir Módulo de Patrocinadores</button>
-                        <button type="button" id="add-timeline-module-btn"><i class="fa-solid fa-stream"></i> Añadir Módulo de Timeline</button>
                     </div>
                 </fieldset>
 
-                <fieldset>
-                    <legend><i class="fa-solid fa-palette"></i> Diseño y Plantilla</legend>
-                    <div class="design-selectors">
-                        <div class="form-group">
-                            <label for="template-style-select">Estilo de Plantilla</label>
-                            <select id="template-style-select">
-                                <option value="classic">Clásica (Contenido centrado)</option>
-                                <option value="modern">Moderna (Ancho completo)</option>
+                <fieldset class="builder-section">
+                    <legend><i class="fa-solid fa-cubes text-accent"></i> 4. Constructor de Módulos</legend>
+                    <p class="form-hint mb-3">Añade bloques de contenido y usa las flechas (↑ ↓) para ordenar cómo se verán en la página.</p>
+                    
+                    <div id="custom-modules-container" class="modules-canvas"></div>
+                    
+                    <div class="module-actions-bar">
+                        <span>Añadir bloque:</span>
+                        <button type="button" class="btn-add-mod" data-type="text"><i class="fa-solid fa-align-left"></i> Texto</button>
+                        <button type="button" class="btn-add-mod" data-type="embed"><i class="fa-solid fa-play"></i> Media (Video)</button>
+                        <button type="button" class="btn-add-mod" data-type="subscription"><i class="fa-solid fa-envelope"></i> Suscripción</button>
+                        <button type="button" class="btn-add-mod" data-type="sponsors"><i class="fa-solid fa-handshake"></i> Apoyos</button>
+                        <button type="button" class="btn-add-mod" data-type="timeline"><i class="fa-solid fa-stream"></i> Hitos</button>
+                    </div>
+                </fieldset>
+
+                <fieldset class="builder-section bg-light-panel">
+                    <legend><i class="fa-solid fa-gear text-accent"></i> 5. Configuración de Lanzamiento</legend>
+                    
+                    <div class="settings-grid">
+                        <div class="setting-box">
+                            <label>Diseño y Tema</label>
+                            <select id="template-style-select" class="modern-select mb-2">
+                                <option value="modern">Moderna (Inmersiva)</option>
+                                <option value="classic">Clásica (Bento Estándar)</option>
+                            </select>
+                            <select id="color-palette-select" class="modern-select">
+                                <option value="dark">Cinemático (Oscuro)</option>
+                                <option value="default">Agencia (Claro)</option>
+                                <option value="sand">Académico (Arena)</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label for="color-palette-select">Paleta de Colores</label>
-                            <select id="color-palette-select">
-                                <option value="default">Claro (Por defecto)</option>
-                                <option value="dark">Oscuro</option>
-                                <option value="sand">Arena</option>
-                            </select>
+
+                        <div class="setting-box">
+                            <label>Enlace del Proyecto (Slug)</label>
+                            <div class="slug-editor">
+                                <span class="slug-prefix">epistecnologia.com/p/</span>
+                                <input type="text" id="project-slug" placeholder="mi-proyecto-increible">
+                            </div>
+                            <p class="form-hint" style="font-size:0.75rem; margin-top:5px;">Usa solo letras minúsculas, números y guiones medios (-).</p>
+                        </div>
+
+                        <div class="setting-box flex-center-col">
+                            <label style="text-align:center;">Estado del Microsite</label>
+                            <label class="switch modern-switch">
+                                <input type="checkbox" id="microsite-is-public">
+                                <span class="slider round"></span>
+                            </label>
+                            <span id="public-status-text" class="status-text mt-2">Borrador Privado</span>
                         </div>
                     </div>
                 </fieldset>
 
-                <fieldset>
-                    <legend><i class="fa-solid fa-globe"></i> Estado de Publicación</legend>
-                    <div class="publish-toggle">
-                        <label for="microsite-is-public">Hacer microsite público</label>
-                        <p class="form-hint">Cuando esté activo, cualquiera con el enlace podrá ver la página.</p>
-                        <label class="switch">
-                            <input type="checkbox" id="microsite-is-public" name="microsite-is-public">
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-                </fieldset>
-
-                <div class="final-actions">
-                    <button type="button" id="preview-btn" class="secondary-button"><i class="fa-solid fa-eye"></i> Vista Previa</button>
-                    <button type="submit" id="save-btn"><i class="fa-solid fa-save"></i> Guardar Cambios</button>
-                </div>
             </form>
         </div>
     </div>
