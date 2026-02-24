@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function init() {
         const urlParams = new URLSearchParams(window.location.search);
-        const slug = urlParams.get('slug');
+        let slug = urlParams.get('slug');
 
         // NUEVA LÓGICA: Si no hay '?slug=', lo extraemos de la ruta limpia '/p/mi-proyecto'
         if (!slug && window.location.pathname.startsWith('/p/')) {
