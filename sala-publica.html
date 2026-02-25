@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sala Pública - Epistecnología</title>
+    <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="/live/css/sala-publica.css">
+</head>
+<body class="tv-mode-dark">
+
+    <header class="room-header">
+        <div class="header-left">
+            <a href="/live.html" class="btn-back"><i class="fa-solid fa-arrow-left"></i> EPT Live</a>
+            <div class="divider"></div>
+            <span class="room-branding"><img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo"> Auditorio</span>
+        </div>
+        <div class="header-right">
+            <button id="btn-share" class="btn-icon" title="Compartir"><i class="fa-solid fa-share-nodes"></i></button>
+        </div>
+    </header>
+
+    <main class="room-layout" id="room-layout">
+        
+        <section class="video-column">
+            
+            <div class="theater-stage" id="player-container">
+                <div class="theater-badges">
+                    <span id="status-badge" class="badge">Cargando...</span>
+                    <span id="viewers-badge" class="badge viewers hidden"><i class="fa-solid fa-eye"></i> <span id="viewer-count">0</span></span>
+                </div>
+
+                <div id="countdown-overlay" class="countdown-overlay hidden">
+                    <h3>El evento comenzará en:</h3>
+                    <div class="timer" id="timer-display">00:00:00</div>
+                    <p id="countdown-date" class="timer-date"></p>
+                </div>
+                </div>
+
+            <div class="context-panel">
+                <div class="context-header">
+                    <h1 id="session-title">Cargando evento...</h1>
+                    <div class="context-meta">
+                        <span id="session-date"><i class="fa-regular fa-clock"></i> ...</span>
+                        <span id="session-project" class="project-tag"><i class="fa-solid fa-folder-open"></i> ...</span>
+                        <span id="session-doi" class="doi-tag hidden"><i class="fa-solid fa-fingerprint"></i> <span></span></span>
+                    </div>
+                </div>
+
+                <div class="context-grid">
+                    <div class="info-card">
+                        <h3><i class="fa-solid fa-microphone-lines"></i> Investigadores</h3>
+                        <div id="speakers-list" class="speakers-list"></div>
+                    </div>
+                    
+                    <div class="info-card description-card">
+                        <h3><i class="fa-solid fa-circle-info"></i> Información</h3>
+                        <p id="session-desc"></p>
+                        <a href="#" id="btn-saber-mas" class="btn-primary hidden" target="_blank">Saber Más <i class="fa-solid fa-external-link-alt"></i></a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <aside class="chat-column">
+            <div class="chat-container">
+                <div class="chat-tabs">
+                    <button class="chat-tab active" data-target="ept-chat">Chat EPT</button>
+                    <button class="chat-tab hidden" id="native-chat-tab" data-target="native-chat">Stream Chat</button>
+                </div>
+
+                <div class="chat-panels">
+                    <div id="ept-chat" class="chat-panel active">
+                        <div id="bsky-auth-overlay" class="chat-overlay hidden">
+                            <i class="fa-brands fa-bluesky"></i>
+                            <p>Únete a la conversación.</p>
+                            <button id="btn-connect-bsky" class="btn-primary">Conectar Bluesky</button>
+                        </div>
+                        <div id="bsky-chat-feed" class="chat-feed">
+                            <p class="text-muted text-center" style="margin-top:20px;">Cargando conversación...</p>
+                        </div>
+                        <div class="chat-input-area">
+                            <button id="btn-emoji" class="btn-emoji" disabled title="Añadir emoji"><i class="fa-regular fa-face-smile"></i></button>
+                            <input type="text" id="bsky-chat-input" placeholder="Escribe tu mensaje..." disabled>
+                            <button id="btn-send-bsky" disabled><i class="fa-solid fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+                    <div id="native-chat" class="chat-panel hidden"></div>
+                </div>
+            </div>
+        </aside>
+
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.4/dist/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/live/js/sala-publica.js"></script>
+</body>
+</html>

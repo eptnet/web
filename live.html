@@ -62,136 +62,63 @@
             </div>
         </div>
     </header>
-    <main id="main-content">
-        <section id="featured-carousel-section" class="featured-carousel">
-            <div class="carousel-wrapper">
-                <div class="carousel-track"></div>
+    <main class="live-main-content">
+        
+        <section class="hero-tv" id="hero-tv-container">
+            <div class="hero-tv-overlay"></div>
+            <div class="container hero-tv-content">
+                <span class="badge" id="hero-badge"><i class="fa-solid fa-circle-notch fa-spin"></i> Buscando señal...</span>
+                <h1 id="hero-title" class="hero-title">EPT Live</h1>
+                <p id="hero-desc" class="hero-desc">Explora el conocimiento en tiempo real.</p>
+                <div class="hero-actions" id="hero-actions">
+                    </div>
             </div>
-            <button class="carousel-nav prev"><i class="fas fa-chevron-left"></i></button>
-            <button class="carousel-nav next"><i class="fas fa-chevron-right"></i></button>
         </section>
 
-        <div class="agenda-wrapper">
-             <div class="search-bar-wrapper" id="seccion-eventos">
-                 <div class="search-bar">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="search-input" placeholder="Buscar eventos y videos...">
+        <div class="container">
+            <section class="explore-section">
+                <div class="search-bar-tv">
+                    <i class="fa-solid fa-search"></i>
+                    <input type="text" id="global-search" placeholder="Buscar sesiones, eventos, investigadores...">
                 </div>
-            </div>
-            <div class="tabs">
-                <button class="tab-link active" data-tab="agenda-tab">Eventos</button>
-                <button class="tab-link" data-tab="videos-tab">Videos</button>
-            </div>
-            <div class="tab-content-wrapper">
-                <div id="agenda-tab" class="tab-content active">
-                    <div id="schedule-list" class="card-grid"></div>
+                
+                <div class="categories-rail">
+                    <button class="category-pill active">Todos</button>
+                    <button class="category-pill">Tecnología e IA</button>
+                    <button class="category-pill">Filosofía</button>
+                    <button class="category-pill">Ciencias Sociales</button>
+                    <button class="category-pill">Salud y Biología</button>
+                    <button class="category-pill">Arte y Cultura</button>
                 </div>
-                <div id="videos-tab" class="tab-content">
-                    <div id="ondemand-list-container" class="card-grid"></div>
+            </section>
+
+            <section class="tv-section">
+                <div class="section-header-tv">
+                    <h2>En Vivo y Próximamente <span class="highlight">Sesiones</span></h2>
                 </div>
-            </div>
+                <div id="schedule-list" class="bento-grid">
+                    <p style="color: var(--color-secondary);">Cargando sesiones...</p>
+                </div>
+            </section>
+
+            <section class="tv-section" id="events-section" style="display: none;">
+                <div class="section-header-tv">
+                    <h2>Congresos y Seminarios <span class="highlight">Eventos</span></h2>
+                </div>
+                <div id="events-list" class="bento-grid">
+                    </div>
+            </section>
+
+            <section class="tv-section">
+                <div class="section-header-tv">
+                    <h2>Biblioteca On-Demand <span class="highlight">Grabaciones</span></h2>
+                </div>
+                <div id="recordings-list" class="bento-grid">
+                    <p style="color: var(--color-secondary);">Cargando catálogo...</p>
+                </div>
+            </section>
         </div>
     </main>
-    
-    <div id="modal-container"></div>
-
-    <template id="bsky-connect-template">
-    <div class="bento-box">
-        <h3><i class="fa-solid fa-link"></i> Conectar Cuenta para Participar</h3>
-        
-        <div class="step">
-            <h4>Paso 1: Ten una cuenta de Bluesky</h4>
-            <p class="form-hint">Para interactuar necesitas una cuenta en la red social descentralizada Bluesky. Si no tienes una, ¡es gratis y fácil de crear!</p>
-            <a href="https://bsky.app" target="_blank" class="btn btn-secondary" style="width:100%; text-decoration: none;">
-                <i class="fa-solid fa-arrow-up-right-from-square"></i> Crear o Iniciar Sesión en Bluesky
-            </a>
-        </div>
-        
-        <hr>
-
-        <div class="step">
-            <h4>Paso 2: Conecta de Forma Segura</h4>
-            <p class="form-hint">Genera una <strong>Contraseña de Aplicación</strong> (no tu contraseña principal) para darnos permiso de publicar en tu nombre.</p>
-            <form id="bsky-connect-form">
-                <div class="form-group">
-                    <label for="bsky-handle">Tu Handle de Bluesky</label>
-                    <input type="text" id="bsky-handle" placeholder="tu-usuario.bsky.social" required>
-                </div>
-                <div class="form-group">
-                    <label for="bsky-app-password">Contraseña de Aplicación</label>
-                    <input type="password" id="bsky-app-password" placeholder="xxxx-xxxx-xxxx-xxxx" required>
-                </div>
-                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-link"></i> Conectar Cuenta</button>
-            </form>
-        </div>
-
-        <div class="troubleshooting-note">
-            <p><strong>¿Problemas para conectar?</strong> Si recibes un error de "credenciales inválidas" a pesar de que son correctas, te recomendamos seguir estos pasos en Bluesky: <strong>1. Reinicia tu contraseña principal. 2. Genera una nueva Contraseña de Aplicación.</strong> Esto suele solucionar el problema.</p>
-        </div>
-    </div>
-</template>
-
-    <div id="login-modal-overlay" class="login-modal-overlay">
-        <div class="login-modal">
-            <header class="modal-header">
-                <h2>Accede a Epistecnología</h2>
-                <button id="login-modal-close-btn" class="modal-close-btn">×</button>
-            </header>
-            <main class="modal-content">
-                <p>Usa tu cuenta preferida para continuar y acceder a tu panel de investigador.</p>
-                <div class="login-options">
-                    <a href="#" class="login-provider-btn" data-provider="google">
-                        <i class="fa-brands fa-google"></i> Continuar con Google
-                    </a>
-                    <a href="#" class="login-provider-btn" data-provider="github">
-                        <i class="fa-brands fa-github"></i> Continuar con GitHub
-                    </a>
-                </div>
-            </main>
-        </div>
-    </div>
-    
-    <nav class="mobile-nav">
-        <a href="/" class="mobile-nav__link active" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
-        <a href="https://eptnews.substack.com/" class="mobile-nav__link" aria-label="Newsletter"><i class="fa-solid fa-newspaper"></i></a>
-        <a href="/live.html" class="mobile-nav__link" id="nav-live-mobile" aria-label="En Vivo"><i class="fa-solid fa-satellite-dish"></i></a>
-        <button class="mobile-nav__link" id="mobile-more-btn" aria-label="Más opciones"><i class="fa-solid fa-bars"></i></button>
-    </nav>
-
-    <div class="mobile-more-menu" id="mobile-more-menu">
-        <div class="mobile-more-menu__content">
-            <a href="#" data-provider="google" id="login-google-btn-mobile" class="mobile-more-menu__item login-provider-btn"><i class="fa-brands fa-google"></i><span>Iniciar con Google</span></a>
-            <a href="#" data-provider="github" id="login-github-btn-mobile" class="mobile-more-menu__item login-provider-btn"><i class="fa-brands fa-github"></i><span>Iniciar con GitHub</span></a>
-            <hr style="border: none; border-top: 1px solid var(--color-border); margin: 0.5rem 0;">
-            <a href="#" id="community-btn-mobile" data-url="/inv/comunidad.html" class="mobile-more-menu__item"><i class="fa-solid fa-users"></i><span>Comunidad</span></a>
-            <a href="/live.html#seccion-eventos" class="mobile-more-menu__item"><i class="fa-solid fa-calendar-days"></i><span>Eventos</span></a>
-            <hr style="border: none; border-top: 1px solid var(--color-border); margin: 0.5rem 0;">
-            <button class="mobile-more-menu__item" id="theme-switcher-mobile"><i class="fa-solid fa-moon"></i><span>Cambiar Tema</span></button>
-            <button class="mobile-more-menu__item" id="mobile-more-menu-close"><i class="fa-solid fa-xmark"></i><span>Cerrar</span></button>
-        </div>
-    </div>
-    
-    <div class="overlay" id="overlay"></div>
-
-    <div id="login-modal-overlay" class="modal-overlay">
-        <div class="modal login-modal">
-            <header class="modal-header">
-                <h2>Accede a Epistecnología</h2>
-                <button id="login-modal-close-btn" class="modal-close-btn">&times;</button>
-            </header>
-            <main class="modal-content">
-                <p>Usa tu cuenta preferida para continuar. Al iniciar sesión, podrás acceder a tu panel de investigador y participar en la comunidad.</p>
-                <div class="login-options">
-                    <a href="#" class="login-provider-btn" data-provider="google">
-                        <i class="fa-brands fa-google"></i> Continuar con Google
-                    </a>
-                    <a href="#" class="login-provider-btn" data-provider="github">
-                        <i class="fa-brands fa-github"></i> Continuar con GitHub
-                    </a>
-                </div>
-            </main>
-        </div>
-    </div>
 
     <footer class="site-footer">
         <div class="container footer-content">
@@ -226,7 +153,7 @@
     <script src="https://player.twitch.tv/js/embed/v1.js"></script>
 
     <script src="/js/main.js"></script>
-    <script src="/live/js/live.js"></script>
+    <script src="/live/js/live2.0.js"></script>
 
 </body>
 </html>

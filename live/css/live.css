@@ -1703,3 +1703,100 @@ body {
     color: white;
     border-color: var(--color-accent);
 }
+/* =================================================================
+ * ESTÉTICA "STREAM TV" (Netflix / Twitch UI)
+ * ================================================================= */
+
+/* 1. Hero TV Cinemático */
+.live-main-content { padding-top: 0; } /* Quitamos el padding top para que el hero toque el header */
+.hero-tv {
+    position: relative;
+    width: 100%;
+    height: 75vh;
+    min-height: 500px;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: flex-end; /* Alinea el contenido abajo */
+    padding-bottom: 4rem;
+    margin-bottom: 2rem;
+    transition: background-image 0.5s ease-in-out;
+}
+.hero-tv-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(0deg, var(--color-background) 0%, rgba(18,18,18,0.7) 50%, rgba(18,18,18,0.3) 100%),
+                linear-gradient(90deg, var(--color-background) 0%, transparent 50%);
+    z-index: 2;
+    pointer-events: none; /* MAGIA: Permite que el ratón "atraviese" el degradado y toque el video */
+}
+.hero-tv-content {
+    position: relative;
+    z-index: 3;
+    max-width: 800px;
+    animation: fadeInUp 1s ease;
+    pointer-events: auto; /* Los botones frontales siguen funcionando */
+}
+/* Estilo para el reproductor incrustado en el fondo */
+.hero-video-wrapper iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    pointer-events: auto;
+}
+.hero-tv-content .badge { margin-bottom: 1rem; display: inline-block; padding: 6px 12px; border-radius: 4px; font-weight: 800; letter-spacing: 1px; font-size: 0.85rem;}
+.badge.live { background: #e50914; color: white; animation: pulse 2s infinite; }
+.badge.upcoming { background: rgba(255,255,255,0.2); backdrop-filter: blur(5px); color: white; }
+
+.hero-title { font-size: clamp(2.5rem, 5vw, 4.5rem); font-weight: 900; line-height: 1.1; margin: 0 0 1rem 0; color: #fff; text-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+.hero-desc { font-size: 1.2rem; color: rgba(255,255,255,0.8); line-height: 1.6; margin-bottom: 2rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.hero-actions { display: flex; gap: 1rem; }
+.btn-tv-primary { background: white; color: black; padding: 12px 30px; border-radius: 8px; font-weight: 700; font-size: 1.1rem; border: none; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; text-decoration: none;}
+.btn-tv-primary:hover { background: rgba(255,255,255,0.8); transform: scale(1.05); }
+.btn-tv-secondary { background: rgba(109, 109, 110, 0.7); color: white; padding: 12px 30px; border-radius: 8px; font-weight: 700; font-size: 1.1rem; border: none; cursor: pointer; backdrop-filter: blur(5px); transition: 0.2s; }
+.btn-tv-secondary:hover { background: rgba(109, 109, 110, 0.9); }
+
+/* 2. Barra de Búsqueda y Categorías */
+.explore-section { margin-bottom: 3rem; }
+.search-bar-tv { position: relative; max-width: 600px; margin-bottom: 1.5rem; }
+.search-bar-tv i { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--color-secondary); font-size: 1.2rem; }
+.search-bar-tv input { width: 100%; background: var(--color-surface); border: 1px solid var(--border-color); border-radius: 50px; padding: 15px 20px 15px 50px; font-size: 1rem; color: var(--color-primary); outline: none; transition: border-color 0.3s; }
+.search-bar-tv input:focus { border-color: var(--color-accent); }
+
+.categories-rail { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; scroll-snap-type: x mandatory; }
+.categories-rail::-webkit-scrollbar { display: none; }
+.category-pill { scroll-snap-align: start; flex: 0 0 auto; background: var(--color-surface); border: 1px solid var(--border-color); color: var(--color-primary); padding: 10px 20px; border-radius: 50px; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: 0.2s; }
+.category-pill:hover { border-color: var(--color-secondary); }
+.category-pill.active { background: var(--color-primary); color: var(--color-background); border-color: var(--color-primary); }
+
+/* 3. Secciones tipo Bento/Póster */
+.tv-section { margin-bottom: 4rem; }
+.section-header-tv { margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: flex-end; }
+.section-header-tv h2 { font-size: 1.5rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 10px; }
+.section-header-tv .highlight { font-size: 0.9rem; background: rgba(183, 42, 30, 0.1); color: var(--color-accent); padding: 4px 10px; border-radius: 6px; text-transform: uppercase; letter-spacing: 1px;}
+
+.bento-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+
+/* Tarjetas actualizadas para que parezcan miniaturas de video */
+.tv-card { background: var(--color-surface); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; cursor: pointer; transition: 0.3s; position: relative; }
+.tv-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.2); border-color: var(--color-accent); z-index: 10; }
+.tv-card-img { width: 100%; aspect-ratio: 16/9; position: relative; background: #000; }
+.tv-card-img img { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: 0.3s; }
+.tv-card:hover .tv-card-img img { opacity: 1; transform: scale(1.05); }
+.tv-card-content { padding: 1.2rem; }
+.tv-card-title { font-size: 1.1rem; font-weight: 700; margin: 0 0 5px 0; line-height: 1.3; }
+.tv-card-meta { font-size: 0.85rem; color: var(--color-secondary); display: flex; align-items: center; gap: 6px; }
+
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+/* --- CORRECCIONES RESPONSIVE (MÓVIL) --- */
+@media (max-width: 768px) {
+    .search-bar-tv { width: 100%; margin-bottom: 1rem; }
+    .search-bar-tv input { font-size: 16px; /* Evita zoom automático en iOS */ }
+    .categories-rail { 
+        padding-bottom: 15px; 
+        -webkit-overflow-scrolling: touch; /* Scroll suave en móviles */
+        margin: 0 -20px; /* Expande el scroll hasta los bordes de la pantalla */
+        padding-left: 20px; padding-right: 20px;
+    }
+    .hero-tv { height: auto; min-height: 60vh; padding-bottom: 2rem; }
+    .hero-title { font-size: 2.2rem; }
+}
