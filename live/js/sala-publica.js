@@ -69,22 +69,30 @@ const PublicRoomApp = {
         }
 
         // Inicializar Selector de Emojis
-        if (window.EmojiButton) {
-            const picker = new EmojiButton({
-                theme: 'dark',
-                position: 'top-start',
-                i18n: { search: 'Buscar emoji...', notFound: 'No se encontraron emojis', categories: { search: 'Resultados de búsqueda', recent: 'Usados recientemente', smileys: 'Emoticonos y emociones', people: 'Personas y cuerpo', animals: 'Animales y naturaleza', food: 'Comida y bebida', activities: 'Actividades', travel: 'Viajes y lugares', objects: 'Objetos', symbols: 'Símbolos', flags: 'Banderas' } }
-            });
-            const btnEmoji = document.getElementById('btn-emoji');
-            const chatInput = document.getElementById('bsky-chat-input');
-            
-            picker.on('emoji', selection => {
-                chatInput.value += selection.emoji;
-                chatInput.focus();
+        // --- NUEVO: Inicializar Selector de Emojis (Web Component) ---
+        const btnEmoji = document.getElementById('btn-emoji');
+        const pickerContainer = document.getElementById('emoji-picker-container');
+        const picker = document.querySelector('emoji-picker');
+        const chatInputText = document.getElementById('bsky-chat-input');
+
+        if (btnEmoji && pickerContainer && picker && chatInputText) {
+            // Mostrar/Ocultar con el botón
+            btnEmoji.addEventListener('click', (e) => {
+                e.stopPropagation(); // Evita que se cierre instantáneamente
+                pickerContainer.classList.toggle('hidden');
             });
 
-            btnEmoji.addEventListener('click', () => {
-                picker.togglePicker(btnEmoji);
+            // Insertar emoji al hacer clic en uno
+            picker.addEventListener('emoji-click', event => {
+                chatInputText.value += event.detail.unicode;
+                chatInputText.focus(); // Devuelve el cursor al input
+            });
+
+            // Cerrar el panel automáticamente si haces clic fuera de él
+            document.addEventListener('click', (e) => {
+                if (!pickerContainer.contains(e.target) && e.target !== btnEmoji && !btnEmoji.contains(e.target)) {
+                    pickerContainer.classList.add('hidden');
+                }
             });
         }
     },

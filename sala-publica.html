@@ -80,7 +80,11 @@
                         <div id="bsky-chat-feed" class="chat-feed">
                             <p class="text-muted text-center" style="margin-top:20px;">Cargando conversación...</p>
                         </div>
-                        <div class="chat-input-area">
+                        <div class="chat-input-area" style="position: relative;">
+                            <div id="emoji-picker-container" class="hidden" style="position: absolute; bottom: 65px; left: 15px; z-index: 9999; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border-radius: 8px;">
+                                <emoji-picker class="dark"></emoji-picker>
+                            </div>
+                            
                             <button id="btn-emoji" class="btn-emoji" disabled title="Añadir emoji"><i class="fa-regular fa-face-smile"></i></button>
                             <input type="text" id="bsky-chat-input" placeholder="Escribe tu mensaje..." disabled>
                             <button id="btn-send-bsky" disabled><i class="fa-solid fa-paper-plane"></i></button>
@@ -93,7 +97,7 @@
 
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.4/dist/index.min.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/live/js/sala-publica.js"></script>
 </body>
