@@ -30,6 +30,7 @@
     <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     
+    <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/live/css/live.css">
 
 </head>
@@ -42,7 +43,7 @@
             </a>
             <nav class="main-menu bento-box-nav">
                 <a href="/" class="nav-icon" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
-                <a href="https://eptnews.substack.com/" class="nav-icon" aria-label="Newsletter"><i class="fa-solid fa-newspaper"></i></a>
+                <a href="https://publicaciones.epistecnologia.com/" class="nav-icon" aria-label="Revista"><i class="fa-solid fa-newspaper"></i></a>
                 <a href="#" id="community-btn-desktop" data-url="/inv/comunidad.html" class="nav-icon" aria-label="Comunidad"><i class="fa-solid fa-users"></i></a>
             </nav>
             <div class="live-channels bento-box-nav">
@@ -119,6 +120,26 @@
             </section>
         </div>
     </main>
+
+    <div id="login-modal-overlay" class="modal-overlay">
+        <div class="modal login-modal">
+            <header class="modal-header">
+                <h2>Accede a Epistecnología</h2>
+                <button id="login-modal-close-btn" class="modal-close-btn">&times;</button>
+            </header>
+            <main class="modal-content">
+                <p>Usa tu cuenta preferida para continuar. Al iniciar sesión, podrás acceder a tu panel de investigador y participar en la comunidad.</p>
+                <div class="login-options">
+                    <a href="#" class="login-provider-btn" data-provider="google">
+                        <i class="fa-brands fa-google"></i> Continuar con Google
+                    </a>
+                    <a href="#" class="login-provider-btn" data-provider="github">
+                        <i class="fa-brands fa-github"></i> Continuar con GitHub
+                    </a>
+                </div>
+            </main>
+        </div>
+    </div>
 
     <footer class="site-footer">
         <div class="container footer-content">

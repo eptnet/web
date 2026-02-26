@@ -17,8 +17,68 @@ const LiveAppV2 = {
         }
 
         this.setupEventListeners();
+        await this.handleAuthUI(); // <-- AÑADIMOS ESTA LÍNEA AQUÍ
         await this.fetchSessions();
     },
+
+    // ====================================================================
+    // 👇 2. PEGA LA NUEVA FUNCIÓN JUSTO AQUÍ 👇
+    // ====================================================================
+    async handleAuthUI() {
+        // Obtenemos la sesión actual de Supabase
+        const { data: { session } } = await this.supabase.auth.getSession();
+        
+        // Ubicamos los elementos exactos de tu HTML
+        const guestView = document.getElementById('guest-view');
+        const userView = document.getElementById('user-view');
+        const avatarLink = document.getElementById('user-avatar-link');
+        const logoutBtn = document.getElementById('logout-btn-header');
+        const loginBtn = document.getElementById('login-modal-trigger-desktop');
+
+        if (session) {
+            // USUARIO LOGUEADO: Ocultar botón de login, mostrar avatar
+            if (guestView) guestView.style.display = 'none';
+            if (userView) userView.style.display = 'flex'; // Tu CSS original usa flex para alinear los iconos
+
+            // Obtener datos del perfil para pintar la foto
+            const { data: profile } = await this.supabase
+                .from('profiles')
+                .select('avatar_url, username')
+                .eq('id', session.user.id)
+                .single();
+
+            // Pintar Avatar
+            const avatarUrl = profile?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
+            if (avatarLink) {
+                avatarLink.href = `/@${profile?.username || ''}`; // Ruta limpia de perfil
+                avatarLink.innerHTML = `<img src="${avatarUrl}" alt="Mi Perfil" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid var(--color-accent); display: block;">`;
+            }
+
+            // Funcionalidad al botón de Cerrar Sesión
+            if (logoutBtn) {
+                logoutBtn.onclick = async () => {
+                    await this.supabase.auth.signOut();
+                    window.location.reload(); // Recarga la página para volver a estado "Guest"
+                };
+            }
+        } else {
+            // NO LOGUEADO: Mostrar botón de login, ocultar avatar
+            if (guestView) guestView.style.display = 'flex';
+            if (userView) userView.style.display = 'none';
+
+            // Comportamiento del botón de login (Abre el modal local)
+            if (loginBtn) {
+                loginBtn.onclick = (e) => {
+                    e.preventDefault();
+                    const modal = document.getElementById('login-modal-overlay');
+                    if (modal) modal.classList.add('is-visible');
+                };
+            }
+        }
+    },
+    // ====================================================================
+    // 👆 HASTA AQUÍ 👆
+    // ====================================================================
 
     setupEventListeners() {
         const searchInput = document.getElementById('global-search');
@@ -32,6 +92,35 @@ const LiveAppV2 = {
                 categoryPills.forEach(p => p.classList.remove('active'));
                 e.target.classList.add('active');
             });
+        });
+
+        // --- EVENTOS DEL MODAL DE LOGIN LOCAL ---
+        const loginOverlay = document.getElementById('login-modal-overlay');
+        const loginClose = document.getElementById('login-modal-close-btn');
+        
+        // Cerrar modal con la X
+        if (loginClose) {
+            loginClose.addEventListener('click', () => loginOverlay.classList.remove('is-visible'));
+        }
+        // Cerrar modal al hacer clic afuera
+        if (loginOverlay) {
+            loginOverlay.addEventListener('click', (e) => {
+                if (e.target === loginOverlay) loginOverlay.classList.remove('is-visible');
+            });
+        }
+
+        // Lógica de inicio de sesión con Supabase OAuth
+        document.body.addEventListener('click', (e) => {
+            const providerBtn = e.target.closest('.login-provider-btn');
+            if (providerBtn && providerBtn.dataset.provider) {
+                e.preventDefault();
+                const provider = providerBtn.dataset.provider;
+                // Inicia sesión y luego lo redirige a la misma página de Live o al Perfil, como prefieras
+                this.supabase.auth.signInWithOAuth({ 
+                    provider, 
+                    options: { redirectTo: `${window.location.origin}/inv/profile.html` } 
+                });
+            }
         });
     },
 
@@ -177,7 +266,8 @@ const LiveAppV2 = {
 
         const renderCards = (sessions, container) => {
             sessions.forEach(item => {
-                if (!filteredSessions && this.featuredSession && item.id === this.featuredSession.id) return;
+                // 🛑 LÍNEA ELIMINADA: Ya no saltamos la featuredSession. Ahora TODO se dibuja.
+                // if (!filteredSessions && this.featuredSession && item.id === this.featuredSession.id) return;
 
                 const isLive = item.effectiveStatus === 'EN VIVO';
                 const isVOD = item.effectiveStatus === 'FINALIZADO';
