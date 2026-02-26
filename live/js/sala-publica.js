@@ -95,6 +95,28 @@ const PublicRoomApp = {
                 }
             });
         }
+
+        // --- LÓGICA MÓVIL: ABRIR/CERRAR CHAT DESLIZANTE ---
+        const btnOpenChat = document.getElementById('btn-open-mobile-chat');
+        const btnCloseChat = document.getElementById('btn-close-mobile-chat');
+        const chatColumn = document.querySelector('.chat-column');
+        const roomLayout = document.getElementById('room-layout');
+
+        if (btnOpenChat && btnCloseChat && chatColumn) {
+            // Abrir Chat
+            btnOpenChat.addEventListener('click', () => {
+                chatColumn.classList.add('mobile-open');
+                // Bloqueamos el scroll del texto de atrás para que sea cómodo chatear
+                if (roomLayout) roomLayout.style.overflow = 'hidden'; 
+            });
+
+            // Cerrar Chat
+            btnCloseChat.addEventListener('click', () => {
+                chatColumn.classList.remove('mobile-open');
+                // Restauramos el scroll del texto
+                if (roomLayout) roomLayout.style.overflow = 'auto';
+            });
+        }
     },
 
     async loadSessionData() {
