@@ -545,12 +545,48 @@ const PublicRoomApp = {
         }
     },
 
-    handleReportSession(sessionId) {
-        // En un futuro puedes abrir un modal con formulario. Por ahora un prompt simple sirve de maravilla.
+    async handleReportSession(sessionId) {
+        // 1. Pedimos el motivo al usuario (opcional)
         const reason = prompt("¿Por qué deseas reportar esta sesión? (Opcional)");
-        if (reason !== null) {
-            alert("Gracias. Tu reporte ha sido enviado al equipo de moderación.");
-            // Aquí iría tu código Supabase para insertar en una tabla "reports"
+        if (reason === null) return; // Si el usuario da a "Cancelar", detenemos todo
+
+        // Cambiamos el estado del botón para que sepa que está cargando
+        const reportBtn = document.getElementById('btn-report-session');
+        if (reportBtn) {
+            reportBtn.disabled = true;
+            reportBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
+        }
+
+        try {
+            // 2. Verificamos si el usuario está logueado o es invitado
+            const { data: { session } } = await this.supabase.auth.getSession();
+            const reporterId = session ? session.user.id : 'invitado_anónimo';
+
+            // 3. Invocamos la Edge Function de Supabase
+            // NOTA: Asegúrate de que el nombre 'report-session' coincide con el nombre 
+            // con el que desplegaste tu función en Supabase (ej: supabase functions deploy report-session)
+            const { data, error } = await this.supabase.functions.invoke('report-session', {
+                // Pasamos los datos exactamente como los espera tu index.ts en los headers
+                headers: {
+                    'x-session-id': sessionId,
+                    'x-reporter-id': reporterId
+                },
+                // Mandamos la razón en el body por si en el futuro decides añadirla al correo de Resend
+                body: { reason: reason } 
+            });
+
+            if (error) throw error;
+
+            alert("Gracias. Tu reporte ha sido enviado y notificará al equipo de moderación.");
+        } catch (error) {
+            console.error("Error al reportar la sesión:", error);
+            alert("Hubo un problema al enviar el reporte. Por favor, inténtalo más tarde.");
+        } finally {
+            // Restauramos el botón a su estado original
+            if (reportBtn) {
+                reportBtn.disabled = false;
+                reportBtn.innerHTML = '<i class="fas fa-flag"></i> Reportar sesión';
+            }
         }
     }
 };
