@@ -136,7 +136,12 @@ const PublicRoomApp = {
         try {
             const { data, error } = await this.supabase
                 .from('sessions')
-                .select(`*, event_participants ( profiles (id, display_name, avatar_url, username) )`)
+                // AÑADIMOS organizer:profiles para traer al dueño de la sala
+                .select(`
+                    *, 
+                    organizer:profiles(id, display_name, avatar_url, username),
+                    event_participants ( profiles (id, display_name, avatar_url, username) )
+                `)
                 .eq('id', this.sessionId)
                 .single();
 
@@ -160,6 +165,12 @@ const PublicRoomApp = {
 
     renderUI() {
         const s = this.sessionData;
+        
+        // --- NUEVO: PERSONALIZAR EL NOMBRE DEL ÁGORA ---
+        const brandingElement = document.querySelector('.room-branding');
+        if (brandingElement && s.organizer && s.organizer.username) {
+            brandingElement.innerHTML = `<img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo"> Ágora de <span style="color:var(--text-main); font-weight:800; margin-left:4px;">@${s.organizer.username}</span>`;
+        }
         let effectiveStatus = s.status;
         const now = new Date().getTime();
         const scheduled = new Date(s.scheduled_at).getTime();

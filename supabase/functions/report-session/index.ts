@@ -26,7 +26,7 @@ serve(async (req) => {
     // 1. Buscamos la sesión reportada (esto es obligatorio)
     const { data: session, error: sessionError } = await supabaseClient
       .from('sessions')
-      .select('id, session_title, organizer:profiles(id, display_name)')
+      .select('id, session_title, organizer:profiles(id, display_name, username)')
       .eq('id', sessionId)
       .single()
     if (sessionError) throw sessionError
@@ -74,8 +74,8 @@ serve(async (req) => {
             <hr style="border: 0; border-top: 1px solid #eeeeee;">
             <h3>Acciones Rápidas</h3>
             <p>
-              <a href="https://epistecnologia.com/live.html?sesion=${session.id}" style="padding: 10px 15px; background-color: #1877f2; color: white; text-decoration: none; border-radius: 5px; margin-right: 10px;">Ver Sesión</a>
-              <a href="https://epistecnologia.com/inv/profile.html?id=${session.organizer.id}" style="padding: 10px 15px; background-color: #65676b; color: white; text-decoration: none; border-radius: 5px;">Ver Perfil del Organizador</a>
+              <a href="https://epistecnologia.com/l/${session.id}" style="padding: 10px 15px; background-color: #1877f2; color: white; text-decoration: none; border-radius: 5px; margin-right: 10px;">Ver Sesión</a>
+              <a href="https://epistecnologia.com/@${session.organizer.username}" style="padding: 10px 15px; background-color: #65676b; color: white; text-decoration: none; border-radius: 5px;">Ver Perfil del Organizador</a>
             </p>
           </div>
         </body>
