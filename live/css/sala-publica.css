@@ -89,8 +89,59 @@ body.tv-mode-dark { margin: 0; font-family: 'Inter', sans-serif; background: var
 
 @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
+/* --- LÓGICA DE YOUTUBE MOBILE (HOJA DESLIZANTE) --- */
+.hidden-desktop { display: none !important; }
+
 @media (max-width: 992px) {
-    .room-layout { flex-direction: column; overflow-y: auto; }
-    .chat-column { width: 100%; height: 500px; border-left: none; border-top: 1px solid var(--border); flex-shrink: 0;}
+    .hidden-desktop { display: flex !important; }
+
+    /* 1. Hacemos que la página entera haga scroll (no columnas separadas) */
+    .room-layout { flex-direction: column; overflow-y: auto; height: calc(100vh - 60px); display: block; }
+    .video-column { display: block; overflow: visible; }
+
+    /* 2. REPRODUCTOR PEGAJOSO (Sticky): Nunca se pierde de vista */
+    .theater-stage {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+
+    /* 3. Botón para abrir el chat debajo del video */
+    .mobile-chat-toggle {
+        padding: 15px 20px;
+        background: var(--bg-panel);
+        border-bottom: 1px solid var(--border);
+        justify-content: center;
+    }
+    .mobile-chat-toggle button {
+        width: 100%; padding: 12px; border-radius: 50px; background: var(--bg-card); border: 1px solid var(--border); color: white; font-weight: 600; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s;
+    }
+
+    /* 4. CHAT DESLIZANTE (Bottom Sheet) */
+    .chat-column {
+        position: fixed;
+        bottom: -100%; /* Oculto debajo de la pantalla por defecto */
+        left: 0;
+        width: 100%;
+        /* Altura dinámica: Pantalla total - alto del header - alto del video(16:9) */
+        height: calc(100dvh - 60px - 56.25vw); 
+        border-left: none;
+        border-top: 1px solid var(--border);
+        box-shadow: 0 -10px 30px rgba(0,0,0,0.6);
+        z-index: 90; /* Se desliza por DEBAJO del video que tiene z-index 100 */
+        transition: bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 20px 20px 0 0;
+        overflow: hidden;
+    }
+    
+    /* Clase activa que inyecta JS para mostrarlo */
+    .chat-column.mobile-open { bottom: 0; }
+
+    /* Botón de flecha hacia abajo en el chat */
+    .btn-close-chat-mobile {
+        background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; margin-left: auto; padding: 0 15px;
+    }
+    
     .context-grid { grid-template-columns: 1fr; }
 }
