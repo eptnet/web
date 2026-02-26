@@ -309,23 +309,40 @@ const PublicRoomApp = {
         const s = this.sessionData;
         const hostname = window.location.hostname || 'localhost';
         
-        // Chat Externo (Twitch/YouTube)
-        if (s.platform === 'youtube' || s.platform === 'twitch') {
-            const nativeTab = document.getElementById('native-chat-tab');
-            const nativePanel = document.getElementById('native-chat');
+        // Elementos del DOM
+        const nativeTab = document.getElementById('native-chat-tab');
+        const nativePanel = document.getElementById('native-chat');
+        const bskyPanel = document.getElementById('ept-chat');
+        const eptTab = document.querySelector('.chat-tab[data-target="ept-chat"]');
+        const chatContainer = document.querySelector('.chat-container');
+        
+        const isLive = s.status === 'EN VIVO';
+        const hasExternalChat = (s.platform === 'youtube' || s.platform === 'twitch') && isLive && s.platform_id;
+
+        // 1. CHAT EXTERNO (YouTube / Twitch)
+        if (hasExternalChat) {
             nativeTab.classList.remove('hidden');
+            // Hacer que la pestaña externa sea la activa por defecto si existe
+            nativeTab.classList.add('active');
+            nativePanel.classList.add('active');
+            eptTab.classList.remove('active');
+            bskyPanel.classList.remove('active');
             
-            if (s.platform === 'youtube' && s.platform_id) {
+            if (s.platform === 'youtube') {
                 nativeTab.innerHTML = '<i class="fa-brands fa-youtube" style="color:#ef4444;"></i> Chat YouTube';
-                nativePanel.innerHTML = `<iframe src="https://www.youtube.com/live_chat?v=${s.platform_id}&embed_domain=${hostname}" width="100%" height="100%" frameborder="0"></iframe>`;
-            } else if (s.platform === 'twitch' && s.platform_id) {
+                // Añadimos width y height al 100% y un estilo absoluto para forzar que ocupe todo el espacio
+                nativePanel.innerHTML = `<iframe src="https://www.youtube.com/live_chat?v=${s.platform_id}&embed_domain=${hostname}" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;"></iframe>`;
+            } else if (s.platform === 'twitch') {
                 nativeTab.innerHTML = '<i class="fa-brands fa-twitch" style="color:#a855f7;"></i> Chat Twitch';
-                // Corrección del BUG de Twitch: Aseguramos el parent correcto
-                nativePanel.innerHTML = `<iframe src="https://www.twitch.tv/embed/${s.platform_id}/chat?parent=${hostname}&darkpopout" width="100%" height="100%" frameborder="0"></iframe>`;
+                nativePanel.innerHTML = `<iframe src="https://www.twitch.tv/embed/${s.platform_id}/chat?parent=${hostname}&darkpopout" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;"></iframe>`;
             }
+        } else {
+            // Si no hay chat externo, ocultamos la pestaña
+            nativeTab.classList.add('hidden');
+            nativePanel.innerHTML = '';
         }
 
-        // Lógica Visual del Chat Nativo EPT
+        // 2. CHAT NATIVO EPT (Bluesky / Interno)
         const authOverlay = document.getElementById('bsky-auth-overlay');
         const chatInput = document.getElementById('bsky-chat-input');
         const chatFeed = document.getElementById('bsky-chat-feed');
@@ -333,13 +350,23 @@ const PublicRoomApp = {
 
         chatFeed.innerHTML = ''; // Limpiar mensaje de carga
 
+        if (!isLive && s.status !== 'PROGRAMADO') {
+            // Si el evento ya finalizó
+            authOverlay.classList.remove('hidden');
+            authOverlay.innerHTML = `
+                <i class="fa-solid fa-comment-slash" style="font-size: 2.5rem; color: var(--text-muted); margin-bottom: 15px;"></i>
+                <h3 style="margin:0 0 10px 0;">Chat Desactivado</h3>
+                <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:0;">El chat en vivo ha finalizado.</p>
+            `;
+            return; // Salimos de la función
+        }
+
         if (this.currentUserProfile) {
             // Usuario logueado: Tiene permiso para chatear
             authOverlay.classList.add('hidden');
             chatInput.disabled = false;
             sendBtn.disabled = false;
             
-            // ¡Habilitar botón de Emojis!
             const btnEmoji = document.getElementById('btn-emoji');
             if (btnEmoji) btnEmoji.disabled = false;
             
