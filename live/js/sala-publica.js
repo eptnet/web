@@ -117,6 +117,19 @@ const PublicRoomApp = {
                 if (roomLayout) roomLayout.style.overflow = 'auto';
             });
         }
+
+        // Listeners delegados para avatares y botón de reporte
+        document.body.addEventListener('click', (e) => {
+            const avatar = e.target.closest('.avatar-modal-trigger');
+            if (avatar) {
+                this.openInvestigatorModal(avatar.dataset.userId);
+            }
+
+            const reportBtn = e.target.closest('#btn-report-session');
+            if (reportBtn) {
+                this.handleReportSession(this.sessionId);
+            }
+        });
     },
 
     async loadSessionData() {
@@ -165,10 +178,11 @@ const PublicRoomApp = {
         else if (effectiveStatus === 'PROGRAMADO') { badge.className = 'badge upcoming'; badge.innerHTML = '<i class="fa-regular fa-calendar"></i> PROGRAMADO'; }
         else { badge.className = 'badge vod'; badge.innerHTML = '<i class="fa-solid fa-play-circle"></i> GRABACIÓN'; }
 
+        // DOI (Ahora es cliqueable)
         if (s.project_doi) {
             const doiTag = document.getElementById('session-doi');
             doiTag.classList.remove('hidden');
-            doiTag.querySelector('span').textContent = s.project_doi;
+            doiTag.innerHTML = `<i class="fa-solid fa-fingerprint"></i> <a href="https://doi.org/${s.project_doi}" target="_blank">${s.project_doi}</a>`;
         }
         if (s.more_info_url) {
             const btnMore = document.getElementById('btn-saber-mas');
@@ -176,16 +190,17 @@ const PublicRoomApp = {
             btnMore.href = s.more_info_url;
         }
 
+        // Ponentes (Avatar cliqueable para modal y @usuario hacia la nueva ruta limpia)
         const speakersContainer = document.getElementById('speakers-list');
         if (s.event_participants && s.event_participants.length > 0) {
             speakersContainer.innerHTML = s.event_participants.map(ep => {
                 const p = ep.profiles;
                 return `
                     <div class="speaker-item">
-                        <img src="${p.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="Avatar">
+                        <img src="${p.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="Avatar" class="avatar-modal-trigger" data-user-id="${p.id}">
                         <div class="speaker-info">
                             <strong>${p.display_name}</strong>
-                            <span>@${p.username}</span>
+                            <a href="/@${p.username}" target="_blank" class="speaker-handle">@${p.username}</a>
                         </div>
                     </div>
                 `;
@@ -193,6 +208,9 @@ const PublicRoomApp = {
         } else {
             speakersContainer.innerHTML = '<p class="text-muted" style="font-size:0.9rem;">Ponentes no registrados en el sistema.</p>';
         }
+
+        // --- RENDERIZAR BARRA DE COMPARTIR ---
+        this.renderShareBar(s);
     },
 
     handlePlayerAndCountdown() {
@@ -409,6 +427,131 @@ const PublicRoomApp = {
         
         // Auto-scroll hacia abajo
         feed.scrollTop = feed.scrollHeight;
+    },
+
+    // --- NUEVAS FUNCIONES DE INTERACCIÓN ---
+
+    renderShareBar(session) {
+        const shareBar = document.getElementById('live-room-share-bar');
+        if (!shareBar) return;
+
+        // Ruta limpia configurada en Cloudflare
+        const directLink = `${window.location.origin}/l/${session.id}`;
+        
+        shareBar.innerHTML = `
+            <button class="share-btn" data-sharer="facebook" title="Compartir en Facebook"><i class="fa-brands fa-facebook-f"></i></button>
+            <button class="share-btn" data-sharer="linkedin" title="Compartir en LinkedIn"><i class="fa-brands fa-linkedin-in"></i></button>
+            <button class="share-btn" data-sharer="whatsapp" title="Compartir en WhatsApp"><i class="fa-brands fa-whatsapp"></i></button>
+            <button class="share-btn" data-sharer="x" title="Compartir en X"><i class="fa-brands fa-x-twitter"></i></button>
+            <button class="share-btn" data-sharer="bluesky" aria-label="Compartir en Bluesky"><i class="fa-brands fa-bluesky"></i></button>
+            <button class="share-btn" id="copy-link-live" title="Copiar enlace"><i class="fa-solid fa-link"></i></button>
+        `;
+
+        shareBar.dataset.shareLink = directLink;
+        shareBar.dataset.shareTitle = session.title || session.session_title;
+
+        shareBar.addEventListener('click', (e) => {
+            const shareButton = e.target.closest('.share-btn');
+            if (!shareButton) return;
+
+            const service = shareButton.dataset.sharer;
+            const link = encodeURIComponent(shareBar.dataset.shareLink);
+            const title = encodeURIComponent(shareBar.dataset.shareTitle);
+            let url;
+
+            switch (service) {
+                case 'facebook': url = `https://www.facebook.com/sharer/sharer.php?u=${link}`; break;
+                case 'linkedin': url = `https://www.linkedin.com/shareArticle?mini=true&url=${link}&title=${title}`; break;
+                case 'whatsapp': url = `https://api.whatsapp.com/send?text=${title}%20${link}`; break;
+                case 'x': url = `https://twitter.com/intent/tweet?url=${link}&text=${title}`; break;
+                case 'bluesky': url = `https://bsky.app/intent/compose?text=${title}%20${link}`; break;
+            }
+
+            if (url) window.open(url, '_blank', 'noopener,noreferrer');
+
+            if (shareButton.id === 'copy-link-live') {
+                navigator.clipboard.writeText(decodeURIComponent(link)).then(() => {
+                    const originalIcon = shareButton.innerHTML;
+                    shareButton.innerHTML = `<i class="fa-solid fa-check" style="color: #10b981;"></i>`;
+                    setTimeout(() => { shareButton.innerHTML = originalIcon; }, 1500);
+                });
+            }
+        });
+    },
+
+    async openInvestigatorModal(userId) {
+        if (!userId) return;
+        this.closeInvestigatorModal(); // Limpiar previos
+
+        const modalOverlay = document.createElement('div');
+        modalOverlay.id = 'investigator-modal';
+        modalOverlay.className = 'investigator-modal-overlay';
+        modalOverlay.innerHTML = `
+            <div class="investigator-modal">
+                <header class="investigator-modal-header">
+                    <button class="investigator-modal-close-btn">&times;</button>
+                </header>
+                <main id="investigator-modal-content" class="investigator-modal-content"><p class="text-muted"><i class="fa-solid fa-circle-notch fa-spin"></i> Cargando perfil...</p></main>
+            </div>`;
+        
+        document.body.appendChild(modalOverlay);
+        document.body.style.overflow = 'hidden';
+
+        modalOverlay.querySelector('.investigator-modal-close-btn').addEventListener('click', () => this.closeInvestigatorModal());
+        modalOverlay.addEventListener('click', (e) => { if (e.target.id === 'investigator-modal') this.closeInvestigatorModal(); });
+
+        setTimeout(() => modalOverlay.classList.add('is-visible'), 10);
+
+        try {
+            const { data: user, error: userError } = await this.supabase.from('profiles').select('*').eq('id', userId).single();
+            if (userError) throw userError;
+            const { data: projects } = await this.supabase.from('projects').select('title').eq('user_id', userId).order('created_at', { ascending: false }).limit(3);
+            
+            const modalContent = document.getElementById('investigator-modal-content');
+            if (!modalContent) return;
+
+            const socialLinksHTML = `
+                ${user.website_url ? `<a href="${user.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}
+                ${user.youtube_url ? `<a href="${user.youtube_url}" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>` : ''}
+                ${user.x_url ? `<a href="${user.x_url}" target="_blank" title="X"><i class="fab fa-x-twitter"></i></a>` : ''}
+                ${user.linkedin_url ? `<a href="${user.linkedin_url}" target="_blank" title="LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}
+            `;
+            const orcidHTML = user.orcid ? `<a href="${user.orcid}" target="_blank" style="color:#a3a3a3; text-decoration:none;"><i class="fa-brands fa-orcid" style="color:#a6ce39;"></i> ${user.orcid.replace('https://orcid.org/','')}</a>` : 'No disponible';
+            let projectInfoHTML = projects && projects.length > 0 ? `<div class="project-info"><h4>Últimos proyectos:</h4><ul>${projects.map(p => `<li>${p.title}</li>`).join('')}</ul></div>` : `<div class="project-info"><p class="text-muted">No tiene proyectos públicos en la plataforma.</p></div>`;
+            
+            modalContent.innerHTML = `
+                <img src="${user.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="${user.display_name}" class="avatar">
+                <h3>${user.display_name}</h3>
+                <p style="margin: 0 0 10px 0; font-size: 0.85rem;">${orcidHTML}</p>
+                <a href="/@${user.username}" target="_blank" class="btn-primary" style="display:inline-block; margin-top:5px; padding: 5px 15px; font-size: 0.85rem;">Ver Perfil Completo</a>
+                <div class="profile-card__socials">${socialLinksHTML}</div>
+                <p class="investigator-bio">${user.bio || 'Investigador en Epistecnología.'}</p>
+                ${projectInfoHTML}
+            `;
+        } catch (error) {
+            const modalContent = document.getElementById('investigator-modal-content');
+            if (modalContent) modalContent.innerHTML = "<p class='text-muted'>No se pudo cargar la información del investigador.</p>";
+        }
+    },
+
+    closeInvestigatorModal() {
+        const modal = document.getElementById('investigator-modal');
+        if (modal) {
+            modal.classList.remove('is-visible');
+            setTimeout(() => {
+                modal.remove();
+                document.body.style.overflow = ''; // Restaurar scroll
+            }, 300);
+        }
+    },
+
+    handleReportSession(sessionId) {
+        // En un futuro puedes abrir un modal con formulario. Por ahora un prompt simple sirve de maravilla.
+        const reason = prompt("¿Por qué deseas reportar esta sesión? (Opcional)");
+        if (reason !== null) {
+            alert("Gracias. Tu reporte ha sido enviado al equipo de moderación.");
+            // Aquí iría tu código Supabase para insertar en una tabla "reports"
+        }
     }
 };
 

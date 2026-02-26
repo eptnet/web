@@ -89,6 +89,43 @@ body.tv-mode-dark { margin: 0; font-family: 'Inter', sans-serif; background: var
 
 @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
+/* --- ACCIONES INFERIORES Y COMPARTIR --- */
+.room-footer-actions { margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
+.live-room-share-bar { display: flex; gap: 10px; flex-wrap: wrap; }
+.share-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border); color: var(--text-muted); display: flex; align-items: center; justify-content: center; background: var(--bg-panel); cursor: pointer; transition: 0.2s; font-size: 1.1rem; }
+.share-btn:hover { background: var(--accent); color: white; border-color: var(--accent); transform: translateY(-2px); }
+.footer-meta-actions { display: flex; justify-content: space-between; align-items: flex-start; gap: 2rem; }
+.disclaimer-text { font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.5; flex-grow: 1; }
+.btn-report { background: none; border: none; color: var(--text-muted); font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s; white-space: nowrap; }
+.btn-report:hover { color: #ef4444; }
+
+/* Enlaces dentro de ponentes y DOI */
+.speaker-handle { color: #38bdf8; text-decoration: none; transition: 0.2s; }
+.speaker-handle:hover { text-decoration: underline; }
+.avatar-modal-trigger { cursor: pointer; transition: transform 0.2s; }
+.avatar-modal-trigger:hover { transform: scale(1.1); border-color: var(--accent) !important; }
+.doi-tag a { color: inherit; text-decoration: none; transition: 0.2s; }
+.doi-tag a:hover { color: white; }
+
+/* --- MODAL DE INVESTIGADOR --- */
+.investigator-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 4000; backdrop-filter: blur(5px); opacity: 0; visibility: hidden; transition: 0.3s; }
+.investigator-modal-overlay.is-visible { opacity: 1; visibility: visible; }
+.investigator-modal { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 16px; width: 90%; max-width: 450px; max-height: 85vh; display: flex; flex-direction: column; position: relative; }
+.investigator-modal-header { padding: 1rem; display: flex; justify-content: flex-end; border-bottom: 1px solid var(--border); }
+.investigator-modal-close-btn { background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; }
+.investigator-modal-close-btn:hover { color: white; }
+.investigator-modal-content { padding: 2rem; overflow-y: auto; text-align: center; }
+.investigator-modal-content img.avatar { width: 90px; height: 90px; border-radius: 50%; border: 3px solid var(--accent); margin-bottom: 1rem; object-fit: cover; }
+.investigator-modal-content h3 { margin: 0 0 0.5rem; color: white; font-size: 1.3rem; }
+.profile-card__socials { display: flex; justify-content: center; gap: 15px; margin: 1.5rem 0; font-size: 1.3rem; }
+.profile-card__socials a { color: var(--text-muted); transition: 0.2s; }
+.profile-card__socials a:hover { color: white; transform: scale(1.1); }
+.investigator-bio { font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1.5rem; }
+.project-info { background: var(--bg-base); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; text-align: left; }
+.project-info h4 { margin: 0 0 10px 0; font-size: 0.95rem; color: white; }
+.project-info ul { margin: 0; padding-left: 20px; font-size: 0.85rem; color: var(--text-muted); }
+.project-info li { margin-bottom: 5px; }
+
 /* --- LÓGICA DE YOUTUBE MOBILE (HOJA DESLIZANTE) --- */
 .hidden-desktop { display: none !important; }
 
