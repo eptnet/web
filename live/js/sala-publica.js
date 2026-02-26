@@ -169,7 +169,7 @@ const PublicRoomApp = {
         // --- NUEVO: PERSONALIZAR EL NOMBRE DEL ÁGORA ---
         const brandingElement = document.querySelector('.room-branding');
         if (brandingElement && s.organizer && s.organizer.username) {
-            brandingElement.innerHTML = `<img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo"> Ágora de <span style="color:var(--text-main); font-weight:800; margin-left:4px;">@${s.organizer.username}</span>`;
+            brandingElement.innerHTML = `<img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo"> Ágora con<span style="color:var(--text-main); font-weight:800; margin-left:4px;">@${s.organizer.username}</span>`;
         }
         let effectiveStatus = s.status;
         const now = new Date().getTime();
