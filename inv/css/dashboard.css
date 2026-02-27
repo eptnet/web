@@ -192,6 +192,53 @@ textarea { resize: vertical; min-height: 100px; }
 .session-card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 1rem; border-top: 1px dashed var(--color-border); }
 .session-card-actions .btn-secondary, .session-card-actions .btn-primary, .session-card-actions .btn-danger { flex: 1; min-width: 45%; padding: 8px 12px; font-size: 0.85rem; justify-content: center; }
 
+/* --- ESTILOS PARA GRUPO DE AVATARES EN TARJETAS --- */
+.avatar-group {
+    display: flex;
+    align-items: center;
+    margin-top: 12px;
+    padding-left: 5px; /* Pequeño margen para compensar el borde */
+}
+
+.avatar-group img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--color-surface); /* Usa el color de fondo de la tarjeta para el efecto de corte */
+    margin-left: -12px; /* Efecto de apilamiento/superposición */
+    transition: var(--transition-fast);
+    position: relative;
+    background-color: var(--color-background);
+}
+
+.avatar-group img:first-child {
+    margin-left: 0;
+}
+
+.avatar-group img:hover {
+    transform: translateY(-3px) scale(1.1);
+    z-index: 10;
+    box-shadow: var(--shadow-soft);
+}
+
+/* Por si hay más de 3 invitados y quieres mostrar un "+2" */
+.avatar-more {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--color-background);
+    border: 2px solid var(--color-surface);
+    color: var(--color-text-secondary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-left: -12px;
+    z-index: 1;
+}
+
 /* =================================================================
  * 5. GESTIÓN DE CONTENIDO (Layout)
  * ================================================================= */

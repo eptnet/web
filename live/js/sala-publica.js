@@ -313,89 +313,59 @@ const PublicRoomApp = {
         }
     },
 
-    // --- 3. CONFIGURACIÓN DE CHATS (NATIVO EPT + PLATAFORMA) ---
+    // --- 3. CONFIGURACIÓN DE CHATS (NATIVO EPT + PLATAFORMA EXTERNA) ---
     setupChats() {
         const s = this.sessionData;
-        const hostname = window.location.hostname || 'localhost';
         
         // Elementos del DOM
         const nativeTab = document.getElementById('native-chat-tab');
         const nativePanel = document.getElementById('native-chat');
-        const bskyPanel = document.getElementById('ept-chat');
         const eptTab = document.querySelector('.chat-tab[data-target="ept-chat"]');
-        const chatContainer = document.querySelector('.chat-container');
+        const bskyPanel = document.getElementById('ept-chat');
         
         const isLive = s.status === 'EN VIVO';
-        const hasExternalChat = (s.platform === 'youtube' || s.platform === 'twitch') && isLive && s.platform_id;
+        // Mostrar la pestaña externa si tiene un ID de plataforma, sin importar si está en vivo o es VOD
+        const hasExternalPlatform = (s.platform === 'youtube' || s.platform === 'twitch') && s.platform_id;
 
-        // 1. CHAT EXTERNO (YouTube / Twitch) - VERSIÓN BOTÓN MODAL
-        if (hasExternalChat) {
+        // --- 1. PESTAÑA EXTERNA: INVITACIÓN A LA APP NATIVA (Sin iframes problemáticos) ---
+        if (hasExternalPlatform) {
             nativeTab.classList.remove('hidden');
-            
-            // Movemos la pestaña al inicio para que sea más visible
-            const tabsContainer = document.querySelector('.chat-tabs');
-            if (tabsContainer) tabsContainer.insertBefore(nativeTab, eptTab);
-            
             const isTwitch = s.platform === 'twitch';
             const brandColor = isTwitch ? '#a855f7' : '#ef4444';
             const brandIcon = isTwitch ? 'fa-twitch' : 'fa-youtube';
             const brandName = isTwitch ? 'Twitch' : 'YouTube';
             
-            nativeTab.innerHTML = `<i class="fa-brands ${brandIcon}" style="color:${brandColor};"></i> Chat ${brandName}`;
+            // Creamos el enlace directo al video/canal
+            const externalUrl = isTwitch 
+                ? `https://www.twitch.tv/${s.platform_id}` 
+                : `https://www.youtube.com/watch?v=${s.platform_id}`;
+
+            nativeTab.innerHTML = `<i class="fa-brands ${brandIcon}" style="color:${brandColor};"></i> Ver en ${brandName}`;
             
-            // En lugar de inyectar el iframe, ponemos un botón de acción
             nativePanel.innerHTML = `
                 <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; padding:20px; text-align:center;">
                     <i class="fa-brands ${brandIcon}" style="font-size:3.5rem; color:${brandColor}; margin-bottom:15px;"></i>
-                    <h3 style="margin:0 0 10px 0;">Chat Oficial de ${brandName}</h3>
-                    <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:25px;">Para garantizar la seguridad de tu cuenta, el chat se abrirá en una ventana flotante.</p>
-                    <button id="btn-open-external-modal" class="btn-primary" style="display:flex; align-items:center; gap:8px;">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Chat Flotante
-                    </button>
+                    <h3 style="margin:0 0 10px 0;">Transmisión en ${brandName}</h3>
+                    <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:25px;">Si lo prefieres, puedes ver esta sesión y participar en el chat externo directamente desde la plataforma original.</p>
+                    <a href="${externalUrl}" target="_blank" rel="noopener noreferrer" class="btn-primary" style="display:flex; align-items:center; gap:8px; text-decoration:none; background-color:${brandColor}; border:none;">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir en ${brandName}
+                    </a>
                 </div>
             `;
-
-            // Lógica para abrir el modal al hacer clic en el botón
-            setTimeout(() => {
-                const btnOpenModal = document.getElementById('btn-open-external-modal');
-                const chatModal = document.getElementById('external-chat-modal');
-                const chatContent = document.getElementById('external-chat-content');
-                const closeChatBtn = document.getElementById('close-external-chat');
-                const titleChat = document.getElementById('external-chat-title');
-
-                if (btnOpenModal && chatModal) {
-                    btnOpenModal.addEventListener('click', () => {
-                        titleChat.innerHTML = `<i class="fa-brands ${brandIcon}" style="color:${brandColor};"></i> Chat de ${brandName}`;
-                        
-                        // Inyectamos el iframe SOLO cuando el modal se abre
-                        const iframeSrc = isTwitch 
-                            ? `https://www.twitch.tv/embed/${s.platform_id}/chat?parent=${hostname}&darkpopout`
-                            : `https://www.youtube.com/live_chat?v=${s.platform_id}&embed_domain=${hostname}`;
-                            
-                        chatContent.innerHTML = `<iframe src="${iframeSrc}" style="width:100%; height:100%; border:none; position:absolute; top:0; left:0;"></iframe>`;
-                        
-                        chatModal.classList.add('is-visible');
-                    });
-                }
-
-                // Lógica para cerrar el modal y destruir el iframe
-                const closeModal = () => {
-                    chatModal.classList.remove('is-visible');
-                    setTimeout(() => { chatContent.innerHTML = ''; }, 300); // Destruye el iframe para evitar errores en consola
-                };
-
-                if (closeChatBtn) closeChatBtn.addEventListener('click', closeModal);
-                if (chatModal) chatModal.addEventListener('click', (e) => {
-                    if (e.target === chatModal) closeModal();
-                });
-            }, 100);
-
         } else {
             nativeTab.classList.add('hidden');
             nativePanel.innerHTML = '';
         }
 
-        // 2. CHAT NATIVO EPT (Bluesky / Interno)
+        // Aseguramos que el Chat de Epistecnología SIEMPRE sea el principal (activo)
+        eptTab.classList.add('active');
+        bskyPanel.classList.add('active');
+        if (hasExternalPlatform) {
+            nativeTab.classList.remove('active');
+            nativePanel.classList.remove('active');
+        }
+
+        // --- 2. LÓGICA DEL CHAT NATIVO EPT ---
         const authOverlay = document.getElementById('bsky-auth-overlay');
         const chatInput = document.getElementById('bsky-chat-input');
         const chatFeed = document.getElementById('bsky-chat-feed');
@@ -411,7 +381,7 @@ const PublicRoomApp = {
                 <h3 style="margin:0 0 10px 0;">Chat Desactivado</h3>
                 <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:0;">El chat en vivo ha finalizado.</p>
             `;
-            return; // Salimos de la función
+            return;
         }
 
         if (this.currentUserProfile) {
