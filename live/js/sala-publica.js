@@ -108,6 +108,15 @@ const PublicRoomApp = {
                 chatColumn.classList.add('mobile-open');
                 // Bloqueamos el scroll del texto de atrás para que sea cómodo chatear
                 if (roomLayout) roomLayout.style.overflow = 'hidden'; 
+
+                // INYECTAMOS EL IFRAME DE TWITCH AHORA QUE ES VISIBLE
+                if (this.pendingExternalChat) {
+                    const nativePanel = document.getElementById('native-chat');
+                    if (nativePanel) {
+                        nativePanel.innerHTML = this.pendingExternalChat;
+                        this.pendingExternalChat = null; // Limpiamos para no volver a inyectarlo
+                    }
+                }
             });
 
             // Cerrar Chat
@@ -322,22 +331,33 @@ const PublicRoomApp = {
         // 1. CHAT EXTERNO (YouTube / Twitch)
         if (hasExternalChat) {
             nativeTab.classList.remove('hidden');
-            // Hacer que la pestaña externa sea la activa por defecto si existe
             nativeTab.classList.add('active');
             nativePanel.classList.add('active');
             eptTab.classList.remove('active');
             bskyPanel.classList.remove('active');
             
+            // TU IDEA: Movemos la pestaña visualmente para que sea la primera a la izquierda
+            const tabsContainer = document.querySelector('.chat-tabs');
+            if (tabsContainer) {
+                tabsContainer.insertBefore(nativeTab, eptTab);
+            }
+            
+            let iframeHTML = '';
             if (s.platform === 'youtube') {
                 nativeTab.innerHTML = '<i class="fa-brands fa-youtube" style="color:#ef4444;"></i> Chat YouTube';
-                // Añadimos width y height al 100% y un estilo absoluto para forzar que ocupe todo el espacio
-                nativePanel.innerHTML = `<iframe src="https://www.youtube.com/live_chat?v=${s.platform_id}&embed_domain=${hostname}" style="width:100%; height:100%; border:none;"></iframe>`;
+                iframeHTML = `<iframe src="https://www.youtube.com/live_chat?v=${s.platform_id}&embed_domain=${hostname}" style="width:100%; height:100%; border:none;"></iframe>`;
             } else if (s.platform === 'twitch') {
                 nativeTab.innerHTML = '<i class="fa-brands fa-twitch" style="color:#a855f7;"></i> Chat Twitch';
-                nativePanel.innerHTML = `<iframe src="https://www.twitch.tv/embed/${s.platform_id}/chat?parent=${hostname}&darkpopout" sstyle="width:100%; height:100%; border:none;"></iframe>`;
+                iframeHTML = `<iframe src="https://www.twitch.tv/embed/${s.platform_id}/chat?parent=${hostname}&darkpopout" style="width:100%; height:100%; border:none;"></iframe>`;
+            }
+
+            // TRUCO: En PC cargamos de inmediato. En móvil esperamos a que el usuario presione "Abrir Chat".
+            if (window.innerWidth > 992) {
+                nativePanel.innerHTML = iframeHTML;
+            } else {
+                this.pendingExternalChat = iframeHTML; // Lo guardamos en memoria
             }
         } else {
-            // Si no hay chat externo, ocultamos la pestaña
             nativeTab.classList.add('hidden');
             nativePanel.innerHTML = '';
         }
