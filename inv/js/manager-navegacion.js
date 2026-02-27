@@ -48,6 +48,13 @@ export const Navigation = {
             } else {
                 document.getElementById('content-section').innerHTML = '<h2><i class="fas fa-lock"></i> Acceso Denegado</h2><p>Esta sección solo está disponible para administradores.</p>';
             }
+        // --- AÑADE ESTO PARA LA COMUNIDAD ---
+        } else if (sectionId === 'community-section') {
+            if (window.App.userProfile.role === 'admin') {
+                const { CommunityManager } = await import('./manager-comunidad.js');
+                CommunityManager.init(window.App.supabase, window.App.userProfile);
+                CommunityManager.loadUsers(); // Cargamos la tabla al entrar
+            }
         }
     }
 };

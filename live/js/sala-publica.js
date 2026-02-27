@@ -327,34 +327,57 @@ const PublicRoomApp = {
         // Mostrar la pestaña externa si tiene un ID de plataforma, sin importar si está en vivo o es VOD
         const hasExternalPlatform = (s.platform === 'youtube' || s.platform === 'twitch') && s.platform_id;
 
-        // --- 1. PESTAÑA EXTERNA: INVITACIÓN A LA APP NATIVA (Sin iframes problemáticos) ---
-        if (hasExternalPlatform) {
+        // 1. CHAT EXTERNO (YouTube / Twitch) - VERSIÓN POP-OUT
+        if (hasExternalChat) {
             nativeTab.classList.remove('hidden');
+            
             const isTwitch = s.platform === 'twitch';
             const brandColor = isTwitch ? '#a855f7' : '#ef4444';
             const brandIcon = isTwitch ? 'fa-twitch' : 'fa-youtube';
             const brandName = isTwitch ? 'Twitch' : 'YouTube';
             
-            // Creamos el enlace directo al video/canal
-            const externalUrl = isTwitch 
-                ? `https://www.twitch.tv/${s.platform_id}` 
-                : `https://www.youtube.com/watch?v=${s.platform_id}`;
+            // URLs especiales preparadas para ventanas flotantes
+            const popoutUrl = isTwitch 
+                ? `https://www.twitch.tv/embed/${s.platform_id}/chat?parent=${hostname}&darkpopout`
+                : `https://www.youtube.com/live_chat?v=${s.platform_id}&embed_domain=${hostname}`;
 
-            nativeTab.innerHTML = `<i class="fa-brands ${brandIcon}" style="color:${brandColor};"></i> Ver en ${brandName}`;
+            nativeTab.innerHTML = `<i class="fa-brands ${brandIcon}" style="color:${brandColor};"></i> Chat ${brandName}`;
             
             nativePanel.innerHTML = `
                 <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; padding:20px; text-align:center;">
                     <i class="fa-brands ${brandIcon}" style="font-size:3.5rem; color:${brandColor}; margin-bottom:15px;"></i>
-                    <h3 style="margin:0 0 10px 0;">Transmisión en ${brandName}</h3>
-                    <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:25px;">Si lo prefieres, puedes ver esta sesión y participar en el chat externo directamente desde la plataforma original.</p>
-                    <a href="${externalUrl}" target="_blank" rel="noopener noreferrer" class="btn-primary" style="display:flex; align-items:center; gap:8px; text-decoration:none; background-color:${brandColor}; border:none;">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir en ${brandName}
-                    </a>
+                    <h3 style="margin:0 0 10px 0;">Chat Oficial de ${brandName}</h3>
+                    <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:25px;">Para evitar bloqueos de seguridad de ${brandName}, el chat se abrirá en una ventana ligera y flotante.</p>
+                    <button id="btn-popout-chat" class="btn-primary" style="display:flex; align-items:center; gap:8px; background-color:${brandColor}; border:none;">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Chat Flotante
+                    </button>
                 </div>
             `;
+
+            // Le damos vida al botón inyectado
+            setTimeout(() => {
+                const btnPopout = document.getElementById('btn-popout-chat');
+                if (btnPopout) {
+                    btnPopout.addEventListener('click', () => {
+                        // Abrimos una ventana nativa de 400x600 pixeles
+                        window.open(popoutUrl, 'ChatExterno', 'width=400,height=600,left=200,top=100,toolbar=0,resizable=1');
+                    });
+                }
+            }, 100);
+
         } else {
+            // Si no hay chat externo, ocultamos la pestaña
             nativeTab.classList.add('hidden');
             nativePanel.innerHTML = '';
+        }
+
+        // --- FORZAR CHAT EPT COMO PRINCIPAL ---
+        // Aseguramos que el Chat de Epistecnología SIEMPRE sea el activo al entrar a la sala
+        eptTab.classList.add('active');
+        bskyPanel.classList.add('active');
+        if (hasExternalChat) {
+            nativeTab.classList.remove('active');
+            nativePanel.classList.remove('active');
         }
 
         // Aseguramos que el Chat de Epistecnología SIEMPRE sea el principal (activo)

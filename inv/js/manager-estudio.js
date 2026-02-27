@@ -164,7 +164,7 @@ export const Studio = {
                     <h4>${session.session_title}</h4>
                     <p>${session.project_title}</p>
                 </div>
-                <div class="session-card__participants">${participantsHTML}</div>
+                <div class="avatar-group">${participantsHTML}</div>
                 <div class="session-card__schedule">
                     <p><i class="fas fa-calendar-alt"></i> ${formattedDate}</p>
                     <p><i class="fas fa-clock"></i> ${formattedStartTime}</p>

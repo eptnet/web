@@ -192,51 +192,95 @@ textarea { resize: vertical; min-height: 100px; }
 .session-card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 1rem; border-top: 1px dashed var(--color-border); }
 .session-card-actions .btn-secondary, .session-card-actions .btn-primary, .session-card-actions .btn-danger { flex: 1; min-width: 45%; padding: 8px 12px; font-size: 0.85rem; justify-content: center; }
 
-/* --- ESTILOS PARA GRUPO DE AVATARES EN TARJETAS --- */
-.avatar-group {
-    display: flex;
-    align-items: center;
-    margin-top: 12px;
-    padding-left: 5px; /* Pequeño margen para compensar el borde */
+/* =================================================================
+ * MEJORAS VISUALES: AVATARES Y CONTENIDO
+ * ================================================================= */
+
+/* --- AVATARES APILADOS (Estilo Figma) --- */
+.avatar-group { 
+    display: flex; 
+    align-items: center; 
+    margin: 10px 0; 
+    padding-left: 5px; 
+}
+.avatar-group img.participant-avatar { 
+    width: 38px; 
+    height: 38px; 
+    border-radius: 50%; 
+    object-fit: cover; 
+    border: 2px solid var(--color-surface); 
+    margin-left: -12px; 
+    transition: var(--transition-fast); 
+    position: relative; 
+    background: var(--color-background); 
+}
+.avatar-group img.participant-avatar:first-child { 
+    margin-left: 0; 
+}
+.avatar-group img.participant-avatar:hover { 
+    transform: translateY(-4px) scale(1.1); 
+    z-index: 10; 
+    box-shadow: var(--shadow-hover); 
 }
 
-.avatar-group img {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid var(--color-surface); /* Usa el color de fondo de la tarjeta para el efecto de corte */
-    margin-left: -12px; /* Efecto de apilamiento/superposición */
-    transition: var(--transition-fast);
-    position: relative;
-    background-color: var(--color-background);
+/* --- MEJORA VISUAL: GESTIÓN DE CONTENIDO --- */
+.video-list { 
+    display: grid; 
+    grid-template-columns: 1fr; 
+    gap: 15px; 
+    margin-top: 15px;
 }
-
-.avatar-group img:first-child {
-    margin-left: 0;
+.video-list-item { 
+    display: flex; 
+    align-items: center; 
+    gap: 15px; 
+    background: var(--color-surface); 
+    padding: 12px; 
+    border-radius: 12px; 
+    border: 1px solid var(--color-border); 
+    box-shadow: var(--shadow-soft); 
+    transition: var(--transition-fast); 
 }
-
-.avatar-group img:hover {
-    transform: translateY(-3px) scale(1.1);
-    z-index: 10;
-    box-shadow: var(--shadow-soft);
+.video-list-item:hover { 
+    border-color: var(--color-accent); 
+    transform: translateX(5px); 
 }
-
-/* Por si hay más de 3 invitados y quieres mostrar un "+2" */
-.avatar-more {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: var(--color-background);
-    border: 2px solid var(--color-surface);
-    color: var(--color-text-secondary);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 0.8rem;
-    font-weight: 700;
-    margin-left: -12px;
-    z-index: 1;
+.video-list-item img { 
+    width: 120px; 
+    height: 68px; 
+    border-radius: 8px; 
+    object-fit: cover; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.video-list-item span { 
+    flex-grow: 1; 
+    font-weight: 600; 
+    font-size: 0.95rem; 
+    color: var(--color-text-primary);
+    display: -webkit-box; 
+    -webkit-line-clamp: 2; 
+    -webkit-box-orient: vertical; 
+    overflow: hidden; 
+}
+.delete-btn { 
+    background: var(--color-danger-light); 
+    color: var(--color-danger); 
+    border: none; 
+    width: 38px; 
+    height: 38px; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    font-size: 1.2rem; 
+    transition: var(--transition-fast); 
+    flex-shrink: 0;
+}
+.delete-btn:hover { 
+    background: var(--color-danger); 
+    color: white; 
+    transform: scale(1.05);
 }
 
 /* =================================================================

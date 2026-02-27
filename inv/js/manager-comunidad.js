@@ -1,15 +1,16 @@
 export const CommunityManager = {
     supabase: null,
     usersCache: [],
-    container: null,
 
     async init(supabaseClient, userProfile) {
         this.supabase = supabaseClient;
-        this.container = document.querySelector('main') || document.querySelector('.dashboard-content') || document.getElementById('main-content');
-
         if (userProfile && userProfile.is_admin === true) {
             this.showAdminMenu();
-            this.initListeners();
+            // Evitamos añadir los listeners varias veces
+            if (!this.listenersAttached) {
+                this.initListeners();
+                this.listenersAttached = true;
+            }
         }
     },
 
@@ -19,18 +20,9 @@ export const CommunityManager = {
     },
 
     initListeners() {
-        const btn = document.querySelector('.nav-link[data-section="community-section"]');
-        if (btn) {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.activateSection();
-            });
-        }
-
         // Delegación de eventos (Inputs)
         document.addEventListener('input', (e) => {
             if (e.target.id === 'admin-user-search') this.filterUsers(e.target.value);
-            
             // Vista previa de avatar en tiempo real
             if (e.target.id === 'edit-avatar-url') {
                 const img = document.getElementById('preview-avatar');
@@ -39,33 +31,13 @@ export const CommunityManager = {
         });
 
         // Escuchar el envío del formulario (Botón Guardar)
-        // Usamos delegación global para atrapar el evento sin importar dónde esté el botón
         document.addEventListener('click', (e) => {
-            // Verificamos si el click fue en el botón de guardar del modal de admin
             const submitBtn = e.target.closest('button[form="admin-user-form"]');
             if (submitBtn) {
                 e.preventDefault();
                 this.saveUserProfile();
             }
         });
-    },
-
-    activateSection() {
-        if (!this.container) return;
-
-        // Visual menu active
-        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-        document.querySelector('.nav-link[data-section="community-section"]')?.classList.add('active');
-
-        // Render template
-        this.container.innerHTML = '';
-        const template = document.getElementById('template-community-section');
-        if (template) {
-            this.container.appendChild(template.content.cloneNode(true));
-            this.loadUsers();
-        } else {
-            console.error("No se encontró el template 'template-community-section'");
-        }
     },
 
     async loadUsers() {
