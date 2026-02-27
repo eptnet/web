@@ -45,10 +45,15 @@ const PublicRoomApp = {
         // Pestañas de Chat
         document.querySelectorAll('.chat-tab').forEach(tab => {
             tab.addEventListener('click', (e) => {
+                const targetTab = e.target.closest('.chat-tab');
+                if (!targetTab) return;
+
                 document.querySelectorAll('.chat-tab').forEach(t => t.classList.remove('active'));
                 document.querySelectorAll('.chat-panel').forEach(p => p.classList.remove('active'));
-                e.target.classList.add('active');
-                document.getElementById(e.target.dataset.target).classList.add('active');
+                
+                targetTab.classList.add('active');
+                const targetPanel = document.getElementById(targetTab.dataset.target);
+                if (targetPanel) targetPanel.classList.add('active');
             });
         });
 
@@ -316,6 +321,7 @@ const PublicRoomApp = {
     // --- 3. CONFIGURACIÓN DE CHATS (NATIVO EPT + PLATAFORMA EXTERNA) ---
     setupChats() {
         const s = this.sessionData;
+        const hostname = window.location.hostname || 'localhost';
         
         // Elementos del DOM
         const nativeTab = document.getElementById('native-chat-tab');
@@ -324,10 +330,11 @@ const PublicRoomApp = {
         const bskyPanel = document.getElementById('ept-chat');
         
         const isLive = s.status === 'EN VIVO';
-        // Mostrar la pestaña externa si tiene un ID de plataforma, sin importar si está en vivo o es VOD
-        const hasExternalPlatform = (s.platform === 'youtube' || s.platform === 'twitch') && s.platform_id;
+        
+        // CORRECCIÓN: Definimos la variable correctamente como hasExternalChat
+        const hasExternalChat = (s.platform === 'youtube' || s.platform === 'twitch') && s.platform_id;
 
-        // 1. CHAT EXTERNO (YouTube / Twitch) - VERSIÓN POP-OUT
+        // 1. CHAT EXTERNO (YouTube / Twitch) - VERSIÓN BOTÓN INFALIBLE
         if (hasExternalChat) {
             nativeTab.classList.remove('hidden');
             
@@ -336,54 +343,38 @@ const PublicRoomApp = {
             const brandIcon = isTwitch ? 'fa-twitch' : 'fa-youtube';
             const brandName = isTwitch ? 'Twitch' : 'YouTube';
             
-            // URLs especiales preparadas para ventanas flotantes
+            // URLs nativas preparadas para ventanas flotantes (Pop-outs puros)
             const popoutUrl = isTwitch 
-                ? `https://www.twitch.tv/embed/${s.platform_id}/chat?parent=${hostname}&darkpopout`
-                : `https://www.youtube.com/live_chat?v=${s.platform_id}&embed_domain=${hostname}`;
+                ? `https://www.twitch.tv/popout/${s.platform_id}/chat?darkpopout`
+                : `https://www.youtube.com/live_chat?v=${s.platform_id}&dark_theme=1`;
 
             nativeTab.innerHTML = `<i class="fa-brands ${brandIcon}" style="color:${brandColor};"></i> Chat ${brandName}`;
             
+            // Usamos una etiqueta <a> nativa. Es inmune a bloqueadores si el usuario hace clic.
             nativePanel.innerHTML = `
                 <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; padding:20px; text-align:center;">
                     <i class="fa-brands ${brandIcon}" style="font-size:3.5rem; color:${brandColor}; margin-bottom:15px;"></i>
                     <h3 style="margin:0 0 10px 0;">Chat Oficial de ${brandName}</h3>
-                    <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:25px;">Para evitar bloqueos de seguridad de ${brandName}, el chat se abrirá en una ventana ligera y flotante.</p>
-                    <button id="btn-popout-chat" class="btn-primary" style="display:flex; align-items:center; gap:8px; background-color:${brandColor}; border:none;">
+                    <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:25px;">Para evitar bloqueos de seguridad de ${brandName}, abre el chat en una ventana independiente.</p>
+                    
+                    <a href="${popoutUrl}" 
+                       target="_blank" 
+                       onclick="window.open(this.href, 'ChatExterno', 'width=400,height=600,left=200,top=100,toolbar=0,resizable=1'); return false;" 
+                       class="btn-primary" 
+                       style="display:flex; align-items:center; gap:8px; background-color:${brandColor}; border:none; text-decoration:none;">
                         <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Chat Flotante
-                    </button>
+                    </a>
                 </div>
             `;
-
-            // Le damos vida al botón inyectado
-            setTimeout(() => {
-                const btnPopout = document.getElementById('btn-popout-chat');
-                if (btnPopout) {
-                    btnPopout.addEventListener('click', () => {
-                        // Abrimos una ventana nativa de 400x600 pixeles
-                        window.open(popoutUrl, 'ChatExterno', 'width=400,height=600,left=200,top=100,toolbar=0,resizable=1');
-                    });
-                }
-            }, 100);
-
         } else {
-            // Si no hay chat externo, ocultamos la pestaña
             nativeTab.classList.add('hidden');
             nativePanel.innerHTML = '';
         }
 
         // --- FORZAR CHAT EPT COMO PRINCIPAL ---
-        // Aseguramos que el Chat de Epistecnología SIEMPRE sea el activo al entrar a la sala
         eptTab.classList.add('active');
         bskyPanel.classList.add('active');
         if (hasExternalChat) {
-            nativeTab.classList.remove('active');
-            nativePanel.classList.remove('active');
-        }
-
-        // Aseguramos que el Chat de Epistecnología SIEMPRE sea el principal (activo)
-        eptTab.classList.add('active');
-        bskyPanel.classList.add('active');
-        if (hasExternalPlatform) {
             nativeTab.classList.remove('active');
             nativePanel.classList.remove('active');
         }
@@ -397,7 +388,6 @@ const PublicRoomApp = {
         chatFeed.innerHTML = ''; // Limpiar mensaje de carga
 
         if (!isLive && s.status !== 'PROGRAMADO') {
-            // Si el evento ya finalizó
             authOverlay.classList.remove('hidden');
             authOverlay.innerHTML = `
                 <i class="fa-solid fa-comment-slash" style="font-size: 2.5rem; color: var(--text-muted); margin-bottom: 15px;"></i>
@@ -408,7 +398,6 @@ const PublicRoomApp = {
         }
 
         if (this.currentUserProfile) {
-            // Usuario logueado: Tiene permiso para chatear
             authOverlay.classList.add('hidden');
             chatInput.disabled = false;
             sendBtn.disabled = false;
@@ -418,7 +407,6 @@ const PublicRoomApp = {
             
             chatInput.placeholder = "Escribe un mensaje...";
         } else {
-            // No logueado: Muro de fricción mínimo
             authOverlay.classList.remove('hidden');
             authOverlay.innerHTML = `
                 <i class="fa-solid fa-lock" style="font-size: 2.5rem; color: var(--text-muted); margin-bottom: 15px;"></i>
