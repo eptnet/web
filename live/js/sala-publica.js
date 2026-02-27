@@ -331,10 +331,10 @@ const PublicRoomApp = {
             if (s.platform === 'youtube') {
                 nativeTab.innerHTML = '<i class="fa-brands fa-youtube" style="color:#ef4444;"></i> Chat YouTube';
                 // Añadimos width y height al 100% y un estilo absoluto para forzar que ocupe todo el espacio
-                nativePanel.innerHTML = `<iframe src="https://www.youtube.com/live_chat?v=${s.platform_id}&embed_domain=${hostname}" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;"></iframe>`;
+                nativePanel.innerHTML = `<iframe src="https://www.youtube.com/live_chat?v=${s.platform_id}&embed_domain=${hostname}" style="width:100%; height:100%; border:none;"></iframe>`;
             } else if (s.platform === 'twitch') {
                 nativeTab.innerHTML = '<i class="fa-brands fa-twitch" style="color:#a855f7;"></i> Chat Twitch';
-                nativePanel.innerHTML = `<iframe src="https://www.twitch.tv/embed/${s.platform_id}/chat?parent=${hostname}&darkpopout" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;"></iframe>`;
+                nativePanel.innerHTML = `<iframe src="https://www.twitch.tv/embed/${s.platform_id}/chat?parent=${hostname}&darkpopout" sstyle="width:100%; height:100%; border:none;"></iframe>`;
             }
         } else {
             // Si no hay chat externo, ocultamos la pestaña
