@@ -328,35 +328,68 @@ const PublicRoomApp = {
         const isLive = s.status === 'EN VIVO';
         const hasExternalChat = (s.platform === 'youtube' || s.platform === 'twitch') && isLive && s.platform_id;
 
-        // 1. CHAT EXTERNO (YouTube / Twitch)
+        // 1. CHAT EXTERNO (YouTube / Twitch) - VERSIÓN BOTÓN MODAL
         if (hasExternalChat) {
             nativeTab.classList.remove('hidden');
-            nativeTab.classList.add('active');
-            nativePanel.classList.add('active');
-            eptTab.classList.remove('active');
-            bskyPanel.classList.remove('active');
             
-            // TU IDEA: Movemos la pestaña visualmente para que sea la primera a la izquierda
+            // Movemos la pestaña al inicio para que sea más visible
             const tabsContainer = document.querySelector('.chat-tabs');
-            if (tabsContainer) {
-                tabsContainer.insertBefore(nativeTab, eptTab);
-            }
+            if (tabsContainer) tabsContainer.insertBefore(nativeTab, eptTab);
             
-            let iframeHTML = '';
-            if (s.platform === 'youtube') {
-                nativeTab.innerHTML = '<i class="fa-brands fa-youtube" style="color:#ef4444;"></i> Chat YouTube';
-                iframeHTML = `<iframe src="https://www.youtube.com/live_chat?v=${s.platform_id}&embed_domain=${hostname}" style="width:100%; height:100%; border:none;"></iframe>`;
-            } else if (s.platform === 'twitch') {
-                nativeTab.innerHTML = '<i class="fa-brands fa-twitch" style="color:#a855f7;"></i> Chat Twitch';
-                iframeHTML = `<iframe src="https://www.twitch.tv/embed/${s.platform_id}/chat?parent=${hostname}&darkpopout" style="width:100%; height:100%; border:none;"></iframe>`;
-            }
+            const isTwitch = s.platform === 'twitch';
+            const brandColor = isTwitch ? '#a855f7' : '#ef4444';
+            const brandIcon = isTwitch ? 'fa-twitch' : 'fa-youtube';
+            const brandName = isTwitch ? 'Twitch' : 'YouTube';
+            
+            nativeTab.innerHTML = `<i class="fa-brands ${brandIcon}" style="color:${brandColor};"></i> Chat ${brandName}`;
+            
+            // En lugar de inyectar el iframe, ponemos un botón de acción
+            nativePanel.innerHTML = `
+                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; padding:20px; text-align:center;">
+                    <i class="fa-brands ${brandIcon}" style="font-size:3.5rem; color:${brandColor}; margin-bottom:15px;"></i>
+                    <h3 style="margin:0 0 10px 0;">Chat Oficial de ${brandName}</h3>
+                    <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:25px;">Para garantizar la seguridad de tu cuenta, el chat se abrirá en una ventana flotante.</p>
+                    <button id="btn-open-external-modal" class="btn-primary" style="display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Chat Flotante
+                    </button>
+                </div>
+            `;
 
-            // TRUCO: En PC cargamos de inmediato. En móvil esperamos a que el usuario presione "Abrir Chat".
-            if (window.innerWidth > 992) {
-                nativePanel.innerHTML = iframeHTML;
-            } else {
-                this.pendingExternalChat = iframeHTML; // Lo guardamos en memoria
-            }
+            // Lógica para abrir el modal al hacer clic en el botón
+            setTimeout(() => {
+                const btnOpenModal = document.getElementById('btn-open-external-modal');
+                const chatModal = document.getElementById('external-chat-modal');
+                const chatContent = document.getElementById('external-chat-content');
+                const closeChatBtn = document.getElementById('close-external-chat');
+                const titleChat = document.getElementById('external-chat-title');
+
+                if (btnOpenModal && chatModal) {
+                    btnOpenModal.addEventListener('click', () => {
+                        titleChat.innerHTML = `<i class="fa-brands ${brandIcon}" style="color:${brandColor};"></i> Chat de ${brandName}`;
+                        
+                        // Inyectamos el iframe SOLO cuando el modal se abre
+                        const iframeSrc = isTwitch 
+                            ? `https://www.twitch.tv/embed/${s.platform_id}/chat?parent=${hostname}&darkpopout`
+                            : `https://www.youtube.com/live_chat?v=${s.platform_id}&embed_domain=${hostname}`;
+                            
+                        chatContent.innerHTML = `<iframe src="${iframeSrc}" style="width:100%; height:100%; border:none; position:absolute; top:0; left:0;"></iframe>`;
+                        
+                        chatModal.classList.add('is-visible');
+                    });
+                }
+
+                // Lógica para cerrar el modal y destruir el iframe
+                const closeModal = () => {
+                    chatModal.classList.remove('is-visible');
+                    setTimeout(() => { chatContent.innerHTML = ''; }, 300); // Destruye el iframe para evitar errores en consola
+                };
+
+                if (closeChatBtn) closeChatBtn.addEventListener('click', closeModal);
+                if (chatModal) chatModal.addEventListener('click', (e) => {
+                    if (e.target === chatModal) closeModal();
+                });
+            }, 100);
+
         } else {
             nativeTab.classList.add('hidden');
             nativePanel.innerHTML = '';
