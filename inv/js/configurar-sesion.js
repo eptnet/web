@@ -112,24 +112,34 @@ const SessionConfigApp = {
     },
 
     handlePlatformChange(platform) {
+        // 1. Limpiamos y marcamos la tarjeta seleccionada (de forma segura)
         document.querySelectorAll('.platform-card').forEach(c => c.classList.remove('selected'));
-        document.querySelector(`input[value="${platform}"]`).closest('.platform-card').classList.add('selected');
+        const activeRadio = document.querySelector(`input[name="platform"][value="${platform}"]`);
+        if (activeRadio) {
+            activeRadio.closest('.platform-card').classList.add('selected');
+        }
 
+        // 2. Buscamos los contenedores de los mensajes
         const idContainer = document.getElementById('platform-id-container');
         const eptHint = document.getElementById('ept-live-hint');
         const badge = document.getElementById('preview-badge');
 
+        // 3. Ocultamos/Mostramos SOLO si los contenedores existen en el HTML
         if (platform === 'vdo_ninja') {
-            idContainer.classList.add('hidden');
-            eptHint.classList.remove('hidden');
-            badge.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> EPT Live';
-            badge.style.background = 'var(--accent)';
+            if (idContainer) idContainer.classList.add('hidden');
+            if (eptHint) eptHint.classList.remove('hidden');
+            if (badge) {
+                badge.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> EPT Live';
+                badge.style.background = 'var(--accent)';
+            }
         } else {
-            idContainer.classList.remove('hidden');
-            eptHint.classList.add('hidden');
-            const icons = { 'youtube': 'fa-youtube', 'twitch': 'fa-twitch', 'substack': 'fa-bookmark' };
-            badge.innerHTML = `<i class="fa-brands ${icons[platform] || 'fa-video'}"></i> ${platform.toUpperCase()}`;
-            badge.style.background = '#334155';
+            if (idContainer) idContainer.classList.remove('hidden');
+            if (eptHint) eptHint.classList.add('hidden');
+            if (badge) {
+                const icons = { 'youtube': 'fa-youtube', 'twitch': 'fa-twitch', 'substack': 'fa-bookmark' };
+                badge.innerHTML = `<i class="fa-brands ${icons[platform] || 'fa-video'}"></i> ${platform.toUpperCase()}`;
+                badge.style.background = '#334155';
+            }
         }
     },
 
