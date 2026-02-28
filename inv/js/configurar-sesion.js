@@ -17,8 +17,12 @@ const SessionConfigApp = {
         if (!session) { window.location.href='/'; return; }
         this.user = session.user;
 
-        const { data: profile } = await this.supabase.from('profiles').select('orcid, display_name, full_name').eq('id', this.user.id).single();
-        this.userProfile = profile || { orcid: '0000', display_name: 'Usuario', full_name: 'Usuario' };
+        const { data: profile } = await this.supabase.from('profiles')
+            .select('orcid, display_name, username, avatar_url')
+            .eq('id', this.user.id)
+            .single();
+            
+        this.userProfile = profile || { orcid: '0000', display_name: 'Usuario', username: 'usuario' };
 
         const urlParams = new URLSearchParams(window.location.search);
         this.editSessionId = urlParams.get('edit');
@@ -133,10 +137,15 @@ const SessionConfigApp = {
         DESCRIPCIÓN: [Gancho impactante de máximo 250 caracteres que despierte curiosidad].\n\n[Desarrollo de la idea principal explicada de forma sencilla, empática y humana].\n\n📖 Lee el artículo completo aquí: ${doiLink}\n\n#Epistecnología #RevistEpistecnología #DivulgaciónCientífica #DivulgaciónCultural #[Agrega 2 hashtags relevantes más]`;
 
         try {
-            // Reutilizamos tu Edge Function de texto
+            // CORRECCIÓN: Separamos el contexto en textContent y las reglas en customPrompt
             const { data, error } = await this.supabase.functions.invoke('generate-text', { 
-                body: { textContent: systemPrompt, promptType: 'generate_from_instructions', customPrompt: '' } 
+                body: { 
+                    textContent: `Proyecto base: ${this.currentProject.title}`, 
+                    promptType: 'generate_from_instructions', 
+                    customPrompt: systemPrompt 
+                } 
             });
+            
             if (error) throw error;
 
             const responseText = data.result;
@@ -157,7 +166,7 @@ const SessionConfigApp = {
             }
 
         } catch (error) {
-            console.error(error);
+            console.error("Error en IA de texto:", error);
             alert("Hubo un error al generar el texto. Intenta de nuevo.");
         } finally {
             btn.innerHTML = originalText;
