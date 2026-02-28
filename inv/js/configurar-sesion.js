@@ -386,12 +386,29 @@ const SessionConfigApp = {
 
     showLinksPanel(session) {
         document.getElementById('btn-enter-studio').classList.remove('hidden');
-        if (session.platform === 'vdo_ninja') {
-            document.getElementById('session-links-panel').classList.remove('hidden');
-            document.getElementById('link-guest').value = session.guest_url || 'Link no generado';
-            document.getElementById('link-viewer').value = session.viewer_url || 'Link no generado';
-            document.getElementById('link-director').value = session.director_url || 'Link no generado';
-            document.getElementById('link-public').value = `https://epistecnologia.com/live.html?sesion=${session.id}`;
+        const panel = document.getElementById('session-links-panel');
+        if (!panel) return;
+        
+        panel.classList.remove('hidden');
+        
+        // 1. La URL Pública limpia (Aplica para todas las plataformas)
+        document.getElementById('link-public').value = `https://epistecnologia.com/l/${session.id}`;
+
+        // 2. Enlaces del Estudio Interno (VDO.Ninja)
+        document.getElementById('link-guest').value = session.guest_url || 'Pendiente...';
+        document.getElementById('link-viewer').value = session.viewer_url || 'Pendiente...';
+        document.getElementById('link-director').value = session.director_url || 'Pendiente...';
+
+        // 3. Mostrar botón de OBS solo si es red externa masiva
+        const btnObs = document.getElementById('btn-download-obs');
+        if (btnObs) {
+            if (session.platform === 'youtube' || session.platform === 'twitch') {
+                btnObs.classList.remove('hidden');
+                // Guardamos el ID en el botón para usarlo al descargar
+                btnObs.dataset.sessionId = session.id; 
+            } else {
+                btnObs.classList.add('hidden');
+            }
         }
     },
 
@@ -481,10 +498,9 @@ const SessionConfigApp = {
                 sessionData.status = 'PROGRAMADO';
                 sessionData.is_archived = false;
                 
-                if (platform === 'vdo_ninja') {
-                    const vdoUrls = this.generateVdoNinjaUrls();
-                    sessionData = { ...sessionData, ...vdoUrls };
-                }
+                // Generamos SIEMPRE las URLs de VDO.Ninja (Nuestro Estudio Universal)
+                const vdoUrls = this.generateVdoNinjaUrls();
+                sessionData = { ...sessionData, ...vdoUrls };
 
                 let postMethod = 'none';
                 try {
