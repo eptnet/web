@@ -289,17 +289,15 @@ const PublicRoomApp = {
                 playerContainer.style.backgroundSize = 'cover';
                 playerContainer.style.backgroundPosition = 'center';
 
-                if (s.viewer_url) {
-                    playerContainer.innerHTML += `<iframe src="${s.viewer_url}&transparent=1&automute=1" allow="autoplay; fullscreen; microphone; camera" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none; z-index:1;"></iframe>`;
-                }
+                // ELIMINAMOS LA INYECCIÓN DEL IFRAME AQUÍ PARA QUE SEA UN "GREEN ROOM" REAL
 
                 this.countdownTimer = setInterval(() => {
                     const distance = scheduled - new Date().getTime();
                     if (distance < 0) {
                         clearInterval(this.countdownTimer);
                         document.getElementById('timer-display').textContent = "00:00:00";
-                        document.getElementById('countdown-date').textContent = "Conectando con el auditorio...";
-                        setTimeout(() => overlay.classList.add('hidden'), 5000);
+                        document.getElementById('countdown-date').textContent = "El evento está por comenzar. Esperando señal del director...";
+                        // No ocultamos el overlay hasta que no detectemos que cambió a EN VIVO
                         return;
                     }
                     const d = Math.floor(distance / (1000 * 60 * 60 * 24));
@@ -311,7 +309,8 @@ const PublicRoomApp = {
 
             } else if (s.status === 'EN VIVO') {
                 overlay.classList.add('hidden');
-                if (s.viewer_url) {
+                // SOLO AQUÍ, CUANDO ESTÁ EN VIVO, CONECTAMOS A LA AUDIENCIA
+                if (s.viewer_url && playerContainer.innerHTML.indexOf('iframe') === -1) {
                     playerContainer.innerHTML += `<iframe src="${s.viewer_url}&transparent=1" allow="autoplay; fullscreen; microphone; camera" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none; z-index:1;"></iframe>`;
                 }
             }
@@ -439,6 +438,32 @@ const PublicRoomApp = {
         this.realtimeChannel.on('broadcast', { event: 'chat_message' }, (payload) => {
             this.renderIncomingMessage(payload.payload);
         });
+
+        // 4C. ESCUCHAR CUANDO EL DIRECTOR INICIA LA TRANSMISIÓN (Magia Realtime)
+        this.supabase.channel(`public:sessions`)
+            .on('postgres_changes', { 
+                event: 'UPDATE', 
+                schema: 'public', 
+                table: 'sessions', 
+                filter: `id=eq.${this.sessionId}` 
+            }, (payload) => {
+                if (payload.new.status === 'EN VIVO' && this.sessionData.status !== 'EN VIVO') {
+                    console.log("¡El director inició la transmisión!");
+                    this.sessionData.status = 'EN VIVO';
+                    
+                    // Actualizamos la etiqueta superior a rojo
+                    const badge = document.getElementById('status-badge');
+                    if(badge) {
+                        badge.className = 'badge live'; 
+                        badge.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> EN VIVO';
+                    }
+                    
+                    // Disparamos el reproductor
+                    this.handlePlayerAndCountdown();
+                } else if (payload.new.status === 'FINALIZADO') {
+                    window.location.reload(); // Recarga limpia al terminar
+                }
+            }).subscribe();
 
         // Suscripción final
         this.realtimeChannel.subscribe(async (status) => {
