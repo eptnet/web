@@ -3,6 +3,8 @@ const ControlRoom = {
     sessionId: null,
     sessionData: null,
     iframe: null,
+    realtimeChannel: null,
+    userProfile: null,
 
     init() {
         const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
@@ -36,6 +38,7 @@ const ControlRoom = {
         this.iframe.src = directorUrl.toString();
 
         this.renderActionButtons();
+        this.setupChat();
     },
 
     // --- CAMBIO: NUEVA FUNCIÓN PARA ABRIR EL MODAL DE GRABACIÓN ---
@@ -196,6 +199,123 @@ const ControlRoom = {
                 break;
         }
         container.innerHTML = buttonHTML;
+    },
+
+    // --- MAGIA DEL CHAT INTEGRADO ---
+    async setupChat() {
+        // 1. Obtener datos del director
+        const { data: { session } } = await this.supabase.auth.getSession();
+        if (session) {
+            const { data: profile } = await this.supabase.from('profiles').select('display_name, avatar_url').eq('id', session.user.id).single();
+            this.userProfile = profile;
+        }
+
+        // 2. Conectar al mismo canal exacto de la sala pública
+        this.realtimeChannel = this.supabase.channel(`room_${this.sessionId}`, {
+            config: { 
+                presence: { key: 'director_view' },
+                broadcast: { self: true } 
+            }
+        });
+
+        // 3. Escuchar espectadores conectados
+        this.realtimeChannel.on('presence', { event: 'sync' }, () => {
+            const state = this.realtimeChannel.presenceState();
+            const count = Object.keys(state).length;
+            const counterEl = document.getElementById('control-viewer-count');
+            if (counterEl) counterEl.innerHTML = `<i class="fa-solid fa-eye"></i> ${count}`;
+        });
+
+        // 4. Escuchar mensajes entrantes
+        this.realtimeChannel.on('broadcast', { event: 'chat_message' }, (payload) => {
+            this.renderIncomingMessage(payload.payload);
+        });
+
+        this.realtimeChannel.subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                document.getElementById('control-chat-feed').innerHTML = ''; // Limpiar loader
+                await this.realtimeChannel.track({ online_at: new Date().toISOString() });
+            }
+        });
+
+        // 5. Eventos del teclado y botón
+        const sendBtn = document.getElementById('btn-send-control-chat');
+        const input = document.getElementById('control-chat-input');
+
+        sendBtn.addEventListener('click', () => this.sendChatMessage());
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.sendChatMessage();
+        });
+
+        // 6. Activar Selector de Emojis
+        const btnEmoji = document.getElementById('btn-emoji-control');
+        const pickerContainer = document.getElementById('emoji-picker-container-control');
+        const picker = document.querySelector('emoji-picker');
+        
+        if (btnEmoji && pickerContainer && picker) {
+            btnEmoji.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // Alternamos entre display 'none' y 'block'
+                pickerContainer.style.display = pickerContainer.style.display === 'none' ? 'block' : 'none';
+            });
+            
+            picker.addEventListener('emoji-click', event => {
+                input.value += event.detail.unicode;
+                input.focus();
+            });
+            
+            // Cerrar si haces clic afuera
+            document.addEventListener('click', (e) => {
+                if (!pickerContainer.contains(e.target) && e.target !== btnEmoji && !btnEmoji.contains(e.target)) {
+                    pickerContainer.style.display = 'none';
+                }
+            });
+        }
+    },
+
+    sendChatMessage() {
+        if (!this.userProfile || !this.realtimeChannel) return;
+        
+        const input = document.getElementById('control-chat-input');
+        const text = input.value.trim();
+        if (!text) return;
+
+        // Añadimos un indicativo visual de que es el organizador
+        const displayName = `👑 ${this.userProfile.display_name} (Director)`;
+
+        const messageData = {
+            user: displayName,
+            avatar: this.userProfile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png',
+            text: text,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            isDirector: true
+        };
+
+        this.realtimeChannel.send({
+            type: 'broadcast',
+            event: 'chat_message',
+            payload: messageData
+        });
+
+        input.value = '';
+    },
+
+    renderIncomingMessage(msg) {
+        const feed = document.getElementById('control-chat-feed');
+        
+        const isDir = msg.isDirector ? 'is-director' : '';
+        const msgHtml = `
+            <div class="chat-msg">
+                <div class="chat-msg-header">
+                    <span class="chat-msg-author ${isDir}">${msg.user}</span>
+                    <span class="chat-msg-time">${msg.timestamp}</span>
+                </div>
+                <p class="chat-msg-text">${msg.text}</p>
+            </div>
+        `;
+
+        feed.insertAdjacentHTML('beforeend', msgHtml);
+        feed.scrollTop = feed.scrollHeight; // Auto-scroll
     },
 };
 

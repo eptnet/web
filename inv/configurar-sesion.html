@@ -104,43 +104,57 @@
 
                 <div class="form-section">
                     <h3>4. Destino de Transmisión</h3>
-                    <p class="form-hint" style="margin-bottom: 15px;">Selecciona la plataforma. Si eliges YouTube/Twitch, tu sala de control (EPT Live) se convertirá en un puente hacia ella.</p>
-                    
                     <div class="platform-grid">
                         <label class="platform-card selected">
                             <input type="radio" name="platform" value="vdo_ninja" checked>
                             <i class="fa-solid fa-tower-broadcast"></i>
                             <span>EPT Live</span>
-                            <small>Nativo</small>
+                            <small>Para < 50 viewers</small>
                         </label>
                         <label class="platform-card">
                             <input type="radio" name="platform" value="youtube">
                             <i class="fa-brands fa-youtube"></i>
                             <span>YouTube</span>
+                            <small>Masivo</small>
                         </label>
                         <label class="platform-card">
                             <input type="radio" name="platform" value="twitch">
                             <i class="fa-brands fa-twitch"></i>
                             <span>Twitch</span>
+                            <small>Masivo</small>
+                        </label>
+                        <label class="platform-card">
+                            <input type="radio" name="platform" value="substack">
+                            <i class="fa-solid fa-bookmark"></i>
+                            <span>Substack</span>
+                            <small>Solo VOD</small>
                         </label>
                     </div>
-                    
+
                     <div id="external-broadcast-options" class="hidden mt-3" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px;">
-                        <label style="margin-bottom: 10px;">¿Dónde deseas transmitir?</label>
+                        <label style="margin-bottom: 10px; color: #38bdf8;">¿Dónde deseas transmitir?</label>
                         <select id="broadcast-mode" style="width: 100%; margin-bottom: 15px; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-color); color: white; border-radius: 6px;">
                             <option value="official">En el Canal Oficial de Epistecnología (Recomendado)</option>
                             <option value="own">En mi propio canal</option>
                         </select>
 
                         <div id="platform-id-container" class="form-group hidden">
-                            <label for="platform-id">ID de la Transmisión / Video:</label>
-                            <input type="text" id="platform-id" placeholder="Pega el ID aquí...">
-                            <p class="form-hint">Como usarás tu propio canal, deberás crear el evento allá y pegar el ID aquí.</p>
+                            <label for="platform-id" style="color: #f59e0b;">ID de tu Transmisión / Video:</label>
+                            <input type="text" id="platform-id" placeholder="Ej: dQw4w9WgXcQ (YouTube) o tu-canal (Twitch)">
+                            <p class="form-hint">Crea el evento en tu canal y pega el ID aquí para conectar nuestra sala.</p>
                         </div>
 
                         <div id="official-channel-hint" class="form-group">
-                            <p class="form-hint" style="color: #38bdf8;"><i class="fa-solid fa-circle-info"></i> Al guardar, el sistema te asignará automáticamente una clave de transmisión hacia nuestra red.</p>
+                            <p class="form-hint" style="color: #10b981; margin: 0;">
+                                <i class="fa-solid fa-key"></i> Al guardar la sesión, el sistema te asignará una <strong>Clave de Transmisión (Stream Key)</strong> única para que tu OBS envíe la señal directo a nuestra red oficial, la encontraras al final con la <strong>Guía de Traansmisión.</strong>
+                            </p>
                         </div>
+                    </div>
+                    
+                    <div id="ept-live-hint" class="form-group mt-3">
+                        <p class="form-hint" style="color: #94a3b8; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
+                            <i class="fa-solid fa-circle-info"></i> <strong>EPT Live Nativo:</strong> Genera una sala privada dentro de nuestra plataforma ideal para debates, mesas de trabajo o eventos con aforo controlado.
+                        </p>
                     </div>
                 </div>
 
@@ -157,14 +171,10 @@
                     </div>
                 </div>
 
-                <div id="session-links-panel" class="form-section hidden" style="border-color: #10b981; background: rgba(16, 185, 129, 0.05);">
-                    <h3 style="color: #10b981;"><i class="fa-solid fa-link"></i> Enlaces de la Sala</h3>
-                    <p class="form-hint">Copia y comparte estos enlaces según lo necesites.</p>
+                <div id="session-links-panel" class="form-section hidden" style="border-color: #10b981; background: rgba(16, 185, 129, 0.05); padding: 2rem;">
+                    <h3 style="color: #10b981; border-bottom: none; margin-bottom: 5px;"><i class="fa-solid fa-circle-check"></i> ¡Todo Listo! Enlaces de la Sala</h3>
+                    <p class="form-hint" style="margin-bottom: 20px;">Tu sesión está configurada. Copia y comparte estos enlaces según el rol de tus invitados.</p>
                     
-                    <button type="button" id="btn-download-obs" class="btn-primary hidden" style="width: 100%; margin-bottom: 15px; justify-content: center; background: #ea580c; border: none;">
-                        <i class="fa-solid fa-download"></i> Descargar Auto-Setup para OBS
-                    </button>
-
                     <div class="form-group">
                         <label style="color: #38bdf8;">Página Pública (Para la audiencia)</label>
                         <div class="copy-group">
@@ -180,7 +190,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label style="color: #f59e0b;">Enlace de Espectador (OBS / Vista limpia)</label>
+                        <label style="color: #f59e0b;">Enlace de Espectador (Vista limpia para OBS)</label>
                         <div class="copy-group">
                             <input type="text" id="link-viewer" readonly>
                             <button type="button" class="btn-copy" data-target="link-viewer" title="Copiar"><i class="fa-solid fa-copy"></i></button>
@@ -192,6 +202,30 @@
                         <div class="copy-group">
                             <input type="text" id="link-director" readonly>
                             <button type="button" class="btn-copy" data-target="link-director" title="Copiar"><i class="fa-solid fa-copy"></i></button>
+                        </div>
+                    </div>
+
+                    <div id="obs-instructions-box" style="margin-top: 30px; background: var(--bg-dark); border: 1px solid #ea580c; border-radius: 12px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+                        <h4 style="color: #ea580c; margin-top: 0; display: flex; align-items: center; gap: 10px; font-size: 1.15rem;">
+                            <i class="fa-solid fa-video"></i> Guía de Transmisión (OBS Studio)
+                        </h4>
+                        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 15px;">
+                            Para emitir tu evento con diseño profesional, requieres descargar gratis el software seguro <a href="https://obsproject.com/es/download" target="_blank" style="color: #38bdf8; text-decoration: underline; font-weight: bold;">OBS Studio aquí</a>.
+                        </p>
+                        
+                        <button type="button" id="btn-download-obs" class="btn-primary" style="width: 100%; margin-bottom: 20px; justify-content: center; background: #ea580c; border: none; font-size: 1rem; padding: 12px;">
+                            <i class="fa-solid fa-download"></i> Descargar Setup para OBS
+                        </button>
+
+                        <div style="background: var(--bg-panel); border-radius: 8px; padding: 15px 20px; font-size: 0.9rem; color: var(--text-main); border: 1px solid var(--border-color);">
+                            <strong style="color: #ea580c;">Pasos a seguir:</strong>
+                            <ol style="margin: 10px 0 0; padding-left: 20px; line-height: 1.6; color: var(--text-muted);">
+                                <li>Abre OBS Studio y ve a <strong>Colección de Escenas > Importar</strong> para cargar el archivo que descargaste.</li>
+                                <li>Ve al menú <strong>Ajustes > Emisión</strong>.</li>
+                                <li id="obs-step-3" style="color: white; font-weight: 500; margin: 8px 0;">Cargando credenciales de transmisión...</li>
+                                <li>Haz clic en <strong>Aplicar</strong> y luego en <strong>Aceptar</strong>.</li>
+                                <li>¡Dale clic a <strong>Iniciar Transmisión</strong> y opcionalmente a <strong>Iniciar Grabación</strong>!</li>
+                            </ol>
                         </div>
                     </div>
                 </div>

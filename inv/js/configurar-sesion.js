@@ -95,6 +95,8 @@ const SessionConfigApp = {
             btnObs.addEventListener('click', (e) => this.generateOBSCollection(e.currentTarget));
         }
 
+        document.getElementById('broadcast-mode')?.addEventListener('change', (e) => this.handleBroadcastModeChange(e.target.value));
+
     },
 
     generateOBSCollection(btn) {
@@ -231,34 +233,44 @@ const SessionConfigApp = {
     },
 
     handlePlatformChange(platform) {
-        // 1. Limpiamos y marcamos la tarjeta seleccionada (de forma segura)
         document.querySelectorAll('.platform-card').forEach(c => c.classList.remove('selected'));
         const activeRadio = document.querySelector(`input[name="platform"][value="${platform}"]`);
-        if (activeRadio) {
-            activeRadio.closest('.platform-card').classList.add('selected');
-        }
+        if (activeRadio) activeRadio.closest('.platform-card').classList.add('selected');
 
-        // 2. Buscamos los contenedores de los mensajes
-        const idContainer = document.getElementById('platform-id-container');
+        const externalOptions = document.getElementById('external-broadcast-options');
         const eptHint = document.getElementById('ept-live-hint');
         const badge = document.getElementById('preview-badge');
 
-        // 3. Ocultamos/Mostramos SOLO si los contenedores existen en el HTML
         if (platform === 'vdo_ninja') {
-            if (idContainer) idContainer.classList.add('hidden');
+            if (externalOptions) externalOptions.classList.add('hidden');
             if (eptHint) eptHint.classList.remove('hidden');
-            if (badge) {
-                badge.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> EPT Live';
-                badge.style.background = 'var(--accent)';
-            }
+            if (badge) { badge.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> EPT Live'; badge.style.background = 'var(--accent)'; }
         } else {
-            if (idContainer) idContainer.classList.remove('hidden');
+            if (externalOptions) externalOptions.classList.remove('hidden');
             if (eptHint) eptHint.classList.add('hidden');
             if (badge) {
                 const icons = { 'youtube': 'fa-youtube', 'twitch': 'fa-twitch', 'substack': 'fa-bookmark' };
                 badge.innerHTML = `<i class="fa-brands ${icons[platform] || 'fa-video'}"></i> ${platform.toUpperCase()}`;
                 badge.style.background = '#334155';
             }
+            // Disparar la lógica del sub-menú (Oficial vs Propio)
+            this.handleBroadcastModeChange(document.getElementById('broadcast-mode').value);
+        }
+    },
+
+    handleBroadcastModeChange(mode) {
+        const idContainer = document.getElementById('platform-id-container');
+        const officialHint = document.getElementById('official-channel-hint');
+
+        if (mode === 'own') {
+            if (idContainer) idContainer.classList.remove('hidden');
+            if (officialHint) officialHint.classList.add('hidden');
+        } else {
+            if (idContainer) idContainer.classList.add('hidden');
+            if (officialHint) officialHint.classList.remove('hidden');
+            // Limpiamos el ID por si había escrito algo
+            const idInput = document.getElementById('platform-id');
+            if (idInput) idInput.value = '';
         }
     },
 
@@ -458,6 +470,16 @@ const SessionConfigApp = {
         if (platformRadio) {
             platformRadio.checked = true;
             this.handlePlatformChange(session.platform);
+            // --- INICIO CORRECCIÓN ---
+        if (session.platform !== 'vdo_ninja') {
+            const modeSelect = document.getElementById('broadcast-mode');
+            if (modeSelect) {
+                // Inferimos que si hay un platform_id guardado, eligió su propio canal. Si no, usó el oficial.
+                modeSelect.value = session.platform_id ? 'own' : 'official';
+                this.handleBroadcastModeChange(modeSelect.value);
+            }
+        }
+        // --- FIN CORRECCIÓN ---
         }
         
         // 🛠️ FUNCIÓN BLINDADA: Si un campo no existe en el HTML, lo ignora y no rompe la página
@@ -510,21 +532,40 @@ const SessionConfigApp = {
         
         panel.classList.remove('hidden');
         
-        // 1. La URL Pública limpia (Aplica para todas las plataformas)
+        // 1. Rellenar los enlaces
         document.getElementById('link-public').value = `https://epistecnologia.com/l/${session.id}`;
-
-        // 2. Enlaces del Estudio Interno (VDO.Ninja)
         document.getElementById('link-guest').value = session.guest_url || 'Pendiente...';
         document.getElementById('link-viewer').value = session.viewer_url || 'Pendiente...';
         document.getElementById('link-director').value = session.director_url || 'Pendiente...';
 
-        // 3. Mostrar SIEMPRE el botón de OBS (Para permitir Multistreaming)
+        // 2. Activar el botón de OBS
         const btnObs = document.getElementById('btn-download-obs');
         if (btnObs) {
-            btnObs.classList.remove('hidden');
-            // Guardamos el viewer_url en el botón para usarlo al armar el JSON
             btnObs.dataset.viewerUrl = session.viewer_url; 
             btnObs.dataset.sessionTitle = session.session_title; 
+        }
+
+        // 3. Lógica dinámica para las instrucciones de la Clave (Paso 3)
+        const step3 = document.getElementById('obs-step-3');
+        const broadcastMode = document.getElementById('broadcast-mode')?.value;
+
+        if (step3) {
+            if (session.platform === 'vdo_ninja' || broadcastMode === 'official') {
+                // CORRECCIÓN: Convertimos el ID a String de forma segura antes de cortarlo
+                const safeId = String(session.id).split('-')[0];
+                const mockStreamKey = `ept-live-${safeId}-${Math.floor(Math.random()*1000)}`;
+                
+                step3.innerHTML = `
+                    En Servicio elige <strong>"Personalizado"</strong> y pega estos datos oficiales de nuestra red:<br>
+                    <div style="display:inline-block; margin-top:10px; background: #000; padding: 12px; border-radius: 6px; color: #10b981; border: 1px dashed #334155; width: 100%; font-family: monospace;">
+                        <strong>Servidor:</strong> <span style="user-select: all; color: #94a3b8;">rtmp://a.rtmp.youtube.com/live2</span><br>
+                        <strong>Clave:</strong> <span style="user-select: all; filter: blur(5px); cursor: pointer; transition: 0.3s;" onclick="this.style.filter='none'" title="Haz clic para revelar la clave">${mockStreamKey}</span>
+                    </div>
+                `;
+            } else {
+                const platformName = session.platform.charAt(0).toUpperCase() + session.platform.slice(1);
+                step3.innerHTML = `En Servicio elige <strong>"${platformName}"</strong>, conecta tu cuenta o pega tu propia clave de transmisión proporcionada por tu canal.`;
+            }
         }
     },
 
@@ -575,13 +616,21 @@ const SessionConfigApp = {
 
         const title = document.getElementById('session-title').value.trim();
         const start = document.getElementById('session-start').value;
+
         const platform = document.querySelector('input[name="platform"]:checked').value;
+        const broadcastMode = document.getElementById('broadcast-mode')?.value;
         
         if (!title || !start) { 
             alert("El título y la fecha son obligatorios."); 
             btn.disabled=false; 
             btn.innerHTML=originalText; 
             return; 
+        }
+
+        // LÓGICA DE LIMPIEZA: Si eligió el Canal Oficial, anulamos el ID para no ensuciar la base de datos
+        let platformIdToSave = document.getElementById('platform-id')?.value || null;
+        if (platform !== 'vdo_ninja' && broadcastMode === 'official') {
+            platformIdToSave = null; 
         }
 
         let sessionData = {
@@ -595,7 +644,7 @@ const SessionConfigApp = {
             thumbnail_url: document.getElementById('session-thumbnail')?.value || '',
             more_info_url: document.getElementById('session-more-info')?.value || null,
             platform: platform,
-            platform_id: document.getElementById('platform-id')?.value || null,
+            platform_id: platformIdToSave, // <-- Usamos la variable limpia aquí
         };
 
         const authorInfo = {

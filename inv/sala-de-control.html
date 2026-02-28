@@ -37,12 +37,36 @@
         <div id="action-buttons-container"></div>
     </header>
     <main class="control-room-main">
-        <iframe id="mixer-iframe" allow="autoplay; camera; microphone; fullscreen; picture-in-picture; display-capture"></iframe>
+        <div class="video-workspace">
+            <iframe id="mixer-iframe" allow="autoplay; camera; microphone; fullscreen; picture-in-picture; display-capture"></iframe>
+        </div>
+        
+        <aside class="control-chat-sidebar">
+            <div class="chat-header">
+                <h3><i class="fa-solid fa-comments"></i> Chat del Auditorio</h3>
+                <span id="control-viewer-count" class="viewer-count"><i class="fa-solid fa-eye"></i> 0</span>
+            </div>
+            <div id="control-chat-feed" class="chat-feed">
+                <p class="chat-system-msg"><i class="fa-solid fa-circle-notch fa-spin"></i> Conectando al auditorio...</p>
+            </div>
+            <div class="chat-input-area" style="position: relative;">
+                <div id="emoji-picker-container-control" class="hidden" style="display: none; position: absolute; bottom: 65px; left: 15px; z-index: 9999; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border-radius: 8px;">
+                    <emoji-picker class="dark"></emoji-picker>
+                </div>
+                
+                <button id="btn-emoji-control" title="Añadir emoji" style="background: transparent; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer; padding: 0 10px; transition: 0.2s;"><i class="fa-regular fa-face-smile"></i></button>
+                
+                <input type="text" id="control-chat-input" placeholder="Mensaje como Director...">
+                <button id="btn-send-control-chat" title="Enviar"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </aside>
     </main>
     
     <div id="modal-overlay-container"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
     <script src="/inv/js/sala-de-control.js"></script>
+    
 </body>
 </html>
