@@ -89,6 +89,125 @@ const SessionConfigApp = {
             });
         });
 
+        // Botón: Descargar Setup de OBS
+        const btnObs = document.getElementById('btn-download-obs');
+        if (btnObs) {
+            btnObs.addEventListener('click', (e) => this.generateOBSCollection(e.currentTarget));
+        }
+
+    },
+
+    generateOBSCollection(btn) {
+        const viewerUrl = btn.dataset.viewerUrl;
+        const sessionTitle = btn.dataset.sessionTitle || "Evento_Epistecnologia";
+        
+        if (!viewerUrl) {
+            alert("El enlace de espectador aún no está listo. Guarda la sesión primero.");
+            return;
+        }
+
+        // Limpiamos el título para que sea un nombre de archivo válido
+        const safeTitle = sessionTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+
+        // Estructura JSON estándar de una "Colección de Escenas" de OBS Studio
+        const obsJson = {
+            "current_scene": "EPT Live - Escena Principal",
+            "current_program_scene": "EPT Live - Escena Principal",
+            "name": `EPT_${safeTitle}`,
+            "scene_order": [
+                { "name": "EPT Live - Escena Principal" }
+            ],
+            "sources": [
+                {
+                    "balance": 0.5,
+                    "deinterlace_field_order": 0,
+                    "deinterlace_mode": 0,
+                    "enabled": true,
+                    "flags": 0,
+                    "hotkeys": {},
+                    "id": "scene",
+                    "mixers": 0,
+                    "monitoring_type": 0,
+                    "muted": false,
+                    "name": "EPT Live - Escena Principal",
+                    "prev_ver": 436207616,
+                    "private_settings": {},
+                    "push-to-mute": false,
+                    "push-to-mute-delay": 0,
+                    "push-to-talk": false,
+                    "push-to-talk-delay": 0,
+                    "settings": {
+                        "custom_size": false,
+                        "id_counter": 1,
+                        "items": [
+                            {
+                                "align": 5,
+                                "bounds": { "x": 0.0, "y": 0.0 },
+                                "bounds_align": 0,
+                                "bounds_type": 0,
+                                "crop_bottom": 0,
+                                "crop_left": 0,
+                                "crop_right": 0,
+                                "crop_top": 0,
+                                "group_item_backup": false,
+                                "id": 1,
+                                "locked": false,
+                                "name": "Cámara EPT Live (Navegador)",
+                                "pos": { "x": 0.0, "y": 0.0 },
+                                "private_settings": {},
+                                "rot": 0.0,
+                                "scale": { "x": 1.0, "y": 1.0 },
+                                "scale_filter": "disable",
+                                "visible": true
+                            }
+                        ]
+                    },
+                    "sync": 0,
+                    "versioned_id": "scene",
+                    "volume": 1.0
+                },
+                {
+                    "balance": 0.5,
+                    "deinterlace_field_order": 0,
+                    "deinterlace_mode": 0,
+                    "enabled": true,
+                    "flags": 0,
+                    "hotkeys": {},
+                    "id": "browser_source",
+                    "mixers": 255,
+                    "monitoring_type": 0,
+                    "muted": false,
+                    "name": "Cámara EPT Live (Navegador)",
+                    "prev_ver": 436207616,
+                    "private_settings": {},
+                    "push-to-mute": false,
+                    "push-to-mute-delay": 0,
+                    "push-to-talk": false,
+                    "push-to-talk-delay": 0,
+                    "settings": {
+                        "fps": 30,
+                        "height": 1080,
+                        "reroute_audio": true,
+                        "url": viewerUrl,
+                        "width": 1920
+                    },
+                    "sync": 0,
+                    "versioned_id": "browser_source",
+                    "volume": 1.0
+                }
+            ],
+            "transition_duration": 300,
+            "transitions": []
+        };
+
+        // Creamos el archivo y forzamos la descarga
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(obsJson, null, 2));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", `OBS_${safeTitle}.json`);
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
     },
 
     setupRealtimePreview() {
@@ -399,16 +518,13 @@ const SessionConfigApp = {
         document.getElementById('link-viewer').value = session.viewer_url || 'Pendiente...';
         document.getElementById('link-director').value = session.director_url || 'Pendiente...';
 
-        // 3. Mostrar botón de OBS solo si es red externa masiva
+        // 3. Mostrar SIEMPRE el botón de OBS (Para permitir Multistreaming)
         const btnObs = document.getElementById('btn-download-obs');
         if (btnObs) {
-            if (session.platform === 'youtube' || session.platform === 'twitch') {
-                btnObs.classList.remove('hidden');
-                // Guardamos el ID en el botón para usarlo al descargar
-                btnObs.dataset.sessionId = session.id; 
-            } else {
-                btnObs.classList.add('hidden');
-            }
+            btnObs.classList.remove('hidden');
+            // Guardamos el viewer_url en el botón para usarlo al armar el JSON
+            btnObs.dataset.viewerUrl = session.viewer_url; 
+            btnObs.dataset.sessionTitle = session.session_title; 
         }
     },
 
