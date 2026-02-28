@@ -59,6 +59,10 @@ const SessionConfigApp = {
         document.getElementById('btn-enter-studio').addEventListener('click', () => {
             if (this.editSessionId) window.location.href = `/inv/sala-de-control.html?id=${this.editSessionId}`;
         });
+
+        // Nuevos botones de Inteligencia Artificial
+        document.getElementById('btn-generate-ai')?.addEventListener('click', () => this.generateTextAI());
+        document.getElementById('btn-generate-img-ai')?.addEventListener('click', () => this.generateImageAI());
     },
 
     setupRealtimePreview() {
@@ -100,6 +104,188 @@ const SessionConfigApp = {
             const icons = { 'youtube': 'fa-youtube', 'twitch': 'fa-twitch', 'substack': 'fa-bookmark' };
             badge.innerHTML = `<i class="fa-brands ${icons[platform] || 'fa-video'}"></i> ${platform.toUpperCase()}`;
             badge.style.background = '#334155';
+        }
+    },
+
+    // ==========================================
+    // MAGIA IA: GENERACIÓN DE TEXTO (Google API)
+    // ==========================================
+    async generateTextAI() {
+        const promptInput = document.getElementById('ai-prompt-input').value.trim();
+        if (!promptInput) { alert("Cuéntale a la IA de qué deseas hablar primero."); return; }
+        if (!this.currentProject) { alert("Selecciona un proyecto en el Dashboard primero para darle contexto a la IA."); return; }
+
+        const btn = document.getElementById('btn-generate-ai');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Pensando...';
+        btn.disabled = true;
+
+        // Construimos el Prompt Divulgativo Maestro
+        const doiLink = this.currentProject.doi ? `https://doi.org/${this.currentProject.doi}` : `https://epistecnologia.com/@${this.userProfile.username}`;
+        
+        const systemPrompt = `Eres un experto en divulgación científica y cultural digital. 
+        Tengo un proyecto titulado: "${this.currentProject.title}".
+        El investigador quiere hacer una sesión en vivo sobre esto: "${promptInput}".
+        
+        Devuelve ÚNICAMENTE el siguiente formato exacto, sin saludos ni explicaciones extra:
+        
+        TÍTULO: [Un título muy atractivo y corto, máximo 8 palabras]
+        DESCRIPCIÓN: [Gancho impactante de máximo 250 caracteres que despierte curiosidad].\n\n[Desarrollo de la idea principal explicada de forma sencilla, empática y humana].\n\n📖 Lee el artículo completo aquí: ${doiLink}\n\n#Epistecnología #RevistEpistecnología #DivulgaciónCientífica #DivulgaciónCultural #[Agrega 2 hashtags relevantes más]`;
+
+        try {
+            // Reutilizamos tu Edge Function de texto
+            const { data, error } = await this.supabase.functions.invoke('generate-text', { 
+                body: { textContent: systemPrompt, promptType: 'generate_from_instructions', customPrompt: '' } 
+            });
+            if (error) throw error;
+
+            const responseText = data.result;
+            
+            // Extraer Título y Descripción con Regex
+            const titleMatch = responseText.match(/TÍTULO:\s*(.+)/i);
+            const descMatch = responseText.match(/DESCRIPCIÓN:\s*([\s\S]+)/i);
+
+            if (titleMatch && titleMatch[1]) {
+                const titleInput = document.getElementById('session-title');
+                titleInput.value = titleMatch[1].trim().replace(/["*]/g, ''); // Limpiar comillas o asteriscos
+                titleInput.dispatchEvent(new Event('input')); // Forzar actualización visual
+            }
+            if (descMatch && descMatch[1]) {
+                const descInput = document.getElementById('session-description');
+                descInput.value = descMatch[1].trim();
+                descInput.dispatchEvent(new Event('input'));
+            }
+
+        } catch (error) {
+            console.error(error);
+            alert("Hubo un error al generar el texto. Intenta de nuevo.");
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    },
+
+    // ==========================================
+    // MAGIA IA: GENERACIÓN DE IMAGEN (Flux 1.0)
+    // ==========================================
+    async generateImageAI() {
+        const title = document.getElementById('session-title').value.trim();
+        const promptInput = document.getElementById('ai-prompt-input').value.trim();
+        
+        if (!title && !promptInput) { alert("Genera primero el título o escribe de qué tratará la sesión."); return; }
+
+        const btn = document.getElementById('btn-generate-img-ai');
+        const originalBtnHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Pintando...';
+        btn.disabled = true;
+
+        try {
+            // 1. Pedir la imagen a la IA (Estilo Editorial por defecto)
+            const imgPrompt = `Concept art for: ${title}. ${promptInput}. No text.`;
+            const { data: imgData, error: imgError } = await this.supabase.functions.invoke('generate-image', { 
+                body: { prompt: imgPrompt, style: 'editorial', ratio: '16:9' } 
+            });
+            
+            if (imgError) throw imgError;
+
+            // 2. Procesar con HTML Canvas para añadir el texto "Duro y Legible"
+            const finalBase64 = await new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 1280; // Resolución estándar YouTube HD
+                    canvas.height = 720;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Dibujar imagen base
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    // Oscurecer ligeramente la parte inferior para que el texto resalte
+                    const gradient = ctx.createLinearGradient(0, canvas.height * 0.4, 0, canvas.height);
+                    gradient.addColorStop(0, "transparent");
+                    gradient.addColorStop(1, "rgba(0, 0, 0, 0.85)");
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    // Configurar fuente dura y legible en móvil (Impact o Arial Black)
+                    ctx.font = "bold 75px 'Arial Black', Impact, sans-serif";
+                    ctx.fillStyle = "#ffffff";
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+
+                    // Sombra fuerte para máximo contraste
+                    ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
+                    ctx.shadowBlur = 15;
+                    ctx.shadowOffsetX = 4;
+                    ctx.shadowOffsetY = 4;
+
+                    // Función para dividir texto en múltiples líneas si es largo
+                    const words = title.split(' ');
+                    let line = '';
+                    let lines = [];
+                    const maxWidth = canvas.width - 100;
+
+                    for(let n = 0; n < words.length; n++) {
+                        let testLine = line + words[n] + ' ';
+                        let metrics = ctx.measureText(testLine);
+                        if (metrics.width > maxWidth && n > 0) {
+                            lines.push(line);
+                            line = words[n] + ' ';
+                        } else {
+                            line = testLine;
+                        }
+                    }
+                    lines.push(line);
+
+                    // Dibujar las líneas centradas verticalmente en el tercio inferior
+                    let startY = canvas.height - (lines.length * 80) + 20;
+                    for(let i = 0; i < lines.length; i++) {
+                        // Dibujar contorno negro grueso (Stroke)
+                        ctx.lineWidth = 6;
+                        ctx.strokeStyle = '#000000';
+                        ctx.strokeText(lines[i], canvas.width / 2, startY + (i * 85));
+                        // Relleno blanco
+                        ctx.fillText(lines[i], canvas.width / 2, startY + (i * 85));
+                    }
+
+                    // Marca de agua de la plataforma
+                    ctx.font = "bold 24px Arial";
+                    ctx.fillStyle = "#38bdf8"; // Color EPT
+                    ctx.shadowBlur = 4;
+                    ctx.fillText("EPT Live", canvas.width - 80, 40);
+
+                    resolve(canvas.toDataURL('image/jpeg', 0.85));
+                };
+                img.onerror = () => reject(new Error("Error procesando imagen en Canvas."));
+                img.src = imgData.image;
+            });
+
+            // 3. Subir el resultado de Canvas a ImgBB para obtener URL pública
+            btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up fa-fade"></i> Subiendo...';
+            
+            const base64Clean = finalBase64.split(',')[1];
+            const formData = new FormData();
+            formData.append("image", base64Clean);
+            
+            const response = await fetch(`https://api.imgbb.com/1/upload?key=${this.IMGBB_API_KEY}`, {
+                method: "POST", body: formData
+            });
+            
+            if (!response.ok) throw new Error("Fallo al subir a ImgBB");
+            const uploadedData = await response.json();
+            
+            // 4. Inyectar la URL final en el input
+            const thumbnailInput = document.getElementById('session-thumbnail');
+            thumbnailInput.value = uploadedData.data.url;
+            thumbnailInput.dispatchEvent(new Event('input')); // Forzar actualización de vista previa
+
+        } catch (error) {
+            console.error(error);
+            alert("No se pudo generar la imagen. Revisa tu consola.");
+        } finally {
+            btn.innerHTML = originalBtnHTML;
+            btn.disabled = false;
         }
     },
 

@@ -55,7 +55,10 @@ input:focus, textarea:focus { outline: none; border-color: var(--accent); }
 .platform-card.selected i { color: var(--accent); }
 
 /* UPLOAD Y BÚSQUEDA */
-.upload-group, .search-participant-group { display: flex; gap: 10px; }
+/* Corrección de botones aplastados en la sección de imagen */
+.upload-group { display: flex; gap: 10px; align-items: stretch; flex-wrap: wrap; }
+.upload-group input[type="text"] { flex-grow: 1; min-width: 200px; }
+.upload-group button { white-space: nowrap; flex-shrink: 0; display: flex; align-items: center; justify-content: center; padding: 0 15px; height: 45px; }
 .btn-upload, .btn-secondary { background: var(--bg-input); border: 1px solid var(--border-color); color: white; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
 .btn-upload:hover, .btn-secondary:hover { border-color: white; }
 .search-results { background: var(--bg-input); border-radius: 8px; margin-top: 5px; max-height: 150px; overflow-y: auto; }
@@ -85,3 +88,30 @@ input:focus, textarea:focus { outline: none; border-color: var(--accent); }
     .studio-container { grid-template-columns: 1fr; }
     .config-panel { padding-right: 0; }
 }
+
+/* --- ESTILOS DE IA Y NUEVO FLUJO --- */
+.ai-magic-box {
+    background: linear-gradient(to right bottom, rgba(15, 23, 42, 1), rgba(30, 41, 59, 1));
+    border: 1px solid #38bdf8;
+    box-shadow: 0 10px 30px rgba(56, 189, 248, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+.ai-magic-box::before {
+    content: '';
+    position: absolute; top: -50px; right: -50px;
+    width: 150px; height: 150px;
+    background: radial-gradient(circle, rgba(56,189,248,0.2) 0%, transparent 70%);
+    border-radius: 50%; pointer-events: none;
+}
+.ai-magic-box textarea {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    color: #e0f2fe;
+}
+.ai-magic-box textarea:focus { border-color: #38bdf8; box-shadow: 0 0 10px rgba(56,189,248,0.2); }
+
+#btn-generate-ai.is-loading { pointer-events: none; opacity: 0.8; animation: pulse 1.5s infinite; }
+
+/* OPTIMIZACIÓN DEL SELECTOR */
+select option { background: var(--bg-panel); color: white; }

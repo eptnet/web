@@ -26,56 +26,24 @@
         <section class="config-panel">
             <div class="panel-header">
                 <h1>Configurar Transmisión</h1>
-                <p>Prepara los detalles de tu sala antes de salir en vivo.</p>
+                <p>Diseña un evento atractivo con la ayuda del asistente de IA.</p>
+            </div>
+
+            <div class="form-section ai-magic-box">
+                <h3 style="color: #38bdf8; border-bottom: none; margin-bottom: 5px;"><i class="fa-solid fa-wand-magic-sparkles"></i> 1. Tu Idea</h3>
+                <p class="form-hint" style="margin-bottom: 15px;">Cuéntale a la IA sobre qué quieres hablar. Usaremos el resumen de tu proyecto para darle contexto divulgativo.</p>
+                <textarea id="ai-prompt-input" rows="2" placeholder="Ej: Quiero debatir sobre cómo la inteligencia artificial afecta los sesgos cognitivos en la investigación médica..."></textarea>
+                <button type="button" id="btn-generate-ai" class="btn-primary mt-3" style="width: 100%; justify-content: center; background: linear-gradient(135deg, #0284c7, #3b82f6); border: none;">
+                    <i class="fa-solid fa-brain"></i> Generar Título y Descripción
+                </button>
             </div>
 
             <form id="session-form">
                 <div class="form-section">
-                    <h3>1. Destino de Transmisión</h3>
-                    <div class="platform-grid">
-                        <label class="platform-card selected">
-                            <input type="radio" name="platform" value="vdo_ninja" checked>
-                            <i class="fa-solid fa-tower-broadcast"></i>
-                            <span>EPT Live</span>
-                            <small>Nativo</small>
-                        </label>
-                        <label class="platform-card">
-                            <input type="radio" name="platform" value="youtube">
-                            <i class="fa-brands fa-youtube"></i>
-                            <span>YouTube</span>
-                            <small>Externo</small>
-                        </label>
-                        <label class="platform-card">
-                            <input type="radio" name="platform" value="twitch">
-                            <i class="fa-brands fa-twitch"></i>
-                            <span>Twitch</span>
-                            <small>Externo</small>
-                        </label>
-                        <label class="platform-card">
-                            <input type="radio" name="platform" value="substack">
-                            <i class="fa-solid fa-bookmark"></i>
-                            <span>Substack</span>
-                            <small>Externo</small>
-                        </label>
-                    </div>
-                    
-                    <div id="platform-id-container" class="form-group hidden mt-3">
-                        <label for="platform-id">ID de la Transmisión / Video:</label>
-                        <input type="text" id="platform-id" placeholder="Ej: dQw4w9WgXcQ (ID de YouTube)">
-                        <p class="form-hint" id="platform-hint">Pega aquí el ID o enlace directo proporcionado por la plataforma externa.</p>
-                    </div>
-                    <div id="ept-live-hint" class="form-group mt-3">
-                        <p class="form-hint" style="color: #10b981; background: rgba(16,185,129,0.1); padding: 10px; border-radius: 8px;">
-                            <i class="fa-solid fa-circle-check"></i> EPT Live generará automáticamente una sala privada encriptada. No necesitas configurar nada más aquí.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="form-section">
                     <h3>2. Detalles del Evento</h3>
                     <div class="form-group">
                         <label for="session-title">Título de la Sesión</label>
-                        <input type="text" id="session-title" required placeholder="Ej: Entrevista sobre Inteligencia Artificial">
+                        <input type="text" id="session-title" required placeholder="El título generado aparecerá aquí...">
                     </div>
                     
                     <div class="form-row">
@@ -91,30 +59,73 @@
 
                     <div class="form-group">
                         <label for="session-description">Descripción Corta</label>
-                        <textarea id="session-description" rows="3" placeholder="De qué tratará esta sesión..."></textarea>
+                        <textarea id="session-description" rows="4" placeholder="La descripción optimizada aparecerá aquí..."></textarea>
                     </div>
                 </div>
 
                 <div class="form-section">
-                    <h3>3. Elementos Visuales</h3>
+                    <h3>3. Portada Visual</h3>
                     <div class="form-group">
                         <label>Miniatura (Thumbnail)</label>
-                        <div class="upload-group">
-                            <input type="text" id="session-thumbnail" placeholder="URL de la imagen o súbela...">
+                        <div class="upload-group" style="flex-wrap: wrap;">
+                            <input type="text" id="session-thumbnail" placeholder="URL de la imagen..." style="flex-grow: 1;">
+                            
+                            <button type="button" id="btn-generate-img-ai" class="btn-secondary" style="color: #a855f7; border-color: #a855f7;">
+                                <i class="fa-solid fa-image"></i> Generar IA
+                            </button>
+
                             <input type="file" id="file-thumbnail" accept="image/*" style="display:none;">
                             <button type="button" class="btn-upload" onclick="document.getElementById('file-thumbnail').click()">
                                 <i class="fa-solid fa-cloud-arrow-up"></i> Subir
                             </button>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label for="session-more-info">URL para "Saber Más" (Opcional)</label>
-                        <input type="url" id="session-more-info" placeholder="https://...">
+                </div>
+
+                <div class="form-section">
+                    <h3>4. Destino de Transmisión</h3>
+                    <p class="form-hint" style="margin-bottom: 15px;">Selecciona la plataforma. Si eliges YouTube/Twitch, tu sala de control (EPT Live) se convertirá en un puente hacia ella.</p>
+                    
+                    <div class="platform-grid">
+                        <label class="platform-card selected">
+                            <input type="radio" name="platform" value="vdo_ninja" checked>
+                            <i class="fa-solid fa-tower-broadcast"></i>
+                            <span>EPT Live</span>
+                            <small>Nativo</small>
+                        </label>
+                        <label class="platform-card">
+                            <input type="radio" name="platform" value="youtube">
+                            <i class="fa-brands fa-youtube"></i>
+                            <span>YouTube</span>
+                        </label>
+                        <label class="platform-card">
+                            <input type="radio" name="platform" value="twitch">
+                            <i class="fa-brands fa-twitch"></i>
+                            <span>Twitch</span>
+                        </label>
+                    </div>
+                    
+                    <div id="external-broadcast-options" class="hidden mt-3" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px;">
+                        <label style="margin-bottom: 10px;">¿Dónde deseas transmitir?</label>
+                        <select id="broadcast-mode" style="width: 100%; margin-bottom: 15px; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-color); color: white; border-radius: 6px;">
+                            <option value="official">En el Canal Oficial de Epistecnología (Recomendado)</option>
+                            <option value="own">En mi propio canal</option>
+                        </select>
+
+                        <div id="platform-id-container" class="form-group hidden">
+                            <label for="platform-id">ID de la Transmisión / Video:</label>
+                            <input type="text" id="platform-id" placeholder="Pega el ID aquí...">
+                            <p class="form-hint">Como usarás tu propio canal, deberás crear el evento allá y pegar el ID aquí.</p>
+                        </div>
+
+                        <div id="official-channel-hint" class="form-group">
+                            <p class="form-hint" style="color: #38bdf8;"><i class="fa-solid fa-circle-info"></i> Al guardar, el sistema te asignará automáticamente una clave de transmisión hacia nuestra red.</p>
+                        </div>
                     </div>
                 </div>
 
                 <div class="form-section">
-                    <h3>4. Investigadores Participantes</h3>
+                    <h3>5. Investigadores Invitados</h3>
                     <div class="search-participant-group">
                         <input type="text" id="participant-search" placeholder="Buscar usuario por nombre o username...">
                         <button type="button" id="search-participant-btn" class="btn-secondary"><i class="fa-solid fa-search"></i></button>
@@ -122,42 +133,21 @@
                     <div id="participant-search-results" class="search-results"></div>
                     
                     <div class="participants-list-box">
-                        <h5>Invitados a la sala:</h5>
-                        <ul id="added-participants-ul" class="participants-ul">
-                            </ul>
+                        <ul id="added-participants-ul" class="participants-ul"></ul>
                     </div>
                 </div>
 
-                <div id="session-links-panel" class="form-section hidden" style="border-color: #38bdf8; background: rgba(56, 189, 248, 0.05);">
-                    <h3 style="color: #38bdf8;"><i class="fa-solid fa-link"></i> Enlaces de la Sala</h3>
+                <div id="session-links-panel" class="form-section hidden" style="border-color: #10b981; background: rgba(16, 185, 129, 0.05);">
+                    <h3 style="color: #10b981;"><i class="fa-solid fa-link"></i> ¡Todo Listo!</h3>
+                    <p class="form-hint">Descarga tu configuración de OBS o copia tus enlaces para la transmisión.</p>
                     
+                    <button type="button" id="btn-download-obs" class="btn-primary hidden" style="width: 100%; margin-bottom: 15px; justify-content: center; background: #ea580c; border: none;">
+                        <i class="fa-solid fa-download"></i> Descargar Auto-Setup para OBS
+                    </button>
+
                     <div class="form-group">
                         <label>Enlace para Invitados (Compartir por interno)</label>
                         <input type="text" id="link-guest" readonly style="color: #10b981; border-color: #10b981;">
-                    </div>
-                    <div class="form-group">
-                        <label>Enlace de Espectador (Vista limpia / OBS)</label>
-                        <input type="text" id="link-viewer" readonly style="color: #f59e0b; border-color: #f59e0b;">
-                    </div>
-                    <div class="form-group">
-                        <label>Página Pública del Evento (Para la audiencia)</label>
-                        <input type="text" id="link-public" readonly style="color: #38bdf8; border-color: #38bdf8;">
-                    </div>
-                </div>
-                <div id="session-links-panel" class="form-section hidden" style="border-color: #38bdf8; background: rgba(56, 189, 248, 0.05);">
-                    <h3 style="color: #38bdf8;"><i class="fa-solid fa-link"></i> Enlaces de la Sala</h3>
-                    
-                    <div class="form-group">
-                        <label>Enlace para Invitados (Compartir por interno)</label>
-                        <input type="text" id="link-guest" readonly style="color: #10b981; border-color: #10b981;">
-                    </div>
-                    <div class="form-group">
-                        <label>Enlace de Espectador (Vista limpia / OBS)</label>
-                        <input type="text" id="link-viewer" readonly style="color: #f59e0b; border-color: #f59e0b;">
-                    </div>
-                    <div class="form-group">
-                        <label>Página Pública del Evento (Para la audiencia)</label>
-                        <input type="text" id="link-public" readonly style="color: #38bdf8; border-color: #38bdf8;">
                     </div>
                 </div>
             </form>
@@ -165,7 +155,7 @@
 
         <section class="preview-panel">
             <div class="sticky-preview">
-                <h3>Vista Previa del Evento</h3>
+                <h3>Vista Previa</h3>
                 <div class="event-preview-card">
                     <div class="preview-image-wrapper">
                         <img id="preview-image" src="https://i.ibb.co/Vt9tv2D/default-placeholder.png" alt="Miniatura">
@@ -179,7 +169,6 @@
                 </div>
             </div>
         </section>
-
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
