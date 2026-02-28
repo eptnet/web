@@ -63,21 +63,41 @@
                     </div>
                 </div>
 
+                <div class="form-group" style="margin-top: 15px;">
+                    <label for="session-more-info"><i class="fa-solid fa-link"></i> URL para "Saber Más" (Opcional)</label>
+                    <input type="url" id="session-more-info" placeholder="https://...">
+                    <p class="form-hint">Añade un enlace a materiales descargables, presentaciones o recursos de apoyo para la sesión.</p>
+                </div>
+
                 <div class="form-section">
                     <h3>3. Portada Visual</h3>
                     <div class="form-group">
+                        <label>Estilo de la IA</label>
+                        <select id="ai-image-style" style="width: 100%; margin-bottom: 15px; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-color); color: white; border-radius: 6px;">
+                            <option value="editorial">🎨 Pintura Óleo (Estilo Epistecnología)</option>
+                            <option value="realistic">📸 Realista / Fotográfico</option>
+                            <option value="vector">🖋️ Ilustración / Vector</option>
+                            <option value="cinematic">🎬 Cinemático / Película</option>
+                        </select>
                         <label>Miniatura (Thumbnail)</label>
-                        <div class="upload-group" style="flex-wrap: wrap;">
+                        <div class="upload-group">
                             <input type="text" id="session-thumbnail" placeholder="URL de la imagen..." style="flex-grow: 1;">
-                            
                             <button type="button" id="btn-generate-img-ai" class="btn-secondary" style="color: #a855f7; border-color: #a855f7;">
                                 <i class="fa-solid fa-image"></i> Generar IA
                             </button>
-
                             <input type="file" id="file-thumbnail" accept="image/*" style="display:none;">
                             <button type="button" class="btn-upload" onclick="document.getElementById('file-thumbnail').click()">
                                 <i class="fa-solid fa-cloud-arrow-up"></i> Subir
                             </button>
+                        </div>
+                        
+                        <div id="ai-gallery" class="ai-gallery-container hidden">
+                            <p class="form-hint">Vista previa generada:</p>
+                            <img id="ai-gallery-img" src="" class="ai-gallery-preview">
+                            <div style="display: flex; gap: 10px; justify-content: center;">
+                                <button type="button" id="btn-discard-img" class="btn-secondary"><i class="fa-solid fa-trash"></i> Descartar</button>
+                                <button type="button" id="btn-use-img" class="btn-primary" style="background: #10b981; border:none;"><i class="fa-solid fa-check"></i> Usar esta imagen</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -138,16 +158,37 @@
                 </div>
 
                 <div id="session-links-panel" class="form-section hidden" style="border-color: #10b981; background: rgba(16, 185, 129, 0.05);">
-                    <h3 style="color: #10b981;"><i class="fa-solid fa-link"></i> ¡Todo Listo!</h3>
-                    <p class="form-hint">Descarga tu configuración de OBS o copia tus enlaces para la transmisión.</p>
+                    <h3 style="color: #10b981;"><i class="fa-solid fa-link"></i> Enlaces de la Sala</h3>
+                    <p class="form-hint">Copia y comparte estos enlaces según lo necesites.</p>
                     
-                    <button type="button" id="btn-download-obs" class="btn-primary hidden" style="width: 100%; margin-bottom: 15px; justify-content: center; background: #ea580c; border: none;">
-                        <i class="fa-solid fa-download"></i> Descargar Auto-Setup para OBS
-                    </button>
-
                     <div class="form-group">
-                        <label>Enlace para Invitados (Compartir por interno)</label>
-                        <input type="text" id="link-guest" readonly style="color: #10b981; border-color: #10b981;">
+                        <label style="color: #38bdf8;">Página Pública (Para la audiencia)</label>
+                        <div class="copy-group">
+                            <input type="text" id="link-public" readonly>
+                            <button type="button" class="btn-copy" data-target="link-public" title="Copiar"><i class="fa-solid fa-copy"></i></button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label style="color: #10b981;">Enlace para Invitados (Compartir por interno)</label>
+                        <div class="copy-group">
+                            <input type="text" id="link-guest" readonly>
+                            <button type="button" class="btn-copy" data-target="link-guest" title="Copiar"><i class="fa-solid fa-copy"></i></button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label style="color: #f59e0b;">Enlace de Espectador (OBS / Vista limpia)</label>
+                        <div class="copy-group">
+                            <input type="text" id="link-viewer" readonly>
+                            <button type="button" class="btn-copy" data-target="link-viewer" title="Copiar"><i class="fa-solid fa-copy"></i></button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label style="color: #ef4444;">Enlace de Sala de Control (Mixer / Director)</label>
+                        <p class="form-hint" style="margin-top:0;">Compártelo si quieres que un tercero gestione las cámaras por ti.</p>
+                        <div class="copy-group">
+                            <input type="text" id="link-director" readonly>
+                            <button type="button" class="btn-copy" data-target="link-director" title="Copiar"><i class="fa-solid fa-copy"></i></button>
+                        </div>
                     </div>
                 </div>
             </form>
@@ -158,7 +199,7 @@
                 <h3>Vista Previa</h3>
                 <div class="event-preview-card">
                     <div class="preview-image-wrapper">
-                        <img id="preview-image" src="https://i.ibb.co/Vt9tv2D/default-placeholder.png" alt="Miniatura">
+                        <img id="preview-image" src="https://placehold.co/1280x720/1e293b/38bdf8?text=Vista+Previa" alt="Miniatura">
                         <div class="preview-platform-badge" id="preview-badge"><i class="fa-solid fa-tower-broadcast"></i> EPT Live</div>
                     </div>
                     <div class="preview-content">

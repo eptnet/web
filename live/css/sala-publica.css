@@ -62,7 +62,12 @@ body.tv-mode-dark { margin: 0; font-family: 'Inter', sans-serif; background: var
 .speaker-info strong { display: block; font-size: 1rem; color: white; }
 .speaker-info span { font-size: 0.85rem; color: var(--text-muted); }
 
-.description-card p { line-height: 1.6; color: rgba(255,255,255,0.9); margin-top: 0; }
+.description-card p { 
+    line-height: 1.6; 
+    color: rgba(255,255,255,0.9); 
+    margin-top: 0; 
+    white-space: pre-wrap; /* Esta línea mágica respeta los saltos de línea automáticos */
+}
 .btn-primary { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; transition: 0.2s; }
 .btn-primary:hover { background: #962218; transform: translateY(-2px); }
 

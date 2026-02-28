@@ -67,6 +67,28 @@ const SessionConfigApp = {
         // Nuevos botones de Inteligencia Artificial
         document.getElementById('btn-generate-ai')?.addEventListener('click', () => this.generateTextAI());
         document.getElementById('btn-generate-img-ai')?.addEventListener('click', () => this.generateImageAI());
+    
+        // Botones de la Galería IA
+        document.getElementById('btn-discard-img')?.addEventListener('click', () => {
+            document.getElementById('ai-gallery').classList.add('hidden');
+            document.getElementById('ai-gallery-img').src = '';
+        });
+        document.getElementById('btn-use-img')?.addEventListener('click', (e) => this.uploadGalleryImage(e));
+
+        // Botones de Copiar Enlaces
+        document.querySelectorAll('.btn-copy').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const targetId = e.currentTarget.dataset.target;
+                const input = document.getElementById(targetId);
+                input.select();
+                document.execCommand('copy');
+                // Efecto visual de copiado
+                const originalIcon = e.currentTarget.innerHTML;
+                e.currentTarget.innerHTML = '<i class="fa-solid fa-check" style="color:#10b981;"></i>';
+                setTimeout(() => e.currentTarget.innerHTML = originalIcon, 2000);
+            });
+        });
+
     },
 
     setupRealtimePreview() {
@@ -74,7 +96,7 @@ const SessionConfigApp = {
             const input = document.getElementById(inputId);
             if(!input) return;
             input.addEventListener('input', (e) => {
-                const val = e.target.value || (isImage ? 'https://i.ibb.co/Vt9tv2D/default-placeholder.png' : '...');
+                const val = e.target.value || (isImage ? 'https://placehold.co/1280x720/1e293b/38bdf8?text=Vista+Previa' : '...');
                 if (isImage) document.getElementById(targetId).src = val;
                 else document.getElementById(targetId).textContent = prefix + val;
             });
@@ -180,6 +202,7 @@ const SessionConfigApp = {
     async generateImageAI() {
         const title = document.getElementById('session-title').value.trim();
         const promptInput = document.getElementById('ai-prompt-input').value.trim();
+        const style = document.getElementById('ai-image-style').value;
         
         if (!title && !promptInput) { alert("Genera primero el título o escribe de qué tratará la sesión."); return; }
 
@@ -189,111 +212,103 @@ const SessionConfigApp = {
         btn.disabled = true;
 
         try {
-            // 1. Pedir la imagen a la IA (Estilo Editorial por defecto)
-            const imgPrompt = `Concept art for: ${title}. ${promptInput}. No text.`;
+            // PROMPT DE ALTO RENDIMIENTO (Composición y Anatomía)
+            const imgPrompt = `Concept art for: ${title}. ${promptInput}. 
+            No text, no watermarks.`;
+
             const { data: imgData, error: imgError } = await this.supabase.functions.invoke('generate-image', { 
-                body: { prompt: imgPrompt, style: 'editorial', ratio: '16:9' } 
+                body: { prompt: imgPrompt, style: style, ratio: '16:9' } 
             });
             
             if (imgError) throw imgError;
 
-            // 2. Procesar con HTML Canvas para añadir el texto "Duro y Legible"
+            // Procesar con HTML Canvas para añadir texto
             const finalBase64 = await new Promise((resolve, reject) => {
                 const img = new Image();
                 img.crossOrigin = "anonymous";
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    canvas.width = 1280; // Resolución estándar YouTube HD
-                    canvas.height = 720;
+                    canvas.width = 1280; canvas.height = 720;
                     const ctx = canvas.getContext('2d');
                     
-                    // Dibujar imagen base
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-                    // Oscurecer ligeramente la parte inferior para que el texto resalte
                     const gradient = ctx.createLinearGradient(0, canvas.height * 0.4, 0, canvas.height);
                     gradient.addColorStop(0, "transparent");
                     gradient.addColorStop(1, "rgba(0, 0, 0, 0.85)");
                     ctx.fillStyle = gradient;
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                    // Configurar fuente dura y legible en móvil (Impact o Arial Black)
-                    ctx.font = "bold 75px 'Arial Black', Impact, sans-serif";
+                    ctx.font = "bold 55px 'Arial Black', Impact, sans-serif";
                     ctx.fillStyle = "#ffffff";
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
-
-                    // Sombra fuerte para máximo contraste
                     ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
-                    ctx.shadowBlur = 15;
-                    ctx.shadowOffsetX = 4;
-                    ctx.shadowOffsetY = 4;
+                    ctx.shadowBlur = 15; ctx.shadowOffsetX = 4; ctx.shadowOffsetY = 4;
 
-                    // Función para dividir texto en múltiples líneas si es largo
                     const words = title.split(' ');
-                    let line = '';
-                    let lines = [];
+                    let line = ''; let lines = [];
                     const maxWidth = canvas.width - 100;
 
                     for(let n = 0; n < words.length; n++) {
                         let testLine = line + words[n] + ' ';
                         let metrics = ctx.measureText(testLine);
-                        if (metrics.width > maxWidth && n > 0) {
-                            lines.push(line);
-                            line = words[n] + ' ';
-                        } else {
-                            line = testLine;
-                        }
+                        if (metrics.width > maxWidth && n > 0) { lines.push(line); line = words[n] + ' '; } 
+                        else { line = testLine; }
                     }
                     lines.push(line);
 
-                    // Dibujar las líneas centradas verticalmente en el tercio inferior
                     let startY = canvas.height - (lines.length * 80) + 20;
                     for(let i = 0; i < lines.length; i++) {
-                        // Dibujar contorno negro grueso (Stroke)
-                        ctx.lineWidth = 6;
-                        ctx.strokeStyle = '#000000';
+                        ctx.lineWidth = 6; ctx.strokeStyle = '#000000';
                         ctx.strokeText(lines[i], canvas.width / 2, startY + (i * 85));
-                        // Relleno blanco
                         ctx.fillText(lines[i], canvas.width / 2, startY + (i * 85));
                     }
 
-                    // Marca de agua de la plataforma
-                    ctx.font = "bold 24px Arial";
-                    ctx.fillStyle = "#38bdf8"; // Color EPT
-                    ctx.shadowBlur = 4;
-                    ctx.fillText("EPT Live", canvas.width - 80, 40);
-
+                    ctx.font = "bold 24px Arial"; ctx.fillStyle = "#ffffff8f"; ctx.shadowBlur = 4;
+                    ctx.fillText("✨EPT Live", canvas.width - 80, 40);
                     resolve(canvas.toDataURL('image/jpeg', 0.85));
                 };
-                img.onerror = () => reject(new Error("Error procesando imagen en Canvas."));
+                img.onerror = () => reject(new Error("Error en Canvas."));
                 img.src = imgData.image;
             });
 
-            // 3. Subir el resultado de Canvas a ImgBB para obtener URL pública
-            btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up fa-fade"></i> Subiendo...';
-            
-            const base64Clean = finalBase64.split(',')[1];
+            // NO SE SUBE A IMGBB TODAVÍA. Se muestra en la galería.
+            document.getElementById('ai-gallery-img').src = finalBase64;
+            document.getElementById('ai-gallery').classList.remove('hidden');
+
+        } catch (error) {
+            console.error(error);
+            alert("No se pudo generar la imagen. Intenta de nuevo.");
+        } finally {
+            btn.innerHTML = originalBtnHTML;
+            btn.disabled = false;
+        }
+    },
+
+    async uploadGalleryImage(e) {
+        const btn = e.target;
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Subiendo...';
+        btn.disabled = true;
+
+        try {
+            const base64Clean = document.getElementById('ai-gallery-img').src.split(',')[1];
             const formData = new FormData();
             formData.append("image", base64Clean);
             
-            const response = await fetch(`https://api.imgbb.com/1/upload?key=${this.IMGBB_API_KEY}`, {
-                method: "POST", body: formData
-            });
-            
+            const response = await fetch(`https://api.imgbb.com/1/upload?key=${this.IMGBB_API_KEY}`, { method: "POST", body: formData });
             if (!response.ok) throw new Error("Fallo al subir a ImgBB");
             const uploadedData = await response.json();
             
-            // 4. Inyectar la URL final en el input
             const thumbnailInput = document.getElementById('session-thumbnail');
             thumbnailInput.value = uploadedData.data.url;
             thumbnailInput.dispatchEvent(new Event('input')); // Forzar actualización de vista previa
 
-        } catch (error) {
-            console.error(error);
-            alert("No se pudo generar la imagen. Revisa tu consola.");
+            document.getElementById('ai-gallery').classList.add('hidden'); // Ocultar galería tras éxito
+        } catch(err) {
+            alert("Error subiendo la imagen.");
         } finally {
-            btn.innerHTML = originalBtnHTML;
+            btn.innerHTML = originalHTML;
             btn.disabled = false;
         }
     },
@@ -309,29 +324,53 @@ const SessionConfigApp = {
             document.getElementById('active-project-name').innerHTML = `<i class="fa-solid fa-folder-open"></i> ${this.currentProject.title}`;
         }
 
-        document.querySelector(`input[name="platform"][value="${session.platform}"]`).checked = true;
-        this.handlePlatformChange(session.platform);
+        // Marcar la plataforma correctamente de forma segura
+        const platformRadio = document.querySelector(`input[name="platform"][value="${session.platform}"]`);
+        if (platformRadio) {
+            platformRadio.checked = true;
+            this.handlePlatformChange(session.platform);
+        }
         
-        document.getElementById('platform-id').value = session.platform_id || '';
-        document.getElementById('session-title').value = session.session_title || '';
-        document.getElementById('session-start').value = session.scheduled_at ? new Date(session.scheduled_at).toISOString().slice(0,16) : '';
-        document.getElementById('session-end').value = session.end_at ? new Date(session.end_at).toISOString().slice(0,16) : '';
-        document.getElementById('session-description').value = session.description || '';
-        document.getElementById('session-thumbnail').value = session.thumbnail_url || '';
-        document.getElementById('session-more-info').value = session.more_info_url || '';
+        // 🛠️ FUNCIÓN BLINDADA: Si un campo no existe en el HTML, lo ignora y no rompe la página
+        const setVal = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.value = val || '';
+        };
 
-        document.getElementById('session-title').dispatchEvent(new Event('input'));
-        document.getElementById('session-thumbnail').dispatchEvent(new Event('input'));
-        document.getElementById('session-start').dispatchEvent(new Event('change'));
+        // 🛠️ FUNCIÓN DE ZONA HORARIA: Convierte el UTC de Supabase a tu hora local (Ej. Perú)
+        const toLocalDatetime = (isoString) => {
+            if (!isoString) return '';
+            const d = new Date(isoString);
+            d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+            return d.toISOString().slice(0, 16); // Formato exacto que pide el input datetime-local
+        };
 
+        // Llenar los datos
+        setVal('platform-id', session.platform_id);
+        setVal('session-title', session.session_title);
+        setVal('session-start', toLocalDatetime(session.scheduled_at));
+        setVal('session-end', toLocalDatetime(session.end_at));
+        setVal('session-description', session.description);
+        setVal('session-thumbnail', session.thumbnail_url);
+        setVal('session-more-info', session.more_info_url);
+
+        // Disparar eventos manualmente para que la "Vista Previa" se actualice al instante
+        document.getElementById('session-title')?.dispatchEvent(new Event('input'));
+        document.getElementById('session-description')?.dispatchEvent(new Event('input'));
+        document.getElementById('session-thumbnail')?.dispatchEvent(new Event('input'));
+        document.getElementById('session-start')?.dispatchEvent(new Event('change'));
+
+        // Cargar participantes si los hay
         const { data: participants } = await this.supabase.from('event_participants').select('profiles(id, display_name)').eq('session_id', this.editSessionId);
         if (participants) {
+            this.addedParticipants = []; // Limpiamos la memoria local por seguridad
             participants.forEach(p => {
                 if (p.profiles) this.addedParticipants.push({ id: p.profiles.id, name: p.profiles.display_name });
             });
             this.renderParticipants();
         }
 
+        // Mostrar los enlaces de éxito
         this.showLinksPanel(session);
     },
 
@@ -341,6 +380,7 @@ const SessionConfigApp = {
             document.getElementById('session-links-panel').classList.remove('hidden');
             document.getElementById('link-guest').value = session.guest_url || 'Link no generado';
             document.getElementById('link-viewer').value = session.viewer_url || 'Link no generado';
+            document.getElementById('link-director').value = session.director_url || 'Link no generado';
             document.getElementById('link-public').value = `https://epistecnologia.com/live.html?sesion=${session.id}`;
         }
     },
@@ -407,12 +447,12 @@ const SessionConfigApp = {
             project_doi: this.currentProject.doi,
             session_title: title,
             scheduled_at: new Date(start).toISOString(),
-            end_at: document.getElementById('session-end').value ? new Date(document.getElementById('session-end').value).toISOString() : null,
-            description: document.getElementById('session-description').value,
-            thumbnail_url: document.getElementById('session-thumbnail').value,
-            more_info_url: document.getElementById('session-more-info').value,
+            end_at: document.getElementById('session-end')?.value ? new Date(document.getElementById('session-end').value).toISOString() : null,
+            description: document.getElementById('session-description')?.value || '',
+            thumbnail_url: document.getElementById('session-thumbnail')?.value || '',
+            more_info_url: document.getElementById('session-more-info')?.value || null,
             platform: platform,
-            platform_id: document.getElementById('platform-id').value,
+            platform_id: document.getElementById('platform-id')?.value || null,
         };
 
         const authorInfo = {

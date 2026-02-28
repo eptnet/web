@@ -115,3 +115,18 @@ input:focus, textarea:focus { outline: none; border-color: var(--accent); }
 
 /* OPTIMIZACIÓN DEL SELECTOR */
 select option { background: var(--bg-panel); color: white; }
+
+/* Arreglo botón de búsqueda aplastado */
+.search-participant-group { display: flex; gap: 10px; }
+.search-participant-group input { flex-grow: 1; }
+.search-participant-group button { flex-shrink: 0; width: 50px; padding: 0; display: flex; justify-content: center; align-items: center; }
+
+/* Estilos de los enlaces con Botón de Copiar */
+.copy-group { display: flex; align-items: stretch; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; margin-top: 5px; }
+.copy-group input { border: none !important; border-radius: 0 !important; margin: 0; flex-grow: 1; background: rgba(0,0,0,0.2) !important; color: white !important; }
+.copy-group .btn-copy { background: var(--bg-panel); border: none; border-left: 1px solid var(--border-color); color: var(--text-main); padding: 0 15px; cursor: pointer; transition: 0.2s; }
+.copy-group .btn-copy:hover { background: var(--accent); color: white; }
+
+/* Galería de IA (Vista previa antes de subir) */
+.ai-gallery-container { margin-top: 15px; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 15px; border: 1px dashed var(--border-color); text-align: center; animation: fadeIn 0.3s ease; }
+.ai-gallery-preview { max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
