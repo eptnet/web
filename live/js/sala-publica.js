@@ -321,7 +321,6 @@ const PublicRoomApp = {
     // --- 3. CONFIGURACIÓN DE CHATS (NATIVO EPT + PLATAFORMA EXTERNA) ---
     setupChats() {
         const s = this.sessionData;
-        const hostname = window.location.hostname || 'localhost';
         
         // Elementos del DOM
         const nativeTab = document.getElementById('native-chat-tab');
@@ -330,90 +329,87 @@ const PublicRoomApp = {
         const bskyPanel = document.getElementById('ept-chat');
         
         const isLive = s.status === 'EN VIVO';
-        
-        // CORRECCIÓN: Definimos la variable correctamente como hasExternalChat
         const hasExternalChat = (s.platform === 'youtube' || s.platform === 'twitch') && s.platform_id;
 
-        // 1. CHAT EXTERNO (YouTube / Twitch) - VERSIÓN BOTÓN INFALIBLE
+        // 1. OCULTAMOS LA PESTAÑA EXTERNA PARA SIEMPRE
+        // Como pidió el jefe de producto: Nada de pestañas redundantes.
+        if (nativeTab) nativeTab.classList.add('hidden');
+        if (nativePanel) nativePanel.innerHTML = '';
+
+        // Forzamos el Chat EPT para que sea el rey absoluto
+        if (eptTab) eptTab.classList.add('active');
+        if (bskyPanel) bskyPanel.classList.add('active');
+
+        // 2. INYECTAMOS EL BOTÓN POP-OUT DEBAJO DEL TÍTULO
         if (hasExternalChat) {
-            nativeTab.classList.remove('hidden');
-            
             const isTwitch = s.platform === 'twitch';
             const brandColor = isTwitch ? '#a855f7' : '#ef4444';
             const brandIcon = isTwitch ? 'fa-twitch' : 'fa-youtube';
             const brandName = isTwitch ? 'Twitch' : 'YouTube';
             
-            // URLs nativas preparadas para ventanas flotantes (Pop-outs puros)
+            // URLs nativas preparadas para ventanas flotantes
             const popoutUrl = isTwitch 
                 ? `https://www.twitch.tv/popout/${s.platform_id}/chat?darkpopout`
                 : `https://www.youtube.com/live_chat?v=${s.platform_id}&dark_theme=1`;
 
-            nativeTab.innerHTML = `<i class="fa-brands ${brandIcon}" style="color:${brandColor};"></i> Chat ${brandName}`;
+            // Buscamos la barra de metadatos (donde está la fecha y el proyecto)
+            const contextMeta = document.querySelector('.context-meta');
             
-            // Usamos una etiqueta <a> nativa. Es inmune a bloqueadores si el usuario hace clic.
-            nativePanel.innerHTML = `
-                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; padding:20px; text-align:center;">
-                    <i class="fa-brands ${brandIcon}" style="font-size:3.5rem; color:${brandColor}; margin-bottom:15px;"></i>
-                    <h3 style="margin:0 0 10px 0;">Chat Oficial de ${brandName}</h3>
-                    <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:25px;">Para evitar bloqueos de seguridad de ${brandName}, abre el chat en una ventana independiente.</p>
-                    
+            // Si existe la barra y no hemos inyectado el botón aún...
+            if (contextMeta && !document.getElementById('btn-external-popout')) {
+                const btnHtml = `
                     <a href="${popoutUrl}" 
+                       id="btn-external-popout"
                        target="_blank" 
                        onclick="window.open(this.href, 'ChatExterno', 'width=400,height=600,left=200,top=100,toolbar=0,resizable=1'); return false;" 
                        class="btn-primary" 
-                       style="display:flex; align-items:center; gap:8px; background-color:${brandColor}; border:none; text-decoration:none;">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Chat Flotante
+                       style="background-color:${brandColor}; border:none; text-decoration:none; padding: 6px 14px; font-size: 0.85rem; margin-right: auto; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-brands ${brandIcon}"></i> Chat externo
                     </a>
-                </div>
-            `;
-        } else {
-            nativeTab.classList.add('hidden');
-            nativePanel.innerHTML = '';
+                `;
+                contextMeta.insertAdjacentHTML('beforeend', btnHtml);
+            }
         }
 
-        // --- FORZAR CHAT EPT COMO PRINCIPAL ---
-        eptTab.classList.add('active');
-        bskyPanel.classList.add('active');
-        if (hasExternalChat) {
-            nativeTab.classList.remove('active');
-            nativePanel.classList.remove('active');
-        }
-
-        // --- 2. LÓGICA DEL CHAT NATIVO EPT ---
+        // --- 3. LÓGICA DEL CHAT NATIVO EPT ---
         const authOverlay = document.getElementById('bsky-auth-overlay');
         const chatInput = document.getElementById('bsky-chat-input');
         const chatFeed = document.getElementById('bsky-chat-feed');
         const sendBtn = document.getElementById('btn-send-bsky');
 
-        chatFeed.innerHTML = ''; // Limpiar mensaje de carga
+        if (chatFeed) chatFeed.innerHTML = ''; // Limpiar mensaje de carga
 
         if (!isLive && s.status !== 'PROGRAMADO') {
-            authOverlay.classList.remove('hidden');
-            authOverlay.innerHTML = `
-                <i class="fa-solid fa-comment-slash" style="font-size: 2.5rem; color: var(--text-muted); margin-bottom: 15px;"></i>
-                <h3 style="margin:0 0 10px 0;">Chat Desactivado</h3>
-                <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:0;">El chat en vivo ha finalizado.</p>
-            `;
+            if (authOverlay) {
+                authOverlay.classList.remove('hidden');
+                authOverlay.innerHTML = `
+                    <i class="fa-solid fa-comment-slash" style="font-size: 2.5rem; color: var(--text-muted); margin-bottom: 15px;"></i>
+                    <h3 style="margin:0 0 10px 0;">Chat Desactivado</h3>
+                    <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:0;">El chat en vivo ha finalizado.</p>
+                `;
+            }
             return;
         }
 
         if (this.currentUserProfile) {
-            authOverlay.classList.add('hidden');
-            chatInput.disabled = false;
-            sendBtn.disabled = false;
+            if (authOverlay) authOverlay.classList.add('hidden');
+            if (chatInput) chatInput.disabled = false;
+            if (sendBtn) sendBtn.disabled = false;
             
             const btnEmoji = document.getElementById('btn-emoji');
             if (btnEmoji) btnEmoji.disabled = false;
             
-            chatInput.placeholder = "Escribe un mensaje...";
+            if (chatInput) chatInput.placeholder = "Escribe un mensaje...";
         } else {
-            authOverlay.classList.remove('hidden');
-            authOverlay.innerHTML = `
-                <i class="fa-solid fa-lock" style="font-size: 2.5rem; color: var(--text-muted); margin-bottom: 15px;"></i>
-                <h3 style="margin:0 0 10px 0;">Chat Exclusivo</h3>
-                <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:20px;">Inicia sesión en Epistecnología para unirte a la conversación.</p>
-                <a href="/" class="btn-primary" style="text-decoration:none;">Iniciar Sesión</a>
-            `;
+            if (authOverlay) {
+                authOverlay.classList.remove('hidden');
+                authOverlay.innerHTML = `
+                    <i class="fa-solid fa-lock" style="font-size: 2.5rem; color: var(--text-muted); margin-bottom: 15px;"></i>
+                    <h3 style="margin:0 0 10px 0;">Chat Exclusivo</h3>
+                    <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:20px;">Inicia sesión en Epistecnología para unirte a la conversación.</p>
+                    <a href="/" class="btn-primary" style="text-decoration:none;">Iniciar Sesión</a>
+                `;
+            }
         }
     },
 
