@@ -275,6 +275,66 @@ const SessionConfigApp = {
     },
 
     // ==========================================
+    // ALGORITMO DE PISCINA DE CLAVES (100% BLINDADO)
+    // ==========================================
+    async assignStreamKey(platform, scheduledAt, endAt) {
+        // 1. Obtener todas las claves activas para esta plataforma
+        const { data: keys, error: keysError } = await this.supabase
+            .from('stream_keys_pool')
+            .select('*')
+            .eq('platform', platform)
+            .eq('is_active', true);
+
+        if (keysError || !keys || keys.length === 0) {
+            throw new Error(`No hay claves configuradas en la piscina para ${platform.toUpperCase()}. Contacta a soporte.`);
+        }
+
+        // 2. Calcular ventana de tiempo (Asumimos 3 horas por defecto)
+        const start = new Date(scheduledAt);
+        const end = endAt ? new Date(endAt) : new Date(start.getTime() + 3 * 60 * 60 * 1000);
+
+        // 3. Buscar TODAS las sesiones agendadas para ese mismo día
+        const startOfDay = new Date(start); startOfDay.setHours(0,0,0,0);
+        const endOfDay = new Date(start); endOfDay.setHours(23,59,59,999);
+
+        // CONSULTA ULTRA-SEGURA: Solo buscamos por fecha, sin filtros complejos que rompan la base de datos
+        const { data: overlappingSessions, error: sessionsError } = await this.supabase
+            .from('sessions')
+            .select('id, stream_key, scheduled_at, end_at')
+            .gte('scheduled_at', startOfDay.toISOString())
+            .lte('scheduled_at', endOfDay.toISOString());
+
+        if (sessionsError) {
+            console.error("Error en BD consultando horarios:", sessionsError);
+            throw new Error("Error al consultar disponibilidad de horarios en la base de datos.");
+        }
+
+        // 4. Filtrar en Javascript (Evita errores de tipos de datos SQL)
+        const usedKeys = overlappingSessions.filter(s => {
+            // Ignorar la sesión actual si estamos en modo edición (convertimos a String por seguridad)
+            if (this.editSessionId && String(s.id) === String(this.editSessionId)) return false;
+            
+            // Ignorar sesiones que no tengan una clave de la piscina asignada
+            if (!s.stream_key) return false;
+
+            const sStart = new Date(s.scheduled_at);
+            const sEnd = s.end_at ? new Date(s.end_at) : new Date(sStart.getTime() + 3 * 60 * 60 * 1000);
+            
+            // Lógica de colisión de tiempo: Empieza antes de que yo termine Y termina después de que yo empiece
+            return (start < sEnd && end > sStart);
+        }).map(s => s.stream_key);
+
+        // 5. Buscar la primera clave de la piscina que NO esté en la lista de las usadas
+        const availableKey = keys.find(k => !usedKeys.includes(k.stream_key));
+
+        if (!availableKey) {
+            throw new Error(`Nuestros canales oficiales de ${platform.toUpperCase()} están a máxima capacidad en ese horario. Por favor, elige otra hora o transmite usando tu propio canal.`);
+        }
+
+        return availableKey.stream_key;
+    },
+
+    // ==========================================
     // MAGIA IA: GENERACIÓN DE TEXTO (Google API)
     // ==========================================
     async generateTextAI() {
@@ -569,6 +629,58 @@ const SessionConfigApp = {
         }
     },
 
+    // ==========================================
+    // ALGORITMO DE PISCINA DE CLAVES
+    // ==========================================
+    async assignStreamKey(platform, scheduledAt, endAt) {
+        // 1. Obtener todas las claves activas para esta plataforma
+        const { data: keys, error: keysError } = await this.supabase
+            .from('stream_keys_pool')
+            .select('*')
+            .eq('platform', platform)
+            .eq('is_active', true);
+
+        if (keysError || !keys || keys.length === 0) {
+            throw new Error(`No hay claves configuradas en la piscina para ${platform.toUpperCase()}. Contacta a soporte.`);
+        }
+
+        // 2. Calcular ventana de tiempo (Asumimos 3 horas por defecto si no le puso hora de fin)
+        const start = new Date(scheduledAt);
+        const end = endAt ? new Date(endAt) : new Date(start.getTime() + 3 * 60 * 60 * 1000);
+
+        // 3. Buscar TODAS las sesiones agendadas para ese mismo día que ya tengan una clave asignada
+        const startOfDay = new Date(start); startOfDay.setHours(0,0,0,0);
+        const endOfDay = new Date(start); endOfDay.setHours(23,59,59,999);
+
+        const { data: overlappingSessions, error: sessionsError } = await this.supabase
+            .from('sessions')
+            .select('stream_key, scheduled_at, end_at')
+            .not('stream_key', 'is', null)
+            .gte('scheduled_at', startOfDay.toISOString())
+            .lte('scheduled_at', endOfDay.toISOString())
+            .neq('id', this.editSessionId || '00000000-0000-0000-0000-000000000000'); // Ignorar la sesión actual al editar
+
+        if (sessionsError) throw new Error("Error al consultar disponibilidad de horarios en la base de datos.");
+
+        // 4. Filtrar matemáticamente cuáles chocan realmente en esas horas específicas
+        const usedKeys = overlappingSessions.filter(s => {
+            const sStart = new Date(s.scheduled_at);
+            const sEnd = s.end_at ? new Date(s.end_at) : new Date(sStart.getTime() + 3 * 60 * 60 * 1000);
+            
+            // Lógica de colisión: Empieza antes de que yo termine Y termina después de que yo empiece
+            return (start < sEnd && end > sStart);
+        }).map(s => s.stream_key);
+
+        // 5. Buscar la primera clave de la piscina que NO esté en la lista de las usadas
+        const availableKey = keys.find(k => !usedKeys.includes(k.stream_key));
+
+        if (!availableKey) {
+            throw new Error(`Nuestros canales oficiales de ${platform.toUpperCase()} están a máxima capacidad en ese horario. Por favor, elige otra hora o transmite usando tu propio canal.`);
+        }
+
+        return availableKey.stream_key;
+    },
+
     generateVdoNinjaUrls() {
         const stableId = self.crypto.randomUUID().slice(0, 8);
         const orcidStr = this.userProfile.orcid || '0000';
@@ -627,10 +739,25 @@ const SessionConfigApp = {
             return; 
         }
 
-        // LÓGICA DE LIMPIEZA: Si eligió el Canal Oficial, anulamos el ID para no ensuciar la base de datos
+        // LÓGICA DE PISCINA DE CLAVES Y LIMPIEZA
         let platformIdToSave = document.getElementById('platform-id')?.value || null;
+        let generatedStreamKey = null;
+
         if (platform !== 'vdo_ninja' && broadcastMode === 'official') {
             platformIdToSave = null; 
+            try {
+                // LLAMAMOS AL ALGORITMO: Pide una clave real verificando choques de horario
+                generatedStreamKey = await this.assignStreamKey(platform, start, document.getElementById('session-end')?.value);
+            } catch (err) {
+                // Si la piscina está llena, mostramos el error y DETENEMOS el guardado
+                alert(err.message);
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                return; 
+            }
+        } else if (platform === 'vdo_ninja') {
+            // EPT Live nativo no choca con YouTube/Twitch, le damos una clave virtual
+            generatedStreamKey = `ept-live-${self.crypto.randomUUID().slice(0, 8)}`;
         }
 
         let sessionData = {
@@ -644,7 +771,8 @@ const SessionConfigApp = {
             thumbnail_url: document.getElementById('session-thumbnail')?.value || '',
             more_info_url: document.getElementById('session-more-info')?.value || null,
             platform: platform,
-            platform_id: platformIdToSave, // <-- Usamos la variable limpia aquí
+            platform_id: platformIdToSave,
+            stream_key: generatedStreamKey // <-- Guardamos la clave asignada en la BD
         };
 
         const authorInfo = {
