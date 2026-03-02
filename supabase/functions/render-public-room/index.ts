@@ -56,12 +56,12 @@ serve(async (req) => {
         <meta name="twitter:image" content="${image}">
 
         <script>
-            window.location.replace("https://epistecnologia.com/live.html?sesion=${id}");
+            window.location.replace("https://epistecnologia.com/l/${id}");
         </script>
     </head>
     <body style="background: #0f172a; color: white; font-family: sans-serif; text-align: center; padding-top: 50px;">
         <p>Cargando la sala pública de Epistecnología...</p>
-        <p>Si no eres redirigido, <a href="https://epistecnologia.com/live.html?sesion=${id}" style="color: #38bdf8;">haz clic aquí</a>.</p>
+        <p>Si no eres redirigido, <a href="https://epistecnologia.com/l/${id}" style="color: #38bdf8;">haz clic aquí</a>.</p>
     </body>
     </html>
     `;

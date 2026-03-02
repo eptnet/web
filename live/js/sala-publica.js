@@ -236,6 +236,20 @@ const PublicRoomApp = {
 
         // --- RENDERIZAR BARRA DE COMPARTIR ---
         this.renderShareBar(s);
+        // --- ACTUALIZAR META TAGS (OPEN GRAPH) PARA REDES SOCIALES ---
+        const pageTitle = s.title || s.session_title;
+        const pageDesc = s.description || 'Únete a la conversación en esta sesión especial de Epistecnología.';
+        const pageImg = s.thumbnail_url || 'https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png';
+        const pageUrl = window.location.href;
+
+        // Actualizar el Título de la pestaña
+        document.title = `${pageTitle} - Epistecnología`;
+
+        // Actualizar los metas dinámicamente
+        document.getElementById('meta-og-title')?.setAttribute('content', pageTitle);
+        document.getElementById('meta-og-desc')?.setAttribute('content', pageDesc);
+        document.getElementById('meta-og-image')?.setAttribute('content', pageImg);
+        document.getElementById('meta-og-url')?.setAttribute('content', pageUrl);
     },
 
     handlePlayerAndCountdown() {
