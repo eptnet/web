@@ -76,10 +76,17 @@
                         <select id="ai-image-style" style="width: 100%; margin-bottom: 15px; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-color); color: white; border-radius: 6px;">
                             <option value="editorial">🎨 Pintura Óleo (Estilo Epistecnología)</option>
                             <option value="realistic">📸 Realista / Fotográfico</option>
-                            <option value="vector">🖋️ Ilustración / Vector</option>
+                            <option value="comic">🦸‍♂️ Animación 2D / Cómic (Estilo Western)</option>
                             <option value="cinematic">🎬 Cinemático / Película</option>
                         </select>
-                        <label>Miniatura (Thumbnail)</label>
+
+                        <label>Texto en la Miniatura (Opcional)</label>
+                        <input type="text" id="thumbnail-text" placeholder='Ej: EL SECRETO de la mente'>
+                        <p class="form-hint" style="margin-top: 5px; margin-bottom: 15px;">
+                            <i class="fa-solid fa-lightbulb" style="color:#f59e0b;"></i> Si dejas esto en blanco, se generará la imagen limpia sin letras. Usa 2 o 3 palabras máximo para impacto visual.
+                        </p>
+
+                        <label>Subir o Generar Miniatura</label>
                         <div class="upload-group">
                             <input type="text" id="session-thumbnail" placeholder="URL de la imagen..." style="flex-grow: 1;">
                             <button type="button" id="btn-generate-img-ai" class="btn-secondary" style="color: #a855f7; border-color: #a855f7;">

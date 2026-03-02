@@ -356,8 +356,8 @@ const SessionConfigApp = {
         
         Devuelve ÚNICAMENTE el siguiente formato exacto, sin saludos ni explicaciones extra:
         
-        TÍTULO: [Un título muy atractivo y corto, máximo 8 palabras]
-        DESCRIPCIÓN: [Gancho impactante de máximo 250 caracteres que despierte curiosidad].\n\n[Desarrollo de la idea principal explicada de forma sencilla, empática y humana].\n\n📖 Lee el artículo completo aquí: ${doiLink}\n\n#Epistecnología #RevistEpistecnología #DivulgaciónCientífica #DivulgaciónCultural #[Agrega 4 hashtags relevantes más]`;
+        TÍTULO: [Un título muy atractivo y corto, máximo 8 palabras. Incluye 1 emoji al medio].
+        DESCRIPCIÓN: [Gancho impactante de máximo 250 caracteres que despierte curiosidad, usa 1 o 2 emojis relevantes].\n\n[Desarrollo de la idea principal explicada de forma sencilla, empática y humana].\n\n📖 Lee el artículo completo aquí: ${doiLink}\n\n#Epistecnología #RevistEpistecnología #DivulgaciónCientífica #DivulgaciónCultural #[Agrega 4 hashtags relevantes más]`;
 
         try {
             // CORRECCIÓN: Separamos el contexto en textContent y las reglas en customPrompt
@@ -404,6 +404,7 @@ const SessionConfigApp = {
         const title = document.getElementById('session-title').value.trim();
         const promptInput = document.getElementById('ai-prompt-input').value.trim();
         const style = document.getElementById('ai-image-style').value;
+        const thumbText = document.getElementById('thumbnail-text').value.trim(); // <-- NUEVO CAMPO
         
         if (!title && !promptInput) { alert("Genera primero el título o escribe de qué tratará la sesión."); return; }
 
@@ -413,9 +414,9 @@ const SessionConfigApp = {
         btn.disabled = true;
 
         try {
-            // PROMPT DE ALTO RENDIMIENTO (Composición y Anatomía)
-            const imgPrompt = `Concept art for: ${title}. ${promptInput}. 
-            Action in the center. No text, no watermarks.`;
+            // Transformar el estilo comic al prompt correcto si fue seleccionado
+            const stylePrompt = style === 'comic' ? 'Cartoon & Comic Style, 2D animation' : style;
+            const imgPrompt = `Concept art for: ${title}. ${promptInput}. Style: ${stylePrompt}. Action in the center of image. No text, no watermarks.`;
 
             const { data: imgData, error: imgError } = await this.supabase.functions.invoke('generate-image', { 
                 body: { prompt: imgPrompt, style: style, ratio: '16:9' } 
@@ -433,47 +434,59 @@ const SessionConfigApp = {
                     const ctx = canvas.getContext('2d');
                     
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    const gradient = ctx.createLinearGradient(0, canvas.height * 0.4, 0, canvas.height);
-                    gradient.addColorStop(0, "transparent");
-                    gradient.addColorStop(1, "rgba(0, 0, 0, 0.85)");
-                    ctx.fillStyle = gradient;
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    // Solo dibujamos la viñeta y las letras SI el usuario escribió algo
+                    if (thumbText) {
+                        // Viñeta oscura a la izquierda para que resalten las letras
+                        const gradient = ctx.createLinearGradient(0, 0, canvas.width * 0.7, 0);
+                        gradient.addColorStop(0, "rgba(0, 0, 0, 0.85)");
+                        gradient.addColorStop(1, "transparent");
+                        ctx.fillStyle = gradient;
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                    ctx.font = "bold 80px 'Arial Black', Impact, sans-serif";
-                    ctx.fillStyle = "#ffffff";
-                    ctx.textAlign = "center";
-                    ctx.textBaseline = "middle";
-                    ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
-                    ctx.shadowBlur = 15; ctx.shadowOffsetX = 4; ctx.shadowOffsetY = 4;
+                        ctx.font = "bold 85px 'Arial Black', Impact, sans-serif";
+                        ctx.fillStyle = "#ffffff";
+                        ctx.textAlign = "left"; // Alineación izquierda
+                        ctx.textBaseline = "middle";
+                        ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
+                        ctx.shadowBlur = 15; ctx.shadowOffsetX = 4; ctx.shadowOffsetY = 4;
 
-                    const words = title.split(' ');
-                    let line = ''; let lines = [];
-                    const maxWidth = canvas.width - 100;
+                        // Lógica History Channel: 1ra línea (primera palabra), 2da línea (el resto)
+                        const words = thumbText.split(' ');
+                        let lines = [];
+                        
+                        if (words.length > 1) {
+                            lines.push(words[0].toUpperCase());
+                            lines.push(words.slice(1).join(' ').toUpperCase());
+                        } else {
+                            lines.push(words[0].toUpperCase());
+                        }
 
-                    for(let n = 0; n < words.length; n++) {
-                        let testLine = line + words[n] + ' ';
-                        let metrics = ctx.measureText(testLine);
-                        if (metrics.width > maxWidth && n > 0) { lines.push(line); line = words[n] + ' '; } 
-                        else { line = testLine; }
+                        // Posicionamiento a la izquierda
+                        let startY = canvas.height - (lines.length * 95) - 40;
+                        const startX = 60; // Margen izquierdo
+
+                        for(let i = 0; i < lines.length; i++) {
+                            // Cambiamos el color de la primera línea para más impacto visual (Opcional, estilo History)
+                            ctx.fillStyle = i === 0 ? "#facc15" : "#ffffff"; // Amarillo en la 1ra, Blanco en la 2da
+                            
+                            ctx.lineWidth = 6; ctx.strokeStyle = '#000000';
+                            ctx.strokeText(lines[i], startX, startY + (i * 95));
+                            ctx.fillText(lines[i], startX, startY + (i * 95));
+                        }
                     }
-                    lines.push(line);
 
-                    let startY = canvas.height - (lines.length * 80) + 20;
-                    for(let i = 0; i < lines.length; i++) {
-                        ctx.lineWidth = 6; ctx.strokeStyle = '#000000';
-                        ctx.strokeText(lines[i], canvas.width / 2, startY + (i * 85));
-                        ctx.fillText(lines[i], canvas.width / 2, startY + (i * 85));
-                    }
-
+                    // Siempre dibujamos el badge de EPT Live en la esquina superior derecha
                     ctx.font = "bold 24px Arial"; ctx.fillStyle = "#ffffff8f"; ctx.shadowBlur = 4;
-                    ctx.fillText("✨EPT Live", canvas.width - 80, 40);
+                    ctx.textAlign = "right";
+                    ctx.fillText("✨EPT Live", canvas.width - 40, 40);
+                    
                     resolve(canvas.toDataURL('image/jpeg', 0.85));
                 };
                 img.onerror = () => reject(new Error("Error en Canvas."));
                 img.src = imgData.image;
             });
 
-            // NO SE SUBE A IMGBB TODAVÍA. Se muestra en la galería.
             document.getElementById('ai-gallery-img').src = finalBase64;
             document.getElementById('ai-gallery').classList.remove('hidden');
 
