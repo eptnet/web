@@ -577,6 +577,7 @@ const SessionConfigApp = {
         setVal('session-description', session.description);
         setVal('session-thumbnail', session.thumbnail_url);
         setVal('session-more-info', session.more_info_url);
+        setVal('session-category', session.session_type || 'Divulgación General');
 
         // Disparar eventos manualmente para que la "Vista Previa" se actualice al instante
         document.getElementById('session-title')?.dispatchEvent(new Event('input'));
@@ -725,6 +726,7 @@ const SessionConfigApp = {
             project_title: this.currentProject.title,
             project_doi: this.currentProject.doi,
             session_title: title,
+            session_type: document.getElementById('session-category').value,
             scheduled_at: new Date(start).toISOString(),
             end_at: document.getElementById('session-end')?.value ? new Date(document.getElementById('session-end').value).toISOString() : null,
             description: document.getElementById('session-description')?.value || '',

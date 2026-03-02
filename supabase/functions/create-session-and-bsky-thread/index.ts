@@ -66,7 +66,7 @@ serve(async (req) => {
             postText = `📢 ¡Evento programado!\n\n"${sessionData.session_title}"\n\n✍️ Presentado por: ${authorInfo.displayName}\n\nConoce los detalles y únete al chat aquí:`;
         }
 
-        const directLink = `https://epistecnologia.com/live.html?sesion=${savedSession.id}`;
+        const directLink = `https://epistecnologia.com/l/${savedSession.id}`;
         
         // --- LÓGICA DE VISTA PREVIA Y MINIATURA ---
         const previewData = await getLinkPreview(directLink);
