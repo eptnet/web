@@ -357,7 +357,7 @@ const SessionConfigApp = {
         Devuelve ÚNICAMENTE el siguiente formato exacto, sin saludos ni explicaciones extra:
         
         TÍTULO: [Un título muy atractivo y corto, máximo 8 palabras]
-        DESCRIPCIÓN: [Gancho impactante de máximo 250 caracteres que despierte curiosidad].\n\n[Desarrollo de la idea principal explicada de forma sencilla, empática y humana].\n\n📖 Lee el artículo completo aquí: ${doiLink}\n\n#Epistecnología #RevistEpistecnología #DivulgaciónCientífica #DivulgaciónCultural #[Agrega 2 hashtags relevantes más]`;
+        DESCRIPCIÓN: [Gancho impactante de máximo 250 caracteres que despierte curiosidad].\n\n[Desarrollo de la idea principal explicada de forma sencilla, empática y humana].\n\n📖 Lee el artículo completo aquí: ${doiLink}\n\n#Epistecnología #RevistEpistecnología #DivulgaciónCientífica #DivulgaciónCultural #[Agrega 4 hashtags relevantes más]`;
 
         try {
             // CORRECCIÓN: Separamos el contexto en textContent y las reglas en customPrompt
@@ -415,7 +415,7 @@ const SessionConfigApp = {
         try {
             // PROMPT DE ALTO RENDIMIENTO (Composición y Anatomía)
             const imgPrompt = `Concept art for: ${title}. ${promptInput}. 
-            No text, no watermarks.`;
+            Action in the center. No text, no watermarks.`;
 
             const { data: imgData, error: imgError } = await this.supabase.functions.invoke('generate-image', { 
                 body: { prompt: imgPrompt, style: style, ratio: '16:9' } 
@@ -439,7 +439,7 @@ const SessionConfigApp = {
                     ctx.fillStyle = gradient;
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                    ctx.font = "bold 55px 'Arial Black', Impact, sans-serif";
+                    ctx.font = "bold 80px 'Arial Black', Impact, sans-serif";
                     ctx.fillStyle = "#ffffff";
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
