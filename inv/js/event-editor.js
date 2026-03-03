@@ -148,7 +148,7 @@ export const EventEditorApp = {
     },
 
     addEventListeners() {
-        // Generador RESPETUOSO de Slug (Solo se ejecuta si el slug está en blanco)
+        // Generador RESPETUOSO de Slug
         document.getElementById('event-title').addEventListener('blur', (e) => {
             const slugInput = document.getElementById('event-slug');
             if (!slugInput.value.trim() && e.target.value.trim()) {
@@ -160,14 +160,13 @@ export const EventEditorApp = {
         document.getElementById('save-event-btn').addEventListener('click', () => this.handleSave());
         document.getElementById('add-edition-btn').addEventListener('click', () => this.openEditionEditor(null));
         
-        document.getElementById('editions-list-container').addEventListener('click', e => {
-            const button = e.target.closest('button');
-            if (!button) return;
-            const editionId = e.target.closest('.edition-item').dataset.editionId;
+        // Escuchador de clics en el menú lateral de ediciones
+        document.getElementById('editions-nav-list').addEventListener('click', e => {
+            const navItem = e.target.closest('.edition-nav-item');
+            if (!navItem) return;
+            const editionId = navItem.dataset.editionId;
             const edition = this.currentEditions.find(ed => ed.id === editionId);
-
-            if (button.classList.contains('edit-edition-btn')) this.openEditionEditor(edition);
-            if (button.classList.contains('delete-edition-btn')) this.deleteEdition(editionId);
+            this.openEditionEditor(edition);
         });
 
         // Eventos de IA
@@ -212,21 +211,34 @@ export const EventEditorApp = {
     },
 
     renderEditionsList() {
-        const container = document.getElementById('editions-list-container');
+        const container = document.getElementById('editions-nav-list');
+        const welcomeScreen = document.getElementById('edition-welcome');
+        const editorScreen = document.getElementById('edition-editor-container');
+        
         if (!container) return;
+        
         if (this.currentEditions.length === 0) {
-            container.innerHTML = `<p class="form-hint">No hay ediciones para este evento.</p>`;
+            container.innerHTML = `<p class="form-hint" style="text-align:center;">Aún no has creado ediciones.</p>`;
+            welcomeScreen.style.display = 'block';
+            editorScreen.style.display = 'none';
             return;
         }
+
         container.innerHTML = this.currentEditions.map(edition => `
-            <div class="edition-item ${edition.id === this.activeEditionId ? 'active' : ''}" data-edition-id="${edition.id}">
-                <span class="edition-item-name">${edition.edition_name}</span>
-                <div class="edition-item-actions">
-                    <button class="edit-edition-btn mod-btn"><i class="fa-solid fa-pencil"></i></button>
-                    <button class="delete-edition-btn mod-btn delete"><i class="fa-solid fa-trash"></i></button>
-                </div>
-            </div>
+            <button class="edition-nav-item ${edition.id === this.activeEditionId ? 'active' : ''}" data-edition-id="${edition.id}">
+                <span>${edition.edition_name}</span>
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
         `).join('');
+
+        // Controlar qué pantalla mostrar
+        if (this.activeEditionId) {
+            welcomeScreen.style.display = 'none';
+            editorScreen.style.display = 'block';
+        } else {
+            welcomeScreen.style.display = 'block';
+            editorScreen.style.display = 'none';
+        }
     },
 
     async openEditionEditor(editionData = null) {
@@ -248,6 +260,7 @@ export const EventEditorApp = {
         container.innerHTML = `
             <fieldset class="builder-section">
                 <legend><i class="fa-solid fa-pen text-accent"></i> ${editionData ? `Editando: ${editionData.edition_name}` : 'Nueva Edición'}</legend>
+                ${editionData ? `<button type="button" class="btn-danger" style="float: right; margin-top: -2.0rem;" onclick="EventEditorApp.deleteEdition('${editionData.id}')"><i class="fa-solid fa-trash"></i> Eliminar Edición</button>` : ''}
                 <div class="form-group"><label>Nombre de la Edición</label><input type="text" id="edition-name" value="${editionData?.edition_name || ''}" required></div>
                 <div class="form-group-grid mt-3">
                     <div><label>Fecha de Inicio</label><input type="date" id="edition-start-date" value="${editionData?.start_date || ''}"></div>
@@ -472,4 +485,5 @@ export const EventEditorApp = {
     }
 };
 
+window.EventEditorApp = EventEditorApp; // <-- ESTA ES LA LÍNEA MÁGICA
 document.addEventListener('DOMContentLoaded', () => EventEditorApp.init());
