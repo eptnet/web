@@ -1,15 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { corsHeaders } from '../_shared/cors.ts' // Asegúrate de tener este archivo o pon los headers directo
+import { corsHeaders } from '../_shared/cors.ts'
 
 serve(async (req) => {
-    // 1. Manejar el CORS para llamadas desde el navegador
     if (req.method === 'OPTIONS') { return new Response('ok', { headers: corsHeaders }) }
 
     try {
-        const { title, description } = await req.json();
+        // Añadimos thumbnailUrl para recibir la imagen
+        const { title, description, thumbnailUrl } = await req.json();
         if (!title) throw new Error("Se requiere un título para el evento.");
 
-        // 2. Obtener variables de entorno
         const clientId = Deno.env.get('YOUTUBE_CLIENT_ID');
         const clientSecret = Deno.env.get('YOUTUBE_CLIENT_SECRET');
         const refreshToken = Deno.env.get('YOUTUBE_REFRESH_TOKEN');
@@ -18,7 +17,7 @@ serve(async (req) => {
             throw new Error("Faltan variables de entorno de YouTube.");
         }
 
-        // 3. Generar un Access Token fresco (Dura 1 hora, se renueva en cada petición)
+        // 3. Generar Access Token fresco
         const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -31,14 +30,11 @@ serve(async (req) => {
         });
         const tokenData = await tokenResponse.json();
         const accessToken = tokenData.access_token;
-        if (!accessToken) throw new Error("No se pudo obtener el Access Token de YouTube.");
+        if (!accessToken) throw new Error("No se pudo obtener el Access Token.");
 
-        const ytHeaders = { 
-            Authorization: `Bearer ${accessToken}`, 
-            'Content-Type': 'application/json' 
-        };
+        const ytHeaders = { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' };
 
-        // 4. Crear el Broadcast (El Evento / Video)
+        // 4. Crear el Broadcast
         const broadcastRes = await fetch('https://youtube.googleapis.com/youtube/v3/liveBroadcasts?part=snippet,status,contentDetails', {
             method: 'POST',
             headers: ytHeaders,
@@ -49,28 +45,20 @@ serve(async (req) => {
                     scheduledStartTime: new Date().toISOString() 
                 },
                 status: { privacyStatus: "unlisted", selfDeclaredMadeForKids: false },
-                contentDetails: { 
-                    enableAutoStart: true, // ¡Inicia solo cuando OBS manda señal!
-                    enableAutoStop: false,
-                    monitorStream: { enableMonitorStream: false } // Baja latencia
-                }
+                contentDetails: { enableAutoStart: true, enableAutoStop: false, monitorStream: { enableMonitorStream: false } }
             })
         });
         const broadcastData = await broadcastRes.json();
         if (broadcastData.error) throw new Error(`YouTube API Error (Broadcast): ${broadcastData.error.message}`);
-        const broadcastId = broadcastData.id; // ¡ESTE ES EL ID DEL VIDEO!
+        const broadcastId = broadcastData.id; 
 
-        // 5. Crear el Stream (El Contenedor de video que genera la clave)
+        // 5. Crear el Stream (Clave)
         const streamRes = await fetch('https://youtube.googleapis.com/youtube/v3/liveStreams?part=snippet,cdn', {
             method: 'POST',
             headers: ytHeaders,
             body: JSON.stringify({
                 snippet: { title: `Stream for: ${title}` },
-                cdn: { 
-                    frameRate: "variable", 
-                    ingestionType: "rtmp", 
-                    resolution: "variable" 
-                }
+                cdn: { frameRate: "variable", ingestionType: "rtmp", resolution: "variable" }
             })
         });
         const streamData = await streamRes.json();
@@ -79,20 +67,44 @@ serve(async (req) => {
         const streamKey = streamData.cdn.ingestionInfo.streamName;
         const streamUrl = streamData.cdn.ingestionInfo.ingestionAddress;
 
-        // 6. Unir el Evento con la Clave de Transmisión (Bind)
+        // 6. Unir Evento y Clave (Bind)
         const bindRes = await fetch(`https://youtube.googleapis.com/youtube/v3/liveBroadcasts/bind?id=${broadcastId}&streamId=${streamId}&part=id,contentDetails`, {
-            method: 'POST',
-            headers: ytHeaders
+            method: 'POST', headers: ytHeaders
         });
         const bindData = await bindRes.json();
         if (bindData.error) throw new Error(`YouTube API Error (Bind): ${bindData.error.message}`);
 
-        // 7. Retornar los datos mágicos a tu plataforma
+        // --- 7. MAGIA NUEVA: SUBIR LA MINIATURA ---
+        if (thumbnailUrl) {
+            try {
+                // Descargamos la imagen de ImgBB a la memoria de la Edge Function
+                const imgRes = await fetch(thumbnailUrl);
+                const imgBlob = await imgRes.blob();
+
+                // Subimos la imagen cruda a YouTube
+                const thumbUploadUrl = `https://youtube.googleapis.com/youtube/v3/thumbnails/set?videoId=${broadcastId}`;
+                const thumbRes = await fetch(thumbUploadUrl, {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        'Content-Type': imgBlob.type || 'image/jpeg'
+                    },
+                    body: imgBlob
+                });
+                
+                const thumbData = await thumbRes.json();
+                if (thumbData.error) console.error("Error subiendo miniatura:", thumbData.error.message);
+            } catch (thumbErr) {
+                // Lo envolvemos en un try-catch silencioso para que, si la foto falla,
+                // la transmisión de todas formas se cree correctamente.
+                console.error("Excepción procesando la miniatura:", thumbErr.message);
+            }
+        }
+        // --- FIN MAGIA MINIATURA ---
+
+        // 8. Retornar éxito
         return new Response(JSON.stringify({ 
-            success: true, 
-            videoId: broadcastId, 
-            streamKey: streamKey, 
-            streamUrl: streamUrl 
+            success: true, videoId: broadcastId, streamKey: streamKey, streamUrl: streamUrl 
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
     } catch (error) {

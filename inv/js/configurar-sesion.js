@@ -571,7 +571,8 @@ const SessionConfigApp = {
                         const { data, error } = await this.supabase.functions.invoke('create-youtube-live', {
                             body: {
                                 title: title,
-                                description: document.getElementById('session-description')?.value || ''
+                                description: document.getElementById('session-description')?.value || '',
+                                thumbnailUrl: document.getElementById('session-thumbnail')?.value || '' // <-- ¡LÍNEA NUEVA AÑADIDA!
                             }
                         });
                         
