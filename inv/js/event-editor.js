@@ -51,6 +51,8 @@ export const EventEditorApp = {
     async loadEventData() {
         document.getElementById('event-main-title').textContent = this.currentEvent.title;
         document.getElementById('event-title').value = this.currentEvent.title;
+        // NUEVA LÍNEA:
+        document.getElementById('event-slug').value = this.currentEvent.slug || '';
         document.getElementById('event-cover-url').value = this.currentEvent.cover_url || '';
         document.getElementById('event-registration-url').value = this.currentEvent.registration_url || '';
         document.getElementById('event-is-public').checked = this.currentEvent.is_public;
@@ -212,6 +214,19 @@ export const EventEditorApp = {
     },
 
     addEventListeners() {
+        // AUTOGENERAR SLUG A PARTIR DEL TÍTULO
+        document.getElementById('event-title').addEventListener('input', (e) => {
+            // Solo si es un evento nuevo o si el usuario borró el slug manualmente
+            if (!this.editMode || !document.getElementById('event-slug').value) {
+                let generatedSlug = e.target.value.toLowerCase()
+                    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Quitar tildes
+                    .replace(/[^a-z0-9-]/g, '-') // Reemplazar no alfanuméricos con guiones
+                    .replace(/-+/g, '-') // Evitar múltiples guiones
+                    .replace(/^-|-$/g, ''); // Quitar guiones al inicio o final
+                document.getElementById('event-slug').value = generatedSlug;
+            }
+        });
+
         document.getElementById('add-edition-btn').addEventListener('click', () => this.openEditionEditor(null));
         document.getElementById('editions-list-container').addEventListener('click', e => {
             const button = e.target.closest('button');
@@ -309,8 +324,23 @@ export const EventEditorApp = {
         saveButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
 
         tinymce.triggerSave();
+
+        // --- LÓGICA DEL SLUG: Limpiar antes de guardar ---
+        let slugInput = document.getElementById('event-slug').value.trim();
+        if (!slugInput) slugInput = document.getElementById('event-title').value.trim();
+        
+        slugInput = slugInput.toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "") 
+            .replace(/[^a-z0-9-]/g, '-') 
+            .replace(/-+/g, '-') 
+            .replace(/^-|-$/g, '');
+            
+        document.getElementById('event-slug').value = slugInput; // Actualizar UI por si acaso
+
+        // Objeto a guardar
         const eventUpdates = {
             title: document.getElementById('event-title').value,
+            slug: slugInput, // <-- ENVIAMOS EL SLUG A SUPABASE
             cover_url: document.getElementById('event-cover-url').value,
             registration_url: document.getElementById('event-registration-url').value,
             is_public: document.getElementById('event-is-public').checked,
@@ -322,6 +352,7 @@ export const EventEditorApp = {
             registration_thank_you_message: tinymce.get('event-thank-you-message').getContent(),
             user_id: this.user.id
         };
+        
         const { data: savedEvent, error: eventError } = await this.supabase
             .from('events')
             .upsert(this.editMode ? { id: this.currentEvent.id, ...eventUpdates } : eventUpdates)
