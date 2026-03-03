@@ -20,12 +20,20 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     async function init() {
+        // 1. NUEVA LÓGICA PARA LEER EL SLUG DESDE LA RUTA LIMPIA (/e/slug)
+        const pathParts = window.location.pathname.split('/');
+        const pathSlug = pathParts.includes('e') ? pathParts[pathParts.indexOf('e') + 1] : null;
+        
         const urlParams = new URLSearchParams(window.location.search);
-        const slug = urlParams.get('slug');
-        if (!slug) { document.body.innerHTML = '<h1>Error: Evento no encontrado.</h1>'; return; }
+        const querySlug = urlParams.get('slug');
+        
+        // Toma el de la ruta limpia primero, si no existe, toma el del parámetro
+        const slug = pathSlug || querySlug;
+
+        if (!slug) { document.body.innerHTML = '<h1 style="text-align:center; margin-top:20vh;">Error: Evento no encontrado.</h1>'; return; }
 
         const { data: event, error } = await supabase.from('events').select('*').eq('slug', slug).eq('is_public', true).single();
-        if (error || !event) { console.error('Error fetching event:', error); document.body.innerHTML = '<h1>Error: Evento no encontrado o no es público.</h1>'; return; }
+        if (error || !event) { console.error('Error fetching event:', error); document.body.innerHTML = '<h1 style="text-align:center; margin-top:20vh;">Error: Evento no encontrado o no es público.</h1>'; return; }
 
         // --- INICIO DE LA LÓGICA DEL MODAL DE AGRADECIMIENTO ---
         // 1. Revisamos si la URL tiene el parámetro "gracias".
