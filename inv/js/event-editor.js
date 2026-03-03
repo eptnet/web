@@ -214,15 +214,21 @@ export const EventEditorApp = {
     },
 
     addEventListeners() {
+        // SEGURO DEL SLUG: Si el usuario escribe en el slug, dejamos de auto-generarlo
+        let slugEditedManually = false;
+        document.getElementById('event-slug').addEventListener('input', () => {
+            slugEditedManually = true;
+        });
+
         // AUTOGENERAR SLUG A PARTIR DEL TÍTULO
         document.getElementById('event-title').addEventListener('input', (e) => {
-            // Solo si es un evento nuevo o si el usuario borró el slug manualmente
-            if (!this.editMode || !document.getElementById('event-slug').value) {
+            // Solo auto-generamos si NO lo han editado manualmente y si el campo está vacío
+            if (!slugEditedManually && (!this.editMode || !document.getElementById('event-slug').value)) {
                 let generatedSlug = e.target.value.toLowerCase()
-                    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Quitar tildes
-                    .replace(/[^a-z0-9-]/g, '-') // Reemplazar no alfanuméricos con guiones
-                    .replace(/-+/g, '-') // Evitar múltiples guiones
-                    .replace(/^-|-$/g, ''); // Quitar guiones al inicio o final
+                    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") 
+                    .replace(/[^a-z0-9-]/g, '-') 
+                    .replace(/-+/g, '-') 
+                    .replace(/^-|-$/g, ''); 
                 document.getElementById('event-slug').value = generatedSlug;
             }
         });

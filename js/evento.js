@@ -33,7 +33,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!slug) { document.body.innerHTML = '<h1 style="text-align:center; margin-top:20vh;">Error: Evento no encontrado.</h1>'; return; }
 
         const { data: event, error } = await supabase.from('events').select('*').eq('slug', slug).eq('is_public', true).single();
-        if (error || !event) { console.error('Error fetching event:', error); document.body.innerHTML = '<h1 style="text-align:center; margin-top:20vh;">Error: Evento no encontrado o no es público.</h1>'; return; }
+        
+        if (error) { 
+            console.error('Error fetching event:', error); 
+            
+            // Si el error es PGRST116 (0 filas devueltas), significa que es privado o no existe
+            if (error.code === 'PGRST116') {
+                document.body.innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; color: white; background: #0f172a; font-family: sans-serif;">
+                        <i class="fa-solid fa-lock" style="font-size: 4rem; color: #64748b; margin-bottom: 1rem;"></i>
+                        <h1 style="margin: 0; font-size: 2rem;">Evento en Borrador o Privado</h1>
+                        <p style="color: #94a3b8; max-width: 400px; margin-top: 1rem;">Este evento no se encuentra disponible públicamente en este momento.</p>
+                    </div>`;
+            } else {
+                document.body.innerHTML = '<h1 style="text-align:center; margin-top:20vh; color:white;">Error de conexión con la base de datos.</h1>'; 
+            }
+            return; 
+        }
 
         // --- INICIO DE LA LÓGICA DEL MODAL DE AGRADECIMIENTO ---
         // 1. Revisamos si la URL tiene el parámetro "gracias".
