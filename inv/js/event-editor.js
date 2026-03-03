@@ -11,6 +11,7 @@ export const EventEditorApp = {
         const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
         this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
         const { data: { session } } = await this.supabase.auth.getSession();
         if (!session) { window.location.href = '/'; return; }
         this.user = session.user;
@@ -37,9 +38,9 @@ export const EventEditorApp = {
             tinymce.init({
                 selector: '#event-about, #event-call-for-papers, #event-thank-you-message',
                 plugins: 'autolink lists link charmap',
-                toolbar: 'undo redo | bold italic | alignleft aligncenter alignright | bullist numlist | forecolor',
+                toolbar: 'undo redo | bold italic | alignleft aligncenter alignright | bullist numlist | link | forecolor',
                 menubar: false,
-                height: 300,
+                height: 350,
                 skin: document.body.classList.contains('dark-theme') ? 'oxide-dark' : 'oxide',
                 content_css: document.body.classList.contains('dark-theme') ? 'dark' : 'default',
                 setup: (editor) => {
@@ -110,35 +111,36 @@ export const EventEditorApp = {
     },
 
     setupImageUploads() {
-        const fileInputs = [
-            { id: 'file-event-cover', target: 'event-cover-url' },
-            { id: 'file-event-seo', target: 'event-seo-image-url' }
+        const uploaders = [
+            { btnId: 'file-event-cover', targetId: 'event-cover-url' },
+            { btnId: 'file-event-seo', targetId: 'event-seo-image-url' }
         ];
 
-        fileInputs.forEach(inputObj => {
-            const el = document.getElementById(inputObj.id);
-            if (el) {
-                el.addEventListener('change', async (e) => {
+        uploaders.forEach(u => {
+            const fileInput = document.getElementById(u.btnId);
+            if (fileInput) {
+                fileInput.addEventListener('change', async (e) => {
                     const file = e.target.files[0];
                     if (!file) return;
-                    const btn = el.nextElementSibling;
-                    const originalText = btn.innerHTML;
-                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-                    btn.disabled = true;
+                    const uploadBtn = fileInput.nextElementSibling;
+                    const originalHTML = uploadBtn.innerHTML;
+                    uploadBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                    uploadBtn.disabled = true;
 
                     try {
                         const formData = new FormData();
                         formData.append("image", file);
-                        const response = await fetch(`https://api.imgbb.com/1/upload?key=${this.IMGBB_API_KEY}`, { method: "POST", body: formData });
-                        const data = await response.json();
-                        if (data.success) document.getElementById(inputObj.target).value = data.data.url;
-                        else throw new Error("Error en ImgBB");
+                        const res = await fetch(`https://api.imgbb.com/1/upload?key=${this.IMGBB_API_KEY}`, { method: "POST", body: formData });
+                        const data = await res.json();
+                        if (data.success) {
+                            document.getElementById(u.targetId).value = data.data.url;
+                        } else throw new Error("Fallo en ImgBB");
                     } catch (error) {
-                        alert("Hubo un error subiendo la imagen.");
+                        alert("Error al subir la imagen.");
                     } finally {
-                        btn.innerHTML = originalText;
-                        btn.disabled = false;
-                        el.value = '';
+                        uploadBtn.innerHTML = originalHTML;
+                        uploadBtn.disabled = false;
+                        fileInput.value = '';
                     }
                 });
             }
@@ -146,7 +148,14 @@ export const EventEditorApp = {
     },
 
     addEventListeners() {
-        // Eventos básicos (Eliminada la auto-generación de slug al teclear)
+        // Generador RESPETUOSO de Slug (Solo se ejecuta si el slug está en blanco)
+        document.getElementById('event-title').addEventListener('blur', (e) => {
+            const slugInput = document.getElementById('event-slug');
+            if (!slugInput.value.trim() && e.target.value.trim()) {
+                slugInput.value = e.target.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+            }
+        });
+
         document.getElementById('event-is-public').addEventListener('change', () => this.updatePublicStatusText());
         document.getElementById('save-event-btn').addEventListener('click', () => this.handleSave());
         document.getElementById('add-edition-btn').addEventListener('click', () => this.openEditionEditor(null));
@@ -154,13 +163,52 @@ export const EventEditorApp = {
         document.getElementById('editions-list-container').addEventListener('click', e => {
             const button = e.target.closest('button');
             if (!button) return;
-            const editionItem = e.target.closest('.edition-item');
-            const editionId = editionItem.dataset.editionId;
+            const editionId = e.target.closest('.edition-item').dataset.editionId;
             const edition = this.currentEditions.find(ed => ed.id === editionId);
 
             if (button.classList.contains('edit-edition-btn')) this.openEditionEditor(edition);
             if (button.classList.contains('delete-edition-btn')) this.deleteEdition(editionId);
         });
+
+        // Eventos de IA
+        document.querySelectorAll('.ai-button, .ai-button-text').forEach(btn => {
+            btn.addEventListener('click', (e) => this.handleAIClick(e.currentTarget));
+        });
+    },
+
+    async handleAIClick(btn) {
+        const targetId = btn.dataset.target;
+        const isRichText = btn.classList.contains('ai-button-text');
+        const currentContent = isRichText ? tinymce.get(targetId).getContent({format: 'text'}) : document.getElementById(targetId).value;
+        const projectContext = document.getElementById('event-title').value;
+
+        if (!projectContext) return alert('Escribe primero el Título del Evento para darle contexto a la IA.');
+
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        btn.disabled = true;
+
+        let systemInstruction = "Eres un asistente experto en divulgación científica y organización de eventos.";
+        if (targetId === 'event-title') systemInstruction += " Mejora este título de evento para que sea muy atractivo e impactante. Devuelve SOLO EL TÍTULO SIN COMILLAS, máximo 8 palabras.";
+        else if (targetId === 'event-about') systemInstruction += " Redacta un texto persuasivo en HTML (usando <p>, <strong>) sobre este evento. Hazlo empático e invita a participar. Máximo 2 párrafos cortos.";
+        else if (targetId === 'event-call-for-papers') systemInstruction += " Redacta un llamado a ponencias (Call for Papers) en HTML para este evento. Sé claro, profesional y motivador. Usa viñetas <ul> si es necesario.";
+
+        try {
+            const { data, error } = await this.supabase.functions.invoke('generate-text', {
+                body: { textContent: `Evento: ${projectContext}. Texto actual: ${currentContent || 'Ninguno'}`, promptType: 'generate_from_instructions', customPrompt: systemInstruction }
+            });
+            if (error) throw error;
+            
+            let result = data.result.replace(/^["']|["']$/g, '').trim();
+            if (isRichText) tinymce.get(targetId).setContent(result);
+            else document.getElementById(targetId).value = result;
+        } catch (error) {
+            console.error("AI Error:", error);
+            alert("No se pudo conectar con la IA.");
+        } finally {
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+        }
     },
 
     renderEditionsList() {
@@ -201,13 +249,13 @@ export const EventEditorApp = {
             <fieldset class="builder-section">
                 <legend><i class="fa-solid fa-pen text-accent"></i> ${editionData ? `Editando: ${editionData.edition_name}` : 'Nueva Edición'}</legend>
                 <div class="form-group"><label>Nombre de la Edición</label><input type="text" id="edition-name" value="${editionData?.edition_name || ''}" required></div>
-                <div class="form-group-grid">
+                <div class="form-group-grid mt-3">
                     <div><label>Fecha de Inicio</label><input type="date" id="edition-start-date" value="${editionData?.start_date || ''}"></div>
                     <div><label>Fecha de Fin</label><input type="date" id="edition-end-date" value="${editionData?.end_date || ''}"></div>
                 </div>
-                <div class="form-group"><label>Lugar</label><input type="text" id="edition-location" value="${editionData?.location || ''}"></div>
+                <div class="form-group mt-3"><label>Lugar</label><input type="text" id="edition-location" value="${editionData?.location || ''}"></div>
                 
-                <div class="setting-box flex-center-col" style="align-items: flex-start; padding:0; border:none;">
+                <div class="setting-box flex-center-col mt-3" style="align-items: flex-start; padding:0; border:none;">
                     <label>Activar cuenta atrás en portada</label>
                     <label class="switch modern-switch">
                         <input type="checkbox" id="edition-countdown-enabled">
@@ -273,6 +321,13 @@ export const EventEditorApp = {
             </div>
             <div class="form-group mb-2"><label>Título</label><input type="text" class="program-item-title" value="${data.title || ''}"></div>
             <div class="form-group mb-2"><label>Ponente</label><select class="modern-select program-item-speaker">${opts}</select></div>
+            <div class="form-group mb-2"><label>Portada (Hero)</label>
+                <div class="input-with-upload">
+                    <input type="text" class="program-item-cover-url" placeholder="URL imagen" value="${data.itemCoverUrl || ''}">
+                    <input type="file" accept="image/*" style="display:none;" onchange="EventEditorApp.handleNestedUpload(this)">
+                    <button type="button" class="btn-upload" onclick="this.previousElementSibling.click()"><i class="fa-solid fa-cloud-arrow-up"></i></button>
+                </div>
+            </div>
             <div class="form-group"><label>Descripción Corta</label><textarea class="program-item-description" style="min-height:60px;">${data.description || ''}</textarea></div>
         `;
         if (data.speaker_name) fieldset.querySelector('.program-item-speaker').value = data.speaker_name;
@@ -285,7 +340,13 @@ export const EventEditorApp = {
         fieldset.innerHTML = `
             <button type="button" class="btn-remove-item">&times;</button>
             <div class="form-group mb-2"><label>Nombre</label><input type="text" class="speaker-name" value="${data.name || ''}"></div>
-            <div class="form-group mb-2"><label>URL Foto (Avatar)</label><input type="text" class="speaker-avatar" value="${data.avatarUrl || ''}"></div>
+            <div class="form-group mb-2"><label>URL Foto (Avatar)</label>
+                <div class="input-with-upload">
+                    <input type="text" class="speaker-avatar" placeholder="URL avatar" value="${data.avatarUrl || ''}">
+                    <input type="file" accept="image/*" style="display:none;" onchange="EventEditorApp.handleNestedUpload(this)">
+                    <button type="button" class="btn-upload" onclick="this.previousElementSibling.click()"><i class="fa-solid fa-cloud-arrow-up"></i></button>
+                </div>
+            </div>
             <div class="form-group mb-2"><label>Bio corta</label><textarea class="speaker-bio" style="min-height:60px;">${data.bio || ''}</textarea></div>
             <label>Redes Sociales</label>
             <div class="form-group-grid-3-col mt-2">
@@ -297,6 +358,26 @@ export const EventEditorApp = {
         container.appendChild(fieldset);
         fieldset.querySelector('.speaker-name').addEventListener('input', () => this.updateSpeakerOptionsInProgram());
         fieldset.querySelector('.btn-remove-item').addEventListener('click', () => { fieldset.remove(); this.updateSpeakerOptionsInProgram(); });
+    },
+
+    // Subida auxiliar para Ponentes e Items del Programa
+    async handleNestedUpload(inputEl) {
+        const file = inputEl.files[0];
+        if (!file) return;
+        const uploadBtn = inputEl.nextElementSibling;
+        const textInput = inputEl.previousElementSibling;
+        const originalHTML = uploadBtn.innerHTML;
+        uploadBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        uploadBtn.disabled = true;
+
+        try {
+            const formData = new FormData();
+            formData.append("image", file);
+            const res = await fetch(`https://api.imgbb.com/1/upload?key=${this.IMGBB_API_KEY}`, { method: "POST", body: formData });
+            const data = await res.json();
+            if (data.success) textInput.value = data.data.url;
+        } catch (e) { alert("Error al subir imagen."); } 
+        finally { uploadBtn.innerHTML = originalHTML; uploadBtn.disabled = false; inputEl.value = ''; }
     },
 
     updateSpeakerOptionsInProgram() {
@@ -319,30 +400,19 @@ export const EventEditorApp = {
         const saveButton = document.getElementById('save-event-btn');
         const originalText = saveButton.innerHTML;
         saveButton.disabled = true;
-        saveButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Publicando...';
+        saveButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
 
         tinymce.triggerSave();
 
-        // --- LÓGICA DEL SLUG (Respetuosa) ---
+        // Limpieza de tu Slug (Si está vacío, usa el título por defecto)
         let slugInput = document.getElementById('event-slug').value.trim();
-        
-        // Solo toma el título si el usuario dejó el slug completamente en blanco
-        if (!slugInput) {
-            slugInput = document.getElementById('event-title').value.trim();
-        }
-        
-        // Limpiamos caracteres raros, tildes y espacios, pero respetamos sus palabras
-        slugInput = slugInput.toLowerCase()
-            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-            .replace(/[^a-z0-9-]/g, '-')
-            .replace(/-+/g, '-')
-            .replace(/^-|-$/g, '');
-            
+        if (!slugInput) slugInput = document.getElementById('event-title').value.trim();
+        slugInput = slugInput.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
         document.getElementById('event-slug').value = slugInput;
 
         const eventUpdates = {
             title: document.getElementById('event-title').value,
-            slug: slugInput, // <-- Aquí se asegura de mandar TU slug elegido a Supabase
+            slug: slugInput, 
             cover_url: document.getElementById('event-cover-url').value,
             registration_url: document.getElementById('event-registration-url').value,
             is_public: document.getElementById('event-is-public').checked,
@@ -358,7 +428,7 @@ export const EventEditorApp = {
         const { data: savedEvent, error: eventError } = await this.supabase.from('events').upsert(this.editMode ? { id: this.currentEvent.id, ...eventUpdates } : eventUpdates).select().single();
 
         if (eventError) {
-            alert("Error al guardar el evento.");
+            alert("Error al guardar el evento. Asegúrate de modificar el Trigger en Supabase si el slug te da error.");
             saveButton.disabled = false; saveButton.innerHTML = originalText; return;
         }
         
@@ -375,6 +445,7 @@ export const EventEditorApp = {
                 endTime: el.querySelector('.program-item-end-time').value,
                 title: el.querySelector('.program-item-title').value,
                 speaker_name: el.querySelector('.program-item-speaker').value,
+                itemCoverUrl: el.querySelector('.program-item-cover-url').value,
                 description: el.querySelector('.program-item-description').value
             }));
             const speakers = Array.from(document.querySelectorAll('#speakers-list-container .item-fieldset')).map(el => ({
@@ -394,8 +465,9 @@ export const EventEditorApp = {
             await this.supabase.from('event_editions').upsert([editionDataToSave]); 
         }
         
-        alert("¡Evento guardado y actualizado con éxito!");
-        saveButton.disabled = false; saveButton.innerHTML = originalText;
+        saveButton.disabled = false; 
+        saveButton.innerHTML = '<i class="fa-solid fa-check"></i> ¡Publicado!';
+        setTimeout(() => saveButton.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Publicar Cambios', 2000);
         await this.loadEventData();
     }
 };
