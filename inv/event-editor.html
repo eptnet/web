@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editor de Eventos</title>
+    <title>Editor de Eventos - Epistecnología</title>
     <link rel="stylesheet" href="/inv/css/style-editor.css">
     <link rel="stylesheet" href="/inv/css/event-editor.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -17,15 +17,16 @@
         </a>
         <nav class="header-nav">
             <a href="/inv/dashboard.html"><i class="fa-solid fa-table-columns"></i> Dashboard</a>
-            <a href="/inv/profile.html"><i class="fa-solid fa-user"></i> Mi Perfil</a>
+            <button id="view-page-btn" class="btn-header-secondary" style="display: none;"><i class="fa-solid fa-eye"></i> Previsualizar</button>
+            <button id="save-event-btn" class="btn-header-primary"><i class="fa-solid fa-cloud-arrow-up"></i> Publicar Cambios</button>
         </nav>
     </header>
 
     <div class="editor-panel">
-        <header class="editor-header">
+        <div class="editor-hero">
             <h1 id="event-main-title">Nuevo Evento</h1>
             <p>Define la información general de tu evento y gestiona sus ediciones.</p>
-        </header>
+        </div>
 
         <div class="editor-tabs">
             <button class="tab-link active" data-tab="tab-general">Información General</button>
@@ -36,9 +37,13 @@
             <form id="event-general-form" onsubmit="event.preventDefault();">
                 <fieldset class="builder-section">
                     <legend><i class="fa-solid fa-pen-to-square text-accent"></i> Datos Principales</legend>
+                    
                     <div class="form-group">
                         <label for="event-title">Título del Evento</label>
-                        <input type="text" id="event-title" placeholder="Ej: Congreso Internacional de Epistemología" required>
+                        <div class="input-with-ai">
+                            <input type="text" id="event-title" placeholder="Ej: Congreso Internacional de Epistemología" required>
+                            <button type="button" class="ai-button" data-target="event-title" title="Mejorar Título con IA"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -47,70 +52,78 @@
                             <span class="slug-prefix">epistecnologia.com/e/</span>
                             <input type="text" id="event-slug" placeholder="congreso-epistemologia" required>
                         </div>
-                        <p class="form-hint" style="font-size:0.75rem; margin-top:5px;">Usa solo letras minúsculas, números y guiones medios (-).</p>
+                        <p class="form-hint" style="font-size:0.75rem; margin-top:5px;">El enlace se autogenera, pero puedes personalizarlo. Solo minúsculas, números y guiones.</p>
                     </div>
 
                     <div class="form-group">
-                        <label for="event-cover-url">URL de Imagen de Portada</label>
-                        <input type="text" id="event-cover-url" placeholder="https://ejemplo.com/imagen.jpg">
+                        <label for="event-cover-url">Imagen de Portada (Hero)</label>
+                        <div class="input-with-upload">
+                            <input type="text" id="event-cover-url" placeholder="https://ejemplo.com/imagen.jpg">
+                            <input type="file" id="file-event-cover" accept="image/*" style="display:none;">
+                            <button type="button" class="btn-upload" onclick="document.getElementById('file-event-cover').click()"><i class="fa-solid fa-cloud-arrow-up"></i> Subir</button>
+                        </div>
                     </div>
+
                     <div class="form-group">
-                        <label for="event-registration-url">Enlace de Registro Principal</label>
-                        <p class="form-hint">Este enlace creará un botón destacado en la portada.</p>
+                        <label for="event-seo-image-url">Miniatura para Redes Sociales (SEO)</label>
+                        <div class="input-with-upload">
+                            <input type="text" id="event-seo-image-url" placeholder="Imagen que se verá en WhatsApp/Bluesky...">
+                            <input type="file" id="file-event-seo" accept="image/*" style="display:none;">
+                            <button type="button" class="btn-upload" onclick="document.getElementById('file-event-seo').click()"><i class="fa-solid fa-cloud-arrow-up"></i> Subir</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="event-registration-url">Enlace de Registro Principal (Tally, Google Forms...)</label>
                         <input type="url" id="event-registration-url" placeholder="https://tally.so/r/...">
-                    </div>
-                    <div class="form-group">
-                        <label for="event-thank-you-message">Mensaje de Agradecimiento Post-Registro</label>
-                        <p class="form-hint">Se mostrará en un modal cuando un usuario vuelva con &gracias=true en la URL.</p>
-                        <textarea id="event-thank-you-message"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="event-seo-image-url">URL de Miniatura para Redes (SEO)</label>
-                        <p class="form-hint">Si lo dejas en blanco, se usará la imagen de portada.</p>
-                        <input type="text" id="event-seo-image-url" placeholder="https://ejemplo.com/miniatura.jpg">
                     </div>
                 </fieldset>
 
                 <fieldset class="builder-section">
-                    <legend><i class="fa-solid fa-align-left text-accent"></i> Contenido Principal</legend>
+                    <legend><i class="fa-solid fa-align-left text-accent"></i> Contenido del Evento</legend>
+                    
                     <div class="form-group">
-                        <label for="event-about">Sobre el Evento</label>
+                        <div class="flex-between">
+                            <label for="event-about">Sobre el Evento</label>
+                            <button type="button" class="ai-button-text" data-target="event-about"><i class="fa-solid fa-wand-magic-sparkles"></i> Mejorar redacción</button>
+                        </div>
                         <textarea id="event-about" class="tinymce-editor"></textarea>
                     </div>
-                    <div class="form-group">
+
+                    <div class="form-group mt-3">
                         <label for="event-call-for-papers">Llamada a Ponencias (Call for Papers)</label>
                         <textarea id="event-call-for-papers" class="tinymce-editor"></textarea>
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <label for="event-thank-you-message">Mensaje de Agradecimiento Post-Registro</label>
+                        <p class="form-hint">Se mostrará en un modal al redirigir con &gracias=true</p>
+                        <textarea id="event-thank-you-message" class="tinymce-editor"></textarea>
                     </div>
                 </fieldset>
 
                 <fieldset class="builder-section bg-light-panel">
                     <legend><i class="fa-solid fa-globe text-accent"></i> Publicación</legend>
-                    <div class="publish-toggle flex-center-col" style="align-items: flex-start; padding: 0; border: none;">
-                        <label for="event-is-public">Hacer página del evento pública</label>
-                        <label class="switch modern-switch" style="margin-top: 10px;">
+                    <div class="setting-box flex-center-col" style="align-items: flex-start; padding: 0; border: none;">
+                        <label>Estado del Evento</label>
+                        <label class="switch modern-switch">
                             <input type="checkbox" id="event-is-public">
                             <span class="slider round"></span>
                         </label>
+                        <span id="public-status-text" class="status-text mt-2">Borrador Privado</span>
                     </div>
                 </fieldset>
             </form>
         </div>
 
         <div id="tab-editions" class="tab-content">
-            <fieldset>
-                <legend>Gestionar Ediciones</legend>
-                <div id="editions-list-container"></div>
+            <fieldset class="builder-section">
+                <legend><i class="fa-solid fa-calendar-days text-accent"></i> Gestionar Ediciones</legend>
+                <div id="editions-list-container" class="editions-list"></div>
                 <button type="button" id="add-edition-btn" class="btn-add-item"><i class="fa-solid fa-plus"></i> Añadir Nueva Edición</button>
             </fieldset>
 
             <div id="edition-editor-container" style="display: none;"></div>
-        </div>
-
-        <div class="final-actions">
-            <a href="#" id="view-page-btn" target="_blank" class="btn-secondary" style="display: none;">
-                <i class="fa-solid fa-eye"></i> Ver Página
-            </a>
-            <button type="button" id="save-event-btn" class="btn-primary"><i class="fa-solid fa-save"></i> Guardar Cambios</button>
         </div>
     </div>
 

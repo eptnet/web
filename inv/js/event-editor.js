@@ -5,6 +5,7 @@ export const EventEditorApp = {
     currentEvent: null,
     currentEditions: [],
     activeEditionId: null,
+    IMGBB_API_KEY: "89d606fc7588367140913f93a4c89785", 
 
     async init() {
         const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
@@ -16,6 +17,7 @@ export const EventEditorApp = {
 
         this.setupTabEvents();
         this.addEventListeners();
+        this.setupImageUploads();
         await this.initializeEditors();
 
         const activeEventString = sessionStorage.getItem('activeEvent');
@@ -23,25 +25,27 @@ export const EventEditorApp = {
             this.editMode = true;
             this.currentEvent = JSON.parse(activeEventString);
             await this.loadEventData();
+        } else {
+            this.updatePublicStatusText();
         }
     },
 
     initializeEditors() {
         return new Promise(resolve => {
-            // Ahora inicializamos 3 editores
             const totalEditors = 3;
             let initializedEditors = 0;
-
             tinymce.init({
-                // --- CAMBIO CLAVE: Añadimos el nuevo ID al selector ---
                 selector: '#event-about, #event-call-for-papers, #event-thank-you-message',
+                plugins: 'autolink lists link charmap',
+                toolbar: 'undo redo | bold italic | alignleft aligncenter alignright | bullist numlist | forecolor',
+                menubar: false,
                 height: 300,
+                skin: document.body.classList.contains('dark-theme') ? 'oxide-dark' : 'oxide',
+                content_css: document.body.classList.contains('dark-theme') ? 'dark' : 'default',
                 setup: (editor) => {
                     editor.on('init', () => {
                         initializedEditors++;
-                        if (initializedEditors >= totalEditors) {
-                            resolve();
-                        }
+                        if (initializedEditors >= totalEditors) resolve();
                     });
                 }
             });
@@ -51,7 +55,6 @@ export const EventEditorApp = {
     async loadEventData() {
         document.getElementById('event-main-title').textContent = this.currentEvent.title;
         document.getElementById('event-title').value = this.currentEvent.title;
-        // NUEVA LÍNEA:
         document.getElementById('event-slug').value = this.currentEvent.slug || '';
         document.getElementById('event-cover-url').value = this.currentEvent.cover_url || '';
         document.getElementById('event-registration-url').value = this.currentEvent.registration_url || '';
@@ -64,26 +67,33 @@ export const EventEditorApp = {
         tinymce.get('event-call-for-papers')?.setContent(content.callForPapers || '');
         tinymce.get('event-thank-you-message')?.setContent(this.currentEvent.registration_thank_you_message || '');
 
-        // --- INICIO DE LA LÓGICA PARA EL BOTÓN "VER PÁGINA" ---
-        // --- INICIO DE LA LÓGICA PARA EL BOTÓN "VER PÁGINA" ---
-        const viewPageBtn = document.getElementById('view-page-btn');
-        if (this.currentEvent && this.currentEvent.slug) {
-            viewPageBtn.href = `/e/${this.currentEvent.slug}`; // RUTA LIMPIA
-            viewPageBtn.style.display = 'inline-flex'; // Usamos inline-flex para centrar el icono y texto
-        } else {
-            // Si es un evento nuevo sin guardar, el botón permanece oculto
-            viewPageBtn.style.display = 'none';
-        }
-        // --- FIN DE LA LÓGICA ---
+        this.updatePublicStatusText();
+        this.updatePreviewButton();
 
-        const { data: editions, error } = await this.supabase
-            .from('event_editions')
-            .select('*')
-            .eq('event_id', this.currentEvent.id);
-        
+        const { data: editions, error } = await this.supabase.from('event_editions').select('*').eq('event_id', this.currentEvent.id);
         if (error) { console.error("Error fetching editions:", error); return; }
         this.currentEditions = editions || [];
         this.renderEditionsList();
+    },
+
+    updatePreviewButton() {
+        const viewPageBtn = document.getElementById('view-page-btn');
+        if (this.currentEvent && this.currentEvent.slug) {
+            viewPageBtn.style.display = 'inline-flex';
+            viewPageBtn.onclick = (e) => {
+                e.preventDefault();
+                window.open(`/e/${this.currentEvent.slug}`, '_blank');
+            };
+        } else {
+            viewPageBtn.style.display = 'none';
+        }
+    },
+
+    updatePublicStatusText() {
+        const checkbox = document.getElementById('event-is-public');
+        const text = document.getElementById('public-status-text');
+        if (checkbox.checked) { text.textContent = "Público y Visible"; text.className = "status-text public"; } 
+        else { text.textContent = "Borrador Privado"; text.className = "status-text"; }
     },
 
     setupTabEvents() {
@@ -99,6 +109,60 @@ export const EventEditorApp = {
         });
     },
 
+    setupImageUploads() {
+        const fileInputs = [
+            { id: 'file-event-cover', target: 'event-cover-url' },
+            { id: 'file-event-seo', target: 'event-seo-image-url' }
+        ];
+
+        fileInputs.forEach(inputObj => {
+            const el = document.getElementById(inputObj.id);
+            if (el) {
+                el.addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const btn = el.nextElementSibling;
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                    btn.disabled = true;
+
+                    try {
+                        const formData = new FormData();
+                        formData.append("image", file);
+                        const response = await fetch(`https://api.imgbb.com/1/upload?key=${this.IMGBB_API_KEY}`, { method: "POST", body: formData });
+                        const data = await response.json();
+                        if (data.success) document.getElementById(inputObj.target).value = data.data.url;
+                        else throw new Error("Error en ImgBB");
+                    } catch (error) {
+                        alert("Hubo un error subiendo la imagen.");
+                    } finally {
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                        el.value = '';
+                    }
+                });
+            }
+        });
+    },
+
+    addEventListeners() {
+        // Eventos básicos (Eliminada la auto-generación de slug al teclear)
+        document.getElementById('event-is-public').addEventListener('change', () => this.updatePublicStatusText());
+        document.getElementById('save-event-btn').addEventListener('click', () => this.handleSave());
+        document.getElementById('add-edition-btn').addEventListener('click', () => this.openEditionEditor(null));
+        
+        document.getElementById('editions-list-container').addEventListener('click', e => {
+            const button = e.target.closest('button');
+            if (!button) return;
+            const editionItem = e.target.closest('.edition-item');
+            const editionId = editionItem.dataset.editionId;
+            const edition = this.currentEditions.find(ed => ed.id === editionId);
+
+            if (button.classList.contains('edit-edition-btn')) this.openEditionEditor(edition);
+            if (button.classList.contains('delete-edition-btn')) this.deleteEdition(editionId);
+        });
+    },
+
     renderEditionsList() {
         const container = document.getElementById('editions-list-container');
         if (!container) return;
@@ -110,8 +174,8 @@ export const EventEditorApp = {
             <div class="edition-item ${edition.id === this.activeEditionId ? 'active' : ''}" data-edition-id="${edition.id}">
                 <span class="edition-item-name">${edition.edition_name}</span>
                 <div class="edition-item-actions">
-                    <button class="edit-edition-btn"><i class="fa-solid fa-pencil"></i> Editar</button>
-                    <button class="delete-edition-btn"><i class="fa-solid fa-trash"></i> Borrar</button>
+                    <button class="edit-edition-btn mod-btn"><i class="fa-solid fa-pencil"></i></button>
+                    <button class="delete-edition-btn mod-btn delete"><i class="fa-solid fa-trash"></i></button>
                 </div>
             </div>
         `).join('');
@@ -124,10 +188,7 @@ export const EventEditorApp = {
         const container = document.getElementById('edition-editor-container');
         container.style.display = 'block';
 
-        console.log('Buscando sesiones para el user_id:', this.user.id);
-        const { data: allSessions, error } = await this.supabase.from('sessions').select('id, session_title').eq('user_id', this.user.id);
-
-        if (error) console.error("Error al buscar sesiones:", error.message);
+        const { data: allSessions } = await this.supabase.from('sessions').select('id, session_title').eq('user_id', this.user.id);
         
         let sessionsCheckboxesHTML = (allSessions || []).map(session => `
             <div class="checkbox-item">
@@ -136,7 +197,6 @@ export const EventEditorApp = {
             </div>
         `).join('');
 
-        // --- CAMBIO CLAVE: Añadimos los campos del contador al HTML ---
         container.innerHTML = `
             <fieldset class="builder-section">
                 <legend><i class="fa-solid fa-pen text-accent"></i> ${editionData ? `Editando: ${editionData.edition_name}` : 'Nueva Edición'}</legend>
@@ -147,61 +207,47 @@ export const EventEditorApp = {
                 </div>
                 <div class="form-group"><label>Lugar</label><input type="text" id="edition-location" value="${editionData?.location || ''}"></div>
                 
-                <div class="publish-toggle form-group">
-                    <label for="edition-countdown-enabled">Activar cuenta atrás en la portada</label>
+                <div class="setting-box flex-center-col" style="align-items: flex-start; padding:0; border:none;">
+                    <label>Activar cuenta atrás en portada</label>
                     <label class="switch modern-switch">
                         <input type="checkbox" id="edition-countdown-enabled">
                         <span class="slider round"></span>
                     </label>
                 </div>
-                <div class="form-group" id="countdown-time-wrapper" style="display: none;">
-                    <label for="edition-countdown-time">Hora de finalización de la cuenta atrás</label>
-                    <input type="time" id="edition-countdown-time">
-                    <p class="form-hint">Si se deja en blanco, usará las 00:00 de la fecha de inicio.</p>
+                <div class="form-group mt-3" id="countdown-time-wrapper" style="display: none;">
+                    <label>Hora límite de la cuenta atrás</label>
+                    <input type="time" id="edition-countdown-time" value="${editionData?.countdown_time || ''}">
                 </div>
             </fieldset>
+
             <fieldset class="builder-section">
                 <legend><i class="fa-solid fa-users text-accent"></i> Ponentes</legend>
                 <div id="speakers-list-container" class="item-list-editor"></div>
                 <button type="button" class="btn-add-item" id="add-speaker-btn"><i class="fa-solid fa-plus"></i> Añadir Ponente</button>
             </fieldset>
+
             <fieldset class="builder-section">
                 <legend><i class="fa-solid fa-list-check text-accent"></i> Programa</legend>
                 <div id="program-items-container" class="item-list-editor"></div>
                 <button type="button" class="btn-add-item" id="add-program-item-btn"><i class="fa-solid fa-plus"></i> Añadir al Programa</button>
             </fieldset>
+
             <fieldset class="builder-section bg-light-panel">
-                <legend><i class="fa-solid fa-podcast text-accent"></i> Sesiones de LiveRoom Asociadas</legend>
-                <p class="form-hint">Marca todas las sesiones que quieres mostrar en la página del evento.</p>
-                <div class="checkbox-list-container">${sessionsCheckboxesHTML}</div>
+                <legend><i class="fa-solid fa-podcast text-accent"></i> Sesiones EPT Live Asociadas</legend>
+                <div class="checkbox-list-container">${sessionsCheckboxesHTML || '<p class="form-hint">No tienes sesiones EPT Live.</p>'}</div>
             </fieldset>
         `;
 
-        if (!allSessions || allSessions.length === 0) {
-            container.querySelector('.checkbox-list-container').innerHTML = '<p class="form-hint" style="color: #E11D48;">No se encontraron sesiones de LiveRoom para este usuario.</p>';
-        }
-
-        // --- CAMBIO CLAVE: Lógica para manejar los nuevos campos del contador ---
         const countdownToggle = container.querySelector('#edition-countdown-enabled');
         const countdownTimeWrapper = container.querySelector('#countdown-time-wrapper');
-        const countdownTimeInput = container.querySelector('#edition-countdown-time');
+        countdownToggle.checked = editionData?.countdown_enabled ?? true;
+        const toggleTimeVisibility = () => countdownTimeWrapper.style.display = countdownToggle.checked ? 'block' : 'none';
+        toggleTimeVisibility();
+        countdownToggle.addEventListener('change', toggleTimeVisibility);
 
-        // Asignamos los valores guardados (o los valores por defecto)
-        countdownToggle.checked = editionData?.countdown_enabled ?? true; // Por defecto activado
-        countdownTimeInput.value = editionData?.countdown_time || '';
-
-        // Función para mostrar/ocultar el campo de la hora
-        const toggleTimeVisibility = () => {
-            countdownTimeWrapper.style.display = countdownToggle.checked ? 'block' : 'none';
-        };
-        
-        toggleTimeVisibility(); // Mostramos/ocultamos al cargar
-        countdownToggle.addEventListener('change', toggleTimeVisibility); // Y cada vez que cambia el interruptor
-
-        // El resto de la lógica de la función sigue igual...
-        if (editionData && editionData.selected_sessions) {
+        if (editionData?.selected_sessions) {
             editionData.selected_sessions.forEach(sessionId => {
-                const checkbox = container.querySelector(`input[name="associated_session"][value="${sessionId}"]`);
+                const checkbox = container.querySelector(`input[value="${sessionId}"]`);
                 if (checkbox) checkbox.checked = true;
             });
         }
@@ -213,65 +259,21 @@ export const EventEditorApp = {
         container.querySelector('#add-speaker-btn').addEventListener('click', () => this.addSpeakerFields(container.querySelector('#speakers-list-container')));
     },
 
-    addEventListeners() {
-        // SEGURO DEL SLUG: Si el usuario escribe en el slug, dejamos de auto-generarlo
-        let slugEditedManually = false;
-        document.getElementById('event-slug').addEventListener('input', () => {
-            slugEditedManually = true;
-        });
-
-        // AUTOGENERAR SLUG A PARTIR DEL TÍTULO
-        document.getElementById('event-title').addEventListener('input', (e) => {
-            // Solo auto-generamos si NO lo han editado manualmente y si el campo está vacío
-            if (!slugEditedManually && (!this.editMode || !document.getElementById('event-slug').value)) {
-                let generatedSlug = e.target.value.toLowerCase()
-                    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") 
-                    .replace(/[^a-z0-9-]/g, '-') 
-                    .replace(/-+/g, '-') 
-                    .replace(/^-|-$/g, ''); 
-                document.getElementById('event-slug').value = generatedSlug;
-            }
-        });
-
-        document.getElementById('add-edition-btn').addEventListener('click', () => this.openEditionEditor(null));
-        document.getElementById('editions-list-container').addEventListener('click', e => {
-            const button = e.target.closest('button');
-            if (!button) return;
-            const editionItem = e.target.closest('.edition-item');
-            const editionId = editionItem.dataset.editionId;
-            const edition = this.currentEditions.find(ed => ed.id === editionId);
-
-            if (button.classList.contains('edit-edition-btn')) this.openEditionEditor(edition);
-            if (button.classList.contains('delete-edition-btn')) this.deleteEdition(editionId);
-        });
-        document.getElementById('save-event-btn').addEventListener('click', () => this.handleSave());
-    },
-    
-    // ... (El resto de funciones como addProgramItemFields, addSpeakerFields, etc. van aquí)
     addProgramItemFields(container, data = {}) {
-        const itemId = `program-${Date.now()}`;
-        const fieldset = document.createElement('fieldset');
-        fieldset.classList.add('item-fieldset');
-        const speakerNameInputs = document.querySelectorAll('#speakers-list-container .speaker-name');
-        const speakerNames = Array.from(speakerNameInputs).map(input => input.value).filter(name => name.trim() !== '');
-        let dynamicAuthorsOptions = '<option value="">Seleccionar ponente...</option>' + speakerNames.map(name => `<option value="${name}">${name}</option>`).join('');
+        const fieldset = document.createElement('div'); fieldset.className = 'item-fieldset';
+        const speakerNames = Array.from(document.querySelectorAll('.speaker-name')).map(i => i.value).filter(n => n.trim());
+        let opts = '<option value="">Seleccionar ponente...</option>' + speakerNames.map(n => `<option value="${n}">${n}</option>`).join('');
 
         fieldset.innerHTML = `
-            <legend>Item del Programa</legend>
             <button type="button" class="btn-remove-item">&times;</button>
-            <div class="form-group"><label for="date-${itemId}">Fecha</label><input type="date" class="program-item-date" value="${data.date || ''}"></div>
-            <div class="form-group-grid">
-                <div><label for="start-time-${itemId}">Hora Inicio</label><input type="time" class="program-item-start-time" value="${data.startTime || ''}"></div>
-                <div><label for="end-time-${itemId}">Hora Fin</label><input type="time" class="program-item-end-time" value="${data.endTime || ''}"></div>
+            <div class="form-group mb-2"><label>Fecha</label><input type="date" class="program-item-date" value="${data.date || ''}"></div>
+            <div class="form-group-grid mb-2">
+                <div><label>Hora Inicio</label><input type="time" class="program-item-start-time" value="${data.startTime || ''}"></div>
+                <div><label>Hora Fin</label><input type="time" class="program-item-end-time" value="${data.endTime || ''}"></div>
             </div>
-            <div class="form-group"><label for="title-${itemId}">Título</label><input type="text" class="program-item-title" value="${data.title || ''}"></div>
-            <div class="form-group"><label for="speaker-${itemId}">Ponente</label><select class="program-item-speaker">${dynamicAuthorsOptions}</select></div>
-            <div class="form-group"><label for="item-cover-url-${itemId}">URL Imagen</label><input type="url" class="program-item-cover-url" value="${data.itemCoverUrl || ''}"></div>
-            <div class="form-group"><label for="desc-${itemId}">Descripción</label><textarea class="program-item-description" rows="3">${data.description || ''}</textarea></div>
-            <div class="form-group-grid">
-                <div><label for="link-text-${itemId}">Texto Botón</label><input type="text" class="program-item-link-text" value="${data.linkText || ''}"></div>
-                <div><label for="link-url-${itemId}">Enlace Botón</label><input type="url" class="program-item-link-url" value="${data.linkUrl || ''}"></div>
-            </div>
+            <div class="form-group mb-2"><label>Título</label><input type="text" class="program-item-title" value="${data.title || ''}"></div>
+            <div class="form-group mb-2"><label>Ponente</label><select class="modern-select program-item-speaker">${opts}</select></div>
+            <div class="form-group"><label>Descripción Corta</label><textarea class="program-item-description" style="min-height:60px;">${data.description || ''}</textarea></div>
         `;
         if (data.speaker_name) fieldset.querySelector('.program-item-speaker').value = data.speaker_name;
         container.appendChild(fieldset);
@@ -279,45 +281,34 @@ export const EventEditorApp = {
     },
 
     addSpeakerFields(container, data = {}) {
-        const speakerId = `speaker-${Date.now()}`;
-        const fieldset = document.createElement('fieldset');
-        fieldset.classList.add('item-fieldset');
+        const fieldset = document.createElement('div'); fieldset.className = 'item-fieldset';
         fieldset.innerHTML = `
-            <legend>Ponente</legend>
             <button type="button" class="btn-remove-item">&times;</button>
-            <div class="form-group"><label for="name-${speakerId}">Nombre</label><input type="text" class="speaker-name" value="${data.name || ''}"></div>
-            <div class="form-group"><label for="avatar-${speakerId}">URL Foto</label><input type="text" class="speaker-avatar" value="${data.avatarUrl || ''}"></div>
-            <div class="form-group"><label for="bio-${speakerId}">Bio corta</label><textarea class="speaker-bio" rows="2">${data.bio || ''}</textarea></div>
-            <div class="form-group"><label for="email-${speakerId}">Email</label><input type="email" class="speaker-email" value="${data.email || ''}"></div>
+            <div class="form-group mb-2"><label>Nombre</label><input type="text" class="speaker-name" value="${data.name || ''}"></div>
+            <div class="form-group mb-2"><label>URL Foto (Avatar)</label><input type="text" class="speaker-avatar" value="${data.avatarUrl || ''}"></div>
+            <div class="form-group mb-2"><label>Bio corta</label><textarea class="speaker-bio" style="min-height:60px;">${data.bio || ''}</textarea></div>
             <label>Redes Sociales</label>
-            <div class="form-group-grid-3-col">
-                <input type="url" class="speaker-social1" value="${data.social1 || ''}"><input type="url" class="speaker-social2" value="${data.social2 || ''}"><input type="url" class="speaker-social3" value="${data.social3 || ''}">
+            <div class="form-group-grid-3-col mt-2">
+                <input type="text" class="speaker-social1" placeholder="Web/ORCID" value="${data.social1 || ''}">
+                <input type="text" class="speaker-social2" placeholder="LinkedIn" value="${data.social2 || ''}">
+                <input type="text" class="speaker-social3" placeholder="X/Twitter" value="${data.social3 || ''}">
             </div>
         `;
         container.appendChild(fieldset);
         fieldset.querySelector('.speaker-name').addEventListener('input', () => this.updateSpeakerOptionsInProgram());
-        fieldset.querySelector('.btn-remove-item').addEventListener('click', () => {
-            fieldset.remove();
-            this.updateSpeakerOptionsInProgram();
-        });
+        fieldset.querySelector('.btn-remove-item').addEventListener('click', () => { fieldset.remove(); this.updateSpeakerOptionsInProgram(); });
     },
 
     updateSpeakerOptionsInProgram() {
-        const speakerNameInputs = document.querySelectorAll('#speakers-list-container .speaker-name');
-        const speakerNames = Array.from(speakerNameInputs).map(input => input.value).filter(name => name.trim() !== '');
-        let authorsOptions = '<option value="">Seleccionar ponente...</option>' + speakerNames.map(name => `<option value="${name}">${name}</option>`).join('');
-        const speakerSelects = document.querySelectorAll('.program-item-speaker');
-        speakerSelects.forEach(select => {
-            const currentValue = select.value;
-            select.innerHTML = authorsOptions;
-            select.value = currentValue;
-        });
+        const speakerNames = Array.from(document.querySelectorAll('.speaker-name')).map(i => i.value).filter(n => n.trim());
+        let opts = '<option value="">Seleccionar ponente...</option>' + speakerNames.map(n => `<option value="${n}">${n}</option>`).join('');
+        document.querySelectorAll('.program-item-speaker').forEach(s => { const val = s.value; s.innerHTML = opts; s.value = val; });
     },
-    
+
     async deleteEdition(editionId) {
         if (!confirm("¿Estás seguro de que quieres borrar esta edición?")) return;
         const { error } = await this.supabase.from('event_editions').delete().eq('id', editionId);
-        if (error) { alert("Error al borrar la edición."); } else {
+        if (!error) {
             this.currentEditions = this.currentEditions.filter(ed => ed.id !== editionId);
             this.renderEditionsList();
             document.getElementById('edition-editor-container').style.display = 'none';
@@ -326,27 +317,32 @@ export const EventEditorApp = {
 
     async handleSave() {
         const saveButton = document.getElementById('save-event-btn');
+        const originalText = saveButton.innerHTML;
         saveButton.disabled = true;
-        saveButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+        saveButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Publicando...';
 
         tinymce.triggerSave();
 
-        // --- LÓGICA DEL SLUG: Limpiar antes de guardar ---
+        // --- LÓGICA DEL SLUG (Respetuosa) ---
         let slugInput = document.getElementById('event-slug').value.trim();
-        if (!slugInput) slugInput = document.getElementById('event-title').value.trim();
         
+        // Solo toma el título si el usuario dejó el slug completamente en blanco
+        if (!slugInput) {
+            slugInput = document.getElementById('event-title').value.trim();
+        }
+        
+        // Limpiamos caracteres raros, tildes y espacios, pero respetamos sus palabras
         slugInput = slugInput.toLowerCase()
-            .normalize("NFD").replace(/[\u0300-\u036f]/g, "") 
-            .replace(/[^a-z0-9-]/g, '-') 
-            .replace(/-+/g, '-') 
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9-]/g, '-')
+            .replace(/-+/g, '-')
             .replace(/^-|-$/g, '');
             
-        document.getElementById('event-slug').value = slugInput; // Actualizar UI por si acaso
+        document.getElementById('event-slug').value = slugInput;
 
-        // Objeto a guardar
         const eventUpdates = {
             title: document.getElementById('event-title').value,
-            slug: slugInput, // <-- ENVIAMOS EL SLUG A SUPABASE
+            slug: slugInput, // <-- Aquí se asegura de mandar TU slug elegido a Supabase
             cover_url: document.getElementById('event-cover-url').value,
             registration_url: document.getElementById('event-registration-url').value,
             is_public: document.getElementById('event-is-public').checked,
@@ -359,25 +355,19 @@ export const EventEditorApp = {
             user_id: this.user.id
         };
 
-        const { data: savedEvent, error: eventError } = await this.supabase
-            .from('events')
-            .upsert(this.editMode ? { id: this.currentEvent.id, ...eventUpdates } : eventUpdates)
-            .select().single();
+        const { data: savedEvent, error: eventError } = await this.supabase.from('events').upsert(this.editMode ? { id: this.currentEvent.id, ...eventUpdates } : eventUpdates).select().single();
 
         if (eventError) {
-            console.error("Error saving event:", eventError);
-            alert("Error al guardar el evento principal.");
-            saveButton.disabled = false;
-            saveButton.innerHTML = '<i class="fa-solid fa-save"></i> Guardar Cambios';
-            return;
+            alert("Error al guardar el evento.");
+            saveButton.disabled = false; saveButton.innerHTML = originalText; return;
         }
+        
         this.currentEvent = savedEvent;
         this.editMode = true;
         sessionStorage.setItem('activeEvent', JSON.stringify(savedEvent));
 
+        // Guardar Edición activa si el panel está abierto
         const editionEditor = document.getElementById('edition-editor-container');
-        let editionError = null; 
-
         if (editionEditor.style.display === 'block' && this.activeEditionId) {
             const program = Array.from(document.querySelectorAll('#program-items-container .item-fieldset')).map(el => ({
                 date: el.querySelector('.program-item-date').value || null,
@@ -385,64 +375,29 @@ export const EventEditorApp = {
                 endTime: el.querySelector('.program-item-end-time').value,
                 title: el.querySelector('.program-item-title').value,
                 speaker_name: el.querySelector('.program-item-speaker').value,
-                itemCoverUrl: el.querySelector('.program-item-cover-url').value,
-                description: el.querySelector('.program-item-description').value,
-                linkText: el.querySelector('.program-item-link-text').value,
-                linkUrl: el.querySelector('.program-item-link-url').value,
+                description: el.querySelector('.program-item-description').value
             }));
             const speakers = Array.from(document.querySelectorAll('#speakers-list-container .item-fieldset')).map(el => ({
-                name: el.querySelector('.speaker-name').value,
-                avatarUrl: el.querySelector('.speaker-avatar').value,
-                bio: el.querySelector('.speaker-bio').value,
-                email: el.querySelector('.speaker-email').value,
-                social1: el.querySelector('.speaker-social1').value,
-                social2: el.querySelector('.speaker-social2').value,
-                social3: el.querySelector('.speaker-social3').value,
+                name: el.querySelector('.speaker-name').value, avatarUrl: el.querySelector('.speaker-avatar').value,
+                bio: el.querySelector('.speaker-bio').value, social1: el.querySelector('.speaker-social1').value,
+                social2: el.querySelector('.speaker-social2').value, social3: el.querySelector('.speaker-social3').value
             }));
-            const selectedSessions = Array.from(document.querySelectorAll('input[name="associated_session"]:checked'))
-                                        .map(checkbox => Number(checkbox.value));
+            const selectedSessions = Array.from(document.querySelectorAll('input[name="associated_session"]:checked')).map(cb => Number(cb.value));
             
-            // --- CAMBIO CLAVE: Leemos los valores de los nuevos campos del contador ---
-            const countdownEnabled = document.getElementById('edition-countdown-enabled').checked;
-            const countdownTime = document.getElementById('edition-countdown-time').value || null; // Guardamos null si está vacío
-
             const editionDataToSave = {
-                event_id: this.currentEvent.id,
-                edition_name: document.getElementById('edition-name').value,
-                start_date: document.getElementById('edition-start-date').value || null,
-                end_date: document.getElementById('edition-end-date').value || null,
-                location: document.getElementById('edition-location').value,
-                program: program,
-                speakers: speakers,
-                selected_sessions: selectedSessions,
-                countdown_enabled: countdownEnabled, // Añadimos el valor a los datos
-                countdown_time: countdownTime       // Añadimos el valor a los datos
+                event_id: this.currentEvent.id, edition_name: document.getElementById('edition-name').value,
+                start_date: document.getElementById('edition-start-date').value || null, end_date: document.getElementById('edition-end-date').value || null,
+                location: document.getElementById('edition-location').value, program: program, speakers: speakers, selected_sessions: selectedSessions,
+                countdown_enabled: document.getElementById('edition-countdown-enabled').checked, countdown_time: document.getElementById('edition-countdown-time').value || null
             };
-
-            if (this.activeEditionId !== 'new') {
-                editionDataToSave.id = this.activeEditionId;
-            }
-
-            const { error } = await this.supabase
-                .from('event_editions')
-                .upsert([editionDataToSave]); 
-            
-            editionError = error; 
+            if (this.activeEditionId !== 'new') editionDataToSave.id = this.activeEditionId;
+            await this.supabase.from('event_editions').upsert([editionDataToSave]); 
         }
         
-        if (editionError) {
-            console.error("Error saving edition:", editionError);
-            alert("Se guardó el evento principal, pero hubo un error al guardar la edición.");
-        } else {
-            alert("¡Guardado con éxito!");
-        }
-
-        saveButton.disabled = false;
-        saveButton.innerHTML = '<i class="fa-solid fa-save"></i> Guardar Cambios';
-        
+        alert("¡Evento guardado y actualizado con éxito!");
+        saveButton.disabled = false; saveButton.innerHTML = originalText;
         await this.loadEventData();
-        if (editionEditor) editionEditor.style.display = 'none';
-    },
+    }
 };
 
 document.addEventListener('DOMContentLoaded', () => EventEditorApp.init());
