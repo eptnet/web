@@ -12,88 +12,116 @@
     <meta property="og:url" id="og-url" content="">
     <meta name="twitter:card" content="summary_large_image">
 
+    <link href="https://fonts.googleapis.com" rel="preconnect">
+    <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
+    
     <link rel="stylesheet" href="/css/evento.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
-<body>
-    <nav class="event-nav">
+<body class="palette-dark">
+
+    <nav class="site-nav" id="site-nav">
         <div class="nav-content">
-            <span id="nav-event-title" class="nav-event-title"></span>
-            <button id="mobile-menu-btn" class="mobile-menu-btn">
-                <i class="fa-solid fa-bars"></i>
-            </button>
-            <ul id="nav-link-list">
-                <li><a href="#about-section">Sobre el Evento</a></li>
-                <li><a href="#speakers-section">Ponentes</a></li>
-                <li><a href="#program-section">Programa</a></li>
-                <li><a href="#call-for-papers-section">Call for Papers</a></li>
-            </ul>
+            <span id="nav-event-title" class="nav-project-title">Cargando...</span>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <ul id="nav-link-list">
+                    <li><a href="#about-section">Sobre el Evento</a></li>
+                    <li><a href="#speakers-section">Ponentes</a></li>
+                    <li><a href="#program-section">Programa</a></li>
+                </ul>
+                <button id="mobile-menu-btn" class="mobile-menu-btn"><i class="fa-solid fa-bars"></i></button>
+            </div>
         </div>
     </nav>
 
-    <header id="cover-section" class="event-cover">
-        <div class="cover-content">
-            <h1 id="event-title-cover"></h1>
-            <p id="event-project-doi"></p>
-            <div id="countdown-timer"></div>
-            <a href="#" id="main-registration-btn" class="main-registration-btn" style="display: none;">Registrarse en el Evento</a>
+    <header id="cover-section" class="cover-cinematic">
+        <div class="cover-overlay"></div>
+        <div class="cover-content scroll-animate">
+            <div class="hero-badge"><span class="badge" id="event-badge">✨ Evento Especial</span></div>
+            <h1 id="event-title-cover">Cargando...</h1>
+            <p id="event-project-doi" class="lead-text"></p>
+            
+            <div id="edition-selector-container" style="display: none; margin-bottom: 2.5rem;">
+                <select id="edition-selector" class="edition-dropdown"></select>
+            </div>
+            
+            <div id="countdown-timer" class="countdown-bento"></div>
+            
+            <div class="hero-buttons mt-4">
+                <a href="#" id="main-registration-btn" class="btn btn-primary" style="display: none;"><i class="fa-solid fa-ticket"></i> Inscribirse ahora</a>
+                <a href="#bento-main-grid" class="btn btn-secondary">Explorar Evento <i class="fa-solid fa-arrow-down"></i></a>
+            </div>
         </div>
     </header>
 
-    <main class="event-container">
-        <section id="about-section" class="event-section scroll-animate"></section>
-        <section id="speakers-section" class="event-section scroll-animate"></section>
+    <main class="container">
+        <div id="bento-main-grid" class="bento-grid">
+            
+            <div id="about-section" class="bento-box span-8 scroll-animate" style="display: none;"></div>
 
-        <section id="program-section" class="event-section program-section scroll-animate">
-            <h2>Programa</h2>
-            <div id="program-day-tabs" class="program-day-tabs">
-                </div>
-            <div id="program-content" class="program-content">
-                </div>
-        </section>
+            <div id="call-for-papers-section" class="bento-box span-4 scroll-animate" style="display: none;"></div>
 
-        <section id="call-for-papers-section" class="event-section scroll-animate"></section>
-        <section id="past-editions-section" class="event-section scroll-animate"></section>
+            <div id="speakers-section" class="bento-box span-12 scroll-animate" style="display: none;"></div>
+
+            <div id="program-section" class="bento-box span-12 scroll-animate" style="display: none;">
+                <div class="bento-header">
+                    <i class="fa-solid fa-list-check text-accent"></i>
+                    <h2>Programa Oficial</h2>
+                </div>
+                <div id="program-day-tabs" class="program-day-tabs"></div>
+                <div id="program-content" class="program-content"></div>
+            </div>
+
+            <div id="liveroom-sessions-section" class="bento-box span-12 scroll-animate" style="display: none;"></div>
+
+        </div>
     </main>
     
-    <div id="program-modal" class="program-modal">
-        <div class="program-modal-content">
-            <span class="close-button">&times;</span>
-            <img id="modal-item-cover" class="modal-item-cover" src="" alt="Portada de la Ponencia">
-            <h3 id="modal-item-title"></h3>
-            <p id="modal-item-time"></p>
-            <div class="modal-time-actions">
-                <p id="modal-item-time"></p>
-                <div id="modal-calendar-container"></div>
-            </div>
-            <div id="modal-item-speaker" class="modal-item-speaker">
-                <img id="modal-speaker-avatar" src="" alt="Avatar del Ponente">
-                <div class="modal-speaker-info">
-                    <span id="modal-speaker-name"></span>
-                    <span id="modal-speaker-bio"></span>
-                </div>
-            </div>
-            <p id="modal-item-description"></p>
-            <a id="modal-item-link" href="#" target="_blank" class="program-item-btn" style="display:none;"></a>
-        </div>
-    </div>
-    <div id="speaker-modal-overlay" class="modal-overlay">
-        <div class="modal-content">
+    <footer class="footer">
+        <p>Un evento impulsado por <strong>Epistecnología</strong></p>
+    </footer>
+
+    <div id="program-modal" class="modal-overlay">
+        <div class="modal-content program-modal-content">
             <button class="modal-close-btn">&times;</button>
-            <div id="modal-speaker-content">
+            <img id="modal-item-cover" class="modal-item-cover" src="" alt="Portada">
+            <div style="padding: 2rem;">
+                <h3 id="modal-item-title" class="modal-title-main"></h3>
+                <p id="modal-item-time" class="modal-time-badge"></p>
+                
+                <div class="modal-time-actions">
+                    <div id="modal-calendar-container"></div>
                 </div>
-        </div>
-    </div>
-    <div id="thank-you-modal" class="modal-overlay">
-        <div class="modal-content">
-            <button id="thank-you-modal-close-btn" class="modal-close-btn">&times;</button>
-            <div id="thank-you-modal-content">
+
+                <div id="modal-item-speaker" class="modal-item-speaker hidden">
+                    <img id="modal-speaker-avatar" src="" alt="Avatar">
+                    <div class="modal-speaker-info">
+                        <span id="modal-speaker-name"></span>
+                        <span id="modal-speaker-bio"></span>
+                    </div>
                 </div>
+
+                <div id="modal-item-description" class="prose mt-3"></div>
+                <a id="modal-item-link" href="#" target="_blank" class="btn btn-primary w-100 mt-3" style="display:none;"></a>
+            </div>
         </div>
     </div>
 
-    <footer class="event-footer"><p>Un evento impulsado por Epistecnología</p></footer>
+    <div id="speaker-modal-overlay" class="modal-overlay">
+        <div class="modal-content profile-modal">
+            <button class="modal-close-btn">&times;</button>
+            <div id="modal-speaker-content"></div>
+        </div>
+    </div>
+
+    <div id="thank-you-modal" class="modal-overlay">
+        <div class="modal-content profile-modal">
+            <button id="thank-you-modal-close-btn" class="modal-close-btn">&times;</button>
+            <div id="thank-you-modal-content" class="prose"></div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/js/evento.js"></script>
