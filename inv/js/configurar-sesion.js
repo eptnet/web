@@ -1,8 +1,12 @@
+// ARCHIVO: /inv/js/configurar-sesion.js
+// Actualizado con Integración API YouTube Dinámica y Soporte Twitch
+
 const SessionConfigApp = {
     supabase: null,
     user: null,
     userProfile: null,
     currentProject: null,
+    currentSession: null, // <-- NUEVO: Guarda la sesión actual para no duplicar eventos en YouTube
     IMGBB_API_KEY: "89d606fc7588367140913f93a4c89785", 
     addedParticipants: [],
     isEditMode: false,
@@ -64,145 +68,69 @@ const SessionConfigApp = {
             if (this.editSessionId) window.location.href = `/inv/sala-de-control.html?id=${this.editSessionId}`;
         });
 
-        // Nuevos botones de Inteligencia Artificial
         document.getElementById('btn-generate-ai')?.addEventListener('click', () => this.generateTextAI());
         document.getElementById('btn-generate-img-ai')?.addEventListener('click', () => this.generateImageAI());
     
-        // Botones de la Galería IA
         document.getElementById('btn-discard-img')?.addEventListener('click', () => {
             document.getElementById('ai-gallery').classList.add('hidden');
             document.getElementById('ai-gallery-img').src = '';
         });
         document.getElementById('btn-use-img')?.addEventListener('click', (e) => this.uploadGalleryImage(e));
 
-        // Botones de Copiar Enlaces
         document.querySelectorAll('.btn-copy').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const targetId = e.currentTarget.dataset.target;
                 const input = document.getElementById(targetId);
                 input.select();
                 document.execCommand('copy');
-                // Efecto visual de copiado
                 const originalIcon = e.currentTarget.innerHTML;
                 e.currentTarget.innerHTML = '<i class="fa-solid fa-check" style="color:#10b981;"></i>';
                 setTimeout(() => e.currentTarget.innerHTML = originalIcon, 2000);
             });
         });
 
-        // Botón: Descargar Setup de OBS
         const btnObs = document.getElementById('btn-download-obs');
         if (btnObs) {
             btnObs.addEventListener('click', (e) => this.generateOBSCollection(e.currentTarget));
         }
 
         document.getElementById('broadcast-mode')?.addEventListener('change', (e) => this.handleBroadcastModeChange(e.target.value));
-
     },
 
     generateOBSCollection(btn) {
         const viewerUrl = btn.dataset.viewerUrl;
         const sessionTitle = btn.dataset.sessionTitle || "Evento_Epistecnologia";
         
-        if (!viewerUrl) {
-            alert("El enlace de espectador aún no está listo. Guarda la sesión primero.");
-            return;
-        }
+        if (!viewerUrl) { alert("El enlace aún no está listo. Guarda la sesión primero."); return; }
 
-        // Limpiamos el título para que sea un nombre de archivo válido
         const safeTitle = sessionTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
-        // Estructura JSON estándar de una "Colección de Escenas" de OBS Studio
         const obsJson = {
             "current_scene": "EPT Live - Escena Principal",
             "current_program_scene": "EPT Live - Escena Principal",
             "name": `EPT_${safeTitle}`,
-            "scene_order": [
-                { "name": "EPT Live - Escena Principal" }
-            ],
+            "scene_order": [{ "name": "EPT Live - Escena Principal" }],
             "sources": [
                 {
-                    "balance": 0.5,
-                    "deinterlace_field_order": 0,
-                    "deinterlace_mode": 0,
-                    "enabled": true,
-                    "flags": 0,
-                    "hotkeys": {},
                     "id": "scene",
-                    "mixers": 0,
-                    "monitoring_type": 0,
-                    "muted": false,
                     "name": "EPT Live - Escena Principal",
-                    "prev_ver": 436207616,
-                    "private_settings": {},
-                    "push-to-mute": false,
-                    "push-to-mute-delay": 0,
-                    "push-to-talk": false,
-                    "push-to-talk-delay": 0,
                     "settings": {
                         "custom_size": false,
                         "id_counter": 1,
-                        "items": [
-                            {
-                                "align": 5,
-                                "bounds": { "x": 0.0, "y": 0.0 },
-                                "bounds_align": 0,
-                                "bounds_type": 0,
-                                "crop_bottom": 0,
-                                "crop_left": 0,
-                                "crop_right": 0,
-                                "crop_top": 0,
-                                "group_item_backup": false,
-                                "id": 1,
-                                "locked": false,
-                                "name": "Cámara EPT Live (Navegador)",
-                                "pos": { "x": 0.0, "y": 0.0 },
-                                "private_settings": {},
-                                "rot": 0.0,
-                                "scale": { "x": 1.0, "y": 1.0 },
-                                "scale_filter": "disable",
-                                "visible": true
-                            }
-                        ]
-                    },
-                    "sync": 0,
-                    "versioned_id": "scene",
-                    "volume": 1.0
+                        "items": [{ "id": 1, "name": "Cámara EPT Live (Navegador)", "visible": true }]
+                    }
                 },
                 {
-                    "balance": 0.5,
-                    "deinterlace_field_order": 0,
-                    "deinterlace_mode": 0,
-                    "enabled": true,
-                    "flags": 0,
-                    "hotkeys": {},
                     "id": "browser_source",
-                    "mixers": 255,
-                    "monitoring_type": 0,
-                    "muted": false,
                     "name": "Cámara EPT Live (Navegador)",
-                    "prev_ver": 436207616,
-                    "private_settings": {},
-                    "push-to-mute": false,
-                    "push-to-mute-delay": 0,
-                    "push-to-talk": false,
-                    "push-to-talk-delay": 0,
                     "settings": {
-                        "fps": 30,
-                        "height": 1080,
-                        "reroute_audio": true,
-                        "url": viewerUrl,
-                        "width": 1920
-                    },
-                    "sync": 0,
-                    "versioned_id": "browser_source",
-                    "volume": 1.0
+                        "fps": 30, "height": 1080, "width": 1920,
+                        "reroute_audio": true, "url": viewerUrl
+                    }
                 }
-            ],
-            "transition_duration": 300,
-            "transitions": []
+            ]
         };
 
-        // Creamos el archivo y forzamos la descarga
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(obsJson, null, 2));
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href", dataStr);
@@ -253,7 +181,6 @@ const SessionConfigApp = {
                 badge.innerHTML = `<i class="fa-brands ${icons[platform] || 'fa-video'}"></i> ${platform.toUpperCase()}`;
                 badge.style.background = '#334155';
             }
-            // Disparar la lógica del sub-menú (Oficial vs Propio)
             this.handleBroadcastModeChange(document.getElementById('broadcast-mode').value);
         }
     },
@@ -268,75 +195,47 @@ const SessionConfigApp = {
         } else {
             if (idContainer) idContainer.classList.add('hidden');
             if (officialHint) officialHint.classList.remove('hidden');
-            // Limpiamos el ID por si había escrito algo
             const idInput = document.getElementById('platform-id');
             if (idInput) idInput.value = '';
         }
     },
 
-    // ==========================================
-    // ALGORITMO DE PISCINA DE CLAVES (100% BLINDADO)
-    // ==========================================
+    // ALGORITMO ORIGINAL DE PISCINA (Se conserva para Twitch y Substack)
     async assignStreamKey(platform, scheduledAt, endAt) {
-        // 1. Obtener todas las claves activas para esta plataforma
         const { data: keys, error: keysError } = await this.supabase
-            .from('stream_keys_pool')
-            .select('*')
-            .eq('platform', platform)
-            .eq('is_active', true);
+            .from('stream_keys_pool').select('*').eq('platform', platform).eq('is_active', true);
 
         if (keysError || !keys || keys.length === 0) {
             throw new Error(`No hay claves configuradas en la piscina para ${platform.toUpperCase()}. Contacta a soporte.`);
         }
 
-        // 2. Calcular ventana de tiempo (Asumimos 3 horas por defecto)
         const start = new Date(scheduledAt);
         const end = endAt ? new Date(endAt) : new Date(start.getTime() + 3 * 60 * 60 * 1000);
-
-        // 3. Buscar TODAS las sesiones agendadas para ese mismo día
         const startOfDay = new Date(start); startOfDay.setHours(0,0,0,0);
         const endOfDay = new Date(start); endOfDay.setHours(23,59,59,999);
 
-        // CONSULTA ULTRA-SEGURA: Solo buscamos por fecha, SIN el código de los ceros
         const { data: overlappingSessions, error: sessionsError } = await this.supabase
-            .from('sessions')
-            .select('id, stream_key, scheduled_at, end_at')
-            .gte('scheduled_at', startOfDay.toISOString())
-            .lte('scheduled_at', endOfDay.toISOString());
+            .from('sessions').select('id, stream_key, scheduled_at, end_at')
+            .gte('scheduled_at', startOfDay.toISOString()).lte('scheduled_at', endOfDay.toISOString());
 
-        if (sessionsError) {
-            console.error("Error en BD consultando horarios:", sessionsError);
-            throw new Error("Error al consultar disponibilidad de horarios en la base de datos.");
-        }
+        if (sessionsError) throw new Error("Error al consultar disponibilidad de horarios.");
 
-        // 4. Filtrar en Javascript (Evita errores de tipos de datos SQL)
         const usedKeys = overlappingSessions.filter(s => {
-            // Ignorar la sesión actual si estamos en modo edición
             if (this.editSessionId && String(s.id) === String(this.editSessionId)) return false;
-            
-            // Ignorar sesiones que no tengan una clave de la piscina asignada
             if (!s.stream_key) return false;
-
             const sStart = new Date(s.scheduled_at);
             const sEnd = s.end_at ? new Date(s.end_at) : new Date(sStart.getTime() + 3 * 60 * 60 * 1000);
-            
-            // Lógica de colisión de tiempo
             return (start < sEnd && end > sStart);
         }).map(s => s.stream_key);
 
-        // 5. Buscar la primera clave de la piscina que NO esté en la lista de las usadas
         const availableKey = keys.find(k => !usedKeys.includes(k.stream_key));
 
         if (!availableKey) {
-            throw new Error(`Nuestros canales oficiales de ${platform.toUpperCase()} están a máxima capacidad en ese horario. Por favor, elige otra hora o transmite usando tu propio canal.`);
+            throw new Error(`Nuestros canales oficiales de ${platform.toUpperCase()} están llenos en ese horario. Por favor elige otra hora.`);
         }
-
         return availableKey.stream_key;
     },
 
-    // ==========================================
-    // MAGIA IA: GENERACIÓN DE TEXTO (Google API)
-    // ==========================================
     async generateTextAI() {
         const promptInput = document.getElementById('ai-prompt-input').value.trim();
         if (!promptInput) { alert("Cuéntale a la IA de qué deseas hablar primero."); return; }
@@ -347,9 +246,7 @@ const SessionConfigApp = {
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Pensando...';
         btn.disabled = true;
 
-        // Construimos el Prompt Divulgativo Maestro
         const doiLink = this.currentProject.doi ? `https://doi.org/${this.currentProject.doi}` : `https://epistecnologia.com/@${this.userProfile.username}`;
-        
         const systemPrompt = `Eres un experto en divulgación científica y cultural digital. 
         Tengo un proyecto titulado: "${this.currentProject.title}".
         El investigador quiere hacer una sesión en vivo sobre esto: "${promptInput}".
@@ -357,54 +254,39 @@ const SessionConfigApp = {
         Devuelve ÚNICAMENTE el siguiente formato exacto, sin saludos ni explicaciones extra:
         
         TÍTULO: [Un título muy atractivo y corto, máximo 8 palabras. Incluye 1 emoji al medio].
-        DESCRIPCIÓN: [Gancho impactante de máximo 250 caracteres que despierte curiosidad, usa 1 o 2 emojis relevantes].\n\n[Desarrollo de la idea principal explicada de forma sencilla, empática y humana].\n\n📖 Lee el artículo completo aquí: ${doiLink}\n\n#Epistecnología #RevistEpistecnología #DivulgaciónCientífica #DivulgaciónCultural #[Agrega 4 hashtags relevantes más]`;
+        DESCRIPCIÓN: [Gancho impactante de máximo 250 caracteres que despierte curiosidad, usa 1 o 2 emojis relevantes].\n\n[Desarrollo de la idea principal explicada de forma sencilla, empática y humana].\n\n📖 Lee el artículo completo aquí: ${doiLink}\n\n#Epistecnología #RevistEpistecnología #DivulgaciónCientífica`;
 
         try {
-            // CORRECCIÓN: Separamos el contexto en textContent y las reglas en customPrompt
             const { data, error } = await this.supabase.functions.invoke('generate-text', { 
-                body: { 
-                    textContent: `Proyecto base: ${this.currentProject.title}`, 
-                    promptType: 'generate_from_instructions', 
-                    customPrompt: systemPrompt 
-                } 
+                body: { textContent: `Proyecto base: ${this.currentProject.title}`, promptType: 'generate_from_instructions', customPrompt: systemPrompt } 
             });
-            
             if (error) throw error;
 
             const responseText = data.result;
-            
-            // Extraer Título y Descripción con Regex
             const titleMatch = responseText.match(/TÍTULO:\s*(.+)/i);
             const descMatch = responseText.match(/DESCRIPCIÓN:\s*([\s\S]+)/i);
 
             if (titleMatch && titleMatch[1]) {
                 const titleInput = document.getElementById('session-title');
-                titleInput.value = titleMatch[1].trim().replace(/["*]/g, ''); // Limpiar comillas o asteriscos
-                titleInput.dispatchEvent(new Event('input')); // Forzar actualización visual
+                titleInput.value = titleMatch[1].trim().replace(/["*]/g, '');
+                titleInput.dispatchEvent(new Event('input')); 
             }
             if (descMatch && descMatch[1]) {
                 const descInput = document.getElementById('session-description');
                 descInput.value = descMatch[1].trim();
                 descInput.dispatchEvent(new Event('input'));
             }
-
         } catch (error) {
             console.error("Error en IA de texto:", error);
             alert("Hubo un error al generar el texto. Intenta de nuevo.");
-        } finally {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        }
+        } finally { btn.innerHTML = originalText; btn.disabled = false; }
     },
 
-    // ==========================================
-    // MAGIA IA: GENERACIÓN DE IMAGEN (Flux 1.0)
-    // ==========================================
     async generateImageAI() {
         const title = document.getElementById('session-title').value.trim();
         const promptInput = document.getElementById('ai-prompt-input').value.trim();
         const style = document.getElementById('ai-image-style').value;
-        const thumbText = document.getElementById('thumbnail-text').value.trim(); // <-- NUEVO CAMPO
+        const thumbText = document.getElementById('thumbnail-text').value.trim(); 
         
         if (!title && !promptInput) { alert("Genera primero el título o escribe de qué tratará la sesión."); return; }
 
@@ -414,17 +296,14 @@ const SessionConfigApp = {
         btn.disabled = true;
 
         try {
-            // Transformar el estilo comic al prompt correcto si fue seleccionado
             const stylePrompt = style === 'comic' ? 'Cartoon & Comic Style, 2D animation' : style;
             const imgPrompt = `Concept art for: ${title}. ${promptInput}. Style: ${stylePrompt}. Action in the center of image. No text, no watermarks.`;
 
             const { data: imgData, error: imgError } = await this.supabase.functions.invoke('generate-image', { 
                 body: { prompt: imgPrompt, style: style, ratio: '16:9' } 
             });
-            
             if (imgError) throw imgError;
 
-            // Procesar con HTML Canvas para añadir texto
             const finalBase64 = await new Promise((resolve, reject) => {
                 const img = new Image();
                 img.crossOrigin = "anonymous";
@@ -432,12 +311,9 @@ const SessionConfigApp = {
                     const canvas = document.createElement('canvas');
                     canvas.width = 1280; canvas.height = 720;
                     const ctx = canvas.getContext('2d');
-                    
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                     
-                    // Solo dibujamos la viñeta y las letras SI el usuario escribió algo
                     if (thumbText) {
-                        // Viñeta oscura a la izquierda para que resalten las letras
                         const gradient = ctx.createLinearGradient(0, 0, canvas.width * 0.7, 0);
                         gradient.addColorStop(0, "rgba(0, 0, 0, 0.85)");
                         gradient.addColorStop(1, "transparent");
@@ -446,41 +322,32 @@ const SessionConfigApp = {
 
                         ctx.font = "bold 85px 'Arial Black', Impact, sans-serif";
                         ctx.fillStyle = "#ffffff";
-                        ctx.textAlign = "left"; // Alineación izquierda
+                        ctx.textAlign = "left"; 
                         ctx.textBaseline = "middle";
                         ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
                         ctx.shadowBlur = 15; ctx.shadowOffsetX = 4; ctx.shadowOffsetY = 4;
 
-                        // Lógica History Channel: 1ra línea (primera palabra), 2da línea (el resto)
                         const words = thumbText.split(' ');
                         let lines = [];
-                        
                         if (words.length > 1) {
                             lines.push(words[0].toUpperCase());
                             lines.push(words.slice(1).join(' ').toUpperCase());
-                        } else {
-                            lines.push(words[0].toUpperCase());
-                        }
+                        } else { lines.push(words[0].toUpperCase()); }
 
-                        // Posicionamiento a la izquierda
                         let startY = canvas.height - (lines.length * 95) - 40;
-                        const startX = 60; // Margen izquierdo
+                        const startX = 60; 
 
                         for(let i = 0; i < lines.length; i++) {
-                            // Cambiamos el color de la primera línea para más impacto visual (Opcional, estilo History)
-                            ctx.fillStyle = i === 0 ? "#facc15" : "#ffffff"; // Amarillo en la 1ra, Blanco en la 2da
-                            
+                            ctx.fillStyle = i === 0 ? "#facc15" : "#ffffff"; 
                             ctx.lineWidth = 6; ctx.strokeStyle = '#000000';
                             ctx.strokeText(lines[i], startX, startY + (i * 95));
                             ctx.fillText(lines[i], startX, startY + (i * 95));
                         }
                     }
 
-                    // Siempre dibujamos el badge de EPT Live en la esquina superior derecha
                     ctx.font = "bold 24px Arial"; ctx.fillStyle = "#ffffff8f"; ctx.shadowBlur = 4;
                     ctx.textAlign = "right";
                     ctx.fillText("✨EPT Live", canvas.width - 40, 40);
-                    
                     resolve(canvas.toDataURL('image/jpeg', 0.85));
                 };
                 img.onerror = () => reject(new Error("Error en Canvas."));
@@ -493,10 +360,7 @@ const SessionConfigApp = {
         } catch (error) {
             console.error(error);
             alert("No se pudo generar la imagen. Intenta de nuevo.");
-        } finally {
-            btn.innerHTML = originalBtnHTML;
-            btn.disabled = false;
-        }
+        } finally { btn.innerHTML = originalBtnHTML; btn.disabled = false; }
     },
 
     async uploadGalleryImage(e) {
@@ -516,15 +380,12 @@ const SessionConfigApp = {
             
             const thumbnailInput = document.getElementById('session-thumbnail');
             thumbnailInput.value = uploadedData.data.url;
-            thumbnailInput.dispatchEvent(new Event('input')); // Forzar actualización de vista previa
+            thumbnailInput.dispatchEvent(new Event('input')); 
 
-            document.getElementById('ai-gallery').classList.add('hidden'); // Ocultar galería tras éxito
+            document.getElementById('ai-gallery').classList.add('hidden'); 
         } catch(err) {
             alert("Error subiendo la imagen.");
-        } finally {
-            btn.innerHTML = originalHTML;
-            btn.disabled = false;
-        }
+        } finally { btn.innerHTML = originalHTML; btn.disabled = false; }
     },
 
     async loadSessionForEdit() {
@@ -533,43 +394,38 @@ const SessionConfigApp = {
         const { data: session, error } = await this.supabase.from('sessions').select('*').eq('id', this.editSessionId).single();
         if (error || !session) return alert('No se pudo cargar la sesión.');
 
+        this.currentSession = session; // Guardamos en memoria para uso futuro
+
         if (!this.currentProject) {
             this.currentProject = { title: session.project_title, doi: session.project_doi };
             document.getElementById('active-project-name').innerHTML = `<i class="fa-solid fa-folder-open"></i> ${this.currentProject.title}`;
         }
 
-        // Marcar la plataforma correctamente de forma segura
         const platformRadio = document.querySelector(`input[name="platform"][value="${session.platform}"]`);
         if (platformRadio) {
             platformRadio.checked = true;
             this.handlePlatformChange(session.platform);
-            // --- INICIO CORRECCIÓN ---
-        if (session.platform !== 'vdo_ninja') {
-            const modeSelect = document.getElementById('broadcast-mode');
-            if (modeSelect) {
-                // Inferimos que si hay un platform_id guardado, eligió su propio canal. Si no, usó el oficial.
-                modeSelect.value = session.platform_id ? 'own' : 'official';
-                this.handleBroadcastModeChange(modeSelect.value);
+            
+            if (session.platform !== 'vdo_ninja') {
+                const modeSelect = document.getElementById('broadcast-mode');
+                if (modeSelect) {
+                    // Si el platform_id no es una URL rara de Supabase, significa que lo editó o lo conectó manual
+                    // Inferimos si es suyo (texto corto como dQw4w9) o si lo pusimos nosotros.
+                    // Para mantenerlo simple: si platform_id existe, es "own" o ya está configurado.
+                    modeSelect.value = session.platform_id ? 'own' : 'official';
+                    this.handleBroadcastModeChange(modeSelect.value);
+                }
             }
         }
-        // --- FIN CORRECCIÓN ---
-        }
         
-        // 🛠️ FUNCIÓN BLINDADA: Si un campo no existe en el HTML, lo ignora y no rompe la página
-        const setVal = (id, val) => {
-            const el = document.getElementById(id);
-            if (el) el.value = val || '';
-        };
-
-        // 🛠️ FUNCIÓN DE ZONA HORARIA: Convierte el UTC de Supabase a tu hora local (Ej. Perú)
+        const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
         const toLocalDatetime = (isoString) => {
             if (!isoString) return '';
             const d = new Date(isoString);
             d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-            return d.toISOString().slice(0, 16); // Formato exacto que pide el input datetime-local
+            return d.toISOString().slice(0, 16); 
         };
 
-        // Llenar los datos
         setVal('platform-id', session.platform_id);
         setVal('session-title', session.session_title);
         setVal('session-start', toLocalDatetime(session.scheduled_at));
@@ -579,23 +435,20 @@ const SessionConfigApp = {
         setVal('session-more-info', session.more_info_url);
         setVal('session-category', session.session_type || 'Divulgación General');
 
-        // Disparar eventos manualmente para que la "Vista Previa" se actualice al instante
         document.getElementById('session-title')?.dispatchEvent(new Event('input'));
         document.getElementById('session-description')?.dispatchEvent(new Event('input'));
         document.getElementById('session-thumbnail')?.dispatchEvent(new Event('input'));
         document.getElementById('session-start')?.dispatchEvent(new Event('change'));
 
-        // Cargar participantes si los hay
         const { data: participants } = await this.supabase.from('event_participants').select('profiles(id, display_name)').eq('session_id', this.editSessionId);
         if (participants) {
-            this.addedParticipants = []; // Limpiamos la memoria local por seguridad
+            this.addedParticipants = []; 
             participants.forEach(p => {
                 if (p.profiles) this.addedParticipants.push({ id: p.profiles.id, name: p.profiles.display_name });
             });
             this.renderParticipants();
         }
 
-        // Mostrar los enlaces de éxito
         this.showLinksPanel(session);
     },
 
@@ -606,32 +459,33 @@ const SessionConfigApp = {
         
         panel.classList.remove('hidden');
         
-        // 1. Rellenar los enlaces
         document.getElementById('link-public').value = `https://epistecnologia.com/l/${session.id}`;
         document.getElementById('link-guest').value = session.guest_url || 'Pendiente...';
         document.getElementById('link-viewer').value = session.viewer_url || 'Pendiente...';
         document.getElementById('link-director').value = session.director_url || 'Pendiente...';
 
-        // 2. Activar el botón de OBS
         const btnObs = document.getElementById('btn-download-obs');
         if (btnObs) {
             btnObs.dataset.viewerUrl = session.viewer_url; 
             btnObs.dataset.sessionTitle = session.session_title; 
         }
 
-        // 3. Lógica dinámica para las instrucciones de la Clave (Paso 3)
+        // GUÍA OBS DINÁMICA
         const step3 = document.getElementById('obs-step-3');
         const broadcastMode = document.getElementById('broadcast-mode')?.value;
 
         if (step3) {
             if (session.platform === 'vdo_ninja' || broadcastMode === 'official') {
-                // CORRECCIÓN: Leemos la clave REAL que guardamos en la base de datos
                 const realStreamKey = session.stream_key || 'Clave-no-asignada';
+                let rtmpUrl = 'rtmp://a.rtmp.youtube.com/live2';
                 
+                if (session.platform === 'twitch') rtmpUrl = 'rtmp://live.twitch.tv/app';
+                else if (session.platform === 'vdo_ninja') rtmpUrl = 'Servidor Interno EPT (Automático)';
+
                 step3.innerHTML = `
                     En Servicio elige <strong>"Personalizado"</strong> y pega estos datos oficiales de nuestra red:<br>
                     <div style="display:inline-block; margin-top:10px; background: #000; padding: 12px; border-radius: 6px; color: #10b981; border: 1px dashed #334155; width: 100%; font-family: monospace;">
-                        <strong>Servidor:</strong> <span style="user-select: all; color: #94a3b8;">rtmp://a.rtmp.youtube.com/live2</span><br>
+                        <strong>Servidor:</strong> <span style="user-select: all; color: #94a3b8;">${rtmpUrl}</span><br>
                         <strong>Clave:</strong> <span style="user-select: all; filter: blur(5px); cursor: pointer; transition: 0.3s;" onclick="this.style.filter='none'" title="Haz clic para revelar la clave">${realStreamKey}</span>
                     </div>
                 `;
@@ -673,12 +527,7 @@ const SessionConfigApp = {
         const guest_url = `${vdoDomain}/?${guestParams.toString()}`;
         const viewer_url = `${vdoDomain}/?${viewerParams.toString()}&layout&whepshare=https://use1.meshcast.io/whep/${roomName}&cleanoutput`;
 
-        return {
-            director_url,
-            guest_url,
-            viewer_url,
-            recording_source_url
-        };
+        return { director_url, guest_url, viewer_url, recording_source_url };
     },
 
     async saveSession() {
@@ -689,37 +538,70 @@ const SessionConfigApp = {
 
         const title = document.getElementById('session-title').value.trim();
         const start = document.getElementById('session-start').value;
-
         const platform = document.querySelector('input[name="platform"]:checked').value;
         const broadcastMode = document.getElementById('broadcast-mode')?.value;
         
         if (!title || !start) { 
             alert("El título y la fecha son obligatorios."); 
-            btn.disabled=false; 
-            btn.innerHTML=originalText; 
+            btn.disabled=false; btn.innerHTML=originalText; 
             return; 
         }
 
-        // LÓGICA DE PISCINA DE CLAVES Y LIMPIEZA
+        // --- MAGIA: LÓGICA DE INTEGRACIÓN API DE YOUTUBE Y TWITCH ---
         let platformIdToSave = document.getElementById('platform-id')?.value || null;
-        let generatedStreamKey = null;
+        let generatedStreamKey = this.currentSession?.stream_key || null;
 
         if (platform !== 'vdo_ninja' && broadcastMode === 'official') {
-            platformIdToSave = null; 
-            try {
-                // LLAMAMOS AL ALGORITMO: Pide una clave real verificando choques de horario
-                generatedStreamKey = await this.assignStreamKey(platform, start, document.getElementById('session-end')?.value);
-            } catch (err) {
-                // Si la piscina está llena, mostramos el error y DETENEMOS el guardado
-                alert(err.message);
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-                return; 
+            // Verificamos si ya tenemos una clave válida generada para ESTA plataforma
+            const alreadyHasOfficialKey = this.isEditMode && 
+                                          this.currentSession?.platform === platform && 
+                                          this.currentSession?.stream_key && 
+                                          !this.currentSession?.platform_id?.includes('http');
+            
+            if (alreadyHasOfficialKey) {
+                // Si ya existe (estamos editando), mantenemos el evento intacto
+                platformIdToSave = this.currentSession.platform_id;
+                generatedStreamKey = this.currentSession.stream_key;
+            } else {
+                try {
+                    if (platform === 'youtube') {
+                        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creando en YouTube...';
+                        
+                        // LLAMAMOS A LA EDGE FUNCTION DE GOOGLE API
+                        const { data, error } = await this.supabase.functions.invoke('create-youtube-live', {
+                            body: {
+                                title: title,
+                                description: document.getElementById('session-description')?.value || ''
+                            }
+                        });
+                        
+                        if (error) throw error;
+                        if (!data.success) throw new Error(data.error);
+                        
+                        // La API nos devuelve el ID del video y la clave en tiempo real
+                        platformIdToSave = data.videoId;
+                        generatedStreamKey = data.streamKey;
+
+                    } else if (platform === 'twitch') {
+                        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Asignando clave Twitch...';
+                        generatedStreamKey = await this.assignStreamKey(platform, start, document.getElementById('session-end')?.value);
+                        platformIdToSave = 'epistecnologia'; // Canal oficial de Twitch
+                    } else {
+                        // Substack / Otros (Aún usan piscina)
+                        generatedStreamKey = await this.assignStreamKey(platform, start, document.getElementById('session-end')?.value);
+                    }
+                } catch (err) {
+                    alert(`Error al configurar transmisión oficial: ${err.message}`);
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    return; 
+                }
             }
         } else if (platform === 'vdo_ninja') {
-            // EPT Live nativo no choca con YouTube/Twitch, le damos una clave virtual
-            generatedStreamKey = `ept-live-${self.crypto.randomUUID().slice(0, 8)}`;
+            generatedStreamKey = this.currentSession?.stream_key || `ept-live-${self.crypto.randomUUID().slice(0, 8)}`;
+            platformIdToSave = null;
         }
+        // --- FIN MAGIA API ---
 
         let sessionData = {
             user_id: this.user.id,
@@ -734,7 +616,7 @@ const SessionConfigApp = {
             more_info_url: document.getElementById('session-more-info')?.value || null,
             platform: platform,
             platform_id: platformIdToSave,
-            stream_key: generatedStreamKey // <-- Guardamos la clave asignada en la BD
+            stream_key: generatedStreamKey 
         };
 
         const authorInfo = {
@@ -753,7 +635,6 @@ const SessionConfigApp = {
                 sessionData.status = 'PROGRAMADO';
                 sessionData.is_archived = false;
                 
-                // Generamos SIEMPRE las URLs de VDO.Ninja (Nuestro Estudio Universal)
                 const vdoUrls = this.generateVdoNinjaUrls();
                 sessionData = { ...sessionData, ...vdoUrls };
 
@@ -783,6 +664,8 @@ const SessionConfigApp = {
                 this.editSessionId = savedSession.id;
                 window.history.replaceState({}, '', `/inv/configurar-sesion.html?edit=${savedSession.id}`);
             }
+
+            this.currentSession = savedSession; // Actualizamos la memoria
 
             if (this.addedParticipants.length > 0) {
                 await this.supabase.from('event_participants').delete().eq('session_id', savedSession.id);
