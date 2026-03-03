@@ -33,9 +33,9 @@
         </div>
 
         <div id="tab-general" class="tab-content active">
-            <form id="event-general-form">
-                <fieldset>
-                    <legend>Datos Principales</legend>
+            <form id="event-general-form" onsubmit="event.preventDefault();">
+                <fieldset class="builder-section">
+                    <legend><i class="fa-solid fa-pen-to-square text-accent"></i> Datos Principales</legend>
                     <div class="form-group">
                         <label for="event-title">Título del Evento</label>
                         <input type="text" id="event-title" placeholder="Ej: Congreso Internacional de Epistemología" required>
@@ -49,34 +49,32 @@
                         </div>
                         <p class="form-hint" style="font-size:0.75rem; margin-top:5px;">Usa solo letras minúsculas, números y guiones medios (-).</p>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="event-cover-url">URL de Imagen de Portada</label>
                         <input type="text" id="event-cover-url" placeholder="https://ejemplo.com/imagen.jpg">
                     </div>
                     <div class="form-group">
                         <label for="event-registration-url">Enlace de Registro Principal</label>
-                        <p class="form-hint">Este enlace creará un botón destacado en la portada del evento.</p>
+                        <p class="form-hint">Este enlace creará un botón destacado en la portada.</p>
                         <input type="url" id="event-registration-url" placeholder="https://tally.so/r/...">
                     </div>
                     <div class="form-group">
                         <label for="event-thank-you-message">Mensaje de Agradecimiento Post-Registro</label>
-                        <p class="form-hint">
-                            Este mensaje se mostrará en un modal cuando un usuario se registre y vuelva a la página con el parámetro &gracias=true en la URL.
-                        </p>
+                        <p class="form-hint">Se mostrará en un modal cuando un usuario vuelva con &gracias=true en la URL.</p>
                         <textarea id="event-thank-you-message"></textarea>
                     </div>
                     <div class="form-group">
                         <label for="event-seo-image-url">URL de Miniatura para Redes (SEO)</label>
-                        <p class="form-hint">Usa una imagen de 1200x630px. Si lo dejas en blanco, se usará la imagen de portada.</p>
+                        <p class="form-hint">Si lo dejas en blanco, se usará la imagen de portada.</p>
                         <input type="text" id="event-seo-image-url" placeholder="https://ejemplo.com/miniatura.jpg">
                     </div>
                 </fieldset>
-                <fieldset>
-                    <legend>Contenido Principal</legend>
-                    <p class="form-hint">Este contenido es general para el evento (ej: la sección "Sobre Nosotros" o "Llamada a Ponencias").</p>
+
+                <fieldset class="builder-section">
+                    <legend><i class="fa-solid fa-align-left text-accent"></i> Contenido Principal</legend>
                     <div class="form-group">
-                        <label for="event-about">Sobre el Evento (Descripción Larga)</label>
+                        <label for="event-about">Sobre el Evento</label>
                         <textarea id="event-about" class="tinymce-editor"></textarea>
                     </div>
                     <div class="form-group">
@@ -84,17 +82,28 @@
                         <textarea id="event-call-for-papers" class="tinymce-editor"></textarea>
                     </div>
                 </fieldset>
-                <fieldset>
-                    <legend>Publicación</legend>
-                    <div class="publish-toggle">
+
+                <fieldset class="builder-section bg-light-panel">
+                    <legend><i class="fa-solid fa-globe text-accent"></i> Publicación</legend>
+                    <div class="publish-toggle flex-center-col" style="align-items: flex-start; padding: 0; border: none;">
                         <label for="event-is-public">Hacer página del evento pública</label>
-                        <label class="switch">
+                        <label class="switch modern-switch" style="margin-top: 10px;">
                             <input type="checkbox" id="event-is-public">
                             <span class="slider round"></span>
                         </label>
                     </div>
                 </fieldset>
             </form>
+        </div>
+
+        <div id="tab-editions" class="tab-content">
+            <fieldset class="builder-section">
+                <legend><i class="fa-solid fa-calendar-days text-accent"></i> Gestionar Ediciones</legend>
+                <div id="editions-list-container"></div>
+                <button type="button" id="add-edition-btn" class="btn-add-item"><i class="fa-solid fa-plus"></i> Añadir Nueva Edición</button>
+            </fieldset>
+
+            <div id="edition-editor-container" style="display: none;"></div>
         </div>
 
         <div id="tab-editions" class="tab-content">

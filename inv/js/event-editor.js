@@ -65,10 +65,10 @@ export const EventEditorApp = {
         tinymce.get('event-thank-you-message')?.setContent(this.currentEvent.registration_thank_you_message || '');
 
         // --- INICIO DE LA LÓGICA PARA EL BOTÓN "VER PÁGINA" ---
+        // --- INICIO DE LA LÓGICA PARA EL BOTÓN "VER PÁGINA" ---
         const viewPageBtn = document.getElementById('view-page-btn');
         if (this.currentEvent && this.currentEvent.slug) {
-            // Si el evento tiene un slug (es decir, ya se ha guardado al menos una vez)
-            viewPageBtn.href = `/evento.html?slug=${this.currentEvent.slug}`;
+            viewPageBtn.href = `/e/${this.currentEvent.slug}`; // RUTA LIMPIA
             viewPageBtn.style.display = 'inline-flex'; // Usamos inline-flex para centrar el icono y texto
         } else {
             // Si es un evento nuevo sin guardar, el botón permanece oculto
@@ -138,8 +138,8 @@ export const EventEditorApp = {
 
         // --- CAMBIO CLAVE: Añadimos los campos del contador al HTML ---
         container.innerHTML = `
-            <fieldset>
-                <legend>${editionData ? `Editando: ${editionData.edition_name}` : 'Nueva Edición'}</legend>
+            <fieldset class="builder-section">
+                <legend><i class="fa-solid fa-pen text-accent"></i> ${editionData ? `Editando: ${editionData.edition_name}` : 'Nueva Edición'}</legend>
                 <div class="form-group"><label>Nombre de la Edición</label><input type="text" id="edition-name" value="${editionData?.edition_name || ''}" required></div>
                 <div class="form-group-grid">
                     <div><label>Fecha de Inicio</label><input type="date" id="edition-start-date" value="${editionData?.start_date || ''}"></div>
@@ -149,7 +149,7 @@ export const EventEditorApp = {
                 
                 <div class="publish-toggle form-group">
                     <label for="edition-countdown-enabled">Activar cuenta atrás en la portada</label>
-                    <label class="switch">
+                    <label class="switch modern-switch">
                         <input type="checkbox" id="edition-countdown-enabled">
                         <span class="slider round"></span>
                     </label>
@@ -160,18 +160,18 @@ export const EventEditorApp = {
                     <p class="form-hint">Si se deja en blanco, usará las 00:00 de la fecha de inicio.</p>
                 </div>
             </fieldset>
-            <fieldset>
-                <legend><i class="fa-solid fa-users"></i> Ponentes</legend>
+            <fieldset class="builder-section">
+                <legend><i class="fa-solid fa-users text-accent"></i> Ponentes</legend>
                 <div id="speakers-list-container" class="item-list-editor"></div>
                 <button type="button" class="btn-add-item" id="add-speaker-btn"><i class="fa-solid fa-plus"></i> Añadir Ponente</button>
             </fieldset>
-            <fieldset>
-                <legend><i class="fa-solid fa-list-check"></i> Programa</legend>
+            <fieldset class="builder-section">
+                <legend><i class="fa-solid fa-list-check text-accent"></i> Programa</legend>
                 <div id="program-items-container" class="item-list-editor"></div>
                 <button type="button" class="btn-add-item" id="add-program-item-btn"><i class="fa-solid fa-plus"></i> Añadir al Programa</button>
             </fieldset>
-            <fieldset>
-                <legend><i class="fa-solid fa-podcast"></i> Sesiones de LiveRoom Asociadas</legend>
+            <fieldset class="builder-section bg-light-panel">
+                <legend><i class="fa-solid fa-podcast text-accent"></i> Sesiones de LiveRoom Asociadas</legend>
                 <p class="form-hint">Marca todas las sesiones que quieres mostrar en la página del evento.</p>
                 <div class="checkbox-list-container">${sessionsCheckboxesHTML}</div>
             </fieldset>
@@ -352,7 +352,7 @@ export const EventEditorApp = {
             registration_thank_you_message: tinymce.get('event-thank-you-message').getContent(),
             user_id: this.user.id
         };
-        
+
         const { data: savedEvent, error: eventError } = await this.supabase
             .from('events')
             .upsert(this.editMode ? { id: this.currentEvent.id, ...eventUpdates } : eventUpdates)
