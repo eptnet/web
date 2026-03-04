@@ -1,3 +1,4 @@
+// /inv/js/sala-de-control.js
 const ControlRoom = {
     supabase: null,
     sessionId: null,
@@ -16,293 +17,200 @@ const ControlRoom = {
         this.iframe = document.getElementById('mixer-iframe');
 
         if (!this.sessionId) {
-            document.body.innerHTML = '<h1>Error: No se ha proporcionado un ID de sesión.</h1>';
+            document.body.innerHTML = '<h1 style="text-align:center; margin-top:50px;">Error: No se ha proporcionado un ID de sesión.</h1>';
             return;
         }
         
+        document.getElementById('btn-edit-session').href = `/inv/configurar-sesion.html?edit=${this.sessionId}`;
         this.fetchAndLoadSession();
     },
 
     async fetchAndLoadSession() {
-        const { data, error } = await this.supabase.from('sessions').select('*').eq('id', this.sessionId).single();
-        if (error || !data) {
-            document.body.innerHTML = `<h1>Error: No se pudo cargar la sesión.</h1>`;
-            return;
-        }
-        this.sessionData = data;
-        document.title = `${this.sessionData.session_title} - Sala de Control`;
-        document.getElementById('session-title-header').textContent = this.sessionData.session_title;
-        
-        const directorUrl = new URL(this.sessionData.director_url);
-        directorUrl.searchParams.set('api', '1');
-        this.iframe.src = directorUrl.toString();
+        const { data: session, error } = await this.supabase.from('sessions').select('*').eq('id', this.sessionId).single();
+        if (error || !session) { alert('Error al cargar la sesión'); return; }
 
-        this.renderActionButtons();
-        this.setupChat();
-    },
+        this.sessionData = session;
+        document.getElementById('control-session-title').textContent = session.session_title;
+        document.title = `🔴 Control - ${session.session_title}`;
 
-    // --- CAMBIO: NUEVA FUNCIÓN PARA ABRIR EL MODAL DE GRABACIÓN ---
-    openRecordModal() {
-        const modalContainer = document.getElementById('modal-overlay-container');
-        modalContainer.innerHTML = `
-            <div id="record-modal" class="modal-overlay is-visible">
-                <div class="modal">
-                    <header class="modal-header">
-                        <h3>Opciones de Grabación</h3>
-                        <button class="modal-close-btn">&times;</button>
-                    </header>
-                    <main class="modal-content">
-                        <p>Elige cómo quieres grabar tu sesión. La grabación local ofrece la máxima calidad y se guarda directamente en tu computadora.</p>
-                        </main>
-                    <footer class="modal-footer">
-                        <button id="record-local-btn" class="btn-primary btn-full-width"><i class="fas fa-desktop"></i> Grabar en mi PC</button>
-                        <button class="btn-secondary btn-full-width" disabled><i class="fas fa-cloud"></i> Grabar en la Nube (Próximamente)</button>
-                    </footer>
-                </div>
-            </div>`;
-
-        modalContainer.querySelector('.modal-close-btn').addEventListener('click', () => this.closeModal());
-        modalContainer.querySelector('#record-local-btn').addEventListener('click', () => this.startLocalRecording());
-    },
-
-    // --- CAMBIO: NUEVA FUNCIÓN PARA CERRAR CUALQUIER MODAL ---
-    closeModal() {
-        const modalContainer = document.getElementById('modal-overlay-container');
-        if(modalContainer) modalContainer.innerHTML = '';
-    },
-
-    // --- CAMBIO: NUEVA FUNCIÓN PARA INICIAR LA GRABACIÓN LOCAL ---
-    // La nueva versión que usa la URL correcta
-    startLocalRecording() {
-        // Verificamos que la nueva URL específica para grabar exista
-        if (!this.sessionData.recording_source_url) {
-            alert("Error: La URL de grabación local no fue encontrada para esta sesión.");
-            return;
-        }
-        
-        console.log("Abriendo sala de grabación local:", this.sessionData.recording_source_url);
-        
-        // Abrimos la URL guardada en la base de datos
-        window.open(this.sessionData.recording_source_url, '_blank');
-        
-        this.closeModal();
-    },
-
-    async goLive() {
-        // ... esta función permanece igual
-        if (this.sessionData.status !== 'PROGRAMADO') return;
-        if (this.iframe && this.iframe.contentWindow) {
-            this.iframe.contentWindow.postMessage({ 'record': true }, "*");
+        // Cargar iframe del director
+        if (session.director_url) {
+            this.iframe.src = session.director_url;
         } else {
-            alert("Error de comunicación con la ventana de VDO.Ninja.");
-            return;
+            this.iframe.src = 'about:blank';
+            this.iframe.style.background = '#000 url("https://placehold.co/1280x720/000000/38bdf8?text=Esperando+Señal...") center / contain no-repeat';
         }
-        await this.updateStatus('EN VIVO');
-    },
 
-    async goLiveOnTwitch() {
-        const button = document.querySelector('.go-live');
-        button.textContent = 'Generando enlace...';
-        button.disabled = true;
+        // Actualizar la interfaz (Green Room)
+        this.updateStreamControlsUI(session.status);
 
-        try {
-            // Llamamos a nuestra Edge Function segura
-            const { data, error } = await this.supabase.functions.invoke('crear-enlace-twitch', {
-                body: { session_id: this.sessionId },
-            });
-
-            if (error) throw error;
-
-            // Abrimos la URL que nos devuelve la Edge Function
-            window.open(data.twitch_url, '_blank');
-            
-            // Marcamos la sesión como 'EN VIVO' en nuestra base de datos
-            await this.updateStatus('EN VIVO');
-
-        } catch (error) {
-            alert("Error al generar el enlace de Twitch: " + error.message);
-            this.renderActionButtons(); // Restaura el botón original
-        }
-    },
-
-    async endSession() {
-        // ... esta función permanece igual
-        if (this.sessionData.status !== 'EN VIVO') return;
-        if (!confirm("Esto finalizará la transmisión pública y la archivará. ¿Estás seguro?")) return;
-        if (this.iframe && this.iframe.contentWindow) {
-            this.iframe.contentWindow.postMessage({ 'close': 'estop' }, "*");
-        }
-        setTimeout(async () => { await this.updateStatus('FINALIZADO'); }, 500);
-    },
-    
-    async updateStatus(newStatus) {
-        if (this.sessionData.status === newStatus) return;
-
-        // --- INICIO DEL CAMBIO ---
-        // Ya no asignamos 'is_archived' automáticamente al finalizar.
-        // Esto lo hará el usuario manualmente desde el dashboard.
-        const updateData = { status: newStatus };
-        // --- FIN DEL CAMBIO ---
-        
-        const { error } = await this.supabase
-            .from('sessions')
-            .update(updateData)
-            .eq('id', this.sessionId);
-            
-        if (error) {
-            console.error("Error al actualizar estado:", error);
-            alert(`Error: No se pudo actualizar el estado a ${newStatus}.`);
-        } else {
-            this.sessionData.status = newStatus; 
-            this.renderActionButtons();
-            alert(`¡La sesión ahora está ${newStatus}!`);
-        }
-    },
-
-    renderActionButtons() {
-        const container = document.getElementById('action-buttons-container');
-        if (!container) return;
-
-        let buttonHTML = '';
-        switch (this.sessionData.status) {
-            case 'PROGRAMADO':
-                if (this.sessionData.platform === 'twitch') {
-                    buttonHTML = `<button class="btn-primary go-live" onclick="ControlRoom.goLiveOnTwitch()"><i class="fab fa-twitch"></i> Iniciar en Twitch</button>`;
-                } else {
-                    buttonHTML = `
-                        <button class="btn-secondary" onclick="ControlRoom.openRecordModal()">
-                            <i class="fa-solid fa-video"></i> Grabar
-                        </button>
-                        <button class="btn-primary go-live" onclick="ControlRoom.goLive()">
-                            <i class="fa-solid fa-tower-broadcast"></i> Iniciar Transmisión
-                        </button>
-                    `;
-                }
-                break;
-            case 'EN VIVO':
-                // --- INICIO DE LA CORRECCIÓN ---
-                // Ahora mostramos ambos botones cuando la sesión está en vivo (si no es de Twitch)
-                const recordButtonHTML = this.sessionData.platform !== 'twitch' 
-                    ? `<button class="btn-secondary" onclick="ControlRoom.openRecordModal()"><i class="fa-solid fa-video"></i> Grabar</button>` 
-                    : '';
-
-                buttonHTML = `
-                    ${recordButtonHTML}
-                    <button class="btn-primary is-live" onclick="ControlRoom.endSession()">
-                        <i class="fa-solid fa-stop-circle"></i> Terminar Transmisión
-                    </button>
-                `;
-                // --- FIN DE LA CORRECCIÓN ---
-                break;
-            case 'FINALIZADO':
-                buttonHTML = `<p class="session-ended-message"><i class="fa-solid fa-check-circle"></i> Transmisión finalizada.</p>`;
-                break;
-        }
-        container.innerHTML = buttonHTML;
-    },
-
-    // --- MAGIA DEL CHAT INTEGRADO ---
-    async setupChat() {
-        // 1. Obtener datos del director
-        const { data: { session } } = await this.supabase.auth.getSession();
-        if (session) {
-            const { data: profile } = await this.supabase.from('profiles').select('display_name, avatar_url').eq('id', session.user.id).single();
+        // Cargar perfil y chat
+        const { data: { user } } = await this.supabase.auth.getUser();
+        if (user) {
+            const { data: profile } = await this.supabase.from('profiles').select('*').eq('id', user.id).single();
             this.userProfile = profile;
         }
 
-        // 2. Conectar al mismo canal exacto de la sala pública
-        this.realtimeChannel = this.supabase.channel(`room_${this.sessionId}`, {
-            config: { 
-                presence: { key: 'director_view' },
-                broadcast: { self: true } 
-            }
-        });
+        this.setupRealtimeChat();
+        this.setupEventListeners();
+    },
 
-        // 3. Escuchar espectadores conectados
-        this.realtimeChannel.on('presence', { event: 'sync' }, () => {
-            const state = this.realtimeChannel.presenceState();
-            const count = Object.keys(state).length;
-            const counterEl = document.getElementById('control-viewer-count');
-            if (counterEl) counterEl.innerHTML = `<i class="fa-solid fa-eye"></i> ${count}`;
-        });
+    updateStreamControlsUI(status) {
+        const btnAction = document.getElementById('btn-stream-action');
+        const badge = document.getElementById('live-status-badge');
 
-        // 4. Escuchar mensajes entrantes
-        this.realtimeChannel.on('broadcast', { event: 'chat_message' }, (payload) => {
-            this.renderIncomingMessage(payload.payload);
-        });
+        // Limpiamos clases previas
+        btnAction.className = ''; badge.className = 'status-badge';
 
-        this.realtimeChannel.subscribe(async (status) => {
-            if (status === 'SUBSCRIBED') {
-                document.getElementById('control-chat-feed').innerHTML = ''; // Limpiar loader
-                await this.realtimeChannel.track({ online_at: new Date().toISOString() });
-            }
-        });
-
-        // 5. Eventos del teclado y botón
-        const sendBtn = document.getElementById('btn-send-control-chat');
-        const input = document.getElementById('control-chat-input');
-
-        sendBtn.addEventListener('click', () => this.sendChatMessage());
-        input.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') this.sendChatMessage();
-        });
-
-        // 6. Activar Selector de Emojis
-        const btnEmoji = document.getElementById('btn-emoji-control');
-        const pickerContainer = document.getElementById('emoji-picker-container-control');
-        const picker = document.querySelector('emoji-picker');
-        
-        if (btnEmoji && pickerContainer && picker) {
-            btnEmoji.addEventListener('click', (e) => {
-                e.stopPropagation();
-                // Alternamos entre display 'none' y 'block'
-                pickerContainer.style.display = pickerContainer.style.display === 'none' ? 'block' : 'none';
-            });
-            
-            picker.addEventListener('emoji-click', event => {
-                input.value += event.detail.unicode;
-                input.focus();
-            });
-            
-            // Cerrar si haces clic afuera
-            document.addEventListener('click', (e) => {
-                if (!pickerContainer.contains(e.target) && e.target !== btnEmoji && !btnEmoji.contains(e.target)) {
-                    pickerContainer.style.display = 'none';
-                }
-            });
+        if (status === 'PROGRAMADO' || !status) {
+            badge.classList.add('status-waiting');
+            badge.innerHTML = '<i class="fa-solid fa-clock"></i> En Espera';
+            btnAction.className = 'btn-start-stream';
+            btnAction.innerHTML = '<i class="fa-solid fa-play"></i> Iniciar Transmisión Pública';
+            btnAction.disabled = false;
+            btnAction.onclick = () => this.startBroadcast();
+        } else if (status === 'EN_VIVO') {
+            badge.classList.add('status-live');
+            badge.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> EN VIVO';
+            btnAction.className = 'btn-stop-stream';
+            btnAction.innerHTML = '<i class="fa-solid fa-stop"></i> Finalizar Transmisión';
+            btnAction.disabled = false;
+            btnAction.onclick = () => this.stopBroadcast();
+        } else if (status === 'FINALIZADO') {
+            badge.classList.add('status-ended');
+            badge.innerHTML = '<i class="fa-solid fa-flag-checkered"></i> Evento Finalizado';
+            btnAction.className = 'btn-ended';
+            btnAction.innerHTML = '<i class="fa-solid fa-lock"></i> Transmisión Cerrada';
+            btnAction.disabled = true;
+            btnAction.onclick = null;
         }
     },
 
-    sendChatMessage() {
-        if (!this.userProfile || !this.realtimeChannel) return;
+    async startBroadcast() {
+        if (!confirm("¿Seguro que deseas INICIAR la transmisión pública? Esto abrirá el telón en el Ágora para que los espectadores comiencen a ver el evento.")) return;
+
+        const btn = document.getElementById('btn-stream-action');
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Iniciando...';
+        btn.disabled = true;
+
+        const { error } = await this.supabase.from('sessions').update({ status: 'EN_VIVO' }).eq('id', this.sessionId);
         
+        if (error) {
+            alert("Error al iniciar: " + error.message);
+            this.updateStreamControlsUI('PROGRAMADO');
+            return;
+        }
+
+        this.sessionData.status = 'EN_VIVO';
+        this.updateStreamControlsUI('EN_VIVO');
+
+        // Avisar a todas las salas públicas que el evento empezó
+        if (this.realtimeChannel) {
+            this.realtimeChannel.send({ type: 'broadcast', event: 'stream_status_changed', payload: { status: 'EN_VIVO' } });
+        }
+    },
+
+    async stopBroadcast() {
+        if (!confirm("🚨 PELIGRO: ¿Seguro que deseas FINALIZAR la transmisión? Esto cortará la señal permanentemente y cerrará el evento para todos los espectadores.")) return;
+
+        const btn = document.getElementById('btn-stream-action');
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Finalizando Evento...';
+        btn.disabled = true;
+
+        try {
+            // 1. Cambiamos estado en Base de Datos
+            const { error } = await this.supabase.from('sessions').update({ status: 'FINALIZADO' }).eq('id', this.sessionId);
+            if (error) throw error;
+
+            // 2. Si es de YouTube API, enviamos el misil para cortarlo de raíz
+            if (this.sessionData.platform === 'youtube' && this.sessionData.platform_id && !this.sessionData.platform_id.includes('http')) {
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Cortando señal en YouTube...';
+                
+                const { error: fnError } = await this.supabase.functions.invoke('stop-youtube-live', {
+                    body: { broadcastId: this.sessionData.platform_id }
+                });
+                
+                if (fnError) console.error("Aviso: Error al intentar detener YouTube remotamente.", fnError);
+            }
+
+            this.sessionData.status = 'FINALIZADO';
+            this.updateStreamControlsUI('FINALIZADO');
+
+            // 3. Avisar a las salas públicas que se acabó la fiesta
+            if (this.realtimeChannel) {
+                this.realtimeChannel.send({ type: 'broadcast', event: 'stream_status_changed', payload: { status: 'FINALIZADO' } });
+            }
+
+            alert("El evento ha sido finalizado con éxito.");
+
+        } catch (err) {
+            alert("Error al finalizar: " + err.message);
+            this.updateStreamControlsUI('EN_VIVO');
+        }
+    },
+
+    setupRealtimeChat() {
+        this.realtimeChannel = this.supabase.channel(`room_${this.sessionId}`, {
+            config: { presence: { key: this.userProfile?.id || 'director' } }
+        });
+
+        this.realtimeChannel
+            .on('broadcast', { event: 'chat_message' }, (payload) => this.renderIncomingMessage(payload.payload))
+            .on('presence', { event: 'sync' }, () => {
+                const state = this.realtimeChannel.presenceState();
+                const count = Object.keys(state).length;
+                document.getElementById('viewers-count').innerHTML = `<i class="fa-solid fa-users"></i> ${count}`;
+            })
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    document.getElementById('control-chat-feed').innerHTML = '<p class="chat-system-msg"><i class="fa-solid fa-link"></i> Conectado al Ágora Pública.</p>';
+                    this.realtimeChannel.track({ user: 'Director', online_at: new Date().toISOString() });
+                }
+            });
+    },
+
+    setupEventListeners() {
+        const sendBtn = document.getElementById('btn-send-control-chat');
+        const chatInput = document.getElementById('control-chat-input');
+        const emojiBtn = document.getElementById('btn-emoji-control');
+        const emojiPickerContainer = document.getElementById('emoji-picker-container-control');
+
+        sendBtn.addEventListener('click', () => this.sendMessage());
+        chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') this.sendMessage(); });
+
+        emojiBtn.addEventListener('click', () => {
+            const isHidden = emojiPickerContainer.style.display === 'none';
+            emojiPickerContainer.style.display = isHidden ? 'block' : 'none';
+        });
+
+        document.querySelector('emoji-picker').addEventListener('emoji-click', event => {
+            chatInput.value += event.detail.unicode;
+            emojiPickerContainer.style.display = 'none';
+            chatInput.focus();
+        });
+    },
+
+    sendMessage() {
         const input = document.getElementById('control-chat-input');
         const text = input.value.trim();
         if (!text) return;
 
-        // Añadimos un indicativo visual de que es el organizador
-        const displayName = `👑 ${this.userProfile.display_name} (Director)`;
+        const displayName = `👑 ${this.userProfile?.display_name || 'Director'} (Organizador)`;
 
         const messageData = {
             user: displayName,
-            avatar: this.userProfile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png',
+            avatar: this.userProfile?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png',
             text: text,
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             isDirector: true
         };
 
-        this.realtimeChannel.send({
-            type: 'broadcast',
-            event: 'chat_message',
-            payload: messageData
-        });
-
+        this.realtimeChannel.send({ type: 'broadcast', event: 'chat_message', payload: messageData });
         input.value = '';
     },
 
     renderIncomingMessage(msg) {
         const feed = document.getElementById('control-chat-feed');
-        
         const isDir = msg.isDirector ? 'is-director' : '';
         const msgHtml = `
             <div class="chat-msg">
@@ -313,10 +221,9 @@ const ControlRoom = {
                 <p class="chat-msg-text">${msg.text}</p>
             </div>
         `;
-
         feed.insertAdjacentHTML('beforeend', msgHtml);
-        feed.scrollTop = feed.scrollHeight; // Auto-scroll
-    },
+        feed.scrollTop = feed.scrollHeight; 
+    }
 };
 
 document.addEventListener('DOMContentLoaded', () => ControlRoom.init());

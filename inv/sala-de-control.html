@@ -6,45 +6,35 @@
     <title>Sala de Control - Epistecnología</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    <link rel="stylesheet" href="/inv/css/dashboard.css">
     <link rel="stylesheet" href="/inv/css/sala-de-control.css">
-    <style>
-        .modal-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.6); z-index: 2000; justify-content: center;
-            align-items: center; padding: 1rem; box-sizing: border-box;
-        }
-        .modal-overlay.is-visible { display: flex; }
-        .modal { 
-            background: #fff; padding: 2rem; border-radius: 12px; 
-            width: 100%; max-width: 500px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); 
-        }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; margin-bottom: 1rem; border-bottom: 1px solid #ddd; }
-        .modal-header h3 { margin: 0; }
-        .modal-close-btn { font-size: 1.5rem; background: none; border: none; cursor: pointer; }
-        .modal-content p { margin-top: 0; line-height: 1.6; }
-        .modal-footer { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; }
-        .btn-full-width { width: 100%; text-align: center; }
-    </style>
 </head>
 <body>
     <header class="control-room-header">
-        <a href="/inv/dashboard.html" class="back-link" title="Volver al Dashboard">
-            <i class="fas fa-arrow-left"></i>
-            <span>Dashboard</span>
-        </a>
-        <h2 id="session-title-header">Cargando...</h2>
-        <div id="action-buttons-container"></div>
-    </header>
-    <main class="control-room-main">
-        <div class="video-workspace">
-            <iframe id="mixer-iframe" allow="autoplay; camera; microphone; fullscreen; picture-in-picture; display-capture"></iframe>
-        </div>
+        <a href="/inv/dashboard.html" class="back-link"><i class="fa-solid fa-arrow-left"></i> Volver al Dashboard</a>
+        <h2 id="control-session-title">Cargando Sesión...</h2>
         
-        <aside class="control-chat-sidebar">
+        <div class="session-controls">
+            <div id="live-status-badge" class="status-badge status-waiting">
+                <i class="fa-solid fa-clock"></i> En Espera
+            </div>
+            <button id="btn-stream-action" class="btn-start-stream" disabled>
+                <i class="fa-solid fa-spinner fa-spin"></i> Cargando...
+            </button>
+            <a href="#" id="btn-edit-session" class="btn-edit-settings" target="_blank" title="Ajustes de la sesión">
+                <i class="fa-solid fa-gear"></i>
+            </a>
+        </div>
+    </header>
+
+    <main class="control-layout">
+        <section class="mixer-panel">
+            <iframe id="mixer-iframe" src="" allow="camera; microphone; display-capture; autoplay; fullscreen"></iframe>
+        </section>
+
+        <aside class="chat-panel">
             <div class="chat-header">
-                <h3><i class="fa-solid fa-comments"></i> Chat del Auditorio</h3>
-                <span id="control-viewer-count" class="viewer-count"><i class="fa-solid fa-eye"></i> 0</span>
+                <h3><i class="fa-regular fa-comments"></i> Chat en Vivo (Director)</h3>
+                <span id="viewers-count" class="viewers-count"><i class="fa-solid fa-eye"></i> 0</span>
             </div>
             <div id="control-chat-feed" class="chat-feed">
                 <p class="chat-system-msg"><i class="fa-solid fa-circle-notch fa-spin"></i> Conectando al auditorio...</p>
@@ -54,19 +44,15 @@
                     <emoji-picker class="dark"></emoji-picker>
                 </div>
                 
-                <button id="btn-emoji-control" title="Añadir emoji" style="background: transparent; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer; padding: 0 10px; transition: 0.2s;"><i class="fa-regular fa-face-smile"></i></button>
-                
-                <input type="text" id="control-chat-input" placeholder="Mensaje como Director...">
+                <button id="btn-emoji-control" title="Añadir emoji" class="btn-emoji"><i class="fa-regular fa-face-smile"></i></button>
+                <input type="text" id="control-chat-input" placeholder="Escribe un mensaje como Director...">
                 <button id="btn-send-control-chat" title="Enviar"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
         </aside>
     </main>
-    
-    <div id="modal-overlay-container"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/inv/js/sala-de-control.js"></script>
-    
 </body>
 </html>
