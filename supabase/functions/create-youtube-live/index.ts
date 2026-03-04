@@ -82,7 +82,7 @@ serve(async (req) => {
                 const imgBlob = await imgRes.blob();
 
                 // Subimos la imagen cruda a YouTube
-                const thumbUploadUrl = `https://youtube.googleapis.com/youtube/v3/thumbnails/set?videoId=${broadcastId}`;
+                const thumbUploadUrl = https://youtube.googleapis.com/upload/youtube/v3/thumbnails/set?uploadType=media&videoId=${broadcastId};
                 const thumbRes = await fetch(thumbUploadUrl, {
                     method: 'POST',
                     headers: {
