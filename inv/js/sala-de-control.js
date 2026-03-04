@@ -33,12 +33,23 @@ const ControlRoom = {
         document.getElementById('control-session-title').textContent = session.session_title;
         document.title = `🔴 Control - ${session.session_title}`;
 
-        // Cargar iframe del director
+        // 1. Cargar SIEMPRE el VDO Mixer en el panel izquierdo (El lienzo de trabajo)
         if (session.director_url) {
             this.iframe.src = session.director_url;
         } else {
             this.iframe.src = 'about:blank';
             this.iframe.style.background = '#000 url("https://placehold.co/1280x720/000000/38bdf8?text=Esperando+Señal...") center / contain no-repeat';
+        }
+
+        // 2. Cargar el Monitor de YouTube en la columna derecha (Arriba del chat)
+        const monitorContainer = document.getElementById('monitor-container');
+        const monitorIframe = document.getElementById('monitor-iframe');
+        
+        if (session.platform === 'youtube' && session.platform_id && !session.platform_id.includes('http')) {
+            monitorContainer.style.display = 'block';
+            monitorIframe.src = `https://www.youtube.com/embed/${session.platform_id}?autoplay=1&mute=1`;
+        } else {
+            monitorContainer.style.display = 'none';
         }
 
         // Actualizar la interfaz (Green Room)
@@ -206,6 +217,7 @@ const ControlRoom = {
         };
 
         this.realtimeChannel.send({ type: 'broadcast', event: 'chat_message', payload: messageData });
+        this.renderIncomingMessage(messageData);
         input.value = '';
     },
 

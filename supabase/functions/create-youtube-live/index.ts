@@ -77,26 +77,24 @@ serve(async (req) => {
         // --- 7. MAGIA NUEVA: SUBIR LA MINIATURA ---
         if (thumbnailUrl) {
             try {
-                // Descargamos la imagen de ImgBB a la memoria de la Edge Function
+                // Descargamos la imagen y la convertimos a binario estricto
                 const imgRes = await fetch(thumbnailUrl);
-                const imgBlob = await imgRes.blob();
+                const arrayBuffer = await imgRes.arrayBuffer();
+                const imageBytes = new Uint8Array(arrayBuffer);
 
-                // Subimos la imagen cruda a YouTube
-                const thumbUploadUrl = https://youtube.googleapis.com/upload/youtube/v3/thumbnails/set?uploadType=media&videoId=${broadcastId};
+                const thumbUploadUrl = `https://youtube.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=${broadcastId}`;
                 const thumbRes = await fetch(thumbUploadUrl, {
                     method: 'POST',
                     headers: {
                         Authorization: `Bearer ${accessToken}`,
-                        'Content-Type': imgBlob.type || 'image/jpeg'
+                        'Content-Type': imgRes.headers.get('content-type') || 'image/jpeg'
                     },
-                    body: imgBlob
+                    body: imageBytes // Enviamos los bytes puros
                 });
                 
                 const thumbData = await thumbRes.json();
                 if (thumbData.error) console.error("Error subiendo miniatura:", thumbData.error.message);
             } catch (thumbErr) {
-                // Lo envolvemos en un try-catch silencioso para que, si la foto falla,
-                // la transmisión de todas formas se cree correctamente.
                 console.error("Excepción procesando la miniatura:", thumbErr.message);
             }
         }

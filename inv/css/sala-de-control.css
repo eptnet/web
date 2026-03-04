@@ -69,3 +69,18 @@ body {
 #btn-send-control-chat:hover { background-color: #0ea5e9; transform: scale(1.05); }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+/* MONITOR DEL DIRECTOR (Arriba del chat) */
+.monitor-container {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #000;
+    border-bottom: 1px solid #334155;
+    flex-shrink: 0;
+}
+.monitor-container iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+}
