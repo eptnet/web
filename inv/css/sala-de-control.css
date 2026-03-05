@@ -84,3 +84,20 @@ body {
     border: none;
     display: block;
 }
+
+/* ZOOM A VDO NINJA (Panel Izquierdo) */
+.video-workspace {
+    flex-grow: 1;
+    height: 100%;
+    overflow: hidden; /* Evita que el iframe agrandado genere barras de desplazamiento */
+    background: #000;
+}
+
+#mixer-iframe {
+    width: 125%; /* Compensar el escalado inverso para cubrir toda el área */
+    height: 125%;
+    transform: scale(0.8); /* Zoom al 80% */
+    transform-origin: top left;
+    border: none;
+    display: block;
+}
