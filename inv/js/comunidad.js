@@ -110,41 +110,52 @@ const ComunidadApp = {
     },
 
 
-    // --- MANEJADORES DE EVENTOS (Versión Actualizada) ---
+    // --- MANEJADORES DE EVENTOS (Versión Actualizada y Corregida) ---
     addEventListeners() {
-        // --- INICIO: LÓGICA DE EVENTOS CENTRALIZADA Y CORREGIDA ---
-
-        // Listener único para todos los formularios de la página
+        // 1. Listener para FORMULARIOS (Submits)
         document.body.addEventListener('submit', (e) => {
-            // Si el formulario es el de crear post (ya sea el principal o el del modal)
             if (e.target.id === 'create-post-form' || e.target.id === 'create-post-form-modal') {
                 e.preventDefault();
                 this.handleCreatePost(e.target);
             }
-            // Si el formulario es el de conectar bsky
             if (e.target.id === 'bsky-connect-form') {
                 e.preventDefault();
                 this.handleBlueskyConnect(e);
             }
         });
 
-        // Listener único para todos los CLICS de la página
+        // 2. Listener para CLICS (Botones, Zapping, etc)
         document.body.addEventListener('click', (e) => {
             const target = e.target;
             const button = target.closest('button');
 
-            // Botón para conectar Bsky (en panel izquierdo o en cuadro de crear post)
+            // Modal de Bluesky
             if (button && (button.id === 'connect-bsky-btn' || button.id === 'connect-bsky-in-creator-btn')) {
                 this.openBskyConnectModal();
             }
             
-            // Botón flotante para abrir el modal de post
+            // Modal de Crear Post
             if (button && button.id === 'fab-create-post') {
                 this.openPostModal();
             }
+
+            // --- LÓGICA DEL MULTICANAL (Zapping) AQUÍ SÍ FUNCIONA ---
+            const channelBtn = target.closest('.channel-btn');
+            if (channelBtn) {
+                // 1. Quitamos la clase 'active' a todos los botones
+                document.querySelectorAll('.channel-btn').forEach(b => b.classList.remove('active'));
+                // 2. Se la ponemos al que el usuario hizo clic
+                channelBtn.classList.add('active');
+                
+                // 3. Cambiamos el video o iframe al instante
+                const iframe = document.getElementById('ept-tv-iframe');
+                if (iframe) {
+                    iframe.src = channelBtn.dataset.src;
+                }
+            }
         });
 
-        // Listener para el contenedor del feed (Likes, Comentarios, etc.)
+        // 3. Listener para el Feed (Likes, Comentarios, etc.)
         document.getElementById('feed-container')?.addEventListener('click', (e) => {
             const likeButton = e.target.closest('.like-btn');
             const replyButton = e.target.closest('.reply-btn');
@@ -154,12 +165,6 @@ const ComunidadApp = {
             if (replyButton) this.handleReply(replyButton);
             if (shareButton) this.handleShare(shareButton);
         });
-
-        // Listener para el contador de caracteres (se adjunta dinámicamente)
-        // Ya no es necesario ponerlo aquí, porque `toggleCreatePostBox` y `openPostModal`
-        // lo asignan cuando crean el textarea.
-
-        // --- FIN: LÓGICA DE EVENTOS CENTRALIZADA Y CORREGIDA ---
     },
 
     addFormEventListeners(container) {

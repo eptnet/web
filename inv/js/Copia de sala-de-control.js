@@ -1,7 +1,4 @@
-// =================================================================
-// ARCHIVO: /inv/js/sala-de-control.js (Versión Definitiva 100%)
-// =================================================================
-
+// /inv/js/sala-de-control.js
 const ControlRoom = {
     supabase: null,
     sessionId: null,
@@ -44,7 +41,7 @@ const ControlRoom = {
             this.iframe.style.background = '#000 url("https://placehold.co/1280x720/000000/38bdf8?text=Esperando+Señal...") center / contain no-repeat';
         }
 
-        // 2. Cargar el Monitor en la columna derecha (Arriba del chat)
+        // 2. Cargar el Monitor de YouTube/Twitch
         const monitorWrapper = document.getElementById('monitor-wrapper');
         const monitorIframe = document.getElementById('monitor-iframe');
         
@@ -58,7 +55,7 @@ const ControlRoom = {
             monitorWrapper.style.display = 'none';
         }
 
-        // Actualizar la interfaz de botones (Green Room)
+        // Actualizar la interfaz (Green Room)
         this.updateStreamControlsUI(session.status);
 
         // Cargar perfil y chat
@@ -139,7 +136,7 @@ const ControlRoom = {
             const { error } = await this.supabase.from('sessions').update({ status: 'FINALIZADO' }).eq('id', this.sessionId);
             if (error) throw error;
 
-            // 2. Si es de YouTube API, enviamos la orden para cortarlo de raíz
+            // 2. Si es de YouTube API, enviamos el misil para cortarlo de raíz
             if (this.sessionData.platform === 'youtube' && this.sessionData.platform_id && !this.sessionData.platform_id.includes('http')) {
                 btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Cortando señal en YouTube...';
                 
@@ -153,7 +150,7 @@ const ControlRoom = {
             this.sessionData.status = 'FINALIZADO';
             this.updateStreamControlsUI('FINALIZADO');
 
-            // 3. Avisar a las salas públicas que se acabó el evento
+            // 3. Avisar a las salas públicas que se acabó la fiesta
             if (this.realtimeChannel) {
                 this.realtimeChannel.send({ type: 'broadcast', event: 'stream_status_changed', payload: { status: 'FINALIZADO' } });
             }
@@ -176,17 +173,11 @@ const ControlRoom = {
             .on('presence', { event: 'sync' }, () => {
                 const state = this.realtimeChannel.presenceState();
                 const count = Object.keys(state).length;
-                
-                // CORRECCIÓN DEL ID DEL CONTADOR (Ahora sí coincide con el HTML)
-                const counterEl = document.getElementById('control-viewer-count');
-                if (counterEl) counterEl.innerHTML = `<i class="fa-solid fa-eye"></i> ${count}`;
+                document.getElementById('viewers-count').innerHTML = `<i class="fa-solid fa-users"></i> ${count}`;
             })
             .subscribe((status) => {
                 if (status === 'SUBSCRIBED') {
-                    // CORRECCIÓN DEL HISTORIAL: Solo removemos el mensaje de carga en lugar de todo el chat
-                    const loaderMsg = document.querySelector('.chat-system-msg');
-                    if (loaderMsg) loaderMsg.remove();
-                    
+                    document.getElementById('control-chat-feed').innerHTML = '<p class="chat-system-msg"><i class="fa-solid fa-link"></i> Conectado al Ágora Pública.</p>';
                     this.realtimeChannel.track({ user: 'Director', online_at: new Date().toISOString() });
                 }
             });
@@ -229,10 +220,7 @@ const ControlRoom = {
         };
 
         this.realtimeChannel.send({ type: 'broadcast', event: 'chat_message', payload: messageData });
-        
-        // CORRECCIÓN DEL ECO: Mostramos nuestro propio mensaje inmediatamente
         this.renderIncomingMessage(messageData);
-        
         input.value = '';
     },
 

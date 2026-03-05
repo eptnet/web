@@ -48,19 +48,17 @@ body.dark-theme {
 /* Tablet y Escritorio */
 @media (min-width: 1024px) {
     .community-layout {
-        /* minmax previene que el texto largo rompa la cuadrícula */
-        grid-template-columns: 280px minmax(0, 1fr) 320px; 
+        /* Izquierda: 260px | Centro: Dinámico | Derecha: 380px (Ancha para el video) */
+        grid-template-columns: 260px minmax(0, 1fr) 380px; 
         gap: 2rem;
     }
     .left-column, .right-column {
         position: sticky;
         top: 2rem;
         align-self: start;
-        /* Scroll interno si la columna es muy larga en pantallas pequeñas */
         max-height: calc(100vh - 4rem);
         overflow-y: auto;
     }
-    /* Ocultar barra de scroll en las columnas para diseño limpio */
     .left-column::-webkit-scrollbar, .right-column::-webkit-scrollbar { display: none; }
 }
 
@@ -207,3 +205,77 @@ body.dark-theme {
 .fab:hover { transform: scale(1.1); }
 .link-preview-card { border-radius: var(--border-radius-sm); border: 1px solid var(--color-border); background: var(--color-background); text-decoration: none; color: inherit; display: block; overflow: hidden; margin-top: 1rem;}
 .link-preview-image { width: 100%; height: 180px; object-fit: cover; border-bottom: 1px solid var(--color-border); }
+
+/* --- REPRODUCTOR 24/7 (Columna Izquierda) --- */
+.live-247-box {
+    position: relative;
+    border: 1px solid rgba(239, 68, 68, 0.3) !important; /* Borde sutil rojo */
+    box-shadow: 0 8px 30px rgba(239, 68, 68, 0.08) !important; /* Resplandor rojo en dark mode */
+}
+
+.live-badge-247 {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 6px 10px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 10;
+    pointer-events: none; /* Para que los clics pasen al video */
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* --- CONTROL REMOTO DEL REPRODUCTOR 24/7 --- */
+.channel-switcher {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    background: var(--color-surface);
+    justify-content: center;
+    align-items: center;
+    border-top: 1px solid var(--color-border);
+}
+
+.channel-btn {
+    background: transparent;
+    border: 1px solid var(--color-border);
+    color: var(--color-secondary-text);
+    border-radius: 50%; /* Botones circulares elegantes */
+    width: 38px;
+    height: 38px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.1rem;
+}
+
+.channel-btn:hover {
+    transform: scale(1.1);
+    color: var(--color-primary-text);
+    border-color: var(--color-secondary-text);
+}
+
+/* Estilo del botón cuando ese canal está activo */
+.channel-btn.active {
+    background: var(--color-accent-light);
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+    box-shadow: 0 0 10px rgba(183, 42, 30, 0.2);
+}
+
+/* Color específico para Spotify al hacer hover */
+.channel-btn[data-src*="spotify"]:hover, .channel-btn[data-src*="spotify"].active {
+    background: rgba(30, 215, 96, 0.1);
+    color: #1ed760;
+    border-color: #1ed760;
+    box-shadow: 0 0 10px rgba(30, 215, 96, 0.2);
+}
