@@ -1,16 +1,29 @@
-/* /inv/css/sala-de-control.css */
+/* =================================================================
+ * ARCHIVO: /inv/css/sala-de-control.css (Diseño 100% Sincronizado)
+ * ================================================================= */
+
 body {
-    display: flex; flex-direction: column; height: 100vh; margin: 0;
+    display: flex; 
+    flex-direction: column; 
+    height: 100vh; 
+    margin: 0;
     font-family: system-ui, -apple-system, sans-serif;
-    background-color: #0f172a; color: white; overflow: hidden;
+    background-color: #0f172a; 
+    color: white; 
+    overflow: hidden; /* Evita que toda la página haga scroll accidental */
 }
 
-/* HEADER Y CONTROLES GREEN ROOM */
+/* --- HEADER Y CONTROLES GREEN ROOM --- */
 .control-room-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0.75rem 1.5rem; background-color: #1e293b;
-    border-bottom: 1px solid #334155; flex-shrink: 0;
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between;
+    padding: 0.75rem 1.5rem; 
+    background-color: #1e293b;
+    border-bottom: 1px solid #334155; 
+    flex-shrink: 0; /* Candado 1: El header no se aplasta */
 }
+
 .back-link { color: #94a3b8; text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; transition: 0.2s; }
 .back-link:hover { color: white; }
 .control-room-header h2 { margin: 0; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 1.1rem; flex-grow: 1; margin: 0 20px;}
@@ -30,27 +43,80 @@ body {
 }
 
 /* Botones Dinámicos */
-.btn-start-stream { background-color: #10b981; color: white; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.btn-start-stream, .btn-stop-stream, .btn-ended { border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; transition: 0.2s; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.btn-start-stream { background-color: #10b981; color: white; cursor: pointer; }
 .btn-start-stream:hover { background-color: #059669; transform: translateY(-2px); }
-.btn-stop-stream { background-color: #ef4444; color: white; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.btn-stop-stream { background-color: #ef4444; color: white; cursor: pointer; }
 .btn-stop-stream:hover { background-color: #dc2626; transform: translateY(-2px); }
-.btn-ended { background-color: #334155; color: #94a3b8; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; cursor: not-allowed; }
+.btn-ended { background-color: #334155; color: #94a3b8; cursor: not-allowed; }
 
-.btn-edit-settings { background: #334155; color: white; padding: 8px 12px; border-radius: 8px; text-decoration: none; transition: 0.2s; }
+.btn-edit-settings { background: #334155; color: white; padding: 8px 12px; border-radius: 8px; text-decoration: none; transition: 0.2s; display: inline-flex;}
 .btn-edit-settings:hover { background: #475569; }
 
-/* LAYOUT PRINCIPAL */
-.control-layout { display: flex; flex-grow: 1; overflow: hidden; }
-.mixer-panel { flex-grow: 1; background-color: #000; position: relative; }
-#mixer-iframe { width: 100%; height: 100%; border: none; display: block; }
+/* --- LAYOUT PRINCIPAL --- */
+.control-layout { 
+    display: flex; 
+    flex-grow: 1; /* Ocupa el resto de la pantalla debajo del header */
+    overflow: hidden; 
+}
 
-/* CHAT */
-.chat-panel { width: 350px; background-color: #1e293b; display: flex; flex-direction: column; border-left: 1px solid #334155; flex-shrink: 0; }
-.chat-header { padding: 15px; background-color: #0f172a; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+/* PANEL IZQUIERDO: VDO Mixer con Zoom al 80% */
+.mixer-panel { 
+    flex-grow: 1; 
+    background-color: #000; 
+    position: relative; 
+    overflow: hidden; /* Corta lo que sobre del iframe para no tener barras dobles */
+}
+
+#mixer-iframe { 
+    width: 125%; /* Al reducir el zoom al 80%, debemos agrandar el ancho y alto para compensar (100 / 0.8 = 125%) */
+    height: 125%;
+    transform: scale(0.8); 
+    transform-origin: top left;
+    border: none; 
+    display: block; 
+}
+
+/* --- PANEL DERECHO: SIDEBAR Y CHAT --- */
+.control-chat-sidebar { 
+    width: 350px; 
+    background-color: #1e293b; 
+    display: flex; 
+    flex-direction: column; 
+    border-left: 1px solid #334155; 
+    flex-shrink: 0; /* Candado 2: La barra lateral no se hace angosta */
+    height: 100%;
+}
+
+/* MONITOR DEL DIRECTOR (YouTube) */
+#monitor-wrapper {
+    width: 100%;
+    background: #000;
+    border-bottom: 1px solid #334155;
+    flex-shrink: 0; /* Candado 3: El monitor NO se aplasta con los mensajes */
+}
+
+.chat-header { 
+    padding: 15px; 
+    background-color: #0f172a; 
+    border-bottom: 1px solid #334155; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    flex-shrink: 0; /* Candado 4: El título del chat NO se aplasta */
+}
 .chat-header h3 { margin: 0; font-size: 1rem; color: #e2e8f0; display: flex; align-items: center; gap: 8px; }
-.viewers-count { font-size: 0.85rem; color: #10b981; background: rgba(16, 185, 129, 0.1); padding: 4px 8px; border-radius: 50px; font-weight: 600;}
+.viewer-count { font-size: 0.85rem; color: #10b981; background: rgba(16, 185, 129, 0.1); padding: 4px 8px; border-radius: 50px; font-weight: 600;}
 
-.chat-feed { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+/* Historial del chat (LA ÚNICA ZONA FLUIDA) */
+.chat-feed { 
+    flex-grow: 1; /* Esto es clave: Se estira ocupando el espacio que dejen el monitor y el input */
+    padding: 15px; 
+    overflow-y: auto; /* La barra espaciadora sale AQUÍ y no en toda la página */
+    display: flex; 
+    flex-direction: column; 
+    gap: 12px; 
+}
 .chat-system-msg { text-align: center; color: #94a3b8; font-size: 0.85rem; margin: 0; }
 
 .chat-msg { animation: fadeIn 0.2s ease; line-height: 1.4; background: #0f172a; padding: 10px 12px; border-radius: 8px; border: 1px solid #334155;}
@@ -60,44 +126,20 @@ body {
 .chat-msg-time { font-size: 0.75rem; color: #64748b; }
 .chat-msg-text { margin: 0; font-size: 0.95rem; color: #f8fafc; word-break: break-word; }
 
-.chat-input-area { padding: 15px; background-color: #0f172a; border-top: 1px solid #334155; display: flex; gap: 10px; }
-.btn-emoji { background: transparent; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer; padding: 0 5px; transition: 0.2s; }
-.btn-emoji:hover { color: #facc15; }
+/* Caja de Texto Inferior */
+.chat-input-area { 
+    padding: 15px; 
+    background-color: #0f172a; 
+    border-top: 1px solid #334155; 
+    display: flex; 
+    gap: 10px; 
+    flex-shrink: 0; /* Candado 5: La caja de texto JAMÁS se esconderá hacia abajo */
+}
+#btn-emoji-control { background: transparent; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer; padding: 0 5px; transition: 0.2s; display: flex; align-items: center;}
+#btn-emoji-control:hover { color: #facc15; }
 #control-chat-input { flex-grow: 1; background-color: #1e293b; border: 1px solid #334155; color: white; padding: 10px 15px; border-radius: 20px; outline: none; transition: 0.2s; }
 #control-chat-input:focus { border-color: #38bdf8; }
-#btn-send-control-chat { background-color: #38bdf8; color: #0f172a; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
+#btn-send-control-chat { background-color: #38bdf8; color: #0f172a; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s; flex-shrink: 0;}
 #btn-send-control-chat:hover { background-color: #0ea5e9; transform: scale(1.05); }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-/* MONITOR DEL DIRECTOR (Arriba del chat) */
-.monitor-container {
-    width: 100%;
-    aspect-ratio: 16/9;
-    background: #000;
-    border-bottom: 1px solid #334155;
-    flex-shrink: 0;
-}
-.monitor-container iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
-    display: block;
-}
-
-/* ZOOM A VDO NINJA (Panel Izquierdo) */
-.video-workspace {
-    flex-grow: 1;
-    height: 100%;
-    overflow: hidden; /* Evita que el iframe agrandado genere barras de desplazamiento */
-    background: #000;
-}
-
-#mixer-iframe {
-    width: 125%; /* Compensar el escalado inverso para cubrir toda el área */
-    height: 125%;
-    transform: scale(0.8); /* Zoom al 80% */
-    transform-origin: top left;
-    border: none;
-    display: block;
-}

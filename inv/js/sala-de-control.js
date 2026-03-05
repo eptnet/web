@@ -41,15 +41,18 @@ const ControlRoom = {
             this.iframe.style.background = '#000 url("https://placehold.co/1280x720/000000/38bdf8?text=Esperando+Señal...") center / contain no-repeat';
         }
 
-        // 2. Cargar el Monitor de YouTube en la columna derecha (Arriba del chat)
-        const monitorContainer = document.getElementById('monitor-container');
+        // 2. Cargar el Monitor de YouTube/Twitch
+        const monitorWrapper = document.getElementById('monitor-wrapper');
         const monitorIframe = document.getElementById('monitor-iframe');
         
         if (session.platform === 'youtube' && session.platform_id && !session.platform_id.includes('http')) {
-            monitorContainer.style.display = 'block';
+            monitorWrapper.style.display = 'block';
             monitorIframe.src = `https://www.youtube.com/embed/${session.platform_id}?autoplay=1&mute=1`;
+        } else if (session.platform === 'twitch' && session.platform_id) {
+            monitorWrapper.style.display = 'block';
+            monitorIframe.src = `https://player.twitch.tv/?channel=${session.platform_id}&parent=${window.location.hostname || 'localhost'}&muted=true`;
         } else {
-            monitorContainer.style.display = 'none';
+            monitorWrapper.style.display = 'none';
         }
 
         // Actualizar la interfaz (Green Room)

@@ -31,13 +31,20 @@
             <iframe id="mixer-iframe" src="" allow="camera; microphone; display-capture; autoplay; fullscreen"></iframe>
         </section>
 
-        <aside class="chat-panel">
-            <div id="monitor-container" class="monitor-container" style="display: none;">
-                <iframe id="monitor-iframe" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        <aside class="control-chat-sidebar">
+            
+            <div id="monitor-wrapper" style="display: none; background: #000; flex-shrink: 0; border-bottom: 1px solid #334155;">
+                <div style="font-size: 0.75rem; color: #f59e0b; text-align: center; padding: 4px; background: #1e293b; font-weight: 600;">
+                    <i class="fa-solid fa-triangle-exclamation"></i> La señal pública tiene un retraso normal de 10 a 20 seg.
+                </div>
+                <div id="monitor-container" style="width: 100%; aspect-ratio: 16/9;">
+                    <iframe id="monitor-iframe" src="" allow="autoplay; encrypted-media" allowfullscreen style="width:100%; height:100%; border:none; display:block;"></iframe>
+                </div>
             </div>
+
             <div class="chat-header">
-                <h3><i class="fa-regular fa-comments"></i> Chat en Vivo (Director)</h3>
-                <span id="viewers-count" class="viewers-count"><i class="fa-solid fa-eye"></i> 0</span>
+                <h3><i class="fa-solid fa-comments"></i> Chat del Auditorio</h3>
+                <span id="control-viewer-count" class="viewer-count"><i class="fa-solid fa-eye"></i> 0</span>
             </div>
             <div id="control-chat-feed" class="chat-feed">
                 <p class="chat-system-msg"><i class="fa-solid fa-circle-notch fa-spin"></i> Conectando al auditorio...</p>
@@ -47,8 +54,9 @@
                     <emoji-picker class="dark"></emoji-picker>
                 </div>
                 
-                <button id="btn-emoji-control" title="Añadir emoji" class="btn-emoji"><i class="fa-regular fa-face-smile"></i></button>
-                <input type="text" id="control-chat-input" placeholder="Escribe un mensaje como Director...">
+                <button id="btn-emoji-control" title="Añadir emoji" style="background: transparent; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer; padding: 0 10px; transition: 0.2s;"><i class="fa-regular fa-face-smile"></i></button>
+                
+                <input type="text" id="control-chat-input" placeholder="Mensaje como Director...">
                 <button id="btn-send-control-chat" title="Enviar"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
         </aside>
