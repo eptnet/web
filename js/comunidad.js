@@ -14,7 +14,7 @@ const ComunidadApp = {
     async init() {
         const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
-        this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        this.supabase = window.supabaseClient || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         await this.handleUserSession();
         this.addEventListeners();
@@ -66,20 +66,25 @@ const ComunidadApp = {
         const contentPanel = document.getElementById('user-panel-content');
         
         if (this.userProfile) {
-            document.getElementById('user-panel-avatar').src = this.userProfile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
-            document.getElementById('user-panel-name').textContent = this.userProfile.display_name || 'Sin nombre';
+            const userName = this.userProfile.display_name || 'Sin nombre';
+            // Magia DiceBear: Si no tiene foto, crea una usando su nombre
+            const fallbackAvatar = `https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(userName)}`;
+            
+            document.getElementById('user-panel-avatar').src = this.userProfile.avatar_url || fallbackAvatar;
+            document.getElementById('user-panel-name').textContent = userName;
         } else {
-            // Diseño para el invitado
-            document.getElementById('user-panel-avatar').src = 'https://i.ibb.co/61fJv24/default-avatar.png';
+            // Magia DiceBear para Invitado: Genera uno aleatorio
+            const randomSeed = Math.floor(Math.random() * 10000);
+            document.getElementById('user-panel-avatar').src = `https://api.dicebear.com/9.x/shapes/svg?seed=invitado_${randomSeed}`;
             document.getElementById('user-panel-name').textContent = 'Invitado Explorador';
+            
             const actionArea = document.getElementById('user-panel-bsky-status');
             if (actionArea) {
                 actionArea.innerHTML = `
-                    <p style="font-size: 0.85rem; color: var(--color-secondary-text);">Para publicar e interactuar conecta también tu cuenta Bluesky https://bsky.app/.</p>
-                    <button class="btn-primary" style="width: 100%; margin-top: 10px;" onclick="document.getElementById('login-modal-trigger')?.click();">Crear/Iniciar Sesión</button>
+                    <p style="font-size: 0.85rem; color: var(--color-secondary-text);">Inicia sesión para poder publicar e interactuar.</p>
+                    <button class="btn-primary" style="width: 100%; margin-top: 10px;" onclick="document.getElementById('login-modal-trigger')?.click();">Iniciar Sesión</button>
                 `;
             }
-            // Ocultamos el botón "Ver mi perfil" porque no tiene
             const profileBtn = contentPanel.querySelector('.btn-secondary');
             if(profileBtn) profileBtn.style.display = 'none';
         }
@@ -864,7 +869,7 @@ const ComunidadApp = {
     // 3. Obtener el Podcast vía RSS (Al estilo app.js)
     async fetchLatestPodcast() {
         try {
-            const rssUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fapi.substack.com%2Ffeed%2Fpodcast%2F2867518%2Fs%2F186951.rss';
+            const rssUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed%2Fpodcast&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua';
             const response = await fetch(rssUrl);
             const data = await response.json();
             
