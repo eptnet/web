@@ -116,16 +116,6 @@ const ComunidadApp = {
             console.error("Error en renderFeed:", error);
         }
     },
-    
-    /**
-     * Lógica para mostrar miembros destacados (funcionalidad futura).
-     */
-    renderFeaturedMembers() {
-        const list = document.getElementById('featured-members-list');
-        // TODO: Implementar la lógica para obtener y mostrar miembros.
-        list.innerHTML = `<li>Próximamente...</li>`;
-    },
-
 
     // --- MANEJADORES DE EVENTOS (Versión Actualizada y Corregida) ---
     addEventListeners() {
@@ -139,13 +129,22 @@ const ComunidadApp = {
                 e.preventDefault();
                 this.handleBlueskyConnect(e);
             }
-        });
+        }); // <--- AQUÍ TERMINA EL LISTENER DE FORMULARIOS
 
         // 2. Listener para CLICS (Botones, Zapping, etc)
         document.body.addEventListener('click', (e) => {
-
             const target = e.target;
             const button = target.closest('button');
+
+            // --- ¡AQUÍ ESTÁ EL CREADOR DEL MODAL CORREGIDO! ---
+            const investigatorItem = target.closest('.featured-investigator-item');
+            if (investigatorItem) {
+                e.preventDefault();
+                const username = investigatorItem.dataset.username;
+                if (username) {
+                    this.openProfileModal(username);
+                }
+            }
 
             // Modal de Bluesky
             if (button && (button.id === 'connect-bsky-btn' || button.id === 'connect-bsky-in-creator-btn')) {
@@ -984,12 +983,13 @@ const ComunidadApp = {
         timeline.addEventListener('input', () => { if(audioEl.duration) audioEl.currentTime = (timeline.value / 100) * audioEl.duration; });
         volumeSlider.addEventListener('input', () => { audioEl.volume = volumeSlider.value / 100; });
 
-        // Auto-reproducir siguiente episodio al terminar
+        // Auto-reproducir siguiente episodio al terminar (CON BUCLE)
         audioEl.addEventListener('ended', () => {
             if (this.currentEpisodeIndex < this.podcastEpisodes.length - 1) {
                 this.loadEpisodeIntoPlayer(this.currentEpisodeIndex + 1);
             } else {
-                playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+                // Si llegó al final, vuelve a reproducir el episodio 0
+                this.loadEpisodeIntoPlayer(0);
             }
         });
 
@@ -1123,11 +1123,9 @@ const ComunidadApp = {
         const list = document.getElementById('featured-members-list');
         if (!list) return;
         try {
-            // 1. Conseguir usuarios que tienen proyectos (limitamos para no saturar)
             const { data: projects, error: projErr } = await this.supabase.from('projects').select('user_id').order('created_at', { ascending: false }).limit(30);
             if (projErr) throw projErr;
 
-            // Extraer IDs únicos (Set) y tomar solo 4
             const uniqueUserIds = [...new Set(projects.map(p => p.user_id))].slice(0, 4);
 
             if (uniqueUserIds.length === 0) {
@@ -1135,16 +1133,15 @@ const ComunidadApp = {
                 return;
             }
 
-            // 2. Traer perfiles de esos IDs
             const { data: profiles, error: profErr } = await this.supabase.from('profiles').select('id, display_name, username, avatar_url').in('id', uniqueUserIds);
             if (profErr) throw profErr;
 
             list.innerHTML = profiles.map(p => `
-                <li style="display: flex; align-items: center; gap: 10px; padding: 0.8rem 0; border-bottom: 1px solid var(--color-border);">
+                <li class="featured-investigator-item" data-username="${p.username}" style="display: flex; align-items: center; gap: 10px; padding: 0.8rem 0; border-bottom: 1px solid var(--color-border); cursor: pointer; transition: 0.2s;">
                     <img src="${p.avatar_url || `https://api.dicebear.com/9.x/shapes/svg?seed=${p.username}`}" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid var(--color-surface);">
                     <div style="flex-grow: 1;">
                         <strong style="color: var(--color-primary-text); font-size: 0.95rem; display: block;">${p.display_name}</strong>
-                        <a href="/@${p.username}" target="_blank" style="color: var(--color-secondary-text); font-size: 0.8rem; text-decoration: none;">@${p.username}</a>
+                        <span style="color: var(--color-secondary-text); font-size: 0.8rem;">@${p.username}</span>
                     </div>
                 </li>
             `).join('');
@@ -1153,7 +1150,50 @@ const ComunidadApp = {
             console.error("Error Featured:", error);
             list.innerHTML = '<li><span class="trend-topic">Error al cargar.</span></li>';
         }
-    }
+    },
+
+    openProfileModal(username) {
+        console.log("Abriendo perfil de:", username);
+        let modalContainer = document.getElementById('modal-container');
+        
+        // Si por alguna razón el contenedor no existe en el HTML, lo creamos
+        if (!modalContainer) {
+            modalContainer = document.createElement('div');
+            modalContainer.id = 'modal-container';
+            document.body.appendChild(modalContainer);
+        }
+        
+        // Inyectamos el modal con estilos incrustados a prueba de fallos
+        modalContainer.innerHTML = `
+            <div class="modal-overlay" id="profile-iframe-overlay" style="z-index: 9999; display: flex; opacity: 0; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); transition: opacity 0.3s ease;">
+                <div class="modal" style="width: 95%; max-width: 1000px; height: 90vh; padding: 0; position: relative; overflow: hidden; background: var(--color-background); border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); transform: scale(0.95); transition: transform 0.3s ease;">
+                    <button class="modal-close-btn" style="position: absolute; top: 15px; right: 25px; z-index: 10; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 1.5rem; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s;">&times;</button>
+                    <iframe src="/@${username}" style="width: 100%; height: 100%; border: none; background: var(--color-background);"></iframe>
+                </div>
+            </div>
+        `;
+        
+        const overlay = document.getElementById('profile-iframe-overlay');
+        const modalBox = overlay.querySelector('.modal');
+        document.body.style.overflow = 'hidden'; 
+        
+        // Forzamos el renderizado para que la animación de entrada funcione suavemente
+        requestAnimationFrame(() => {
+            overlay.style.opacity = '1';
+            modalBox.style.transform = 'scale(1)';
+        });
+        
+        // Función de cierre animado
+        const closeFn = () => {
+            overlay.style.opacity = '0';
+            modalBox.style.transform = 'scale(0.95)';
+            document.body.style.overflow = '';
+            setTimeout(() => { modalContainer.innerHTML = ''; }, 300);
+        };
+        
+        overlay.querySelector('.modal-close-btn').addEventListener('click', closeFn);
+        overlay.addEventListener('click', (e) => { if(e.target === overlay) closeFn(); });
+    },
 
 };
 
