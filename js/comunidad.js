@@ -1170,7 +1170,9 @@ const ComunidadApp = {
                     <img src="${p.avatar_url || `https://api.dicebear.com/9.x/shapes/svg?seed=${p.username}`}" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid var(--color-surface);">
                     <div style="flex-grow: 1;">
                         <strong style="color: var(--color-primary-text); font-size: 0.95rem; display: block;">${p.display_name}</strong>
-                        <span style="color: var(--color-secondary-text); font-size: 0.8rem;">@${p.username}</span>
+                        
+                        <span style="color: var(--color-secondary-text); font-size: 0.8rem; display: block; margin-top: 2px;">@${p.username}</span>
+                        
                     </div>
                 </li>
             `).join('');
