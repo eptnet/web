@@ -1186,14 +1186,16 @@ const ComunidadApp = {
     openProfileModal(username) {
         console.log("Abriendo perfil de:", username);
         let modalContainer = document.getElementById('modal-container');
+        
         if (!modalContainer) {
             modalContainer = document.createElement('div');
             modalContainer.id = 'modal-container';
             document.body.appendChild(modalContainer);
         }
         
+        // Eliminamos la "opacidad" manual para no pelear con tu archivo style.css
         modalContainer.innerHTML = `
-            <div class="modal-overlay" id="profile-iframe-overlay" style="z-index: 9999; display: flex; opacity: 0; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); transition: opacity 0.3s ease;">
+            <div class="modal-overlay" id="profile-iframe-overlay" style="z-index: 9999; display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);">
                 <div class="modal" style="width: 95%; max-width: 1000px; height: 90vh; padding: 0; position: relative; overflow: hidden; background: var(--color-background); border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); transform: scale(0.95); transition: transform 0.3s ease;">
                     <button class="modal-close-btn" style="position: absolute; top: 15px; right: 25px; z-index: 10; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 1.5rem; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s;">&times;</button>
                     <iframe src="/@${username}" style="width: 100%; height: 100%; border: none; background: var(--color-background);"></iframe>
@@ -1205,14 +1207,15 @@ const ComunidadApp = {
         const modalBox = overlay.querySelector('.modal');
         document.body.style.overflow = 'hidden'; 
         
-        // Timeout para asegurar que la transición de CSS se vea correctamente
+        // ¡LA SOLUCIÓN! Añadimos la clase oficial is-visible para que el CSS lo revele suavemente
         setTimeout(() => {
-            overlay.style.opacity = '1';
+            overlay.classList.add('is-visible');
             modalBox.style.transform = 'scale(1)';
         }, 10);
         
+        // Función de cierre que remueve la visibilidad
         const closeFn = () => {
-            overlay.style.opacity = '0';
+            overlay.classList.remove('is-visible');
             modalBox.style.transform = 'scale(0.95)';
             document.body.style.overflow = '';
             setTimeout(() => { modalContainer.innerHTML = ''; }, 300);
