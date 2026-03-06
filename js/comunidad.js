@@ -482,7 +482,7 @@ const ComunidadApp = {
         modalNode.querySelector('#parent-post-avatar').src = postData.author.avatar;
         modalNode.querySelector('#parent-post-author').textContent = postData.author.displayName;
         modalNode.querySelector('#parent-post-text').innerHTML = postData.text;
-        modalNode.querySelector('#reply-user-avatar').src = this.userProfile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
+        modalNode.querySelector('#reply-user-avatar').src = this.userProfile.avatar_url || 'https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(userName)}';
         
         // Añadimos los listeners
         modalNode.querySelector('.modal-close-btn').addEventListener('click', () => this.closePostModal());
@@ -588,7 +588,7 @@ const ComunidadApp = {
         return `
             <div class="bento-box feed-post" data-uri="${post.uri}" data-cid="${post.cid}">
                 <div class="post-header">
-                    <img src="${author.avatar || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="Avatar" class="post-avatar">
+                    <img src="${author.avatar || `https://api.dicebear.com/9.x/shapes/svg?seed=${author.handle}`}" alt="Avatar" class="post-avatar">
                     <div class="post-author-info">
                         <strong>${author.displayName || author.handle}</strong>
                         <span class="post-handle">@${author.handle}</span>
@@ -659,7 +659,7 @@ const ComunidadApp = {
         const modalOverlay = modalNode.querySelector('.modal-overlay');
         
         // Personalizar y añadir listeners al clon del modal
-        modalNode.querySelector('#modal-user-avatar').src = this.userProfile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
+        modalNode.querySelector('#modal-user-avatar').src = this.userProfile.avatar_url || 'https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(userName)}';
         modalNode.querySelector('.modal-close-btn').addEventListener('click', () => this.closePostModal());
         
         const form = modalNode.querySelector('form');
@@ -1057,7 +1057,7 @@ const ComunidadApp = {
 
             list.innerHTML = profiles.map(p => `
                 <li style="display: flex; align-items: center; gap: 10px; padding: 0.8rem 0; border-bottom: 1px solid var(--color-border);">
-                    <img src="${p.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid var(--color-surface);">
+                    <img src="${p.avatar_url || `https://api.dicebear.com/9.x/shapes/svg?seed=${p.username}`}" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid var(--color-surface);">
                     <div style="flex-grow: 1;">
                         <strong style="color: var(--color-primary-text); font-size: 0.95rem; display: block;">${p.display_name}</strong>
                         <a href="/@${p.username}" target="_blank" style="color: var(--color-secondary-text); font-size: 0.8rem; text-decoration: none;">@${p.username}</a>
