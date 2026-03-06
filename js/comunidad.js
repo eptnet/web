@@ -348,10 +348,28 @@ const ComunidadApp = {
 
         } catch (error) {
             console.error("Error al publicar:", error);
-            alert(`No se pudo publicar el post: ${error.message}`);
+            
+            // --- NUEVA LÓGICA INTELIGENTE DE ERRORES ---
+            const errMsg = error.message || "";
+            
+            // Si el servidor devuelve error 500/400 (non-2xx) o habla de tokens, es casi seguro que la clave caducó
+            if (errMsg.includes('non-2xx') || errMsg.includes('revoked') || errMsg.includes('Expired')) {
+                alert("Tu clave de aplicación de Bluesky ha caducado o fue revocada. Por favor, genera una nueva en Bluesky y vuelve a conectar tu perfil para seguir publicando.");
+                
+                // Le cerramos el modal de publicar y le abrimos automáticamente el de conectar cuenta
+                this.closePostModal();
+                this.openBskyConnectModal();
+            } else {
+                // Para cualquier otro error (ej. sin internet)
+                alert(`No se pudo publicar el post. Por favor, revisa tu conexión e inténtalo de nuevo.`);
+            }
+
         } finally {
-            submitButton.disabled = false;
-            submitButton.textContent = 'Publicar';
+            // Restauramos el botón a su estado normal
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Publicar';
+            }
         }
     },
 
@@ -868,8 +886,7 @@ const ComunidadApp = {
     // 3. Obtener el Podcast vía RSS (Al estilo app.js)
     async fetchLatestPodcast() {
         try {
-            const rssUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed%2Fpodcast&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua';
-            const response = await fetch(rssUrl);
+            const rssUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fapi.substack.com%2Ffeed%2Fpodcast%2F2867518%2Fs%2F186951.rss&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua';            const response = await fetch(rssUrl);
             const data = await response.json();
             
             if (data.status === 'ok' && data.items.length > 0) {
@@ -894,8 +911,11 @@ const ComunidadApp = {
     },
 
     // ==========================================
-    // LOGICA DEL REPRODUCTOR DE PODCAST PERSISTENTE
+    // LÓGICA DEL REPRODUCTOR DE PODCAST (LISTA DE REPRODUCCIÓN)
     // ==========================================
+    podcastEpisodes: [],
+    currentEpisodeIndex: 0,
+
     setupAudioPlayer() {
         const audioEl = document.getElementById('hidden-audio-source');
         const playBtn = document.getElementById('player-play-btn');
@@ -904,91 +924,146 @@ const ComunidadApp = {
         const currentTimeEl = document.getElementById('player-current-time');
         const durationEl = document.getElementById('player-duration');
         const volumeSlider = document.getElementById('player-volume-slider');
+        const playerContainer = document.getElementById('persistent-audio-player');
+        const playlistPanel = document.getElementById('podcast-playlist-panel');
         
         // 1. Play / Pause
         playBtn.addEventListener('click', () => {
-            if (audioEl.paused) {
-                audioEl.play();
-                playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
-            } else {
-                audioEl.pause();
-                playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+            if (audioEl.paused) { audioEl.play(); playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>'; } 
+            else { audioEl.pause(); playBtn.innerHTML = '<i class="fa-solid fa-play"></i>'; }
+        });
+
+        // 2. AVANZAR Y RETROCEDER ENTRE EPISODIOS
+        document.getElementById('player-rewind-btn').addEventListener('click', () => {
+            if (this.currentEpisodeIndex > 0) this.loadEpisodeIntoPlayer(this.currentEpisodeIndex - 1);
+        });
+        document.getElementById('player-forward-btn').addEventListener('click', () => {
+            if (this.currentEpisodeIndex < this.podcastEpisodes.length - 1) this.loadEpisodeIntoPlayer(this.currentEpisodeIndex + 1);
+        });
+
+        // 3. Menú Flotante de la Lista de Reproducción
+        document.getElementById('player-playlist-btn').addEventListener('click', () => {
+            playlistPanel.style.display = playlistPanel.style.display === 'none' ? 'flex' : 'none';
+        });
+        document.getElementById('close-playlist-btn').addEventListener('click', () => {
+            playlistPanel.style.display = 'none';
+        });
+
+        // Delegación de clics en la lista para reproducir uno específico
+        document.getElementById('podcast-playlist-list').addEventListener('click', (e) => {
+            const item = e.target.closest('.playlist-item');
+            if (item) {
+                const index = parseInt(item.dataset.index);
+                this.loadEpisodeIntoPlayer(index);
+                // Si la lista molesta al usuario tras elegir, la podemos ocultar:
+                // playlistPanel.style.display = 'none'; 
             }
         });
 
-        // 2. Avanzar / Retroceder 15 seg
-        document.getElementById('player-rewind-btn').addEventListener('click', () => audioEl.currentTime -= 15);
-        document.getElementById('player-forward-btn').addEventListener('click', () => audioEl.currentTime += 15);
-
-        // 3. Cerrar Reproductor
+        // 4. Controles de tiempo y cierre...
         closeBtn.addEventListener('click', () => {
-            audioEl.pause();
-            document.getElementById('persistent-audio-player').style.display = 'none';
+            audioEl.pause(); playlistPanel.style.display = 'none';
+            playerContainer.classList.remove('is-visible');
+            setTimeout(() => { playerContainer.style.display = 'none'; }, 400); 
         });
 
-        // 4. Actualizar Timeline
         audioEl.addEventListener('timeupdate', () => {
-            const currentMinutes = Math.floor(audioEl.currentTime / 60);
-            const currentSeconds = Math.floor(audioEl.currentTime - currentMinutes * 60);
-            currentTimeEl.textContent = `${currentMinutes}:${currentSeconds.toString().padStart(2, '0')}`;
+            const currentM = Math.floor(audioEl.currentTime / 60);
+            const currentS = Math.floor(audioEl.currentTime - currentM * 60);
+            currentTimeEl.textContent = `${currentM}:${currentS.toString().padStart(2, '0')}`;
             
             if (audioEl.duration) {
-                const durationMinutes = Math.floor(audioEl.duration / 60);
-                const durationSeconds = Math.floor(audioEl.duration - durationMinutes * 60);
-                durationEl.textContent = `${durationMinutes}:${durationSeconds.toString().padStart(2, '0')}`;
+                const durationM = Math.floor(audioEl.duration / 60);
+                const durationS = Math.floor(audioEl.duration - durationM * 60);
+                durationEl.textContent = `${durationM}:${durationS.toString().padStart(2, '0')}`;
                 timeline.value = (audioEl.currentTime / audioEl.duration) * 100;
             }
         });
 
-        // 5. Arrastrar Timeline
-        timeline.addEventListener('input', () => {
-            if(audioEl.duration) {
-                audioEl.currentTime = (timeline.value / 100) * audioEl.duration;
+        timeline.addEventListener('input', () => { if(audioEl.duration) audioEl.currentTime = (timeline.value / 100) * audioEl.duration; });
+        volumeSlider.addEventListener('input', () => { audioEl.volume = volumeSlider.value / 100; });
+
+        // Auto-reproducir siguiente episodio al terminar
+        audioEl.addEventListener('ended', () => {
+            if (this.currentEpisodeIndex < this.podcastEpisodes.length - 1) {
+                this.loadEpisodeIntoPlayer(this.currentEpisodeIndex + 1);
+            } else {
+                playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
             }
         });
 
-        // 6. Volumen
-        volumeSlider.addEventListener('input', () => {
-            audioEl.volume = volumeSlider.value / 100;
-        });
-
-        // 7. Botón Lanzar desde Bento Box
+        // Lanzar desde Bento Box
         document.getElementById('btn-launch-podcast').addEventListener('click', () => {
-            // Cortamos el video de youtube si está sonando
-            document.getElementById('ept-tv-iframe').src = ''; 
-            
-            audioEl.play();
-            playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
-            document.getElementById('persistent-audio-player').style.display = 'block';
+            const iframe = document.getElementById('ept-tv-iframe');
+            if(iframe) iframe.src = ''; 
+            audioEl.play(); playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+            playerContainer.style.display = 'block';
+            setTimeout(() => playerContainer.classList.add('is-visible'), 10);
         });
     },
 
     async fetchLatestPodcast() {
         try {
-            const rssUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed%2Fpodcast';
+            const rssUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fapi.substack.com%2Ffeed%2Fpodcast%2F2867518%2Fs%2F186951.rss&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua';
             const response = await fetch(rssUrl);
             const data = await response.json();
             
             if (data.status === 'ok' && data.items.length > 0) {
-                const latestEpisode = data.items[0];
-                const audioUrl = latestEpisode.enclosure.link;
-                const title = latestEpisode.title;
-                const imgUrl = latestEpisode.thumbnail || 'https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png';
+                // GUARDAMOS TODOS LOS EPISODIOS
+                this.podcastEpisodes = data.items; 
                 
-                // Actualizar la caja del Bento
-                document.getElementById('podcast-title').textContent = title;
-                document.getElementById('podcast-cover').src = imgUrl;
+                // Generamos el HTML de la lista flotante
+                const listContainer = document.getElementById('podcast-playlist-list');
+                listContainer.innerHTML = this.podcastEpisodes.map((ep, idx) => {
+                    const img = ep.thumbnail || 'https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png';
+                    const date = new Date(ep.pubDate).toLocaleDateString('es-ES', { month: 'short', day: 'numeric', year: 'numeric' });
+                    return `<li class="playlist-item" data-index="${idx}">
+                                <img src="${img}" class="playlist-item-img">
+                                <div class="playlist-item-info">
+                                    <p class="playlist-item-title">${ep.title}</p>
+                                    <p class="playlist-item-date">${date}</p>
+                                </div>
+                            </li>`;
+                }).join('');
 
-                // Cargar datos en el reproductor persistente
-                document.getElementById('hidden-audio-source').src = audioUrl;
-                document.getElementById('player-track-title').textContent = title;
-                document.getElementById('player-track-image').src = imgUrl;
-
-                // Inicializar eventos del audio
+                // Inicializamos cargando el episodio 0
+                this.loadEpisodeIntoPlayer(0);
                 this.setupAudioPlayer();
             }
-        } catch (error) {
-            console.error("Error RSS Podcast:", error);
+        } catch (error) { console.error("Error RSS Podcast:", error); }
+    },
+
+    loadEpisodeIntoPlayer(index) {
+        if (index < 0 || index >= this.podcastEpisodes.length) return;
+        this.currentEpisodeIndex = index;
+        
+        const episode = this.podcastEpisodes[index];
+        const audioUrl = episode.enclosure.link;
+        const imgUrl = episode.thumbnail || 'https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png';
+        const title = episode.title;
+
+        // Actualiza el Bento Box lateral
+        document.getElementById('podcast-title').textContent = title;
+        document.getElementById('podcast-cover').src = imgUrl;
+
+        // Actualiza el reproductor persistente
+        const audioEl = document.getElementById('hidden-audio-source');
+        const isPlaying = !audioEl.paused;
+        
+        audioEl.src = audioUrl;
+        document.getElementById('player-track-title').textContent = title;
+        document.getElementById('player-track-image').src = imgUrl;
+
+        // Marcar visualmente el episodio activo en la lista
+        document.querySelectorAll('.playlist-item').forEach((item, i) => {
+            if (i === index) item.classList.add('active');
+            else item.classList.remove('active');
+        });
+
+        // Si ya estaba sonando otro, que este arranque automáticamente
+        if (isPlaying || document.getElementById('persistent-audio-player').classList.contains('is-visible')) {
+            audioEl.play().catch(e => console.log("Autoplay bloquedo", e));
+            document.getElementById('player-play-btn').innerHTML = '<i class="fa-solid fa-pause"></i>';
         }
     },
 
