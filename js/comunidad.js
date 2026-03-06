@@ -75,8 +75,8 @@ const ComunidadApp = {
             const actionArea = document.getElementById('user-panel-bsky-status');
             if (actionArea) {
                 actionArea.innerHTML = `
-                    <p style="font-size: 0.85rem; color: var(--color-secondary-text);">Inicia sesión para poder publicar e interactuar.</p>
-                    <button class="btn-primary" style="width: 100%; margin-top: 10px;" onclick="document.getElementById('login-modal-trigger')?.click();">Iniciar Sesión</button>
+                    <p style="font-size: 0.85rem; color: var(--color-secondary-text);">Para publicar e interactuar conecta también tu cuenta Bluesky https://bsky.app/.</p>
+                    <button class="btn-primary" style="width: 100%; margin-top: 10px;" onclick="document.getElementById('login-modal-trigger')?.click();">Crear/Iniciar Sesión</button>
                 `;
             }
             // Ocultamos el botón "Ver mi perfil" porque no tiene
