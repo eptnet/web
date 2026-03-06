@@ -188,3 +188,109 @@ body.tv-mode-dark { margin: 0; font-family: 'Inter', sans-serif; background: var
     
     .context-grid { grid-template-columns: 1fr; }
 }
+
+/* =================================================================
+   SECCIÓN DE COMENTARIOS (ÁGORA)
+   ================================================================= */
+.agora-comments-section {
+    margin: 2rem 0;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+}
+.comments-title {
+    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.comments-auth-prompt {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 1.5rem;
+    border-radius: 12px;
+    text-align: center;
+    margin-bottom: 2rem;
+    border: 1px solid var(--border);
+}
+.comments-auth-prompt p { margin: 0; color: var(--text-muted); }
+
+/* Formulario */
+.comments-form {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 3rem;
+    align-items: flex-start;
+}
+.comment-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+.comment-input-wrapper {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+#comment-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--text-muted);
+    color: var(--text-main);
+    font-family: inherit;
+    font-size: 1rem;
+    padding: 8px 0;
+    resize: none;
+    outline: none;
+    overflow: hidden;
+    min-height: 35px;
+    transition: border-color 0.2s;
+}
+#comment-input:focus {
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 7px;
+}
+.comment-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 15px;
+}
+.char-counter { font-size: 0.8rem; color: var(--text-muted); }
+.btn-sm { padding: 8px 18px; font-size: 0.9rem; border-radius: 20px; }
+
+/* Lista de Comentarios */
+.comments-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 1.8rem;
+}
+.comment-item {
+    display: flex;
+    gap: 15px;
+    animation: fadeIn 0.4s ease;
+}
+.comment-item-avatar img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+.comment-item-header {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+.comment-author-name { font-weight: 600; font-size: 0.95rem; color: var(--text-main); }
+.comment-author-handle { font-size: 0.8rem; color: var(--text-muted); }
+.comment-text {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0;
+    word-break: break-word;
+}

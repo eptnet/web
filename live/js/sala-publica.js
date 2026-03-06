@@ -121,6 +121,9 @@ const PublicRoomApp = {
 
             if (error || !data) throw error;
             this.sessionData = data;
+
+            // Inicializar la sección de comentarios en la parte inferior
+            this.setupCommentsSection(this.sessionData);
             
             this.renderUI();
             this.handlePlayerAndCountdown();
@@ -355,8 +358,15 @@ const PublicRoomApp = {
             document.getElementById('viewer-count').textContent = Object.keys(state).length;
         });
 
+        // 1. ESCUCHA EL CHAT LATERAL (Viene de la Sala de Control o usuarios nativos)
         this.realtimeChannel.on('broadcast', { event: 'chat_message' }, (payload) => {
             this.renderIncomingMessage(payload.payload);
+        });
+
+        // 2. ESCUCHA LOS COMENTARIOS DE BLUESKY (Viene de la Edge Function)
+        this.realtimeChannel.on('broadcast', { event: 'new_chat_message' }, (payload) => {
+            // SOLO se pinta en la caja inferior de comentarios
+            this.appendCommentMessage(payload.payload, false);
         });
 
         // 4C. DETECCIÓN DEL CAMBIO DE ESTADO (TRANSICIÓN SUAVE)
@@ -504,6 +514,182 @@ const PublicRoomApp = {
             alert("Hubo un problema al enviar el reporte.");
         } finally {
             if (reportBtn) { reportBtn.disabled = false; reportBtn.innerHTML = '<i class="fas fa-flag"></i> Reportar sesión'; }
+        }
+    },
+
+    // ==========================================
+    // MÓDULO DE COMENTARIOS (ÁGORA INFERIOR)
+    // ==========================================
+    async setupCommentsSection(session) {
+        const authPrompt = document.getElementById('comments-auth-prompt');
+        const commentsForm = document.getElementById('comments-form');
+        const commentInput = document.getElementById('comment-input');
+        const submitBtn = document.getElementById('btn-submit-comment');
+        const charCounter = document.getElementById('comment-char-counter');
+        const userAvatar = document.getElementById('comment-user-avatar');
+
+        // 1. Verificación de Autenticación
+        const { data: { session: authSession } } = await this.supabase.auth.getSession();
+        let hasBskyCreds = false;
+        let bskyHandle = '';
+
+        if (authSession) {
+            const { data: bskyCreds } = await this.supabase.from('bsky_credentials').select('handle').eq('user_id', authSession.user.id).single();
+            if (bskyCreds) {
+                hasBskyCreds = true;
+                bskyHandle = bskyCreds.handle;
+            }
+        }
+
+        // 2. Control de UI según estado del usuario
+        if (!authSession || !hasBskyCreds) {
+            if (authPrompt) authPrompt.classList.remove('hidden');
+            if (commentsForm) commentsForm.classList.add('hidden');
+        } else {
+            if (authPrompt) authPrompt.classList.add('hidden');
+            if (commentsForm) commentsForm.classList.remove('hidden');
+
+            // Cargar avatar del usuario
+            if (this.currentUserProfile && this.currentUserProfile.avatar_url) {
+                userAvatar.src = this.currentUserProfile.avatar_url;
+            } else if (bskyHandle) {
+                userAvatar.src = `https://api.dicebear.com/9.x/shapes/svg?seed=${bskyHandle}`;
+            }
+
+            // Lógica del input auto-expandible
+            commentInput.addEventListener('input', () => {
+                const remaining = 300 - commentInput.value.length;
+                charCounter.textContent = remaining;
+                submitBtn.disabled = commentInput.value.trim().length === 0;
+                
+                commentInput.style.height = 'auto';
+                commentInput.style.height = (commentInput.scrollHeight) + 'px';
+            });
+
+            // Enviar el comentario
+            commentsForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleCommentSubmit(session.bsky_chat_thread_uri, session.bsky_chat_thread_cid, bskyHandle);
+            });
+        }
+
+        // 3. Cargar el Hilo de Bluesky
+        if (session.bsky_chat_thread_uri) {
+            this.loadCommentsThread(session.bsky_chat_thread_uri);
+        } else {
+            document.getElementById('comments-feed').innerHTML = '<p class="text-muted text-center">Aún no hay comentarios.</p>';
+        }
+    },
+
+    async loadCommentsThread(postUri) {
+        const commentsFeed = document.getElementById('comments-feed');
+        if (!commentsFeed) return;
+
+        try {
+            // Usamos tu Edge Function nativa que trae todo el hilo
+            const { data: chatData, error } = await this.supabase.functions.invoke('bsky-get-post-thread', { body: { postUri } });
+            if (error) throw error;
+            
+            commentsFeed.innerHTML = '';
+            
+            if (!chatData.messages || chatData.messages.length === 0) {
+                commentsFeed.innerHTML = '<p class="text-muted text-center" style="margin-top:20px;">Sé el primero en iniciar la conversación.</p>';
+                return;
+            }
+
+            // Renderizar la lista
+            chatData.messages.forEach(msg => {
+                this.appendCommentMessage(msg, false);
+            });
+
+        } catch (error) {
+            console.error("Error al cargar comentarios:", error);
+            commentsFeed.innerHTML = '<p class="text-muted text-center">No se pudieron cargar los comentarios.</p>';
+        }
+    },
+
+    async handleCommentSubmit(threadUri, threadCid, bskyHandle) {
+        const input = document.getElementById('comment-input');
+        const submitBtn = document.getElementById('btn-submit-comment');
+        const text = input.value.trim();
+        if (!text) return;
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+        // 1. Actualización Optimista UI
+        const optimisticMsg = {
+            author: {
+                avatar: this.currentUserProfile?.avatar_url || `https://api.dicebear.com/9.x/shapes/svg?seed=${bskyHandle}`,
+                displayName: this.currentUserProfile?.display_name || 'Tú',
+                handle: bskyHandle
+            },
+            record: { text: text, createdAt: new Date().toISOString() }
+        };
+        
+        const emptyMsg = document.querySelector('#comments-feed .text-center');
+        if (emptyMsg) emptyMsg.remove();
+
+        // Agregamos el comentario arriba (como los más recientes de YT)
+        this.appendCommentMessage(optimisticMsg, true);
+
+        // Limpiar el campo
+        input.value = '';
+        input.style.height = 'auto';
+        document.getElementById('comment-char-counter').textContent = '300';
+
+        try {
+            // 2. Disparar a Bluesky (Tu Edge Function se encarga de subirlo y emitir el Broadcast)
+            const { error } = await this.supabase.functions.invoke('bsky-create-reply', {
+                body: {
+                    replyText: text,
+                    parentPost: { uri: threadUri, cid: threadCid }
+                }
+            });
+            if (error) throw error;
+        } catch (error) {
+            alert("Tu sesión de Bluesky expiró o hubo un error de conexión.");
+            console.error(error);
+        } finally {
+            submitBtn.disabled = true; 
+            submitBtn.innerHTML = 'Comentar';
+        }
+    },
+
+    appendCommentMessage(message, prepend = false) {
+        const feed = document.getElementById('comments-feed');
+        if (!feed || !message || !message.author || !message.record) return;
+
+        // Regla de seguridad: Ocultar el "Anchor Post" automático de la sala para que no parezca un comentario normal
+        if (message.record.text && message.record.text.includes("🔴 ¡EVENTO EN VIVO!")) return;
+
+        const div = document.createElement('div');
+        div.className = 'comment-item';
+        
+        let dateStr = '';
+        if (message.record.createdAt || message.indexedAt) {
+            const d = new Date(message.record.createdAt || message.indexedAt);
+            dateStr = `<span style="font-size:0.75rem; color:var(--text-muted); margin-left: 8px;">${d.toLocaleDateString()}</span>`;
+        }
+
+        div.innerHTML = `
+            <div class="comment-item-avatar">
+                <img src="${message.author.avatar || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="Avatar">
+            </div>
+            <div class="comment-item-content">
+                <div class="comment-item-header">
+                    <span class="comment-author-name">${message.author.displayName || message.author.handle}</span>
+                    <span class="comment-author-handle">@${message.author.handle}</span>
+                    ${dateStr}
+                </div>
+                <p class="comment-text">${message.record.text.replace(/\n/g, '<br>')}</p>
+            </div>
+        `;
+
+        if (prepend) {
+            feed.insertBefore(div, feed.firstChild);
+        } else {
+            feed.appendChild(div);
         }
     }
 };

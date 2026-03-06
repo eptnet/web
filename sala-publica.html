@@ -73,6 +73,29 @@
 
                 <div class="room-footer-actions">
                     <div id="live-room-share-bar" class="live-room-share-bar"></div>
+
+                <div id="agora-comments-section" class="agora-comments-section">
+                    <h3 class="comments-title"><i class="fa-regular fa-comments"></i> Comentarios</h3>
+                    
+                    <div id="comments-auth-prompt" class="comments-auth-prompt hidden">
+                        <p>Para unirte a la conversación permanente, inicia sesión y conecta tu cuenta de Bluesky.</p>
+                    </div>
+
+                    <form id="comments-form" class="comments-form hidden">
+                        <img id="comment-user-avatar" src="https://i.ibb.co/61fJv24/default-avatar.png" class="comment-avatar" alt="Tu Avatar">
+                        <div class="comment-input-wrapper">
+                            <textarea id="comment-input" placeholder="Añade un comentario público..." rows="1" maxlength="300"></textarea>
+                            <div class="comment-actions">
+                                <span id="comment-char-counter" class="char-counter">300</span>
+                                <button type="submit" id="btn-submit-comment" class="btn-primary btn-sm" disabled>Comentar</button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div id="comments-feed" class="comments-feed">
+                        <p class="text-muted text-center" style="margin-top:20px;">Cargando comentarios...</p>
+                    </div>
+                </div>
                     
                     <div class="footer-meta-actions">
                         <p class="disclaimer-text"><i class="fa-solid fa-circle-info"></i> El contenido de esta transmisión es responsabilidad exclusiva de sus autores y no representa necesariamente la postura oficial de Epistecnología.</p>
