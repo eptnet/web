@@ -24,37 +24,31 @@ const ComunidadApp = {
     async handleUserSession() {
         const { data: { session } } = await this.supabase.auth.getSession();
 
+        // MODO INVITADO: Si no hay sesión, dejamos pasar pero sin perfil
         if (!session) { 
-            // Si no hay sesión, en lugar de redirigir, abrimos el modal de login.
-            // Asumimos que el modal de login de tu main.js/live.js está disponible en el HTML.
-            const loginModal = document.getElementById('login-modal-overlay');
-            if (loginModal) {
-                loginModal.classList.add('is-visible');
-            }
-            // Detenemos la carga del resto del contenido.
-            document.getElementById('feed-container').innerHTML = ''; 
+            this.user = null; this.userProfile = null; this.bskyCreds = null;
+            this.renderUserPanel(); 
+            this.toggleCreatePostBox(); 
+            this.renderFeed(); 
+            this.renderFeaturedMembers(); 
+            this.renderLatestPublications(); 
+            this.renderSidebarEvents(); 
+            this.fetchLatestPodcast();
             return; 
         }
-        this.user = session.user;
 
-        // Cargar perfil y credenciales en paralelo
+        this.user = session.user;
         const [profileResponse, credsResponse] = await Promise.all([
             this.supabase.from('profiles').select('*').eq('id', this.user.id).single(),
             this.supabase.from('bsky_credentials').select('*').eq('user_id', this.user.id).single()
         ]);
 
-        if (profileResponse.error) {
-            console.error("Error crítico al cargar el perfil.", profileResponse.error);
-            return;
-        }
-
         this.userProfile = profileResponse.data;
-        this.bskyCreds = credsResponse.data; // Será null si no hay credenciales
+        this.bskyCreds = credsResponse.data;
 
-        // Renderizamos la UI con la información actualizada
         this.renderUserPanel();
         this.renderBskyStatus();
-        this.toggleCreatePostBox(); // <-- [NUEVA LLAMADA] Esto activará la nueva lógica
+        this.toggleCreatePostBox();
         this.renderFeed();
         this.renderFeaturedMembers();
         this.renderLatestPublications();
@@ -71,8 +65,24 @@ const ComunidadApp = {
         const loadingPanel = document.getElementById('user-panel-loading');
         const contentPanel = document.getElementById('user-panel-content');
         
-        document.getElementById('user-panel-avatar').src = this.userProfile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
-        document.getElementById('user-panel-name').textContent = this.userProfile.display_name || 'Sin nombre';
+        if (this.userProfile) {
+            document.getElementById('user-panel-avatar').src = this.userProfile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
+            document.getElementById('user-panel-name').textContent = this.userProfile.display_name || 'Sin nombre';
+        } else {
+            // Diseño para el invitado
+            document.getElementById('user-panel-avatar').src = 'https://i.ibb.co/61fJv24/default-avatar.png';
+            document.getElementById('user-panel-name').textContent = 'Invitado Explorador';
+            const actionArea = document.getElementById('user-panel-bsky-status');
+            if (actionArea) {
+                actionArea.innerHTML = `
+                    <p style="font-size: 0.85rem; color: var(--color-secondary-text);">Inicia sesión para poder publicar e interactuar.</p>
+                    <button class="btn-primary" style="width: 100%; margin-top: 10px;" onclick="document.getElementById('login-modal-trigger')?.click();">Iniciar Sesión</button>
+                `;
+            }
+            // Ocultamos el botón "Ver mi perfil" porque no tiene
+            const profileBtn = contentPanel.querySelector('.btn-secondary');
+            if(profileBtn) profileBtn.style.display = 'none';
+        }
 
         loadingPanel.style.display = 'none';
         contentPanel.style.display = 'block';
@@ -145,27 +155,20 @@ const ComunidadApp = {
             // --- LÓGICA DEL MULTICANAL (Zapping con reproductor nativo) ---
             const channelBtn = target.closest('.channel-btn');
             if (channelBtn) {
-                // Quitar clase active a todos y ponérsela al clicado
                 document.querySelectorAll('.channel-btn').forEach(b => b.classList.remove('active'));
                 channelBtn.classList.add('active');
                 
-                // Variables de control
                 const type = channelBtn.dataset.type;
                 const iframeContainer = document.getElementById('ept-tv-iframe');
                 const podcastContainer = document.getElementById('native-podcast-player');
-                const audioEl = document.getElementById('podcast-audio');
 
                 if (type === 'video') {
-                    // Modo Video
                     podcastContainer.style.display = 'none';
                     iframeContainer.style.display = 'block';
                     iframeContainer.src = channelBtn.dataset.src;
-                    // Pausar podcast para no cruzar el audio
-                    if (audioEl) audioEl.pause();
                 } else if (type === 'podcast') {
-                    // Modo Audio Nativo
                     iframeContainer.style.display = 'none';
-                    iframeContainer.src = ''; // Corta el video de YouTube y su consumo de red
+                    iframeContainer.src = ''; 
                     podcastContainer.style.display = 'flex'; 
                 }
             }
@@ -883,6 +886,183 @@ const ComunidadApp = {
         } catch (error) {
             console.error("Error al cargar el podcast:", error);
             document.getElementById('podcast-title').textContent = "Error de conexión con el Podcast.";
+        }
+    },
+
+    // ==========================================
+    // LOGICA DEL REPRODUCTOR DE PODCAST PERSISTENTE
+    // ==========================================
+    setupAudioPlayer() {
+        const audioEl = document.getElementById('hidden-audio-source');
+        const playBtn = document.getElementById('player-play-btn');
+        const closeBtn = document.getElementById('player-close-btn');
+        const timeline = document.getElementById('player-timeline-slider');
+        const currentTimeEl = document.getElementById('player-current-time');
+        const durationEl = document.getElementById('player-duration');
+        const volumeSlider = document.getElementById('player-volume-slider');
+        
+        // 1. Play / Pause
+        playBtn.addEventListener('click', () => {
+            if (audioEl.paused) {
+                audioEl.play();
+                playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+            } else {
+                audioEl.pause();
+                playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+            }
+        });
+
+        // 2. Avanzar / Retroceder 15 seg
+        document.getElementById('player-rewind-btn').addEventListener('click', () => audioEl.currentTime -= 15);
+        document.getElementById('player-forward-btn').addEventListener('click', () => audioEl.currentTime += 15);
+
+        // 3. Cerrar Reproductor
+        closeBtn.addEventListener('click', () => {
+            audioEl.pause();
+            document.getElementById('persistent-audio-player').style.display = 'none';
+        });
+
+        // 4. Actualizar Timeline
+        audioEl.addEventListener('timeupdate', () => {
+            const currentMinutes = Math.floor(audioEl.currentTime / 60);
+            const currentSeconds = Math.floor(audioEl.currentTime - currentMinutes * 60);
+            currentTimeEl.textContent = `${currentMinutes}:${currentSeconds.toString().padStart(2, '0')}`;
+            
+            if (audioEl.duration) {
+                const durationMinutes = Math.floor(audioEl.duration / 60);
+                const durationSeconds = Math.floor(audioEl.duration - durationMinutes * 60);
+                durationEl.textContent = `${durationMinutes}:${durationSeconds.toString().padStart(2, '0')}`;
+                timeline.value = (audioEl.currentTime / audioEl.duration) * 100;
+            }
+        });
+
+        // 5. Arrastrar Timeline
+        timeline.addEventListener('input', () => {
+            if(audioEl.duration) {
+                audioEl.currentTime = (timeline.value / 100) * audioEl.duration;
+            }
+        });
+
+        // 6. Volumen
+        volumeSlider.addEventListener('input', () => {
+            audioEl.volume = volumeSlider.value / 100;
+        });
+
+        // 7. Botón Lanzar desde Bento Box
+        document.getElementById('btn-launch-podcast').addEventListener('click', () => {
+            // Cortamos el video de youtube si está sonando
+            document.getElementById('ept-tv-iframe').src = ''; 
+            
+            audioEl.play();
+            playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+            document.getElementById('persistent-audio-player').style.display = 'block';
+        });
+    },
+
+    async fetchLatestPodcast() {
+        try {
+            const rssUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed%2Fpodcast';
+            const response = await fetch(rssUrl);
+            const data = await response.json();
+            
+            if (data.status === 'ok' && data.items.length > 0) {
+                const latestEpisode = data.items[0];
+                const audioUrl = latestEpisode.enclosure.link;
+                const title = latestEpisode.title;
+                const imgUrl = latestEpisode.thumbnail || 'https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png';
+                
+                // Actualizar la caja del Bento
+                document.getElementById('podcast-title').textContent = title;
+                document.getElementById('podcast-cover').src = imgUrl;
+
+                // Cargar datos en el reproductor persistente
+                document.getElementById('hidden-audio-source').src = audioUrl;
+                document.getElementById('player-track-title').textContent = title;
+                document.getElementById('player-track-image').src = imgUrl;
+
+                // Inicializar eventos del audio
+                this.setupAudioPlayer();
+            }
+        } catch (error) {
+            console.error("Error RSS Podcast:", error);
+        }
+    },
+
+    // ==========================================
+    // SIDEBAR DATA (RSS y Base de Datos)
+    // ==========================================
+    async renderLatestPublications() {
+        const list = document.getElementById('rss-publications-list');
+        if (!list) return;
+        try {
+            // Usamos la API Key que nos diste para las publicaciones
+            const rssUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua&order_dir=desc&count=4';
+            const response = await fetch(rssUrl);
+            const data = await response.json();
+
+            if (data.status === 'ok' && data.items.length > 0) {
+                list.innerHTML = data.items.map(pub => `
+                    <li>
+                        <a href="${pub.link}" target="_blank" style="text-decoration: none; display: block; padding: 0.2rem 0; transition: transform 0.2s;">
+                            <span style="display: block; font-weight: 600; color: var(--color-primary-text); font-size: 0.9rem; margin-bottom: 4px; line-height: 1.3;">${pub.title}</span>
+                            <span style="font-size: 0.75rem; color: var(--color-accent); font-weight: 600;">Leer artículo <i class="fa-solid fa-arrow-right" style="font-size: 0.7rem;"></i></span>
+                        </a>
+                    </li>
+                `).join('');
+            }
+        } catch (e) { console.error("Error RSS Publ:", e); }
+    },
+
+    async renderSidebarEvents() {
+        const list = document.getElementById('sidebar-event-list');
+        if (!list) return;
+        try {
+            const { data } = await this.supabase.from('sessions').select('id, session_title, scheduled_at, status').order('scheduled_at', { ascending: false }).limit(10); 
+            if (data) {
+                const upcoming = data.filter(s => s.status === 'PROGRAMADO').reverse().slice(0, 2);
+                const past = data.filter(s => s.status === 'FINALIZADO' || s.status === 'ARCHIVADO').slice(0, 2);
+                
+                let html = upcoming.map(s => `<li class="upcoming-event" style="margin-bottom: 0.8rem; border-left: 3px solid var(--color-accent); padding-left: 10px;"><a href="/l/${s.id}" style="text-decoration: none; color: var(--color-primary-text);"><strong style="color: var(--color-accent); font-size: 0.75rem; display: block; text-transform: uppercase;">Próximamente</strong><span style="font-size: 0.85rem; font-weight: 600; line-height: 1.3; display: block; margin-top: 3px;">${s.session_title}</span></a></li>`).join('');
+                html += past.map(s => `<li class="past-event" style="opacity: 0.7; margin-bottom: 0.8rem; padding-left: 10px;"><a href="/l/${s.id}" style="text-decoration: none; color: var(--color-primary-text);"><strong style="color: var(--color-secondary-text); font-size: 0.75rem; display: block; text-transform: uppercase;">Grabación</strong><span style="font-size: 0.85rem; line-height: 1.3; display: block; margin-top: 3px;">${s.session_title}</span></a></li>`).join('');
+                
+                list.innerHTML = html || '<li><span class="trend-topic">No hay eventos por mostrar.</span></li>';
+            }
+        } catch (e) { console.error(e); }
+    },
+
+    async renderFeaturedMembers() {
+        const list = document.getElementById('featured-members-list');
+        if (!list) return;
+        try {
+            // 1. Conseguir usuarios que tienen proyectos (limitamos para no saturar)
+            const { data: projects, error: projErr } = await this.supabase.from('projects').select('user_id').order('created_at', { ascending: false }).limit(30);
+            if (projErr) throw projErr;
+
+            // Extraer IDs únicos (Set) y tomar solo 4
+            const uniqueUserIds = [...new Set(projects.map(p => p.user_id))].slice(0, 4);
+
+            if (uniqueUserIds.length === 0) {
+                list.innerHTML = '<li><span class="trend-topic">Aún no hay investigadores destacados.</span></li>';
+                return;
+            }
+
+            // 2. Traer perfiles de esos IDs
+            const { data: profiles, error: profErr } = await this.supabase.from('profiles').select('id, display_name, username, avatar_url').in('id', uniqueUserIds);
+            if (profErr) throw profErr;
+
+            list.innerHTML = profiles.map(p => `
+                <li style="display: flex; align-items: center; gap: 10px; padding: 0.8rem 0; border-bottom: 1px solid var(--color-border);">
+                    <img src="${p.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid var(--color-surface);">
+                    <div style="flex-grow: 1;">
+                        <strong style="color: var(--color-primary-text); font-size: 0.95rem; display: block;">${p.display_name}</strong>
+                        <a href="/@${p.username}" target="_blank" style="color: var(--color-secondary-text); font-size: 0.8rem; text-decoration: none;">@${p.username}</a>
+                    </div>
+                </li>
+            `).join('');
+
+        } catch (error) {
+            console.error("Error Featured:", error);
+            list.innerHTML = '<li><span class="trend-topic">Error al cargar.</span></li>';
         }
     }
 
