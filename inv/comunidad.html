@@ -70,6 +70,11 @@
                             </div>
                     </div>
                 </div>
+                <div class="bento-box suggestions-box" style="margin-top: 1.5rem;">
+                    <h4><i class="fa-solid fa-users"></i> Investigadores Destacados</h4>
+                    <ul id="featured-members-list" class="members-list">
+                        </ul>
+                </div>
             </br>
                 <div class="bento-box nav-panel-box">
                     <nav class="community-nav">
@@ -105,21 +110,30 @@
             <aside class="right-column">
 
                 <div class="bento-box live-247-box" style="padding: 0; overflow: hidden; margin-bottom: 1.5rem; display: flex; flex-direction: column;">
-                    <div class="live-badge-247"><span class="pulse-dot"></span> EN VIVO 24/7</div>
+                    <div class="live-badge-247"><span class="pulse-dot"></span> EN VIVO / AUDIO</div>
                     
-                    <div style="width: 100%; aspect-ratio: 16/9; background: #000; position: relative;">
-                        <iframe id="ept-tv-iframe" src="https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=1&controls=1" allow="autoplay; encrypted-media" allowfullscreen style="width: 100%; height: 100%; border: none; display: block;"></iframe>
+                    <div style="width: 100%; aspect-ratio: 16/9; background: #000; position: relative;" id="media-display-area">
+                        
+                        <iframe id="ept-tv-iframe" src="https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=1&controls=1" allow="autoplay; encrypted-media" allowfullscreen style="width: 100%; height: 100%; border: none; display: block; position: absolute; inset: 0;"></iframe>
+                        
+                        <div id="native-podcast-player" style="display: none; flex-direction: column; width: 100%; height: 100%; background: linear-gradient(145deg, #1e293b, #0f172a); padding: 15px; text-align: center; justify-content: center; position: absolute; inset: 0; z-index: 2;">
+                            <img id="podcast-cover" src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" style="width: 70px; height: 70px; border-radius: 12px; margin: 0 auto 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); object-fit: cover;">
+                            <h4 id="podcast-title" style="color: white; margin: 0 0 5px 0; font-size: 0.9rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.2;">Cargando último episodio...</h4>
+                            <p style="color: var(--color-accent); font-size: 0.75rem; margin: 0 0 10px 0; font-weight: 600;">Podcast Oficial</p>
+                            <audio id="podcast-audio" controls style="width: 100%; height: 35px; outline: none; border-radius: 50px;"></audio>
+                        </div>
+
                     </div>
 
                     <div class="channel-switcher" id="tv-channel-switcher">
-                        <button class="channel-btn active" data-src="https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=1&controls=1" title="EPT TV (Canal Principal)">
+                        <button class="channel-btn active" data-type="video" data-src="https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=1&controls=1" title="EPT TV (Canal Principal)">
                             <i class="fa-solid fa-tower-broadcast"></i>
                         </button>
-                        <button class="channel-btn" data-src="https://www.youtube.com/embed/AK8Te1T8WD8?autoplay=1&mute=1&controls=1" title="Radio Relax (Lofi/Música)">
+                        <button class="channel-btn" data-type="video" data-src="https://www.youtube.com/embed/4xDzrXVK_P1?autoplay=1&mute=1&controls=1" title="Radio Relax (Lofi/Música)">
                             <i class="fa-solid fa-music"></i>
                         </button>
-                        <button class="channel-btn" data-src="https://open.spotify.com/embed/playlist/61RWu4CSG6rpOKwxWmDAyu" title="Mis Episodios de Podcast">
-                            <i class="fa-brands fa-spotify"></i>
+                        <button class="channel-btn" data-type="podcast" title="Escuchar Podcast Oficial">
+                            <i class="fa-solid fa-podcast"></i>
                         </button>
                     </div>
                 </div>
@@ -159,12 +173,6 @@
                         <li class="past-event"><strong>Grabación:</strong> Archivos Anteriores</li>
                     </ul>
                     <a href="/live.html#seccion-eventos" class="btn btn-secondary w-100 mt-2">Ver Calendario Completo</a>
-                </div>
-
-                <div class="bento-box suggestions-box" style="margin-top: 1.5rem;">
-                    <h4><i class="fa-solid fa-users"></i> Investigadores Destacados</h4>
-                    <ul id="featured-members-list" class="members-list">
-                        </ul>
                 </div>
 
             </aside>

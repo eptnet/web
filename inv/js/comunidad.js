@@ -57,6 +57,9 @@ const ComunidadApp = {
         this.toggleCreatePostBox(); // <-- [NUEVA LLAMADA] Esto activará la nueva lógica
         this.renderFeed();
         this.renderFeaturedMembers();
+        this.renderLatestPublications();
+        this.renderSidebarEvents();
+        this.fetchLatestPodcast();
     },
 
     // --- RENDERIZADO DE COMPONENTES DE LA UI ---
@@ -139,18 +142,31 @@ const ComunidadApp = {
                 this.openPostModal();
             }
 
-            // --- LÓGICA DEL MULTICANAL (Zapping) AQUÍ SÍ FUNCIONA ---
+            // --- LÓGICA DEL MULTICANAL (Zapping con reproductor nativo) ---
             const channelBtn = target.closest('.channel-btn');
             if (channelBtn) {
-                // 1. Quitamos la clase 'active' a todos los botones
+                // Quitar clase active a todos y ponérsela al clicado
                 document.querySelectorAll('.channel-btn').forEach(b => b.classList.remove('active'));
-                // 2. Se la ponemos al que el usuario hizo clic
                 channelBtn.classList.add('active');
                 
-                // 3. Cambiamos el video o iframe al instante
-                const iframe = document.getElementById('ept-tv-iframe');
-                if (iframe) {
-                    iframe.src = channelBtn.dataset.src;
+                // Variables de control
+                const type = channelBtn.dataset.type;
+                const iframeContainer = document.getElementById('ept-tv-iframe');
+                const podcastContainer = document.getElementById('native-podcast-player');
+                const audioEl = document.getElementById('podcast-audio');
+
+                if (type === 'video') {
+                    // Modo Video
+                    podcastContainer.style.display = 'none';
+                    iframeContainer.style.display = 'block';
+                    iframeContainer.src = channelBtn.dataset.src;
+                    // Pausar podcast para no cruzar el audio
+                    if (audioEl) audioEl.pause();
+                } else if (type === 'podcast') {
+                    // Modo Audio Nativo
+                    iframeContainer.style.display = 'none';
+                    iframeContainer.src = ''; // Corta el video de YouTube y su consumo de red
+                    podcastContainer.style.display = 'flex'; 
                 }
             }
         });
@@ -752,6 +768,123 @@ const ComunidadApp = {
             button.innerHTML = 'Conectar Cuenta';
         }
     },
+
+    // ==========================================
+    // NUEVOS MÓDULOS DE LA BARRA LATERAL (SIDEBAR)
+    // ==========================================
+
+    // 1. Cargar Últimas Publicaciones (Desde knowledge_base)
+    async renderLatestPublications() {
+        const list = document.getElementById('rss-publications-list');
+        if (!list) return;
+        
+        try {
+            const { data, error } = await this.supabase
+                .from('knowledge_base')
+                .select('title, url')
+                .eq('source_type', 'article')
+                .order('published_at', { ascending: false })
+                .limit(3);
+                
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+                list.innerHTML = data.map(pub => `
+                    <li>
+                        <a href="${pub.url}" target="_blank" style="text-decoration: none; display: block; padding: 0.2rem 0; transition: transform 0.2s;">
+                            <span style="display: block; font-weight: 600; color: var(--color-primary-text); font-size: 0.9rem; margin-bottom: 4px; line-height: 1.3;">${pub.title}</span>
+                            <span style="font-size: 0.75rem; color: var(--color-accent); font-weight: 600;">Leer artículo <i class="fa-solid fa-arrow-right" style="font-size: 0.7rem;"></i></span>
+                        </a>
+                    </li>
+                `).join('');
+            } else {
+                list.innerHTML = '<li><span class="trend-topic">No hay publicaciones recientes.</span></li>';
+            }
+        } catch (error) {
+            console.error("Error al cargar publicaciones:", error);
+            list.innerHTML = '<li><span class="trend-topic">Error al cargar la revista.</span></li>';
+        }
+    },
+
+    // 2. Cargar Agenda y Eventos (Desde sessions)
+    async renderSidebarEvents() {
+        const list = document.getElementById('sidebar-event-list');
+        if (!list) return;
+
+        try {
+            const { data, error } = await this.supabase
+                .from('sessions')
+                .select('id, session_title, scheduled_at, status')
+                .order('scheduled_at', { ascending: false })
+                .limit(10); 
+                
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+                // Filtramos localmente para tener 2 futuros y 2 pasados
+                const upcoming = data.filter(s => s.status === 'PROGRAMADO').reverse().slice(0, 2);
+                const past = data.filter(s => s.status === 'FINALIZADO' || s.status === 'ARCHIVADO').slice(0, 2);
+                
+                let html = '';
+                
+                upcoming.forEach(s => {
+                    const date = new Date(s.scheduled_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
+                    html += `
+                        <li class="upcoming-event" style="margin-bottom: 0.8rem; border-left: 3px solid var(--color-accent); padding-left: 10px;">
+                            <a href="/l/${s.id}" style="text-decoration: none; color: var(--color-primary-text);">
+                                <strong style="color: var(--color-accent); font-size: 0.75rem; display: block; text-transform: uppercase;">Próximamente (${date})</strong>
+                                <span style="font-size: 0.85rem; font-weight: 600; line-height: 1.3; display: block; margin-top: 3px;">${s.session_title}</span>
+                            </a>
+                        </li>`;
+                });
+                
+                past.forEach(s => {
+                    html += `
+                        <li class="past-event" style="opacity: 0.7; margin-bottom: 0.8rem; padding-left: 10px;">
+                            <a href="/l/${s.id}" style="text-decoration: none; color: var(--color-primary-text);">
+                                <strong style="color: var(--color-secondary-text); font-size: 0.75rem; display: block; text-transform: uppercase;">Grabación</strong>
+                                <span style="font-size: 0.85rem; line-height: 1.3; display: block; margin-top: 3px;">${s.session_title}</span>
+                            </a>
+                        </li>`;
+                });
+
+                list.innerHTML = html || '<li><span class="trend-topic">No hay eventos por mostrar.</span></li>';
+            } else {
+                list.innerHTML = '<li><span class="trend-topic">No hay eventos registrados.</span></li>';
+            }
+        } catch (error) {
+            console.error("Error al cargar eventos:", error);
+            list.innerHTML = '<li><span class="trend-topic">Error al cargar la agenda.</span></li>';
+        }
+    },
+
+    // 3. Obtener el Podcast vía RSS (Al estilo app.js)
+    async fetchLatestPodcast() {
+        try {
+            const rssUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https://eptnews.substack.com/feed/podcast';
+            const response = await fetch(rssUrl);
+            const data = await response.json();
+            
+            if (data.status === 'ok' && data.items.length > 0) {
+                const latestEpisode = data.items[0];
+                
+                // Extraemos el mp3, el título y la portada
+                const audioUrl = latestEpisode.enclosure.link;
+                const title = latestEpisode.title;
+                const imgUrl = latestEpisode.thumbnail || 'https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png';
+                
+                // Inyectamos todo en la caja oculta
+                document.getElementById('podcast-title').textContent = title;
+                document.getElementById('podcast-audio').src = audioUrl;
+                document.getElementById('podcast-cover').src = imgUrl;
+            } else {
+                document.getElementById('podcast-title').textContent = "No hay episodios disponibles.";
+            }
+        } catch (error) {
+            console.error("Error al cargar el podcast:", error);
+            document.getElementById('podcast-title').textContent = "Error de conexión con el Podcast.";
+        }
+    }
 
 };
 
