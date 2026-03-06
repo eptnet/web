@@ -117,7 +117,7 @@ const ComunidadApp = {
         }
     },
 
-    // --- MANEJADORES DE EVENTOS (Versión Actualizada y Corregida) ---
+    // --- MANEJADORES DE EVENTOS (Versión Unificada Definitiva) ---
     addEventListeners() {
         // 1. Listener para FORMULARIOS (Submits)
         document.body.addEventListener('submit', (e) => {
@@ -129,34 +129,63 @@ const ComunidadApp = {
                 e.preventDefault();
                 this.handleBlueskyConnect(e);
             }
-        }); // <--- AQUÍ TERMINA EL LISTENER DE FORMULARIOS
+        });
 
-        // 2. Listener para CLICS (Botones, Zapping, etc)
+        // 2. Listener para CLICS (Navegación, Modales, Zapping)
         document.body.addEventListener('click', (e) => {
             const target = e.target;
             const button = target.closest('button');
 
-            // --- ¡AQUÍ ESTÁ EL CREADOR DEL MODAL CORREGIDO! ---
+            // --- ABRIR MODAL DE INVESTIGADOR (Bloquea la nueva pestaña) ---
             const investigatorItem = target.closest('.featured-investigator-item');
             if (investigatorItem) {
                 e.preventDefault();
+                e.stopPropagation(); // Evitamos que cualquier otro evento interfiera
                 const username = investigatorItem.dataset.username;
                 if (username) {
                     this.openProfileModal(username);
                 }
             }
 
-            // Modal de Bluesky
+            // --- MENÚ LATERAL (Reglas, Notificaciones, etc.) ---
+            const navLink = target.closest('.community-nav-link');
+            if (navLink) {
+                if(navLink.getAttribute('href') === '#') e.preventDefault();
+
+                if (navLink.innerHTML.includes('Reglas')) {
+                    const rulesModal = document.getElementById('rules-modal-overlay');
+                    if (rulesModal) {
+                        rulesModal.style.display = 'flex';
+                        setTimeout(() => rulesModal.classList.add('is-visible'), 10);
+                    }
+                }
+                else if (navLink.id === 'notifications-bell-icon') {
+                    if (this.bskyCreds) window.open('https://bsky.app/notifications', '_blank');
+                    else alert("Únete a Epistecnología para recibir notificaciones.");
+                }
+                else if (navLink.innerHTML.includes('Guardados')) {
+                    alert("🚀 Próximamente: Podrás guardar tus artículos y debates favoritos.");
+                }
+            }
+
+            // --- CERRAR MODAL DE REGLAS ---
+            if (target.id === 'rules-close-btn' || target.id === 'rules-accept-btn' || target.id === 'rules-modal-overlay') {
+                const rulesModal = document.getElementById('rules-modal-overlay');
+                if (rulesModal) {
+                    rulesModal.classList.remove('is-visible');
+                    setTimeout(() => rulesModal.style.display = 'none', 300);
+                }
+            }
+
+            // --- MODALES BSKY Y PUBLICAR ---
             if (button && (button.id === 'connect-bsky-btn' || button.id === 'connect-bsky-in-creator-btn')) {
                 this.openBskyConnectModal();
             }
-            
-            // Modal de Crear Post
             if (button && button.id === 'fab-create-post') {
                 this.openPostModal();
             }
 
-            // --- LÓGICA DEL MULTICANAL (Zapping con reproductor nativo) ---
+            // --- ZAPPING (REPRODUCTOR 24/7 MULTICANAL) ---
             const channelBtn = target.closest('.channel-btn');
             if (channelBtn) {
                 document.querySelectorAll('.channel-btn').forEach(b => b.classList.remove('active'));
@@ -178,7 +207,7 @@ const ComunidadApp = {
             }
         });
 
-        // 3. Listener para el Feed (Likes, Comentarios, etc.)
+        // 3. Listener para el FEED (Likes, Reply, Share)
         document.getElementById('feed-container')?.addEventListener('click', (e) => {
             const likeButton = e.target.closest('.like-btn');
             const replyButton = e.target.closest('.reply-btn');
@@ -1155,15 +1184,12 @@ const ComunidadApp = {
     openProfileModal(username) {
         console.log("Abriendo perfil de:", username);
         let modalContainer = document.getElementById('modal-container');
-        
-        // Si por alguna razón el contenedor no existe en el HTML, lo creamos
         if (!modalContainer) {
             modalContainer = document.createElement('div');
             modalContainer.id = 'modal-container';
             document.body.appendChild(modalContainer);
         }
         
-        // Inyectamos el modal con estilos incrustados a prueba de fallos
         modalContainer.innerHTML = `
             <div class="modal-overlay" id="profile-iframe-overlay" style="z-index: 9999; display: flex; opacity: 0; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); transition: opacity 0.3s ease;">
                 <div class="modal" style="width: 95%; max-width: 1000px; height: 90vh; padding: 0; position: relative; overflow: hidden; background: var(--color-background); border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); transform: scale(0.95); transition: transform 0.3s ease;">
@@ -1177,13 +1203,12 @@ const ComunidadApp = {
         const modalBox = overlay.querySelector('.modal');
         document.body.style.overflow = 'hidden'; 
         
-        // Forzamos el renderizado para que la animación de entrada funcione suavemente
-        requestAnimationFrame(() => {
+        // Timeout para asegurar que la transición de CSS se vea correctamente
+        setTimeout(() => {
             overlay.style.opacity = '1';
             modalBox.style.transform = 'scale(1)';
-        });
+        }, 10);
         
-        // Función de cierre animado
         const closeFn = () => {
             overlay.style.opacity = '0';
             modalBox.style.transform = 'scale(0.95)';
