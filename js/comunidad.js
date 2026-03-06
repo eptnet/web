@@ -12,9 +12,8 @@ const ComunidadApp = {
 
     // --- INICIALIZACIÓN DE LA APLICACIÓN ---
     async init() {
-        const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
-        this.supabase = window.supabaseClient || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // Heredamos la conexión global creada por main.js
+        this.supabase = window.supabaseClient;
 
         await this.handleUserSession();
         this.addEventListeners();
@@ -82,7 +81,7 @@ const ComunidadApp = {
             if (actionArea) {
                 actionArea.innerHTML = `
                     <p style="font-size: 0.85rem; color: var(--color-secondary-text);">Inicia sesión para poder publicar e interactuar.</p>
-                    <button class="btn-primary" style="width: 100%; margin-top: 10px;" onclick="document.getElementById('login-modal-trigger')?.click();">Iniciar Sesión</button>
+                    <button class="btn-primary" style="width: 100%; margin-top: 10px;" onclick="window.location.href='/?auth=open';">Iniciar Sesión</button>
                 `;
             }
             const profileBtn = contentPanel.querySelector('.btn-secondary');
@@ -1000,22 +999,31 @@ const ComunidadApp = {
         const list = document.getElementById('rss-publications-list');
         if (!list) return;
         try {
-            // Usamos la API Key que nos diste para las publicaciones
-            const rssUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua&order_dir=desc&count=4';
-            const response = await fetch(rssUrl);
-            const data = await response.json();
+            // Consultamos tu tabla knowledge_base directamente
+            const { data, error } = await this.supabase
+                .from('knowledge_base')
+                .select('title, url')
+                .order('published_at', { ascending: false })
+                .limit(4);
 
-            if (data.status === 'ok' && data.items.length > 0) {
-                list.innerHTML = data.items.map(pub => `
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+                list.innerHTML = data.map(pub => `
                     <li>
-                        <a href="${pub.link}" target="_blank" style="text-decoration: none; display: block; padding: 0.2rem 0; transition: transform 0.2s;">
+                        <a href="${pub.url}" target="_blank" style="text-decoration: none; display: block; padding: 0.2rem 0; transition: transform 0.2s;">
                             <span style="display: block; font-weight: 600; color: var(--color-primary-text); font-size: 0.9rem; margin-bottom: 4px; line-height: 1.3;">${pub.title}</span>
                             <span style="font-size: 0.75rem; color: var(--color-accent); font-weight: 600;">Leer artículo <i class="fa-solid fa-arrow-right" style="font-size: 0.7rem;"></i></span>
                         </a>
                     </li>
                 `).join('');
+            } else {
+                list.innerHTML = '<li><span class="trend-topic">No hay publicaciones recientes.</span></li>';
             }
-        } catch (e) { console.error("Error RSS Publ:", e); }
+        } catch (e) { 
+            console.error("Error cargando revista desde BD:", e); 
+            list.innerHTML = '<li><span class="trend-topic">No se pudieron cargar las publicaciones.</span></li>';
+        }
     },
 
     async renderSidebarEvents() {
@@ -1073,7 +1081,7 @@ const ComunidadApp = {
 
 };
 
-// Inicializar la aplicación cuando el DOM esté listo.
-document.addEventListener('DOMContentLoaded', () => {
+// Inicializar la aplicación SOLAMENTE cuando main.js haya preparado Supabase
+document.addEventListener('mainReady', () => {
     ComunidadApp.init();
 });
