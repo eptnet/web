@@ -143,46 +143,6 @@ const ComunidadApp = {
 
         // 2. Listener para CLICS (Botones, Zapping, etc)
         document.body.addEventListener('click', (e) => {
-            // --- NAVEGACIÓN IZQUIERDA (Menú de Comunidad) ---
-            const navLink = target.closest('.community-nav-link');
-            if (navLink) {
-                // Evitamos que salte hacia arriba si tiene href="#"
-                if(navLink.getAttribute('href') === '#') e.preventDefault();
-
-                // 1. REGLAS
-                if (navLink.innerHTML.includes('Reglas')) {
-                    const rulesModal = document.getElementById('rules-modal-overlay');
-                    if (rulesModal) {
-                        rulesModal.style.display = 'flex';
-                        setTimeout(() => rulesModal.classList.add('is-visible'), 10);
-                    }
-                }
-                
-                // 2. NOTIFICACIONES
-                else if (navLink.id === 'notifications-bell-icon') {
-                    if (this.bskyCreds) {
-                        // Si está logueado, lo llevamos a sus notificaciones reales
-                        window.open('https://bsky.app/notifications', '_blank');
-                    } else {
-                        // Si es invitado
-                        alert("Únete a Epistecnología para recibir notificaciones de respuestas y menciones.");
-                    }
-                }
-
-                // 3. GUARDADOS
-                else if (navLink.innerHTML.includes('Guardados')) {
-                    alert("🚀 Próximamente: Podrás guardar tus artículos y debates favoritos en tu biblioteca personal.");
-                }
-            }
-
-            // --- CERRAR MODAL DE REGLAS ---
-            if (target.id === 'rules-close-btn' || target.id === 'rules-accept-btn' || target.id === 'rules-modal-overlay') {
-                const rulesModal = document.getElementById('rules-modal-overlay');
-                if (rulesModal) {
-                    rulesModal.classList.remove('is-visible');
-                    setTimeout(() => rulesModal.style.display = 'none', 300);
-                }
-            }
 
             const target = e.target;
             const button = target.closest('button');
