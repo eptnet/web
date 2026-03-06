@@ -861,7 +861,7 @@ const ComunidadApp = {
     // 3. Obtener el Podcast vía RSS (Al estilo app.js)
     async fetchLatestPodcast() {
         try {
-            const rssUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https://eptnews.substack.com/feed/podcast';
+            const rssUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fapi.substack.com%2Ffeed%2Fpodcast%2F2867518%2Fs%2F186951.rss';
             const response = await fetch(rssUrl);
             const data = await response.json();
             
