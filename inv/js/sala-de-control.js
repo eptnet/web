@@ -259,6 +259,16 @@ const ControlRoom = {
     // SISTEMA DE VOTACIÓN (SALA DE CONTROL)
     // ==========================================
     async setupPollSystem() {
+        // --- Lógica del Panel Colapsable (Acordeón) ---
+        const pollToggleBtn = document.getElementById('poll-toggle-btn');
+        const pollContent = document.getElementById('poll-collapsible-content');
+        const pollChevron = document.getElementById('poll-chevron');
+
+        pollToggleBtn.addEventListener('click', () => {
+            const isHidden = pollContent.style.display === 'none';
+            pollContent.style.display = isHidden ? 'block' : 'none';
+            pollChevron.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+        });
         const btnLaunch = document.getElementById('btn-launch-poll');
         const btnClose = document.getElementById('btn-close-poll');
         

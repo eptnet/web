@@ -43,18 +43,23 @@
             </div>
 
             <div id="poll-control-panel" class="poll-control-panel">
-                <div class="poll-header">
-                    <h3><i class="fa-solid fa-chart-simple"></i> Encuesta Rápida</h3>
+                <div class="poll-header" id="poll-toggle-btn" style="cursor: pointer; transition: 0.2s; user-select: none;" title="Abrir/Cerrar panel de encuestas">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-chevron-down" id="poll-chevron" style="transition: transform 0.3s; font-size: 0.85rem; color: #94a3b8;"></i>
+                        <h3 style="margin: 0; font-size: 0.95rem; color: #e2e8f0;"><i class="fa-solid fa-chart-simple"></i> Encuesta Rápida</h3>
+                    </div>
                     <span id="poll-status-indicator" class="status-badge status-waiting" style="padding: 2px 8px; font-size:0.7rem;">Cerrada</span>
                 </div>
-                <div id="poll-setup-area">
-                    <input type="text" id="poll-emojis-input" placeholder="Ej: 👍, 🤯, 👎 (Separa con comas)">
-                    <button id="btn-launch-poll" class="btn-start-stream" style="width:100%; justify-content:center; padding: 6px; margin-top:8px; font-size: 0.85rem;"><i class="fa-solid fa-bolt"></i> Iniciar Encuesta</button>
-                </div>
-                <div id="poll-results-area" class="hidden">
-                    <div id="poll-counters" class="poll-counters">
-                        </div>
-                    <button id="btn-close-poll" class="btn-stop-stream" style="width:100%; justify-content:center; padding: 6px; margin-top:10px; font-size: 0.85rem;"><i class="fa-solid fa-stop"></i> Cerrar Encuesta</button>
+                
+                <div id="poll-collapsible-content" style="display: none; padding-top: 15px; margin-top: 10px; border-top: 1px solid #334155;">
+                    <div id="poll-setup-area">
+                        <input type="text" id="poll-emojis-input" placeholder="Ej: 👍, 🤯, 👎">
+                        <button id="btn-launch-poll" class="btn-start-stream" style="width:100%; justify-content:center; padding: 6px; margin-top:8px; font-size: 0.85rem;"><i class="fa-solid fa-bolt"></i> Iniciar Encuesta</button>
+                    </div>
+                    <div id="poll-results-area" class="hidden">
+                        <div id="poll-counters" class="poll-counters"></div>
+                        <button id="btn-close-poll" class="btn-stop-stream" style="width:100%; justify-content:center; padding: 6px; margin-top:10px; font-size: 0.85rem;"><i class="fa-solid fa-stop"></i> Cerrar Encuesta</button>
+                    </div>
                 </div>
             </div>
 
