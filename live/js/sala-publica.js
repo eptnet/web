@@ -124,6 +124,10 @@ const PublicRoomApp = {
 
             // Inicializar la sección de comentarios en la parte inferior
             this.setupCommentsSection(this.sessionData);
+
+            // Inicializar contadores de la encuesta en vivo
+            this.pollCounts = {};
+            await this.loadInitialPollData();
             
             this.renderUI();
             this.handlePlayerAndCountdown();
@@ -388,9 +392,22 @@ const PublicRoomApp = {
                     this.handlePlayerAndCountdown(); // Cierra el telón suavemente
                     this.setupChats(); // Deshabilita el chat automáticamente
                 }
+                // --- DETECTAR CAMBIOS EN LA ENCUESTA ---
+                if (payload.new.poll_status !== this.sessionData.poll_status || JSON.stringify(payload.new.active_emojis) !== JSON.stringify(this.sessionData.active_emojis)) {
+                    this.sessionData.poll_status = payload.new.poll_status;
+                    this.sessionData.active_emojis = payload.new.active_emojis;
+                    this.renderLivePoll();
+                }
             }).subscribe();
 
         this.realtimeChannel.subscribe(async (status) => {
+            // 5. ESCUCHAR LOS VOTOS DE LA ENCUESTA
+            this.supabase.channel(`public:poll_votes`)
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'poll_votes', filter: `session_id=eq.${this.sessionId}` }, (payload) => {
+                    const emoji = payload.new.emoji;
+                    this.pollCounts[emoji] = (this.pollCounts[emoji] || 0) + 1;
+                    this.updatePollCountersUI();
+            }).subscribe();
             if (status === 'SUBSCRIBED') await this.realtimeChannel.track({ online_at: new Date().toISOString() });
         });
     },
@@ -690,6 +707,71 @@ const PublicRoomApp = {
             feed.insertBefore(div, feed.firstChild);
         } else {
             feed.appendChild(div);
+        }
+    }
+
+    // ==========================================
+    // SISTEMA DE VOTACIÓN (ÁGORA PÚBLICA)
+    // ==========================================
+    async loadInitialPollData() {
+        // Traemos todos los clics que hayan ocurrido (aún si la sesión ya terminó)
+        const { data: votes } = await this.supabase.from('poll_votes').select('emoji').eq('session_id', this.sessionId);
+        if (votes) {
+            votes.forEach(v => { this.pollCounts[v.emoji] = (this.pollCounts[v.emoji] || 0) + 1; });
+        }
+        this.renderLivePoll();
+    },
+
+    renderLivePoll() {
+        const container = document.getElementById('live-poll-container');
+        if (!container) return;
+
+        const isActive = this.sessionData.poll_status === 'abierto';
+        const emojis = this.sessionData.active_emojis || [];
+
+        if (isActive && emojis.length > 0) {
+            container.innerHTML = emojis.map(emj => `
+                <button class="poll-btn" data-emoji="${emj}" title="Votar ${emj}">
+                    ${emj} <span class="poll-count" id="count-${encodeURIComponent(emj)}">${this.pollCounts[emj] || 0}</span>
+                </button>
+            `).join('');
+            container.classList.remove('hidden');
+
+            // Añadimos el listener a los botones nuevos
+            container.querySelectorAll('.poll-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => this.submitVote(e.currentTarget));
+            });
+        } else {
+            container.classList.add('hidden');
+            container.innerHTML = '';
+        }
+    },
+
+    updatePollCountersUI() {
+        const emojis = this.sessionData.active_emojis || [];
+        emojis.forEach(emj => {
+            const countSpan = document.getElementById(`count-${encodeURIComponent(emj)}`);
+            if (countSpan) countSpan.textContent = this.pollCounts[emj] || 0;
+        });
+    },
+
+    async submitVote(button) {
+        const emoji = button.dataset.emoji;
+        
+        // Pequeña animación de Feedback al hacer clic
+        button.style.transform = 'scale(1.2)';
+        setTimeout(() => button.style.transform = '', 150);
+
+        // Disparamos la inserción a la base de datos (El Realtime se encarga de subir el número)
+        try {
+            const userId = this.currentUserProfile?.id || null; // Si no está logueado, queda null (Anónimo)
+            await this.supabase.from('poll_votes').insert([{
+                session_id: this.sessionId,
+                user_id: userId,
+                emoji: emoji
+            }]);
+        } catch (error) {
+            console.error("Error al registrar el voto:", error);
         }
     }
 };

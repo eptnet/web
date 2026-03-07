@@ -143,3 +143,14 @@ body {
 #btn-send-control-chat:hover { background-color: #0ea5e9; transform: scale(1.05); }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+/* --- PANEL DE VOTACIONES (DIRECTOR) --- */
+.poll-control-panel { background: #0f172a; border-bottom: 1px solid #334155; padding: 12px 15px; flex-shrink: 0; }
+.poll-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.poll-header h3 { margin: 0; font-size: 0.95rem; color: #e2e8f0; display: flex; align-items: center; gap: 8px; }
+#poll-emojis-input { width: 100%; background-color: #1e293b; border: 1px solid #334155; color: white; padding: 8px 12px; border-radius: 8px; outline: none; transition: 0.2s; font-size: 1rem;}
+#poll-emojis-input:focus { border-color: #facc15; }
+.poll-counters { display: grid; grid-template-columns: repeat(auto-fit, minmax(50px, 1fr)); gap: 8px; }
+.poll-counter-item { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 8px 0; text-align: center; display: flex; flex-direction: column; gap: 2px;}
+.poll-counter-emoji { font-size: 1.4rem; line-height: 1; }
+.poll-counter-value { font-weight: 700; font-size: 1.1rem; color: #38bdf8; }

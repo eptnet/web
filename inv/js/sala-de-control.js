@@ -69,6 +69,9 @@ const ControlRoom = {
         }
 
         this.setupRealtimeChat();
+        // Iniciar el sistema de encuestas del Director
+        this.pollCounts = {};
+        await this.setupPollSystem();
         this.setupEventListeners();
     },
 
@@ -251,6 +254,92 @@ const ControlRoom = {
         feed.insertAdjacentHTML('beforeend', msgHtml);
         feed.scrollTop = feed.scrollHeight; 
     }
+
+    // ==========================================
+    // SISTEMA DE VOTACIÓN (SALA DE CONTROL)
+    // ==========================================
+    async setupPollSystem() {
+        const btnLaunch = document.getElementById('btn-launch-poll');
+        const btnClose = document.getElementById('btn-close-poll');
+        
+        // 1. Cargar votos existentes
+        const { data: votes } = await this.supabase.from('poll_votes').select('emoji').eq('session_id', this.sessionId);
+        if (votes) {
+            votes.forEach(v => { this.pollCounts[v.emoji] = (this.pollCounts[v.emoji] || 0) + 1; });
+        }
+
+        // 2. Configurar la Interfaz Inicial
+        this.renderPollControlUI(this.sessionData.poll_status, this.sessionData.active_emojis);
+
+        // 3. Funciones de los Botones
+        btnLaunch.addEventListener('click', async () => {
+            const rawInput = document.getElementById('poll-emojis-input').value;
+            // Limpia y separa los emojis por comas, máximo 4.
+            const emojis = rawInput.split(',').map(e => e.trim()).filter(e => e).slice(0, 4);
+            
+            if (emojis.length === 0) { alert("Ingresa al menos 1 emoji."); return; }
+
+            btnLaunch.disabled = true;
+            btnLaunch.innerHTML = "Iniciando...";
+            
+            // Enviamos la orden a la base de datos
+            await this.supabase.from('sessions').update({ poll_status: 'abierto', active_emojis: emojis }).eq('id', this.sessionId);
+            this.renderPollControlUI('abierto', emojis);
+        });
+
+        btnClose.addEventListener('click', async () => {
+            btnClose.disabled = true;
+            await this.supabase.from('sessions').update({ poll_status: 'cerrado' }).eq('id', this.sessionId);
+            this.renderPollControlUI('cerrado', []);
+        });
+
+        // 4. Escuchar votos en Tiempo Real
+        this.supabase.channel('control-poll-votes')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'poll_votes', filter: `session_id=eq.${this.sessionId}` }, (payload) => {
+                const emoji = payload.new.emoji;
+                this.pollCounts[emoji] = (this.pollCounts[emoji] || 0) + 1;
+                this.updatePollCountersUI(this.sessionData.active_emojis);
+            }).subscribe();
+    },
+
+    renderPollControlUI(status, emojis) {
+        this.sessionData.poll_status = status;
+        this.sessionData.active_emojis = emojis || [];
+        
+        const setupArea = document.getElementById('poll-setup-area');
+        const resultsArea = document.getElementById('poll-results-area');
+        const indicator = document.getElementById('poll-status-indicator');
+        const btnLaunch = document.getElementById('btn-launch-poll');
+        const btnClose = document.getElementById('btn-close-poll');
+
+        if (status === 'abierto') {
+            setupArea.classList.add('hidden');
+            resultsArea.classList.remove('hidden');
+            indicator.className = 'status-badge status-live';
+            indicator.innerHTML = 'Activa';
+            this.updatePollCountersUI(emojis);
+        } else {
+            setupArea.classList.remove('hidden');
+            resultsArea.classList.add('hidden');
+            indicator.className = 'status-badge status-waiting';
+            indicator.innerHTML = 'Cerrada';
+            btnLaunch.disabled = false;
+            btnLaunch.innerHTML = '<i class="fa-solid fa-bolt"></i> Iniciar Encuesta';
+        }
+        btnClose.disabled = false;
+    },
+
+    updatePollCountersUI(activeEmojis) {
+        const container = document.getElementById('poll-counters');
+        if (!container) return;
+        
+        container.innerHTML = activeEmojis.map(emj => `
+            <div class="poll-counter-item">
+                <span class="poll-counter-emoji">${emj}</span>
+                <span class="poll-counter-value">${this.pollCounts[emj] || 0}</span>
+            </div>
+        `).join('');
+    },
 };
 
 document.addEventListener('DOMContentLoaded', () => ControlRoom.init());
