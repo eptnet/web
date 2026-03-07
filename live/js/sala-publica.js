@@ -708,7 +708,7 @@ const PublicRoomApp = {
         } else {
             feed.appendChild(div);
         }
-    }
+    },
 
     // ==========================================
     // SISTEMA DE VOTACIÓN (ÁGORA PÚBLICA)

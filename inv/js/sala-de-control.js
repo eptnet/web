@@ -253,7 +253,7 @@ const ControlRoom = {
         `;
         feed.insertAdjacentHTML('beforeend', msgHtml);
         feed.scrollTop = feed.scrollHeight; 
-    }
+    },
 
     // ==========================================
     // SISTEMA DE VOTACIÓN (SALA DE CONTROL)
