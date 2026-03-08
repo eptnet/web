@@ -224,7 +224,10 @@ const ComunidadApp = {
         // La gestión del 'submit' ahora se hace de forma centralizada y única en `addEventListeners`.
 
         // Mantenemos los listeners para los elementos internos del formulario que no son 'submit'.
-        container.querySelector('#post-text')?.addEventListener('input', (e) => this.updateCharCounter(e));
+        container.querySelector('#post-text')?.addEventListener('input', (e) => {
+            this.updateCharCounter(e);
+            this.detectLinkInText(e.target.value); // Aquí sí existe la "e"
+        });
 
         const imageUploadBtn = container.querySelector('#image-upload-btn');
         const imageUploadInput = container.querySelector('#image-upload-input');
@@ -246,6 +249,11 @@ const ComunidadApp = {
                 <form id="create-post-form">
                     <div class="textarea-container">
                         <textarea id="post-text" name="post-text" placeholder="¿Qué estás investigando hoy?" maxlength="300" required></textarea>
+                        
+                        <div id="link-preview-loader" style="display:none; font-size: 0.8rem; margin: 10px 0; color: var(--color-accent);">
+                            <i class="fa-solid fa-spinner fa-spin"></i> Generando vista previa...
+                        </div>
+                        <div id="link-preview-editor" class="link-preview-card" style="display:none; margin-bottom: 15px; position: relative;"></div>
                     </div>
 
                     <div id="image-preview-container" class="image-preview-container" style="display: none;">
@@ -269,7 +277,7 @@ const ComunidadApp = {
             `;
             // Re-adjuntamos listeners para el nuevo contenido
             this.addFormEventListeners(container);
-
+            
         } else if (this.bskyCreds) {
             // Usuario normal conectado
             container.innerHTML = `<h4>¡Ya eres parte de la conversación!</h4><p class="form-hint">Tu cuenta está conectada. Ahora puedes interactuar. La creación de posts está reservada para investigadores.</p>`;
@@ -322,47 +330,64 @@ const ComunidadApp = {
     // --- LÓGICA DE INTERACCIÓN (Versión Actualizada) ---
 
     /**
-     * Maneja la creación de un nuevo post, ya sea desde el form en página o el modal.
-     * @param {HTMLFormElement} form - El formulario que inició el evento.
+     * Maneja la creación de un nuevo post, extrayendo URLs y validando límites de Bluesky.
      */
     async handleCreatePost(form) {
         const submitButton = form.querySelector('button[type="submit"]');
         const textArea = form.querySelector('textarea[name="post-text"]');
         const postText = textArea.value.trim();
 
+        // 1. DETECCIÓN AUTOMÁTICA DE URL (Regex)
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        const match = postText.match(urlRegex);
+        const postLink = match ? match[0] : null;
+
         if (!postText && !this.selectedImageFile) {
             alert("El post debe contener texto o una imagen.");
+            return;
+        }
+
+        // 2. VALIDACIÓN DE LÍMITE DE 1MB
+        if (this.selectedImageFile && this.selectedImageFile.size > 1048576) {
+            alert("La imagen es demasiado pesada para Bluesky (máximo 1MB).");
             return;
         }
 
         submitButton.disabled = true;
         submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Publicando...';
 
-        let body = { postText };
+        // Capturamos los datos de la vista previa generada por Microlink si existen
+        const previewImg = document.querySelector('#link-preview-editor img');
+        const previewTitle = document.querySelector('#link-preview-editor strong');
+        const previewDesc = document.querySelector('#link-preview-editor p');
 
-        // Si hay una imagen seleccionada, la convertimos a Base64 y la añadimos al body
+        let body = { 
+            postText: postText,
+            postLink: postLink,
+            linkTitle: previewTitle ? previewTitle.textContent : null,
+            linkDescription: previewDesc ? previewDesc.textContent : null,
+            linkThumb: previewImg ? previewImg.src : null
+        };
+
         if (this.selectedImageFile) {
             try {
                 const base64Image = await new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.readAsDataURL(this.selectedImageFile);
-                    reader.onload = () => resolve(reader.result.split(',')[1]); // Quitamos el prefijo "data:image/jpeg;base64,"
+                    reader.onload = () => resolve(reader.result.split(',')[1]);
                     reader.onerror = error => reject(error);
                 });
-                
                 body.base64Image = base64Image;
                 body.imageMimeType = this.selectedImageFile.type;
-                
             } catch (error) {
                 console.error("Error al leer la imagen:", error);
-                alert("No se pudo procesar la imagen seleccionada.");
+                alert("No se pudo procesar la imagen.");
                 submitButton.disabled = false;
                 submitButton.textContent = 'Publicar';
                 return;
             }
         }
 
-        // Llamamos a la Edge Function con el texto y opcionalmente la imagen
         try {
             const { error } = await this.supabase.functions.invoke('bsky-create-post', {
                 body: body,
@@ -371,30 +396,21 @@ const ComunidadApp = {
 
             this.prependNewPost(postText, this.selectedImageFile);
             textArea.value = '';
-            this.removeSelectedImage(); // Limpiamos la imagen seleccionada
+            this.removeSelectedImage();
             this.updateCharCounter({ target: textArea });
             this.closePostModal();
 
         } catch (error) {
             console.error("Error al publicar:", error);
-            
-            // --- NUEVA LÓGICA INTELIGENTE DE ERRORES ---
             const errMsg = error.message || "";
-            
-            // Si el servidor devuelve error 500/400 (non-2xx) o habla de tokens, es casi seguro que la clave caducó
             if (errMsg.includes('non-2xx') || errMsg.includes('revoked') || errMsg.includes('Expired')) {
-                alert("Tu clave de aplicación de Bluesky ha caducado o fue revocada. Por favor, genera una nueva en Bluesky y vuelve a conectar tu perfil para seguir publicando.");
-                
-                // Le cerramos el modal de publicar y le abrimos automáticamente el de conectar cuenta
+                alert("Tu clave de Bluesky ha caducado. Por favor, reconecta tu cuenta.");
                 this.closePostModal();
                 this.openBskyConnectModal();
             } else {
-                // Para cualquier otro error (ej. sin internet)
-                alert(`No se pudo publicar el post. Por favor, revisa tu conexión e inténtalo de nuevo.`);
+                alert(`No se pudo publicar. Revisa tu conexión.`);
             }
-
         } finally {
-            // Restauramos el botón a su estado normal
             if (submitButton) {
                 submitButton.disabled = false;
                 submitButton.textContent = 'Publicar';
@@ -608,29 +624,41 @@ const ComunidadApp = {
         const isLiked = !!post.viewer?.like;
         const postDate = new Date(post.indexedAt).toLocaleString('es-ES', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
 
-        // --- INICIO DE LA MODIFICACIÓN ---
+        // --- INICIO DE LA MODIFICACIÓN (Miniaturas Reparadas) ---
         let embedHtml = '';
-            const embed = post.embed;
-            if (embed) {
-            if (embed.$type === 'app.bsky.embed.images' && embed.images) {
-                embedHtml = `<div class="post-embed-image"><img src="${embed.images[0].thumb}" alt="${embed.images[0].alt || 'Imagen adjunta'}" loading="lazy"></div>`;
-            } else if (embed.$type === 'app.bsky.embed.external' && embed.external) {
-                const external = embed.external;
+        const embed = post.embed;
+        
+        if (embed) {
+            // Extraemos los datos omitiendo el problema del sufijo #view de Bluesky
+            // También contemplamos si vienen anidados (recordWithMedia)
+            const imagesData = embed.images || (embed.media && embed.media.images);
+            const externalData = embed.external || (embed.media && embed.media.external);
+
+            if (imagesData && imagesData.length > 0) {
+                // Renderizado para Imágenes
                 embedHtml = `
-                    <a href="${external.uri}" target="_blank" rel="noopener noreferrer" class="link-preview-card">
-                    ${external.thumb ? `<img src="${external.thumb}" alt="Vista previa del enlace" class="link-preview-image">` : ''}
-                    <div class="link-preview-info">
-                        <p class="link-preview-title">${external.title}</p>
-                        <p class="link-preview-description">${external.description}</p>
-                        <p class="link-preview-uri">${new URL(external.uri).hostname}</p>
-                    </div>
+                    <div class="post-embed-image">
+                        <img src="${imagesData[0].thumb}" alt="${imagesData[0].alt || 'Imagen adjunta'}" loading="lazy" style="max-height: 400px; width: 100%; object-fit: cover; border-radius: 12px; margin-top: 10px;">
+                    </div>`;
+            } else if (externalData) {
+                // Renderizado para Enlaces/Eventos (La miniatura que faltaba)
+                let hostname = 'Enlace externo';
+                try { hostname = new URL(externalData.uri).hostname; } catch(e) {}
+
+                embedHtml = `
+                    <a href="${externalData.uri}" target="_blank" rel="noopener noreferrer" class="link-preview-card" style="display: block; text-decoration: none; color: inherit; border: 1px solid var(--color-border); border-radius: 12px; overflow: hidden; margin-top: 12px; background: var(--color-surface); transition: transform 0.2s;">
+                        ${externalData.thumb ? `<img src="${externalData.thumb}" alt="Vista previa" class="link-preview-image" style="width: 100%; height: 200px; object-fit: cover; border-bottom: 1px solid var(--color-border);">` : ''}
+                        <div class="link-preview-info" style="padding: 15px;">
+                            <p class="link-preview-title" style="margin: 0 0 5px 0; font-weight: 700; font-size: 0.95rem; line-height: 1.3; color: var(--color-primary-text);">${externalData.title || hostname}</p>
+                            <p class="link-preview-description" style="margin: 0 0 10px 0; font-size: 0.85rem; color: var(--color-secondary-text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4;">${externalData.description || ''}</p>
+                            <p class="link-preview-uri" style="margin: 0; font-size: 0.75rem; color: var(--color-accent); font-weight: 600;"><i class="fa-solid fa-link"></i> ${hostname}</p>
+                        </div>
                     </a>
                 `;
             }
         }
         // --- FIN DE LA MODIFICACIÓN ---
 
-        // El cambio clave está en el botón de la mitad, ahora es un 'fa-share-nodes'
         return `
             <div class="bento-box feed-post" data-uri="${post.uri}" data-cid="${post.cid}">
                 <div class="post-header">
@@ -648,7 +676,7 @@ const ComunidadApp = {
                     <span class="post-date">${postDate}</span>
                     <div class="post-actions">
                         <button class="post-action-btn share-btn" title="Copiar y compartir enlace">
-                            <i class="fa-solid fa-copy"></i>
+                            <i class="fa-solid fa-share-nodes"></i>
                         </button>
                         <button class="post-action-btn reply-btn" title="Comentar">
                             <i class="fa-regular fa-comment"></i>
@@ -715,7 +743,10 @@ const ComunidadApp = {
         // });
 
         const textArea = modalNode.querySelector('textarea');
-        textArea.addEventListener('input', (e) => this.updateCharCounter(e));
+        textArea.addEventListener('input', (e) => {
+            this.updateCharCounter(e);
+            this.detectLinkInText(e.target.value);
+        });
 
         // Añadimos el modal (aún invisible) al DOM
         modalContainer.appendChild(modalNode);
@@ -1223,6 +1254,54 @@ const ComunidadApp = {
         
         overlay.querySelector('.modal-close-btn').addEventListener('click', closeFn);
         overlay.addEventListener('click', (e) => { if(e.target === overlay) closeFn(); });
+    },
+
+    // Detecta si hay un link mientras el usuario escribe
+    detectLinkInText(text) {
+        const urlRegex = /(https?:\/\/[^\s]+)/;
+        const match = text.match(urlRegex);
+        const currentUrl = match ? match[0] : null;
+
+        // Si hay una URL y es distinta a la última procesada
+        if (currentUrl && currentUrl !== this.lastProcessedUrl) {
+            this.lastProcessedUrl = currentUrl;
+            this.fetchLinkPreview(currentUrl);
+        } else if (!currentUrl) {
+            this.lastProcessedUrl = null;
+            document.getElementById('link-preview-editor').style.display = 'none';
+        }
+    },
+
+    // Obtiene los datos del link y los muestra en el editor
+    async fetchLinkPreview(url) {
+        const loader = document.getElementById('link-preview-loader');
+        const container = document.getElementById('link-preview-editor');
+        
+        loader.style.display = 'block';
+        
+        try {
+            // Usamos una API gratuita de ayuda para obtener metadatos rápidamente en el cliente
+            const res = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`);
+            const json = await res.json();
+            const meta = json.data;
+
+            if (meta) {
+                container.innerHTML = `
+                    <button type="button" class="remove-image-btn" onclick="document.getElementById('link-preview-editor').style.display='none'" style="top: 5px; right: 5px;">&times;</button>
+                    ${meta.image ? `<img src="${meta.image.url}" style="width:100%; height:150px; object-fit:cover; border-bottom:1px solid var(--color-border);">` : ''}
+                    <div style="padding:12px;">
+                        <strong style="display:block; font-size:0.9rem; color:var(--color-primary-text); margin-bottom:4px;">${meta.title || 'Enlace'}</strong>
+                        <p style="font-size:0.8rem; color:var(--color-secondary-text); margin:0; line-height:1.2;">${meta.description || ''}</p>
+                        <span style="font-size:0.75rem; color:var(--color-accent); margin-top:8px; display:block;"><i class="fa-solid fa-link"></i> ${new URL(url).hostname}</span>
+                    </div>
+                `;
+                container.style.display = 'block';
+            }
+        } catch (e) {
+            console.error("Error preview:", e);
+        } finally {
+            loader.style.display = 'none';
+        }
     },
 
 };

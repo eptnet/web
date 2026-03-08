@@ -92,6 +92,11 @@
                     <form id="create-post-form">
                         <div class="textarea-container">
                             <textarea id="post-text" name="post-text" placeholder="¿Qué estás investigando hoy?" maxlength="300" required></textarea>
+                            <div id="link-preview-loader" style="display:none; font-size: 0.8rem; margin: 10px 0; color: var(--color-accent);">
+                                <i class="fa-solid fa-spinner fa-spin"></i> Generando vista previa...
+                            </div>
+                            <div id="link-preview-editor" class="link-preview-card" style="display:none; margin-bottom: 15px; position: relative;">
+                                </div>
                             <span class="char-counter">300</span>
                         </div>
                         <div class="create-post-actions">
@@ -192,6 +197,10 @@
                         <div class="textarea-container">
                             <img id="modal-user-avatar" src="" alt="Tu avatar" class="post-avatar">
                             <textarea name="post-text" placeholder="¿Qué hay de nuevo, investigador?" maxlength="300" required></textarea>
+                            <div id="link-preview-loader-modal" style="display:none; font-size: 0.8rem; margin: 10px 0; color: var(--color-accent);">
+                                <i class="fa-solid fa-spinner fa-spin"></i> Generando vista previa...
+                            </div>
+<div id="link-preview-editor-modal" class="link-preview-card" style="display:none; margin-bottom: 15px; position: relative;"></div>
                         </div>
                         <div class="form-actions">
                             <div class="action-icons">
