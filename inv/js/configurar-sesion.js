@@ -299,7 +299,8 @@ const SessionConfigApp = {
             // 1. SOLUCIÓN A LO ABSTRACTO: 
             // Eliminamos "Concept art for:" para que el modelo haga imágenes fotorrealistas.
             let finalStyle = style;
-            let cleanPrompt = `${title}. ${promptInput}. Medium-wide shot, centered composition, showing surroundings. No text, no watermarks`;
+            // Directrices de cámara enfocadas en objetos/escenarios (evita humanos por defecto)
+let cleanPrompt = `${title}. ${promptInput}. Wide angle, centered object, expansive background. no people unless requested. No text, no watermarks`;
             
             // Si elige cómic, lo adaptamos al idioma que entiende tu Edge Function
             if (style === 'comic 2D') {
