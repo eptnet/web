@@ -390,18 +390,45 @@ const StudioApp = {
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    canvas.width = img.width; canvas.height = img.height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0);
+                    
+                    // LÓGICA DE RECORTE (Crop en lugar de Stretch)
+                    let sourceX = 0;
+                    let sourceY = 0;
+                    let sourceWidth = img.width;   // La imagen original es 1024
+                    let sourceHeight = img.height; // La imagen original es 1024
 
-                    // NUEVA MARCA DE AGUA CON EMOJI ✨
-                    const watermarkText = "IA EPT ✨";
-                    ctx.font = "bold 28px Arial";
-                    ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
-                    ctx.textAlign = "right"; ctx.textBaseline = "bottom";
-                    ctx.shadowColor = "rgba(0, 0, 0, 0.9)"; ctx.shadowBlur = 8; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2;
+                    if (ratio === "16:9") {
+                        // Recortamos arriba y abajo para hacerla horizontal
+                        sourceHeight = img.width * (9 / 16); 
+                        sourceY = (img.height - sourceHeight) / 2; // Centramos el recorte
+                    } else if (ratio === "9:16") {
+                        // Recortamos a los lados para hacerla vertical
+                        sourceWidth = img.height * (9 / 16);
+                        sourceX = (img.width - sourceWidth) / 2; // Centramos el recorte
+                    }
+
+                    // El canvas tendrá el tamaño del recorte perfecto
+                    canvas.width = sourceWidth; 
+                    canvas.height = sourceHeight;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Dibujamos solo la porción recortada en el canvas
+                    ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, sourceWidth, sourceHeight);
+
+                    // MARCA DE AGUA
+                    const watermarkText = "✨EPT IA";
+                    ctx.font = "bold 18px Arial";
+                    ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
+                    ctx.textAlign = "right"; 
+                    ctx.textBaseline = "bottom";
+                    ctx.shadowColor = "rgba(0, 0, 0, 0.9)"; 
+                    ctx.shadowBlur = 8; 
+                    ctx.shadowOffsetX = 2; 
+                    ctx.shadowOffsetY = 2;
 
                     ctx.fillText(watermarkText, canvas.width - 20, canvas.height - 20);
+                    
+                    // Devolvemos la imagen ya recortada y con marca de agua
                     resolve(canvas.toDataURL('image/jpeg', 0.9));
                 };
                 img.onerror = () => reject(new Error("Error procesando imagen."));
@@ -421,6 +448,15 @@ const StudioApp = {
                 </div>
             `;
             tray.insertAdjacentHTML('afterbegin', imgHtml);
+            // MOSTRAR LA IMAGEN EN LA COLUMNA DE REDES SOCIALES
+            const socialImageSection = document.getElementById('social-image-attach-section');
+            const socialImagePreview = document.getElementById('social-attached-preview');
+            if (socialImageSection && socialImagePreview) {
+                socialImagePreview.src = watermarkedImageData;
+                socialImageSection.style.display = 'block';
+                // Guardamos la imagen cruda para enviarla a Bluesky
+                this.lastGeneratedImageBase64 = watermarkedImageData.split(',')[1];
+            }
             resultsContainer.innerHTML = '<p style="color: #2ecc71; font-size:0.85rem; margin-top: 1rem;"><i class="fa-solid fa-check"></i> ¡Lista! Haz clic para ampliar o arrástrala al editor.</p>';
 
         } catch (error) {
@@ -553,13 +589,23 @@ const StudioApp = {
                 try {
                     const { data: creds } = await this.supabase.from('bsky_credentials').select('*').eq('user_id', this.userId).single();
                     
+                    // Verificamos si el usuario quiere adjuntar la imagen generada
+                    const attachCheckbox = document.getElementById('checkbox-attach-image');
+                    const includeImage = attachCheckbox && attachCheckbox.checked && this.lastGeneratedImageBase64;
+
                     const payloadBluesky = {
                         postText: textForCommunity,
                         postLink: postLink,
                         linkTitle: linkTitle,
                         linkDescription: linkDescription,
-                        linkThumb: linkThumb // AHORA SÍ ENVIAMOS LA IMAGEN AL SERVIDOR
+                        linkThumb: linkThumb
                     };
+
+                    // Si hay imagen marcada, la añadimos al envío
+                    if (includeImage) {
+                        payloadBluesky.base64Image = this.lastGeneratedImageBase64;
+                        payloadBluesky.imageMimeType = 'image/jpeg';
+                    }
 
                     if (creds) {
                         const { error } = await this.supabase.functions.invoke('bsky-create-post', { body: payloadBluesky });

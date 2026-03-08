@@ -296,11 +296,19 @@ const SessionConfigApp = {
         btn.disabled = true;
 
         try {
-            const stylePrompt = style === 'comic' ? 'Cartoon & Comic Style, 2D animation' : style;
-            const imgPrompt = `Concept art for: ${title}. ${promptInput}. Style: ${stylePrompt}. Action in the center of image. No text, no watermarks.`;
+            // 1. SOLUCIÓN A LO ABSTRACTO: 
+            // Eliminamos "Concept art for:" para que el modelo haga imágenes fotorrealistas.
+            let finalStyle = style;
+            let cleanPrompt = `${title}. ${promptInput}. Medium-wide shot, centered composition, showing surroundings. No text, no watermarks`;
+            
+            // Si elige cómic, lo adaptamos al idioma que entiende tu Edge Function
+            if (style === 'comic 2D') {
+                cleanPrompt += ", detailed comic book style, 2d illustration";
+                finalStyle = 'vector'; 
+            }
 
             const { data: imgData, error: imgError } = await this.supabase.functions.invoke('generate-image', { 
-                body: { prompt: imgPrompt, style: style, ratio: '16:9' } 
+                body: { prompt: cleanPrompt, style: finalStyle, ratio: '16:9' } 
             });
             if (imgError) throw imgError;
 
@@ -311,8 +319,16 @@ const SessionConfigApp = {
                     const canvas = document.createElement('canvas');
                     canvas.width = 1280; canvas.height = 720;
                     const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                     
+                    // 2. LÓGICA DE RECORTE (Crop 16:9)
+                    // Mantiene la imagen en proporción perfecta sin importar el tamaño que envíe FLUX
+                    const sourceWidth = img.width; 
+                    const sourceHeight = img.width * (9 / 16); 
+                    const sourceY = (img.height - sourceHeight) / 2; 
+
+                    ctx.drawImage(img, 0, sourceY, sourceWidth, sourceHeight, 0, 0, canvas.width, canvas.height);
+                    
+                    // Renderizado de las letras con el degradado
                     if (thumbText) {
                         const gradient = ctx.createLinearGradient(0, 0, canvas.width * 0.7, 0);
                         gradient.addColorStop(0, "rgba(0, 0, 0, 0.85)");
