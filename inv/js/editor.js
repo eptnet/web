@@ -382,7 +382,9 @@ const StudioApp = {
             const { data, error } = await this.supabase.functions.invoke('generate-image', { 
                 body: { prompt: promptInput, style: style, ratio: ratio } 
             });
-            if (error) throw error;
+            
+            if (error) throw error; // Falla de red severa
+            if (data && data.success === false) throw new Error(data.error); // Nuestro mensaje personalizado
 
             const watermarkedImageData = await new Promise((resolve, reject) => {
                 const img = new Image();
@@ -518,23 +520,49 @@ const StudioApp = {
                 textForCommunity += `\n\n📖 Enlace: ${postLink}`;
             }
 
+            // NUEVO: Consultamos Microlink silenciosamente para obtener la miniatura
+            let linkTitle = null;
+            let linkDescription = null;
+            let linkThumb = null;
+
+            if (postLink) {
+                try {
+                    const res = await fetch(`https://api.microlink.io?url=${encodeURIComponent(postLink)}`);
+                    const json = await res.json();
+                    if (json.data) {
+                        linkTitle = json.data.title;
+                        linkDescription = json.data.description;
+                        linkThumb = json.data.image ? json.data.image.url : null;
+                    }
+                } catch (e) {
+                    console.warn("No se pudo extraer la miniatura desde el editor:", e);
+                }
+            }
+
             // PASO 1: PRIMERO ACTUALIZAMOS LA BASE DE DATOS
-            // CORRECCIÓN: Usamos 'updated_at' porque 'published_at' no existe en tu tabla posts
             const { error: dbError } = await this.supabase.from('posts').update({ 
                 status: 'published', 
                 updated_at: new Date().toISOString() 
             }).eq('id', this.currentPost.id);
 
-            if (dbError) throw dbError; // Si falla la BD, saltamos al catch principal
+            if (dbError) throw dbError;
 
-            // PASO 2: INTENTAMOS PUBLICAR EN BLUESKY (Aislado para no romper la app si falla)
+            // PASO 2: PUBLICAR EN BLUESKY CON TODOS LOS DATOS
             let bskyErrorMsg = null;
             if (postToCommunity) {
                 try {
                     const { data: creds } = await this.supabase.from('bsky_credentials').select('*').eq('user_id', this.userId).single();
                     
+                    const payloadBluesky = {
+                        postText: textForCommunity,
+                        postLink: postLink,
+                        linkTitle: linkTitle,
+                        linkDescription: linkDescription,
+                        linkThumb: linkThumb // AHORA SÍ ENVIAMOS LA IMAGEN AL SERVIDOR
+                    };
+
                     if (creds) {
-                        const { error } = await this.supabase.functions.invoke('bsky-create-post', { body: { postText: textForCommunity, postLink: postLink }});
+                        const { error } = await this.supabase.functions.invoke('bsky-create-post', { body: payloadBluesky });
                         if (error) throw error;
                     } else {
                         const authorInfo = {
@@ -542,18 +570,19 @@ const StudioApp = {
                             handle: null,
                             orcid: this.currentUserProfile.orcid
                         };
-                        const { error: botError } = await this.supabase.functions.invoke('bot-create-post', { body: { postText: textForCommunity, authorInfo, postLink: postLink }});
+                        payloadBluesky.authorInfo = authorInfo;
+                        const { error: botError } = await this.supabase.functions.invoke('bot-create-post', { body: payloadBluesky });
                         if (botError) throw botError;
                     }
                 } catch (bskyErr) {
                     console.error("Fallo interno en Bluesky:", bskyErr);
-                    bskyErrorMsg = bskyErr.message || "La función bsky-create-post falló.";
+                    bskyErrorMsg = bskyErr.message || "La función falló.";
                 }
             }
 
             // PASO 3: INFORMAR AL USUARIO
             if (bskyErrorMsg) {
-                alert(`⚠️ El artículo fue publicado y enviado al Editor, PERO falló la publicación en redes. Motivo: ${bskyErrorMsg}`);
+                alert(`⚠️ El artículo fue publicado, PERO falló la publicación en redes. Motivo: ${bskyErrorMsg}`);
             } else {
                 alert("¡Contenido publicado con éxito en la comunidad y enviado al Editor!");
             }
