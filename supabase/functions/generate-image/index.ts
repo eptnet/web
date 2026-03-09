@@ -11,22 +11,27 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const { prompt, style } = await req.json();
+    const { prompt, style, ratio, engine = 'flux' } = await req.json();
     if (!prompt) throw new Error("No se recibió texto.");
 
-    // Prompts optimizados para el modelo SUPERIOR (FLUX)
+    // PROMPTS MAESTROS NIVEL EXPERTO (Evitando deformaciones y exigiendo calidad top)
     let styleModifier = "";
-    if (style === "editorial") styleModifier = "masterpiece, highly detailed, classical art style, professional concept art";
-    if (style === "realistic") styleModifier = "ultra photorealistic, 8k resolution, cinematic lighting, sharp focus";
-    if (style === "vector") styleModifier = "flat vector illustration, clean lines, solid colors, minimalist, white background";
-    if (style === "cinematic") styleModifier = "cinematic shot, dramatic lighting, epic composition, 35mm photography";
+    if (style === "editorial") styleModifier = "award-winning professional editorial illustration, pristine composition, flawless proportions, high-end commercial art, masterpiece, visually stunning, no deformations";
+    if (style === "realistic") styleModifier = "ultra-realistic 8k photography, shot on 35mm lens, perfect anatomy, sharp focus, National Geographic standard, highly detailed, photorealistic, no anatomical anomalies";
+    if (style === "vector") styleModifier = "premium vector graphics, clean SVG style, flat colors, perfect geometry, professional corporate illustration, minimalist, white background, UI asset";
+    if (style === "cinematic") styleModifier = "Hollywood cinematic lighting, epic establishing shot, rule of thirds, photorealistic, majestic composition, 8k resolution, flawless perspective";
     
+    // TAMAÑOS UNIVERSALES: Confiamos en que la API respete la medida enviada
+    let width = 1024, height = 1024;
+    if (ratio === "16:9") { width = 1024; height = 576; }
+    else if (ratio === "9:16") { width = 576; height = 1024; }
+    else if (ratio === "1:1") { width = 1024; height = 1024; }
+
     const finalPrompt = encodeURIComponent(`${prompt}, ${styleModifier}`);
     const randomSeed = Math.floor(Math.random() * 1000000);
 
-    // 1. VOLVEMOS A FLUX.
-    // 2. SIEMPRE pedimos 1024x1024 para que la IA dé su máximo rendimiento sin estirar.
-    const imageUrl = `https://image.pollinations.ai/prompt/${finalPrompt}?width=1024&height=1024&model=flux&seed=${randomSeed}&nologo=true`;
+    // URL Limpia y directa
+    const imageUrl = `https://image.pollinations.ai/prompt/${finalPrompt}?width=${width}&height=${height}&model=${engine}&seed=${randomSeed}&nologo=true`;
 
     const response = await fetch(imageUrl);
     if (!response.ok) throw new Error("Servicio saturado. Intenta de nuevo.");

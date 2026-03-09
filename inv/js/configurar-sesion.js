@@ -286,6 +286,7 @@ const SessionConfigApp = {
         const title = document.getElementById('session-title').value.trim();
         const promptInput = document.getElementById('ai-prompt-input').value.trim();
         const style = document.getElementById('ai-image-style').value;
+        const engine = document.getElementById('ai-image-engine').value;
         const thumbText = document.getElementById('thumbnail-text').value.trim(); 
         
         if (!title && !promptInput) { alert("Genera primero el título o escribe de qué tratará la sesión."); return; }
@@ -299,17 +300,16 @@ const SessionConfigApp = {
             // 1. SOLUCIÓN A LO ABSTRACTO: 
             // Eliminamos "Concept art for:" para que el modelo haga imágenes fotorrealistas.
             let finalStyle = style;
-            // Directrices de cámara enfocadas en objetos/escenarios (evita humanos por defecto)
-let cleanPrompt = `${title}. ${promptInput}. Wide angle, centered object, expansive background. no people unless requested. No text, no watermarks`;
+            let cleanPrompt = `${title}. ${promptInput}. No text, no watermarks`;
             
             // Si elige cómic, lo adaptamos al idioma que entiende tu Edge Function
-            if (style === 'comic 2D') {
-                cleanPrompt += ", detailed comic book style, 2d illustration";
+            if (style === 'Cartoon & Comic Style') {
+                cleanPrompt += ", detailed comic book style, 2d illustration. No text, no watermarks";
                 finalStyle = 'vector'; 
             }
 
             const { data: imgData, error: imgError } = await this.supabase.functions.invoke('generate-image', { 
-                body: { prompt: cleanPrompt, style: finalStyle, ratio: '16:9' } 
+                body: { prompt: cleanPrompt, style: finalStyle, ratio: '16:9', engine: engine } 
             });
             if (imgError) throw imgError;
 

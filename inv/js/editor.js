@@ -367,6 +367,7 @@ const StudioApp = {
         const promptInput = document.getElementById('ai-image-prompt').value.trim();
         const style = document.getElementById('ai-image-style').value;
         const ratio = document.getElementById('ai-image-ratio').value; // NUEVO
+        const engine = document.getElementById('ai-image-engine').value;
         const resultsContainer = document.getElementById('ai-image-results');
 
         if (promptInput.length < 10) {
@@ -380,7 +381,7 @@ const StudioApp = {
         try {
             // Pasamos el nuevo parámetro ratio a la Edge Function
             const { data, error } = await this.supabase.functions.invoke('generate-image', { 
-                body: { prompt: promptInput, style: style, ratio: ratio } 
+                body: { prompt: promptInput, style: style, ratio: ratio, engine: engine } 
             });
             
             if (error) throw error; // Falla de red severa
@@ -388,37 +389,22 @@ const StudioApp = {
 
             const watermarkedImageData = await new Promise((resolve, reject) => {
                 const img = new Image();
+                img.crossOrigin = "anonymous";
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
                     
-                    // LÓGICA DE RECORTE (Crop en lugar de Stretch)
-                    let sourceX = 0;
-                    let sourceY = 0;
-                    let sourceWidth = img.width;   // La imagen original es 1024
-                    let sourceHeight = img.height; // La imagen original es 1024
-
-                    if (ratio === "16:9") {
-                        // Recortamos arriba y abajo para hacerla horizontal
-                        sourceHeight = img.width * (9 / 16); 
-                        sourceY = (img.height - sourceHeight) / 2; // Centramos el recorte
-                    } else if (ratio === "9:16") {
-                        // Recortamos a los lados para hacerla vertical
-                        sourceWidth = img.height * (9 / 16);
-                        sourceX = (img.width - sourceWidth) / 2; // Centramos el recorte
-                    }
-
-                    // El canvas tendrá el tamaño del recorte perfecto
-                    canvas.width = sourceWidth; 
-                    canvas.height = sourceHeight;
+                    // LÓGICA PURA: El canvas adopta el tamaño exacto que la IA decidió enviar
+                    canvas.width = img.width; 
+                    canvas.height = img.height;
                     const ctx = canvas.getContext('2d');
                     
-                    // Dibujamos solo la porción recortada en el canvas
-                    ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, sourceWidth, sourceHeight);
+                    // Dibujamos la imagen intacta, sin recortes ni escalas
+                    ctx.drawImage(img, 0, 0);
 
                     // MARCA DE AGUA
-                    const watermarkText = "✨EPT IA";
-                    ctx.font = "bold 18px Arial";
-                    ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
+                    const watermarkText = "IA EPT ✨";
+                    ctx.font = "bold 28px Arial";
+                    ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
                     ctx.textAlign = "right"; 
                     ctx.textBaseline = "bottom";
                     ctx.shadowColor = "rgba(0, 0, 0, 0.9)"; 
@@ -428,8 +414,7 @@ const StudioApp = {
 
                     ctx.fillText(watermarkText, canvas.width - 20, canvas.height - 20);
                     
-                    // Devolvemos la imagen ya recortada y con marca de agua
-                    resolve(canvas.toDataURL('image/jpeg', 0.9));
+                    resolve(canvas.toDataURL('image/jpeg', 0.95)); // Aumentamos la calidad de exportación a 95%
                 };
                 img.onerror = () => reject(new Error("Error procesando imagen."));
                 img.src = data.image; 
