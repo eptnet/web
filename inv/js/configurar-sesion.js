@@ -303,7 +303,7 @@ const SessionConfigApp = {
             let cleanPrompt = `${title}. ${promptInput}. No text, no watermarks`;
             
             // Si elige cómic, lo adaptamos al idioma que entiende tu Edge Function
-            if (style === 'Cartoon & Comic Style') {
+            if (style === 'Cartoon & Comic Classic') {
                 cleanPrompt += ", detailed comic book style, 2d illustration. No text, no watermarks";
                 finalStyle = 'vector'; 
             }
