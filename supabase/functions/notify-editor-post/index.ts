@@ -27,6 +27,11 @@ serve(async (req) => {
       return new Response(JSON.stringify({ message: "El post ya estaba publicado antes. Ignorando." }), { status: 200, headers: corsHeaders })
     }
 
+    // NUEVO: Respetar la decisión del Editor de NO enviar correo
+    if (newPost.send_email === false) {
+      return new Response(JSON.stringify({ message: "Publicación exclusiva para RRSS. Se omite el correo automático." }), { status: 200, headers: corsHeaders })
+    }
+
     // 3. Cliente con permisos de Administrador para cruzar datos
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',

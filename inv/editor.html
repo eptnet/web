@@ -24,6 +24,12 @@
                 </select>
                 <span id="doi-badge" class="badge-hidden" title="Proyecto verificado con DOI"><i class="fa-solid fa-certificate"></i> DOI Verificado</span>
             </div>
+            <div class="project-focus-selector" style="margin-left: 15px;">
+                <label for="draft-select" style="color:#facc15;"><i class="fa-solid fa-file-pen"></i> Borradores:</label>
+                <select id="draft-select" class="form-control">
+                    <option value="">+ Nuevo Artículo...</option>
+                </select>
+            </div>
         </div>
 
         <div class="topbar-right">
@@ -94,6 +100,11 @@
                         <option value="flux">FLUX.1 (Máxima Calidad / Lento)</option>
                         <option value="z-image">Z-Image Turbo (Ultrarrápido / Tamaños Exactos)</option>
                     </select>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label>Texto en la Imagen (Opcional)</label>
+                        <input type="text" id="ai-image-text" class="form-control" placeholder="Ej: ÚLTIMA HORA">
+                        <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 5px;">Añade un titular impactante sobre la imagen.</p>
+                    </div>
                 </div>
                 <button id="ai-generate-image-btn" class="btn-primary w-100"><i class="fa-solid fa-palette"></i> Pintar Imagen</button>
                 <div id="ai-image-results"></div>
@@ -138,10 +149,21 @@
                     <label class="network-toggle">
                         <input type="checkbox" id="dest-epistecnologia" checked disabled> <span class="network-icon epist-bg"><i class="fa-solid fa-microscope"></i></span> Comunidad Epistecnología
                     </label>
-                    <label class="network-toggle">
-                        <input type="checkbox" id="dest-bsky">
-                        <span class="network-icon bsky-bg"><i class="fa-brands fa-bluesky"></i></span> Bluesky
-                    </label>
+                    <div style="margin-top: 20px; margin-bottom: 15px; padding: 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-envelope-open-text" style="color: #10b981; font-size: 1.2rem;"></i>
+                            <span style="font-size: 0.9rem; color: var(--color-text-primary); font-weight: 500;">Enviar artículo por correo</span>
+                        </div>
+                        <label style="position: relative; display: inline-block; width: 40px; height: 20px; cursor: pointer;">
+                            <input type="checkbox" id="toggle-newsletter" checked style="display: none;">
+                            <span class="slider-bg" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #10b981; border-radius: 20px; transition: .4s;"></span>
+                            <span class="slider-dot" style="position: absolute; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; transform: translateX(20px);"></span>
+                        </label>
+                    </div>
+                    <style>
+                        #toggle-newsletter:not(:checked) ~ .slider-bg { background-color: #475569 !important; }
+                        #toggle-newsletter:not(:checked) ~ .slider-dot { transform: translateX(0) !important; }
+                    </style>
                     <label class="network-toggle" title="Próximamente">
                         <input type="checkbox" id="dest-linkedin" disabled>
                         <span class="network-icon linkedin-bg"><i class="fa-brands fa-linkedin-in"></i></span> LinkedIn

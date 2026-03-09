@@ -69,6 +69,7 @@ const StudioApp = {
         await this.initializeEditor();
         this.addEventListeners();
         await this.loadUserProjects();
+        await this.loadUserDrafts();
 
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('postId')) await this.loadPost(urlParams.get('postId'));
@@ -179,6 +180,30 @@ const StudioApp = {
             option.dataset.doi = p.doi || ''; 
             option.textContent = p.title.length > 40 ? p.title.substring(0, 40) + '...' : p.title;
             select.appendChild(option);
+        });
+    },
+
+    async loadUserDrafts() {
+        const { data: drafts, error } = await this.supabase
+            .from('posts').select('id, title')
+            .eq('user_id', this.userId).eq('status', 'draft')
+            .order('updated_at', { ascending: false });
+            
+        if (error) return console.error("Error cargando borradores:", error);
+        
+        const select = document.getElementById('draft-select');
+        select.innerHTML = '<option value="">+ Nuevo Artículo...</option>';
+        drafts.forEach(d => {
+            const option = document.createElement('option');
+            option.value = d.id;
+            option.textContent = d.title || 'Borrador sin título';
+            if (String(d.id) === String(this.currentPost.id)) option.selected = true;
+            select.appendChild(option);
+        });
+        
+        select.addEventListener('change', (e) => {
+            if(e.target.value) window.location.href = `/inv/editor.html?postId=${e.target.value}`;
+            else window.location.href = `/inv/editor.html`;
         });
     },
 
@@ -402,8 +427,8 @@ const StudioApp = {
                     ctx.drawImage(img, 0, 0);
 
                     // MARCA DE AGUA
-                    const watermarkText = "IA EPT ✨";
-                    ctx.font = "bold 28px Arial";
+                    const watermarkText = "✨EPT IA";
+                    ctx.font = "bold 18px Arial";
                     ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
                     ctx.textAlign = "right"; 
                     ctx.textBaseline = "bottom";
@@ -561,8 +586,11 @@ const StudioApp = {
             }
 
             // PASO 1: PRIMERO ACTUALIZAMOS LA BASE DE DATOS
+            const sendNewsletter = document.getElementById('toggle-newsletter').checked;
+
             const { error: dbError } = await this.supabase.from('posts').update({ 
                 status: 'published', 
+                send_email: sendNewsletter, // <-- GUARDAMOS TU DECISIÓN AQUÍ
                 updated_at: new Date().toISOString() 
             }).eq('id', this.currentPost.id);
 
