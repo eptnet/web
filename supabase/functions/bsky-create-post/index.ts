@@ -19,7 +19,7 @@ serve(async (req) => {
     let styleModifier = "";
     if (style === "editorial") styleModifier = "professional editorial illustration, highly detailed, classical art style, masterpiece";
     if (style === "realistic") styleModifier = "photorealistic, 8k resolution, scientific photography, sharp focus, realistic textures";
-    if (style === "vector") styleModifier = "flat vector illustration, 2d, clean lines, solid colors, minimalist educational infographic, white background";
+    if (style === "vector") styleModifier = "flat vector illustration, 2d, clean lines, solid colors, minimalist educational, white background";
     if (style === "cinematic") styleModifier = "cinematic lighting, movie still, dramatic shadows, epic composition, hyperrealistic 35mm photograph";
     
     // 2. Dimensiones nativas para SDXL (El modelo se adapta al lienzo sin estirar)
