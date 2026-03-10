@@ -9,7 +9,11 @@
     <link rel="stylesheet" href="/inv/css/dashboard.css">
     <link rel="stylesheet" href="/inv/css/editor.css"> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     
-    <script src="https://cdn.tiny.cloud/1/wac03ii8izevsozn0if0ssfme0syw62i0zw7szp05f8trx3o/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/image@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/raw"></script>
 </head>
 <body class="studio-body">
     <header class="studio-topbar">
@@ -41,82 +45,116 @@
 
     <main class="studio-workspace">
         
-        <aside class="col-ai-engine pane">
-            <div class="pane-header">
-                <h2><i class="fa-solid fa-brain"></i> Asistente de Creación</h2>
-            </div>
-            
-            <div class="ai-tabs">
-                <button class="ai-tab-btn active" data-target="tab-text"><i class="fa-solid fa-pen-nib"></i> Texto</button>
-                <button class="ai-tab-btn" data-target="tab-image"><i class="fa-solid fa-image"></i> Imagen</button>
-                <button class="ai-tab-btn disabled" data-target="tab-video" title="Próximamente"><i class="fa-solid fa-film"></i> Video</button>
+        <aside class="col-sidebar pane">
+            <div class="sidebar-tabs">
+                <button class="sidebar-tab-btn active" data-target="panel-ai"><i class="fa-solid fa-brain"></i> Asistente IA</button>
+                <button class="sidebar-tab-btn" data-target="panel-dist"><i class="fa-solid fa-share-nodes"></i> Publicar</button>
             </div>
 
-            <div class="ai-tab-content active" id="tab-text">
-                <div class="form-group">
-                    <label>¿Qué necesitas redactar?</label>
-                    <select id="ai-task-dropdown" class="form-control">
-                        <option value="social">Hilo para Redes Sociales</option>
-                        <option value="summary">Resumen (Abstract)</option>
-                        <option value="text">Artículo de Divulgación</option>
-                        <option value="script">Guion para Video Corto</option>
-                    </select>
+            <div id="panel-ai" class="sidebar-panel active">
+                <div class="ai-tabs">
+                    <button class="ai-tab-btn active" data-target="tab-text"><i class="fa-solid fa-pen-nib"></i> Texto</button>
+                    <button class="ai-tab-btn" data-target="tab-image"><i class="fa-solid fa-image"></i> Imagen</button>
                 </div>
-                <div class="form-group">
-                    <label>Instrucciones adicionales (Opcional):</label>
-                    <textarea id="ai-custom-prompt" rows="4" placeholder="Ej: Usa un tono irónico, enfócate en los resultados del año 2023..."></textarea>
-                </div>
-                <button id="ai-generate-text-btn" class="btn-primary w-100"><i class="fa-solid fa-wand-magic-sparkles"></i> Generar Texto</button>
-                <div id="ai-text-results" class="ai-results-container"></div>
-            </div>
 
-            <div class="ai-tab-content" id="tab-image">
-                <div class="form-group">
-                    <label>¿Qué deseas pintar?</label>
-                    <textarea id="ai-image-prompt" class="form-control" rows="3" placeholder="Ej: Un libro antiguo brillante rodeado de hologramas de ADN..."></textarea>
-                </div>
-                <div class="form-group-row" style="display: flex; gap: 10px; margin-bottom: 15px;">
-                    <div style="flex: 1;">
-                        <label>Estilo Visual</label>
-                        <select id="ai-image-style" class="form-control">
-                            <option value="editorial">🎨 Editorial EPT (Pintura Clásica)</option>
-                            <option value="realistic">📸 Realista / Fotográfico</option>
-                            <option value="vector">🖋️ Vector / Infografía</option>
-                            <option value="cinematic">🎬 Cinemático / Película</option>
+                <div class="ai-tab-content active" id="tab-text">
+                    <div class="form-group">
+                        <label>¿Qué necesitas redactar?</label>
+                        <select id="ai-task-dropdown" class="form-control">
+                            <option value="social">Hilo para Redes Sociales</option>
+                            <option value="summary">Resumen (Abstract)</option>
+                            <option value="text">Artículo de Divulgación</option>
+                            <option value="script">Guion para Video Corto</option>
                         </select>
                     </div>
-                    <div style="flex: 1;">
-                        <label>Formato</label>
-                        <select id="ai-image-ratio" class="form-control">
-                            <option value="16:9">Horizontal (16:9)</option>
-                            <option value="1:1">Cuadrado (1:1)</option>
-                            <option value="9:16">Vertical (9:16)</option>
-                        </select>
+                    <div class="form-group">
+                        <label>Instrucciones adicionales (Opcional):</label>
+                        <textarea id="ai-custom-prompt" rows="4" placeholder="Ej: Usa un tono irónico, enfócate en los resultados del año 2023..."></textarea>
                     </div>
+                    <button id="ai-generate-text-btn" class="btn-primary w-100"><i class="fa-solid fa-wand-magic-sparkles"></i> Generar Texto</button>
+                    <div id="ai-text-results" class="ai-results-container"></div>
                 </div>
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label>Motor de IA</label>
-                    <select id="ai-image-engine" class="form-control">
-                        <option value="flux">FLUX.1 (Máxima Calidad / Lento)</option>
-                        <option value="z-image">Z-Image Turbo (Ultrarrápido / Tamaños Exactos)</option>
-                    </select>
+
+                <div class="ai-tab-content" id="tab-image">
+                    <div class="form-group">
+                        <label>¿Qué deseas pintar?</label>
+                        <textarea id="ai-image-prompt" class="form-control" rows="3" placeholder="Ej: Un libro antiguo brillante rodeado de hologramas..."></textarea>
+                    </div>
+                    <div class="form-group-row" style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <div style="flex: 1;">
+                            <label>Estilo Visual</label>
+                            <select id="ai-image-style" class="form-control">
+                                <option value="editorial">🎨 Editorial</option>
+                                <option value="realistic">📸 Fotográfico</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1;">
+                            <label>Formato</label>
+                            <select id="ai-image-ratio" class="form-control">
+                                <option value="16:9">16:9 (Hor.)</option>
+                                <option value="1:1">1:1 (Cuad.)</option>
+                            </select>
+                        </div>
+                    </div>
                     <div class="form-group" style="margin-bottom: 15px;">
-                        <label>Texto en la Imagen (Opcional)</label>
-                        <input type="text" id="ai-image-text" class="form-control" placeholder="Ej: ÚLTIMA HORA">
-                        <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 5px;">Añade un titular impactante sobre la imagen.</p>
+                        <label>Motor de IA</label>
+                        <select id="ai-image-engine" class="form-control">
+                            <option value="flux">FLUX.1 (Premium)</option>
+                            <option value="z-image">Z-Image (Rápido)</option>
+                        </select>
+                    </div>
+                    <button id="ai-generate-image-btn" class="btn-primary w-100"><i class="fa-solid fa-palette"></i> Pintar Imagen</button>
+                    <div id="ai-image-results"></div>
+                </div>
+            </div>
+
+            <div id="panel-dist" class="sidebar-panel">
+                <div class="distribution-section">
+                    <h3>1. Destinos</h3>
+                    <div class="network-toggles">
+                        <label class="network-toggle">
+                            <input type="checkbox" id="dest-epistecnologia" checked disabled> <span class="network-icon epist-bg"><i class="fa-solid fa-microscope"></i></span> Comunidad
+                        </label>
+                        
+                        <div style="margin-top: 10px; padding: 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-envelope-open-text" style="color: #10b981; font-size: 1.1rem;"></i>
+                                <span style="font-size: 0.85rem; color: var(--color-text-primary); font-weight: 500;">Enviar por correo</span>
+                            </div>
+                            <label style="position: relative; display: inline-block; width: 36px; height: 18px; cursor: pointer;">
+                                <input type="checkbox" id="toggle-newsletter" checked style="display: none;">
+                                <span class="slider-bg" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #10b981; border-radius: 20px; transition: .4s;"></span>
+                                <span class="slider-dot" style="position: absolute; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; transform: translateX(18px);"></span>
+                            </label>
+                        </div>
                     </div>
                 </div>
-                <button id="ai-generate-image-btn" class="btn-primary w-100"><i class="fa-solid fa-palette"></i> Pintar Imagen</button>
-                <div id="ai-image-results"></div>
 
-                <div id="lightbox-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; justify-content:center; align-items:center; flex-direction:column;">
-                    <span onclick="document.getElementById('lightbox-modal').style.display='none'" style="position:absolute; top:20px; right:30px; color:white; font-size:40px; cursor:pointer;">&times;</span>
-                    <img id="lightbox-img" src="" style="max-width:90%; max-height:70%; border-radius:8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 20px;">
-                    
-                    <div style="display: flex; gap: 15px; flex-wrap: wrap; justify-content: center;">
-                        <button onclick="StudioApp.downloadLocalImage()" class="btn-secondary"><i class="fa-solid fa-download"></i> Guardar en mi PC</button>
-                        <button id="upload-imgbb-btn" onclick="StudioApp.uploadToImgBB()" class="btn-primary"><i class="fa-solid fa-cloud-arrow-up"></i> Usar en el Artículo (Subir a la nube)</button>
+                <div class="distribution-section">
+                    <h3>2. Mensaje Redes Sociales</h3>
+                    <textarea id="social-post-text" rows="4" placeholder="¡He publicado un nuevo avance!"></textarea>
+                    <div class="char-counter">
+                        <span id="social-char-count">0</span> / <span id="social-char-limit">300</span>
                     </div>
+                </div>
+
+                <div class="distribution-section" id="social-image-attach-section" style="display: none; border: 1px dashed var(--color-accent);">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <img id="social-attached-preview" src="" style="width: 40px; height: 40px; border-radius: 4px; object-fit: cover;">
+                        <label style="font-size: 0.8rem; cursor: pointer; color: var(--color-text-primary);">
+                            <input type="checkbox" id="checkbox-attach-image" checked> Adjuntar a la Comunidad
+                        </label>
+                    </div>
+                </div>
+
+                <div class="distribution-section">
+                    <h3>3. Enlace (DOI)</h3>
+                    <input type="text" id="social-post-link" class="form-control" placeholder="https://doi.org/...">
+                </div>
+
+                <div class="distribution-actions" style="margin-top: auto;">
+                    <button id="save-draft-btn" class="btn-secondary w-100 mb-2"><i class="fa-regular fa-floppy-disk"></i> Guardar Borrador</button>
+                    <button id="publish-btn" class="btn-publish w-100"><i class="fa-solid fa-paper-plane"></i> Publicar Ahora</button>
                 </div>
             </div>
         </aside>
@@ -126,11 +164,11 @@
                 <input type="text" id="post-title" class="editor-title-input" placeholder="Escribe un título atractivo para tu artículo...">
             </div>
             
-            <div class="editor-container">
-                <textarea id="rich-text-editor"></textarea>
+            <div class="editor-container" style="background: transparent; border: none; padding: 10px 0;">
+                <div id="editorjs"></div>
             </div>
 
-            <div class="media-tray">
+            <div class="media-tray" style="margin-top: 3rem;">
                 <h4><i class="fa-solid fa-paperclip"></i> Archivos Adjuntos</h4>
                 <div id="media-gallery" class="media-gallery">
                     <p class="empty-tray-text">Las imágenes generadas aparecerán aquí.</p>
@@ -138,77 +176,14 @@
             </div>
         </section>
 
-        <aside class="col-distribution pane">
-            <div class="pane-header">
-                <h2><i class="fa-solid fa-share-nodes"></i> Distribución</h2>
+        <div id="lightbox-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; justify-content:center; align-items:center; flex-direction:column;">
+            <span onclick="document.getElementById('lightbox-modal').style.display='none'" style="position:absolute; top:20px; right:30px; color:white; font-size:40px; cursor:pointer;">&times;</span>
+            <img id="lightbox-img" src="" style="max-width:90%; max-height:70%; border-radius:8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 20px;">
+            <div style="display: flex; gap: 15px; flex-wrap: wrap; justify-content: center;">
+                <button onclick="StudioApp.downloadLocalImage()" class="btn-secondary"><i class="fa-solid fa-download"></i> Guardar en PC</button>
+                <button id="upload-imgbb-btn" onclick="StudioApp.uploadToImgBB()" class="btn-primary"><i class="fa-solid fa-cloud-arrow-up"></i> Insertar al Artículo</button>
             </div>
-
-            <div class="distribution-section">
-                <h3>1. Selecciona los destinos</h3>
-                <div class="network-toggles">
-                    <label class="network-toggle">
-                        <input type="checkbox" id="dest-epistecnologia" checked disabled> <span class="network-icon epist-bg"><i class="fa-solid fa-microscope"></i></span> Comunidad Epistecnología
-                    </label>
-                    <div style="margin-top: 20px; margin-bottom: 15px; padding: 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <i class="fa-solid fa-envelope-open-text" style="color: #10b981; font-size: 1.2rem;"></i>
-                            <span style="font-size: 0.9rem; color: var(--color-text-primary); font-weight: 500;">Enviar artículo por correo</span>
-                        </div>
-                        <label style="position: relative; display: inline-block; width: 40px; height: 20px; cursor: pointer;">
-                            <input type="checkbox" id="toggle-newsletter" checked style="display: none;">
-                            <span class="slider-bg" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #10b981; border-radius: 20px; transition: .4s;"></span>
-                            <span class="slider-dot" style="position: absolute; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; transform: translateX(20px);"></span>
-                        </label>
-                    </div>
-                    <style>
-                        #toggle-newsletter:not(:checked) ~ .slider-bg { background-color: #475569 !important; }
-                        #toggle-newsletter:not(:checked) ~ .slider-dot { transform: translateX(0) !important; }
-                    </style>
-                    <label class="network-toggle" title="Próximamente">
-                        <input type="checkbox" id="dest-linkedin" disabled>
-                        <span class="network-icon linkedin-bg"><i class="fa-brands fa-linkedin-in"></i></span> LinkedIn
-                    </label>
-                </div>
-            </div>
-
-            <div class="distribution-section">
-                <h3>2. Adapta tu mensaje (Redes Sociales)</h3>
-                <p class="help-text">Este texto acompañará al enlace de tu artículo principal.</p>
-                <textarea id="social-post-text" rows="5" placeholder="¡He publicado un nuevo avance sobre mi investigación! Lee los detalles aquí..."></textarea>
-                <div class="char-counter">
-                    <span id="social-char-count">0</span> / <span id="social-char-limit">300</span>
-                </div>
-            </div>
-
-            <div class="distribution-section" id="social-image-attach-section" style="display: none; border: 1px dashed var(--color-accent);">
-                <h3>3. Imagen Generada</h3>
-                <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
-                    <img id="social-attached-preview" src="" style="width: 50px; height: 50px; border-radius: 6px; object-fit: cover; border: 1px solid var(--color-border);">
-                    <label style="font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 5px; color: var(--color-text-primary);">
-                        <input type="checkbox" id="checkbox-attach-image" checked style="accent-color: var(--color-accent);">
-                        Adjuntar esta imagen al post de la Comunidad
-                    </label>
-                </div>
-            </div>
-
-            <div class="distribution-section">
-                <h3>4. Enlace de la Publicación</h3>
-                <p class="help-text">Confirma el enlace (DOI o Perfil) que acompañará al post en redes.</p>
-                <div class="form-group">
-                    <input type="text" id="social-post-link" class="form-control" placeholder="https://doi.org/...">
-                </div>
-            </div>
-
-            <div class="distribution-actions">
-                <button id="save-draft-btn" class="btn-secondary w-100 mb-2"><i class="fa-regular fa-floppy-disk"></i> Guardar Borrador</button>
-                <button id="publish-btn" class="btn-publish w-100"><i class="fa-solid fa-paper-plane"></i> Publicar Ahora</button>
-                
-                <p class="publish-disclaimer">
-                    <i class="fa-solid fa-envelope"></i> Al publicar, se enviará una copia al Editor en Jefe para su posible inclusión en la revista oficial.
-                </p>
-            </div>
-
-        </aside>
+        </div>
 
     </main>
 

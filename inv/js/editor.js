@@ -102,6 +102,16 @@ const StudioApp = {
         }
 
         // Pestañas (Tabs) de la IA
+// Pestañas Principales (Sidebar Derecho)
+        document.querySelectorAll('.sidebar-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.sidebar-tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.sidebar-panel').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.target).classList.add('active');
+            });
+        });
+
         document.querySelectorAll('.ai-tab-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 if(btn.classList.contains('disabled')) return;
@@ -228,32 +238,67 @@ const StudioApp = {
         const linkInput = document.getElementById('social-post-link');
         if (linkInput) linkInput.value = projectDoi ? `https://doi.org/${projectDoi}` : `https://epistecnologia.com/@${this.currentUserProfile?.username || ''}`;
 
-        // CORRECCIÓN: Si cambias de proyecto, cargar el nuevo contexto en el editor
+        // Cargar el contexto en el editor de forma limpia
         const { data } = await this.supabase.from('projects').select('description').eq('id', projectId).single();
         if(data && data.description) {
-            this.editorInstance.setContent(`<blockquote><strong>Contexto del Proyecto:</strong><br>${data.description}</blockquote><p><br></p>`);
+            await this.editorInstance.isReady;
+            this.editorInstance.blocks.insert('paragraph', { 
+                text: `<b>Contexto del Proyecto:</b> ${data.description}` 
+            });
         }
     },
 
-    // --- 4. EDITOR MULTIMODAL (TinyMCE) ---
+    // --- 4. EDITOR MULTIMODAL ---
     initializeEditor() {
         return new Promise(resolve => {
-            tinymce.init({
-                selector: '#rich-text-editor',
-                plugins: 'lists link image autoresize wordcount',
-                toolbar: 'undo redo | formatselect | bold italic | bullist numlist | link image | removeformat',
-                autoresize_bottom_margin: 50,
-                min_height: 500,
-                skin: document.body.classList.contains('dark-theme') ? 'oxide-dark' : 'oxide',
-                content_css: document.body.classList.contains('dark-theme') ? 'dark' : 'default',
-                placeholder: 'Escribe aquí tu artículo. Puedes arrastrar imágenes generadas directamente a este espacio...',
-                setup: (editor) => { 
-                    editor.on('init', () => { 
-                        this.editorInstance = editor; 
-                        resolve(); 
-                    });
-                    // Disparar autoguardado al cambiar contenido
-                    editor.on('input change undo redo', () => this.triggerAutoSave());
+            this.editorInstance = new EditorJS({
+                holder: 'editorjs', 
+                placeholder: 'Escribe tu artículo aquí... Presiona "Tab" para abrir el menú o "+" para añadir bloques.',
+                
+                tools: {
+                    header: {
+                        class: Header,
+                        inlineToolbar: true,
+                        config: { placeholder: 'Escribe un Subtítulo', levels: [2, 3, 4], defaultLevel: 2 }
+                    },
+                    list: {
+                        class: EditorjsList, // <-- AQUÍ ESTÁ LA CORRECCIÓN MÁGICA
+                        inlineToolbar: true
+                    },
+                    image: {
+                        class: ImageTool,
+                        config: {
+                            uploader: {
+                                uploadByFile: async (file) => {
+                                    const formData = new FormData();
+                                    formData.append("image", file);
+                                    
+                                    try {
+                                        const response = await fetch('https://api.imgbb.com/1/upload?key=89d606fc7588367140913f93a4c89785', {
+                                            method: 'POST',
+                                            body: formData
+                                        });
+                                        const result = await response.json();
+                                        return { success: 1, file: { url: result.data.url } };
+                                    } catch (error) {
+                                        console.error("Error subiendo a ImgBB:", error);
+                                        return { success: 0, file: { url: null } };
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    raw: {
+                        class: RawTool,
+                    }
+                },
+                
+                onReady: () => {
+                    resolve();
+                },
+                
+                onChange: () => {
+                    this.triggerAutoSave();
                 }
             });
         });
@@ -265,7 +310,16 @@ const StudioApp = {
         
         this.currentPost = { id: data.id, projectId: data.project_id.id };
         document.getElementById('post-title').value = data.title;
-        this.editorInstance.setContent(data.content);
+        // Esperamos a que el editor esté listo
+        await this.editorInstance.isReady;
+        
+        // Verificamos que sea un JSON válido (y no un HTML viejo)
+        if (data.content && typeof data.content === 'object') {
+            this.editorInstance.render(data.content);
+        } else {
+            console.warn("Borrador en formato HTML antiguo ignorado.");
+            this.editorInstance.render({ blocks: [] }); // Empieza limpio
+        }
         
         // Actualizar UI
         this.setProjectFocus(data.project_id.id);
@@ -303,11 +357,15 @@ const StudioApp = {
         }
 
         try {
+            // 1. Extraemos los bloques JSON limpios de Editor.js
+            const editorData = await this.editorInstance.save();
+
+            // 2. Armamos el paquete para Supabase
             const postData = {
                 project_id: this.currentPost.projectId,
                 user_id: this.userId,
                 title: document.getElementById('post-title').value || 'Borrador sin título',
-                content: this.editorInstance.getContent(),
+                content: editorData, // <-- Ahora guarda JSON nativo
                 status: 'draft',
                 updated_at: new Date().toISOString()
             };
@@ -342,7 +400,9 @@ const StudioApp = {
 
     // --- 6. CONEXIÓN CON INTELIGENCIA ARTIFICIAL ---
     async callTextAI() {
-        const textContent = this.editorInstance.getContent({ format: 'text' });
+        // Extraemos los datos y juntamos solo el texto de los párrafos para que la IA lo lea
+        const editorData = await this.editorInstance.save();
+        const textContent = editorData.blocks.map(b => b.data.text || '').join('\n');
         const customPrompt = document.getElementById('ai-custom-prompt').value.trim();
         const resultsContainer = document.getElementById('ai-text-results');
 
@@ -362,15 +422,16 @@ const StudioApp = {
             });
             if (error) throw error;
             
-            // TODO EL CONTENIDO (sea artículo o hilo) VA AL EDITOR PRINCIPAL
-            // Ya no lo enviamos a la caja de redes.
-            const formattedResult = data.result.replace(/\n/g, '<br>');
-            this.editorInstance.setContent(formattedResult);
+            // 1. Formateamos el texto
+            const resultHtml = data.result.replace(/\n/g, '<br>');
             
-            // Disparamos autoguardado
+            // 2. Lo insertamos como un bloque HTML Nativo en lugar de un párrafo forzado
+            this.editorInstance.blocks.insert('raw', { html: resultHtml });
+            
+            // 3. Disparamos autoguardado
             this.triggerAutoSave();
             
-            resultsContainer.innerHTML = '<p style="color: #2ecc71; font-size:0.85rem;"><i class="fa-solid fa-check"></i> Contenido generado en el editor principal. Corta y pega la propuesta de redes en la columna derecha.</p>';
+            resultsContainer.innerHTML = '<p style="color: #2ecc71; font-size:0.85rem;"><i class="fa-solid fa-check"></i> Contenido generado en el editor principal.</p>';
 
         } catch (error) {
             resultsContainer.innerHTML = '<p style="color: red; font-size:0.85rem;">Hubo un error al contactar a la IA.</p>';
@@ -404,75 +465,48 @@ const StudioApp = {
         resultsContainer.innerHTML = '';
 
         try {
-            // Pasamos el nuevo parámetro ratio a la Edge Function
-            const { data, error } = await this.supabase.functions.invoke('generate-image', { 
-                body: { prompt: promptInput, style: style, ratio: ratio, engine: engine } 
+            const { data, error } = await this.supabase.functions.invoke('generate-text', { 
+                body: { textContent, promptType: 'generate_from_instructions', customPrompt } 
+            });
+            if (error) throw error;
+            
+            // 1. Creamos un contenedor invisible para leer el HTML de la IA
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = data.result;
+
+            // 2. Traducimos las etiquetas HTML a bloques nativos de Editor.js
+            const newBlocks = [];
+            tempDiv.childNodes.forEach(node => {
+                if (node.nodeType === 1) { // Si es un elemento HTML válido
+                    if (node.tagName === 'H3' || node.tagName === 'H2') {
+                        newBlocks.push({ type: 'header', data: { text: node.innerHTML, level: parseInt(node.tagName.charAt(1)) } });
+                    } else if (node.tagName === 'P') {
+                        newBlocks.push({ type: 'paragraph', data: { text: node.innerHTML } });
+                    } else if (node.tagName === 'UL' || node.tagName === 'OL') {
+                        const items = Array.from(node.querySelectorAll('li')).map(li => li.innerHTML);
+                        newBlocks.push({ type: 'list', data: { style: node.tagName === 'UL' ? 'unordered' : 'ordered', items: items } });
+                    } else if (node.tagName === 'HR') {
+                        newBlocks.push({ type: 'paragraph', data: { text: '---' } });
+                    }
+                }
+            });
+
+            // 3. Insertamos cada bloque de forma natural en el lienzo
+            newBlocks.forEach(block => {
+                this.editorInstance.blocks.insert(block.type, block.data);
             });
             
-            if (error) throw error; // Falla de red severa
-            if (data && data.success === false) throw new Error(data.error); // Nuestro mensaje personalizado
-
-            const watermarkedImageData = await new Promise((resolve, reject) => {
-                const img = new Image();
-                img.crossOrigin = "anonymous";
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    
-                    // LÓGICA PURA: El canvas adopta el tamaño exacto que la IA decidió enviar
-                    canvas.width = img.width; 
-                    canvas.height = img.height;
-                    const ctx = canvas.getContext('2d');
-                    
-                    // Dibujamos la imagen intacta, sin recortes ni escalas
-                    ctx.drawImage(img, 0, 0);
-
-                    // MARCA DE AGUA
-                    const watermarkText = "✨EPT IA";
-                    ctx.font = "bold 18px Arial";
-                    ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
-                    ctx.textAlign = "right"; 
-                    ctx.textBaseline = "bottom";
-                    ctx.shadowColor = "rgba(0, 0, 0, 0.9)"; 
-                    ctx.shadowBlur = 8; 
-                    ctx.shadowOffsetX = 2; 
-                    ctx.shadowOffsetY = 2;
-
-                    ctx.fillText(watermarkText, canvas.width - 20, canvas.height - 20);
-                    
-                    resolve(canvas.toDataURL('image/jpeg', 0.95)); // Aumentamos la calidad de exportación a 95%
-                };
-                img.onerror = () => reject(new Error("Error procesando imagen."));
-                img.src = data.image; 
-            });
-
-            const tray = document.getElementById('media-gallery');
-            if(tray.querySelector('.empty-tray-text')) tray.querySelector('.empty-tray-text').remove();
-
-            // NUEVO: onclick para abrir en grande (Lightbox)
-            const imgHtml = `
-                <div style="position:relative; width: 120px; height: 90px; flex-shrink: 0; border-radius: 6px; overflow: hidden; border: 1px solid var(--color-border); cursor: grab;">
-                    <img src="${watermarkedImageData}" style="width:100%; height:100%; object-fit:cover;" 
-                         onclick="document.getElementById('lightbox-img').src=this.src; document.getElementById('lightbox-modal').style.display='flex';"
-                         draggable="true" 
-                         ondragstart="event.dataTransfer.setData('text/html', '<img src=\\'${watermarkedImageData}\\' style=\\'max-width:100%; border-radius:8px;\\'>')">
-                </div>
-            `;
-            tray.insertAdjacentHTML('afterbegin', imgHtml);
-            // MOSTRAR LA IMAGEN EN LA COLUMNA DE REDES SOCIALES
-            const socialImageSection = document.getElementById('social-image-attach-section');
-            const socialImagePreview = document.getElementById('social-attached-preview');
-            if (socialImageSection && socialImagePreview) {
-                socialImagePreview.src = watermarkedImageData;
-                socialImageSection.style.display = 'block';
-                // Guardamos la imagen cruda para enviarla a Bluesky
-                this.lastGeneratedImageBase64 = watermarkedImageData.split(',')[1];
-            }
-            resultsContainer.innerHTML = '<p style="color: #2ecc71; font-size:0.85rem; margin-top: 1rem;"><i class="fa-solid fa-check"></i> ¡Lista! Haz clic para ampliar o arrástrala al editor.</p>';
+            // 4. Disparamos autoguardado
+            this.triggerAutoSave();
+            
+            resultsContainer.innerHTML = '<p style="color: #2ecc71; font-size:0.85rem;"><i class="fa-solid fa-check"></i> Contenido generado en el editor principal.</p>';
 
         } catch (error) {
-            resultsContainer.innerHTML = `<p style="color: red; font-size:0.85rem;">Error al generar imagen. Intenta de nuevo.</p>`;
+            resultsContainer.innerHTML = '<p style="color: red; font-size:0.85rem;">Hubo un error al contactar a la IA.</p>';
+            console.error(error);
         } finally {
-            btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-palette"></i> Pintar Imagen';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generar Texto';
         }
     },
 
@@ -509,8 +543,11 @@ const StudioApp = {
             const data = await response.json();
             const cleanUrl = data.data.url;
 
-            // Incrustamos la imagen limpia en el editor
-            this.editorInstance.insertContent(`<p><img src="${cleanUrl}" alt="Imagen generada por IA EPT" style="max-width: 100%; border-radius: 8px;"/></p>`);
+            // Insertamos el bloque de imagen oficial de Editor.js
+            this.editorInstance.blocks.insert('image', {
+                file: { url: cleanUrl },
+                caption: "Imagen generada por IA EPT"
+            });
             
             alert("¡Imagen subida e insertada en tu artículo con éxito!");
             document.getElementById('lightbox-modal').style.display='none';

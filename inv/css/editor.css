@@ -113,7 +113,7 @@ body.dark-theme .studio-topbar { border-bottom: 1px solid var(--color-border); }
 .studio-workspace {
     flex-grow: 1;
     display: grid;
-    grid-template-columns: 320px 1fr 320px;
+    grid-template-columns: 360px 1fr;
     gap: 1.5rem; /* Separación clara entre paneles */
     padding: 1.5rem 2rem; /* Espacio alrededor de todo el layout */
     height: calc(100vh - 70px);
@@ -436,3 +436,101 @@ body.dark-theme .distribution-section { border: 1px solid var(--color-border); }
     padding: 0 0.5rem;
 }
 .publish-disclaimer i { color: var(--color-accent); margin-right: 0.3rem; }
+
+/* --- NUEVAS PESTAÑAS DEL SIDEBAR DERECHO --- */
+.sidebar-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    background: var(--color-background);
+    padding: 0.4rem;
+    border-radius: 50px;
+    border: 1px solid var(--color-border);
+}
+
+.sidebar-tab-btn {
+    flex: 1;
+    padding: 0.6rem;
+    border: none;
+    background: transparent;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.sidebar-tab-btn.active {
+    background: var(--color-surface);
+    color: var(--color-accent);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.sidebar-panel {
+    display: none;
+    flex-direction: column;
+    gap: 1.5rem;
+    height: 100%;
+    overflow-y: auto;
+}
+.sidebar-panel.active { display: flex; animation: fadeIn 0.3s ease; }
+
+.sidebar-panel::-webkit-scrollbar { width: 4px; }
+.sidebar-panel::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
+
+/* --- MAGIA DE DARK THEME PARA EDITOR.JS --- */
+/* Forzar que el texto escrito sea visible */
+body.dark-theme .ce-block__content,
+body.dark-theme .ce-toolbar__content { color: #f1f5f9; }
+
+/* Menú del botón (+) y selecciones flotantes */
+body.dark-theme .ce-popover,
+body.dark-theme .ce-inline-toolbar,
+body.dark-theme .ce-conversion-toolbar { 
+    background-color: #1e293b; /* Fondo oscuro */
+    border: 1px solid #334155; 
+    color: #f1f5f9; 
+}
+
+/* Hover en los menús de Editor.js */
+body.dark-theme .ce-popover__item:hover,
+body.dark-theme .ce-inline-toolbar__button:hover { 
+    background-color: #0f172a; 
+}
+
+/* Iconos de los menús */
+body.dark-theme .ce-popover__item-icon,
+body.dark-theme .ce-inline-tool { 
+    color: #f1f5f9; 
+    background-color: transparent; 
+}
+
+/* Caja de búsqueda dentro del menú (+) */
+body.dark-theme .cdx-search-field { 
+    background-color: #0f172a; 
+    color: #f1f5f9; 
+}
+
+/* Botones laterales (+) y (Engranaje) */
+body.dark-theme .ce-toolbar__plus, 
+body.dark-theme .ce-toolbar__settings-btn { 
+    color: #94a3b8; 
+}
+body.dark-theme .ce-toolbar__plus:hover, 
+body.dark-theme .ce-toolbar__settings-btn:hover { 
+    background-color: #1e293b; 
+    color: #f1f5f9;
+}
+
+/* Color de selección de texto */
+body.dark-theme ::selection { background: rgba(183, 42, 30, 0.4); color: white; }
+
+/* Titulos H1-H6 del editor (Plugin Header) */
+body.dark-theme h1.ce-header, body.dark-theme h2.ce-header, body.dark-theme h3.ce-header {
+    color: #f8fafc;
+}
