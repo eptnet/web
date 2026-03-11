@@ -437,7 +437,7 @@ body.dark-theme {
     width: 68px;
     height: 68px;
     border-radius: 50%;
-    background: linear-gradient(45deg, #facc15, var(--color-accent));
+    background: linear-gradient(45deg, #fa151597, var(--color-accent));
     padding: 3px; /* Grosor del borde de color */
     display: flex;
     justify-content: center;

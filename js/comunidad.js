@@ -1323,11 +1323,20 @@ const ComunidadApp = {
         if (overlay && img) {
             img.src = src;
             overlay.style.display = 'flex';
-            // Cierra al hacer clic en el fondo o en la X
+            
+            // Forzamos un micro-retraso para que la animación CSS se dispare correctamente
+            setTimeout(() => overlay.classList.add('is-visible'), 10);
+            
+            // Cierra al hacer clic en el fondo oscuro o en la X
             overlay.onclick = (e) => { 
                 if (e.target === overlay || e.target.id === 'lightbox-close-btn') {
-                    overlay.style.display = 'none';
-                    img.src = '';
+                    overlay.classList.remove('is-visible'); // Iniciamos la desaparición suave
+                    
+                    // Esperamos a que termine la animación (300ms) para ocultarlo del todo
+                    setTimeout(() => {
+                        overlay.style.display = 'none';
+                        img.src = '';
+                    }, 300);
                 }
             };
         }
