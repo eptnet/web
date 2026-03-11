@@ -400,7 +400,6 @@ const StudioApp = {
 
     // --- 6. CONEXIÓN CON INTELIGENCIA ARTIFICIAL ---
     async callTextAI() {
-        // Extraemos los datos y juntamos solo el texto de los párrafos para que la IA lo lea
         const editorData = await this.editorInstance.save();
         const textContent = editorData.blocks.map(b => b.data.text || '').join('\n');
         const customPrompt = document.getElementById('ai-custom-prompt').value.trim();
@@ -422,16 +421,43 @@ const StudioApp = {
             });
             if (error) throw error;
             
-            // 1. Formateamos el texto
-            const resultHtml = data.result.replace(/\n/g, '<br>');
+            // 1. Creamos un contenedor invisible para leer el HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = data.result;
+
+            // 2. TRADUCTOR MÁGICO: Convertimos a bloques nativos
+            const blocksToInsert = [];
+            Array.from(tempDiv.children).forEach(el => {
+                const tag = el.tagName;
+                const htmlContent = el.innerHTML.trim();
+                
+                if (!htmlContent) return;
+
+                if (tag === 'H2' || tag === 'H3' || tag === 'H1') {
+                    blocksToInsert.push({ type: 'header', data: { text: htmlContent, level: 3 } });
+                } else if (tag === 'P') {
+                    blocksToInsert.push({ type: 'paragraph', data: { text: htmlContent } });
+                } else if (tag === 'UL' || tag === 'OL') {
+                    const items = Array.from(el.querySelectorAll('li')).map(li => li.innerHTML);
+                    blocksToInsert.push({ type: 'list', data: { style: tag === 'UL' ? 'unordered' : 'ordered', items: items } });
+                } else if (tag === 'HR') {
+                    blocksToInsert.push({ type: 'paragraph', data: { text: '---' } });
+                } else {
+                    blocksToInsert.push({ type: 'paragraph', data: { text: el.outerHTML } });
+                }
+            });
+
+            // 3. Insertamos secuencialmente
+            if (blocksToInsert.length > 0) {
+                blocksToInsert.forEach(block => {
+                    this.editorInstance.blocks.insert(block.type, block.data);
+                });
+            } else {
+                this.editorInstance.blocks.insert('paragraph', { text: data.result });
+            }
             
-            // 2. Lo insertamos como un bloque HTML Nativo en lugar de un párrafo forzado
-            this.editorInstance.blocks.insert('raw', { html: resultHtml });
-            
-            // 3. Disparamos autoguardado
             this.triggerAutoSave();
-            
-            resultsContainer.innerHTML = '<p style="color: #2ecc71; font-size:0.85rem;"><i class="fa-solid fa-check"></i> Contenido generado en el editor principal.</p>';
+            resultsContainer.innerHTML = '<p style="color: #2ecc71; font-size:0.85rem;"><i class="fa-solid fa-check"></i> Contenido insertado en el editor.</p>';
 
         } catch (error) {
             resultsContainer.innerHTML = '<p style="color: red; font-size:0.85rem;">Hubo un error al contactar a la IA.</p>';
@@ -452,7 +478,7 @@ const StudioApp = {
     async callImageAI() {
         const promptInput = document.getElementById('ai-image-prompt').value.trim();
         const style = document.getElementById('ai-image-style').value;
-        const ratio = document.getElementById('ai-image-ratio').value; // NUEVO
+        const ratio = document.getElementById('ai-image-ratio').value; 
         const engine = document.getElementById('ai-image-engine').value;
         const resultsContainer = document.getElementById('ai-image-results');
 
@@ -465,48 +491,28 @@ const StudioApp = {
         resultsContainer.innerHTML = '';
 
         try {
-            const { data, error } = await this.supabase.functions.invoke('generate-text', { 
-                body: { textContent, promptType: 'generate_from_instructions', customPrompt } 
+            // CORRECCIÓN: Llamamos a la API de imágenes, no a la de texto
+            const { data, error } = await this.supabase.functions.invoke('generate-image', { 
+                body: { prompt: promptInput, style: style, ratio: ratio, engine: engine } 
             });
             if (error) throw error;
             
-            // 1. Creamos un contenedor invisible para leer el HTML de la IA
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = data.result;
+            this.lastGeneratedImageBase64 = data.image; // Guardamos para la publicación omnicanal
 
-            // 2. Traducimos las etiquetas HTML a bloques nativos de Editor.js
-            const newBlocks = [];
-            tempDiv.childNodes.forEach(node => {
-                if (node.nodeType === 1) { // Si es un elemento HTML válido
-                    if (node.tagName === 'H3' || node.tagName === 'H2') {
-                        newBlocks.push({ type: 'header', data: { text: node.innerHTML, level: parseInt(node.tagName.charAt(1)) } });
-                    } else if (node.tagName === 'P') {
-                        newBlocks.push({ type: 'paragraph', data: { text: node.innerHTML } });
-                    } else if (node.tagName === 'UL' || node.tagName === 'OL') {
-                        const items = Array.from(node.querySelectorAll('li')).map(li => li.innerHTML);
-                        newBlocks.push({ type: 'list', data: { style: node.tagName === 'UL' ? 'unordered' : 'ordered', items: items } });
-                    } else if (node.tagName === 'HR') {
-                        newBlocks.push({ type: 'paragraph', data: { text: '---' } });
-                    }
-                }
-            });
-
-            // 3. Insertamos cada bloque de forma natural en el lienzo
-            newBlocks.forEach(block => {
-                this.editorInstance.blocks.insert(block.type, block.data);
-            });
-            
-            // 4. Disparamos autoguardado
-            this.triggerAutoSave();
-            
-            resultsContainer.innerHTML = '<p style="color: #2ecc71; font-size:0.85rem;"><i class="fa-solid fa-check"></i> Contenido generado en el editor principal.</p>';
+            // Mostramos la imagen lista para abrir en el visor
+            resultsContainer.innerHTML = `
+                <div style="margin-top: 15px; border-radius: 8px; overflow: hidden; border: 1px solid var(--color-border); cursor: pointer;" onclick="document.getElementById('lightbox-img').src='${data.image}'; document.getElementById('lightbox-modal').style.display='flex';">
+                    <img src="${data.image}" style="width: 100%; display: block;" title="Clic para ampliar e insertar">
+                </div>
+                <p style="font-size: 0.75rem; color: var(--color-text-secondary); text-align: center; margin-top: 5px;"><i class="fa-solid fa-magnifying-glass-plus"></i> Clic en la imagen para opciones</p>
+            `;
 
         } catch (error) {
-            resultsContainer.innerHTML = '<p style="color: red; font-size:0.85rem;">Hubo un error al contactar a la IA.</p>';
+            resultsContainer.innerHTML = '<p style="color: red; font-size:0.85rem;">Error al generar imagen.</p>';
             console.error(error);
         } finally {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generar Texto';
+            btn.innerHTML = '<i class="fa-solid fa-palette"></i> Pintar Imagen';
         }
     },
 
