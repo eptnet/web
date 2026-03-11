@@ -362,7 +362,7 @@
 
             if (sessions) sessions.forEach(sess => mixedContent.push({
                 type: 'session', date: new Date(sess.scheduled_at || sess.created_at), title: sess.session_title || sess.project_title, image: sess.thumbnail_url,
-                link: `/live.html?sesion=${sess.id}`,
+                link: `/l/${sess.id}`,
                 badgeText: sess.status === 'EN_VIVO' ? '🔴 EN VIVO' : 'Sesión', badgeColor: sess.status === 'EN_VIVO'?'#ffebee':'#f3e5f5', badgeTextColor: sess.status === 'EN_VIVO'?'#c62828':'#7b1fa2', icon: sess.status === 'EN_VIVO'?'fa-tower-broadcast':'fa-video', target: '_self'
             }));
 
