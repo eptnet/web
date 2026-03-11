@@ -136,15 +136,21 @@ const ComunidadApp = {
             const target = e.target;
             const button = target.closest('button');
 
-            // --- ABRIR MODAL DE INVESTIGADOR (Bloquea la nueva pestaña) ---
-            const investigatorItem = target.closest('.featured-investigator-item');
+            // --- ABRIR MODAL DE INVESTIGADOR (Stories o Listas) ---
+            const investigatorItem = target.closest('.featured-investigator-item, .story-item');
             if (investigatorItem) {
                 e.preventDefault();
-                e.stopPropagation(); // Evitamos que cualquier otro evento interfiera
+                e.stopPropagation();
                 const username = investigatorItem.dataset.username;
-                if (username) {
-                    this.openProfileModal(username);
-                }
+                if (username) this.openProfileModal(username);
+            }
+
+            // --- ABRIR IMAGEN EN PANTALLA COMPLETA (Solución definitiva) ---
+            const embedImg = target.closest('.post-embed-image img');
+            if (embedImg) {
+                e.preventDefault();
+                this.openImageLightbox(embedImg.src);
+                return;
             }
 
             // --- MENÚ LATERAL (Reglas, Notificaciones, etc.) ---
@@ -635,10 +641,10 @@ const ComunidadApp = {
             const externalData = embed.external || (embed.media && embed.media.external);
 
             if (imagesData && imagesData.length > 0) {
-                // Renderizado para Imágenes
+                // Renderizado para Imágenes con OnClick
                 embedHtml = `
                     <div class="post-embed-image">
-                        <img src="${imagesData[0].thumb}" alt="${imagesData[0].alt || 'Imagen adjunta'}" loading="lazy" style="max-height: 400px; width: 100%; object-fit: cover; border-radius: 12px; margin-top: 10px;">
+                        <img src="${imagesData[0].thumb}" alt="${imagesData[0].alt || 'Imagen adjunta'}" loading="lazy" onclick="ComunidadApp.openImageLightbox(this.src)">
                     </div>`;
             } else if (externalData) {
                 // Renderizado para Enlaces/Eventos (La miniatura que faltaba)
@@ -1067,13 +1073,14 @@ const ComunidadApp = {
         try {
             const rssUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fapi.substack.com%2Ffeed%2Fpodcast%2F2867518%2Fs%2F186951.rss&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua';
             const response = await fetch(rssUrl);
+            
+            if (!response.ok) throw new Error("Servidor RSS caído"); // Capturamos el error 500
+            
             const data = await response.json();
             
             if (data.status === 'ok' && data.items.length > 0) {
-                // GUARDAMOS TODOS LOS EPISODIOS
                 this.podcastEpisodes = data.items; 
-                
-                // Generamos el HTML de la lista flotante
+                // ... (código de renderizado de la lista queda igual)
                 const listContainer = document.getElementById('podcast-playlist-list');
                 listContainer.innerHTML = this.podcastEpisodes.map((ep, idx) => {
                     const img = ep.thumbnail || 'https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png';
@@ -1087,11 +1094,15 @@ const ComunidadApp = {
                             </li>`;
                 }).join('');
 
-                // Inicializamos cargando el episodio 0
                 this.loadEpisodeIntoPlayer(0);
                 this.setupAudioPlayer();
+            } else {
+                throw new Error("No hay items");
             }
-        } catch (error) { console.error("Error RSS Podcast:", error); }
+        } catch (error) { 
+            console.warn("Aviso controlado - Podcast:", error.message); 
+            document.getElementById('podcast-title').textContent = "Podcast temporalmente no disponible";
+        }
     },
 
     loadEpisodeIntoPlayer(index) {
@@ -1180,37 +1191,36 @@ const ComunidadApp = {
     },
 
     async renderFeaturedMembers() {
-        const list = document.getElementById('featured-members-list');
-        if (!list) return;
+        const container = document.getElementById('featured-members-list');
+        if (!container) return;
         try {
-            const { data: projects, error: projErr } = await this.supabase.from('projects').select('user_id').order('created_at', { ascending: false }).limit(30);
+            const { data: projects, error: projErr } = await this.supabase.from('projects').select('user_id').order('created_at', { ascending: false }).limit(40);
             if (projErr) throw projErr;
 
-            const uniqueUserIds = [...new Set(projects.map(p => p.user_id))].slice(0, 4);
+            // Traemos hasta 8 investigadores para que se active el scroll horizontal
+            const uniqueUserIds = [...new Set(projects.map(p => p.user_id))].slice(0, 8);
 
             if (uniqueUserIds.length === 0) {
-                list.innerHTML = '<li><span class="trend-topic">Aún no hay investigadores destacados.</span></li>';
+                container.innerHTML = '<p class="trend-topic" style="padding-left:10px;">Aún no hay investigadores destacados.</p>';
                 return;
             }
 
             const { data: profiles, error: profErr } = await this.supabase.from('profiles').select('id, display_name, username, avatar_url').in('id', uniqueUserIds);
             if (profErr) throw profErr;
 
-            list.innerHTML = profiles.map(p => `
-                <li class="featured-investigator-item" data-username="${p.username}" style="display: flex; align-items: center; gap: 10px; padding: 0.8rem 0; border-bottom: 1px solid var(--color-border); cursor: pointer; transition: 0.2s;">
-                    <img src="${p.avatar_url || `https://api.dicebear.com/9.x/shapes/svg?seed=${p.username}`}" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid var(--color-surface);">
-                    <div style="flex-grow: 1;">
-                        <strong style="color: var(--color-primary-text); font-size: 0.95rem; display: block;">${p.display_name}</strong>
-                        
-                        <span style="color: var(--color-secondary-text); font-size: 0.8rem; display: block; margin-top: 2px;">@${p.username}</span>
-                        
+            // Renderizamos en formato "Story"
+            container.innerHTML = profiles.map(p => `
+                <div class="story-item" data-username="${p.username}">
+                    <div class="story-avatar-container">
+                        <img src="${p.avatar_url || `https://api.dicebear.com/9.x/shapes/svg?seed=${p.username}`}" class="story-avatar">
                     </div>
-                </li>
+                    <span class="story-username">${p.display_name.split(' ')[0]}</span>
+                </div>
             `).join('');
 
         } catch (error) {
             console.error("Error Featured:", error);
-            list.innerHTML = '<li><span class="trend-topic">Error al cargar.</span></li>';
+            container.innerHTML = '<p class="trend-topic" style="padding-left:10px;">Error al cargar.</p>';
         }
     },
 
@@ -1304,9 +1314,30 @@ const ComunidadApp = {
         }
     },
 
+    // ==========================================
+    // VISOR DE IMÁGENES (LIGHTBOX)
+    // ==========================================
+    openImageLightbox(src) {
+        const overlay = document.getElementById('image-lightbox-overlay');
+        const img = document.getElementById('lightbox-full-image');
+        if (overlay && img) {
+            img.src = src;
+            overlay.style.display = 'flex';
+            // Cierra al hacer clic en el fondo o en la X
+            overlay.onclick = (e) => { 
+                if (e.target === overlay || e.target.id === 'lightbox-close-btn') {
+                    overlay.style.display = 'none';
+                    img.src = '';
+                }
+            };
+        }
+    },
+
 };
 
 // Inicializar la aplicación SOLAMENTE cuando main.js haya preparado Supabase
 document.addEventListener('mainReady', () => {
     ComunidadApp.init();
+    // Exponemos la app al navegador para que funcionen los OnClick del HTML
+window.ComunidadApp = ComunidadApp;
 });

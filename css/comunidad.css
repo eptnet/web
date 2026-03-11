@@ -44,10 +44,10 @@ body.dark-theme {
     flex-direction: column;
     gap: 1.5rem;
 }
-/* Orden en MÓVIL: 1º Perfil, 2º Video/Podcast, 3º Feed Infinito */
-.left-column { order: 1; }
-.right-column { order: 2; }
-.main-column-feed { order: 3; }
+/* Orden en MÓVIL: 1º Feed (Contenido), 2º Perfil, 3º Video/Podcast */
+.main-column-feed { order: 1; }
+.left-column { order: 2; }
+.right-column { order: 3; }
 
 /* Tablet y Escritorio */
 @media (min-width: 1024px) {
@@ -383,19 +383,88 @@ body.dark-theme {
     background: var(--color-accent);
     transform: scale(1.1);
 }
-/* Forzar contención de imagen en el modal y feed */
+/* Forzar contención de imagen en el modal y feed para NO CORTAR verticales */
 #image-preview-container img, 
 .post-embed-image img {
     max-width: 100% !important;
-    max-height: 350px !important;
-    object-fit: cover !important;
+    max-height: 500px !important; /* Más alto para acomodar verticales */
+    object-fit: contain !important; /* CRÍTICO: Ajusta la imagen completa, no la recorta */
+    background-color: var(--color-background); /* Rellena el espacio sobrante con el color de fondo */
     display: block;
-    margin: 0 auto;
+    margin: 10px auto 0 auto;
     border-radius: 12px;
+    border: 1px solid var(--color-border);
+    transition: transform 0.2s ease;
+}
+
+/* Efecto visual de "Clickeable" solo en el feed */
+.post-embed-image img:hover {
+    transform: scale(1.02);
+    cursor: zoom-in;
 }
 
 /* Evitar que el modal crezca más que la pantalla */
 .modal-content {
     max-height: 90vh;
     overflow-y: auto;
+}
+
+/* ==========================================
+   HISTORIAS / INVESTIGADORES DESTACADOS
+   ========================================== */
+.stories-container {
+    display: flex;
+    gap: 15px;
+    overflow-x: auto;
+    padding-bottom: 5px;
+    scroll-behavior: smooth;
+    scrollbar-width: none; /* Oculta scrollbar en Firefox */
+}
+.stories-container::-webkit-scrollbar { display: none; } /* Oculta scrollbar en Chrome/Safari */
+
+.story-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    min-width: 68px;
+    max-width: 76px;
+}
+
+/* El anillo de degradado */
+.story-avatar-container {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #facc15, var(--color-accent));
+    padding: 3px; /* Grosor del borde de color */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.2s ease;
+}
+
+.story-item:hover .story-avatar-container {
+    transform: scale(1.08); /* Crece al pasar el ratón */
+}
+
+/* La imagen dentro del anillo */
+.story-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 2px solid var(--color-surface); /* Aro invisible para separar foto del degradado */
+    object-fit: cover;
+}
+
+.story-username {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-primary-text);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
 }

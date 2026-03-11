@@ -70,11 +70,7 @@
                             </div>
                     </div>
                 </div>
-                <div class="bento-box suggestions-box" style="margin-top: 1.5rem;">
-                    <h4><i class="fa-solid fa-users"></i> Investigadores Destacados</h4>
-                    <ul id="featured-members-list" class="members-list">
-                        </ul>
-                </div>
+                
             </br>
                 <div class="bento-box nav-panel-box">
                     <nav class="community-nav">
@@ -87,6 +83,13 @@
             </aside>
 
             <main class="main-column-feed">
+                <div class="stories-wrapper bento-box" style="padding: 1rem; margin-bottom: 1.5rem;">
+                    <h4 style="margin: 0 0 12px 0; font-size: 0.9rem; color: var(--color-secondary-text); font-weight: 700;">
+                        <i class="fa-solid fa-star" style="color:#facc15;"></i> Investigadores destacados
+                    </h4>
+                    <div id="featured-members-list" class="stories-container">
+                        </div>
+                </div>
                 <div class="bento-box create-post-box">
                     <h4>Comparte tu conocimiento</h4>
                     <form id="create-post-form">
@@ -200,7 +203,7 @@
                             <div id="link-preview-loader-modal" style="display:none; font-size: 0.8rem; margin: 10px 0; color: var(--color-accent);">
                                 <i class="fa-solid fa-spinner fa-spin"></i> Generando vista previa...
                             </div>
-<div id="link-preview-editor-modal" class="link-preview-card" style="display:none; margin-bottom: 15px; position: relative;"></div>
+                        <div id="link-preview-editor-modal" class="link-preview-card" style="display:none; margin-bottom: 15px; position: relative;"></div>
                         </div>
                         <div class="form-actions">
                             <div class="action-icons">
@@ -393,7 +396,10 @@
             </div>
         </div>
     </footer>
-
+    <div id="image-lightbox-overlay" class="modal-overlay" style="display: none; z-index: 4000; align-items: center; justify-content: center; background: rgba(0,0,0,0.9);">
+        <button id="lightbox-close-btn" style="position: absolute; top: 20px; right: 20px; background: transparent; color: white; border: none; font-size: 2.5rem; cursor: pointer; line-height: 1;">&times;</button>
+        <img id="lightbox-full-image" src="" style="max-width: 95vw; max-height: 95vh; object-fit: contain; border-radius: 8px;">
+    </div>
     <div id="rules-modal-overlay" class="investigator-modal-overlay modal-overlay" style="display: none; z-index: 3000;">
         <div class="investigator-modal modal" style="max-width: 500px; padding: 0;">
             <header class="modal-header" style="justify-content: space-between; background: var(--color-surface);">

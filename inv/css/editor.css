@@ -113,7 +113,7 @@ body.dark-theme .studio-topbar { border-bottom: 1px solid var(--color-border); }
 .studio-workspace {
     flex-grow: 1;
     display: grid;
-    grid-template-columns: 360px 1fr;
+    grid-template-columns: 1fr 360px;
     gap: 1.5rem; /* Separación clara entre paneles */
     padding: 1.5rem 2rem; /* Espacio alrededor de todo el layout */
     height: calc(100vh - 70px);
