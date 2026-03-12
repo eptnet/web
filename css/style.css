@@ -94,14 +94,78 @@ main.container {
 /* 4.1 NAVEGACIÓN */
 .desktop-nav { padding: 1rem 0; position: sticky; top: 0; z-index: 1000; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); background-color: rgba(240, 242, 245, 0.8); transition: background-color 0.3s; }
 body.dark-theme .desktop-nav { background-color: rgba(24, 25, 26, 0.8); } .desktop-nav .container { display: flex; justify-content: space-between; align-items: center; gap: 1rem; } .desktop-nav .logo img { height: 40px; display: block; } .bento-box-nav { display: flex; align-items: center; gap: 0.5rem; background-color: var(--color-surface); padding: 0.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow-light); transition: background-color 0.3s; } .main-menu { flex-grow: 1; justify-content: center; } 
+/* --- Modificación para Nav-Icon con Texto --- */
 .nav-icon { 
     position: relative;
     display: flex; 
     align-items: center; 
     justify-content: center; 
-    width: 44px; height: 44px; 
+    gap: 8px; /* Espacio entre icono y texto */
+    padding: 0 16px; /* Ajusta el ancho automáticamente al texto */
+    height: 44px; 
     border-radius: 8px; 
-    transition: background-color 0.2s ease, color 0.2s ease; color: var(--color-text-secondary); font-size: 1.1rem; } .nav-icon:hover { background-color: var(--color-background); color: var(--color-accent); } .nav-icon.active { background-color: var(--color-accent); color: white; } @keyframes pulse-live { 0% { box-shadow: 0 0 0 0 rgba(183, 42, 30, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(183, 42, 30, 0); } 100% { box-shadow: 0 0 0 0 rgba(183, 42, 30, 0); } } .nav-icon.is-live { background-color: var(--color-accent); color: white; animation: pulse-live 2s infinite; border-radius: 8px; } .desktop-nav.is-at-top { background-color: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; }
+    transition: background-color 0.2s ease, color 0.2s ease; 
+    color: var(--color-text-secondary); 
+    font-size: 0.95rem; 
+    font-weight: 500;
+} 
+.nav-icon:hover { background-color: var(--color-background); color: var(--color-accent); } 
+.nav-icon.active { background-color: var(--color-accent); color: white; }
+
+/* --- Modificación para Nav-Icon con Texto --- */
+.nav-icon { 
+    position: relative;
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 8px; /* Espacio entre icono y texto */
+    padding: 0 16px; /* Ajusta el ancho automáticamente al texto */
+    height: 44px; 
+    border-radius: 8px; 
+    transition: background-color 0.2s ease, color 0.2s ease; 
+    color: var(--color-text-secondary); 
+    font-size: 0.95rem; 
+    font-weight: 500;
+} 
+.nav-icon:hover { background-color: var(--color-background); color: var(--color-accent); } 
+.nav-icon.active { background-color: var(--color-accent); color: white; } 
+
+/* --- Menú Desplegable (Ejes Centrales) --- */
+.nav-dropdown { position: relative; display: inline-block; height: 100%; }
+.dropdown-content { 
+    display: none; 
+    position: absolute; 
+    top: 100%; 
+    left: 0; 
+    background-color: var(--color-surface); 
+    min-width: 180px; 
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12); 
+    border-radius: 12px; 
+    z-index: 2000; 
+    overflow: hidden; 
+    border: 1px solid var(--color-border); 
+    padding: 8px 0;
+}
+body.dark-theme .dropdown-content { box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+.dropdown-content a { 
+    color: var(--color-text-primary); 
+    padding: 10px 20px; 
+    text-decoration: none; 
+    display: flex; 
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem; 
+    transition: background 0.2s; 
+}
+.dropdown-content a:hover { background-color: var(--color-background); color: var(--color-accent); }
+.nav-dropdown:hover .dropdown-content { display: block; animation: fadeInUp 0.2s ease; }
+
+/* Ocultar texto en pantallas muy pequeñas para no romper el header */
+@media (max-width: 1100px) {
+    .nav-text { display: none; }
+    .nav-icon { padding: 0; width: 44px; justify-content: center; }
+}
+
 .mobile-nav { display: none; position: fixed; bottom: 0; left: 0; width: 100%; z-index: 1000; background-color: var(--color-surface); border-top: 1px solid var(--color-border); box-shadow: 0 -2px 5px rgba(0,0,0,0.05); padding: 0.25rem 0; justify-content: space-around; } 
 .mobile-nav__link { flex-grow: 1; color: var(--color-text-secondary); display: flex; align-items: center; justify-content: center; height: 54px; font-size: 1.5rem; } 
 .mobile-nav__link.active { color: var(--color-accent); } 
@@ -792,6 +856,31 @@ input[type="range"]::-moz-range-thumb { border: none; border-radius: 50%; backgr
 
 .footer-link i {
     font-size: 1.2rem;
+}
+
+/* Redes Sociales Footer */
+.social-footer {
+    display: flex;
+    gap: 15px;
+}
+.social-footer a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background-color: var(--color-surface);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+.social-footer a:hover {
+    background-color: var(--color-accent);
+    color: white;
+    border-color: var(--color-accent);
+    transform: translateY(-3px);
 }
 
 /* Estilos para móvil */

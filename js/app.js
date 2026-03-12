@@ -333,38 +333,43 @@ document.addEventListener('mainReady', () => {
         const bentoContainer = document.getElementById('next-event-bento');
         if (!bentoContainer) return;
 
-        let nextOrLastEvent = null;
+        // 1. Buscamos primero si hay un evento EN VIVO justo ahora
+        let { data: liveEvent } = await window.supabaseClient
+            .from('sessions')
+            .select('*')
+            .eq('is_archived', false)
+            .eq('status', 'EN VIVO')
+            .order('scheduled_at', { ascending: false })
+            .limit(1)
+            .single();
 
-        // 1. Intentamos buscar el próximo evento PROGRAMADO
+        if (liveEvent) {
+            bentoContainer.innerHTML = createNextEventHTML(liveEvent);
+            bentoContainer.classList.add('is-visible');
+            bentoContainer.style.display = 'block';
+            return;
+        }
+
+        // 2. Si no hay evento en vivo, buscamos uno PROGRAMADO estictamente en el FUTURO
+        const nowIso = new Date().toISOString();
         let { data: nextEvent } = await window.supabaseClient
             .from('sessions')
             .select('*')
             .eq('is_archived', false)
             .eq('status', 'PROGRAMADO')
+            .gte('scheduled_at', nowIso) // ¡Solo fechas mayores a AHORA!
             .order('scheduled_at', { ascending: true })
             .limit(1)
             .single();
 
-        if (nextEvent && new Date(nextEvent.scheduled_at) > new Date()) {
-            nextOrLastEvent = nextEvent;
-        } else {
-            // 2. Si no hay programados en el futuro, buscamos el último FINALIZADO o EN VIVO
-            let { data: lastEvent } = await window.supabaseClient
-                .from('sessions')
-                .select('*')
-                .eq('is_archived', false)
-                .in('status', ['EN VIVO', 'FINALIZADO'])
-                .order('scheduled_at', { ascending: false })
-                .limit(1)
-                .single();
-            nextOrLastEvent = lastEvent;
-        }
-
-        if (nextOrLastEvent) {
-            bentoContainer.innerHTML = createNextEventHTML(nextOrLastEvent);
+        if (nextEvent) {
+            bentoContainer.innerHTML = createNextEventHTML(nextEvent);
             bentoContainer.classList.add('is-visible');
+            bentoContainer.style.display = 'block';
         } else {
+            // 3. Si no hay nada en vivo ni en el futuro, ocultamos completamente el bloque
             bentoContainer.style.display = 'none';
+            bentoContainer.innerHTML = '';
         }
     }
     
