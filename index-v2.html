@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epistecnología | Plataforma de Divulgación Científica y Cultural</title>
+    <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    
+    <link rel="stylesheet" href="/css/style.css"> 
+    <link rel="stylesheet" href="/css/style-v2.css"> 
+</head>
+<body class="landing-body">
+
+    <header class="desktop-nav">
+        <div class="container">
+            <a href="/index-v2.html" class="logo"><img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Epistecnología"></a>
+            <nav class="main-menu bento-box-nav">
+                <a href="/index-v2.html" class="nav-icon active" title="Inicio"><i class="fa-solid fa-house"></i></a>
+                <a href="https://publicaciones.epistecnologia.com/" target="_blank" class="nav-icon" title="Revista"><i class="fa-solid fa-newspaper"></i></a>
+                <a href="/comunidad.html" class="nav-icon" title="Comunidad"><i class="fa-solid fa-users"></i></a>
+            </nav>
+            <div class="live-channels bento-box-nav">
+                <a href="/sala-publica.html" class="nav-icon" title="Ágoras y Sesiones"><i class="fa-solid fa-satellite-dish"></i></a>
+            </div>
+            <div class="user-actions bento-box-nav">
+                <div id="guest-view">
+                    <button id="login-modal-trigger" class="nav-icon" title="Iniciar sesión"><i class="fa-solid fa-user"></i></button>
+                </div>
+                <div id="user-view" style="display: none;">
+                    <a href="/inv/dashboard.html" id="user-avatar-link" class="nav-icon" title="Mi Panel"></a>
+                    <button id="logout-btn-header" class="nav-icon" title="Cerrar Sesión"><i class="fa-solid fa-right-from-bracket"></i></button>
+                </div>
+                <button class="theme-switcher nav-icon" id="theme-switcher-desktop"><i class="fa-solid fa-moon"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <main class="bento-container">
+        <section class="bento-item hero-bento">
+            <div class="hero-content">
+                <span class="hero-badge">Conocimiento Abierto</span>
+                <h1>Epistecnología</h1>
+                <p class="hero-subtitle">La red omnicanal donde investigadores, académicos y curiosos convergen. Democratizamos la ciencia y la cultura sin el ruido de los algoritmos tradicionales.</p>
+                
+                <div class="search-box-landing">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="landing-search-input" placeholder="Buscar artículos, autores o temas en la base de conocimiento...">
+                    <button class="btn-primary" id="landing-search-btn">Explorar</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="bento-item authority-bento">
+            <h3><i class="fa-solid fa-shield-halved"></i> Rigor y Preservación</h3>
+            <p>Todo el conocimiento generado aquí está protegido. Contamos con el respaldo del <strong>registro DOI (Zenodo)</strong> para garantizar la autoría y la integración con <strong>ORCID</strong> para conectar tu trayectoria académica real con tu divulgación.</p>
+            <div class="authority-badges">
+                <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.16403615.svg" alt="DOI">
+                <span class="orcid-badge"><i class="fa-brands fa-orcid"></i> ORCID Verified</span>
+            </div>
+        </section>
+
+        <a href="/comunidad.html" class="bento-item link-bento community-bento">
+            <div class="bento-bg-overlay"></div>
+            <div class="bento-content">
+                <div class="bento-icon"><i class="fa-solid fa-users-rays"></i></div>
+                <h3>La Comunidad</h3>
+                <p>Únete a nuestra red social diseñada para mentes críticas. Conecta, debate y comparte tus investigaciones en un entorno libre de desinformación.</p>
+            </div>
+            <span class="bento-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+        </a>
+
+        <a href="/sala-publica.html" class="bento-item link-bento agora-bento">
+            <div class="bento-bg-overlay"></div>
+            <div class="bento-content">
+                <div class="event-indicator"><span class="pulse-dot"></span> EN VIVO / AGENDA</div>
+                <h3>Las Ágoras</h3>
+                <p>Participa en nuestras salas públicas de transmisión y debate en tiempo real.</p>
+                
+                <div id="next-event-data" class="next-event-card">
+                    <p class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Cargando agenda...</p>
+                </div>
+            </div>
+            <span class="bento-arrow"><i class="fa-solid fa-video"></i></span>
+        </a>
+
+        <section class="bento-item magazine-bento">
+            <div class="magazine-header">
+                <h3><i class="fa-solid fa-newspaper"></i> Últimos Artículos</h3>
+                <a href="https://publicaciones.epistecnologia.com/" target="_blank" class="btn-secondary btn-small">Ver Revista <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+            </div>
+            <div class="magazine-feed" id="landing-articles-feed">
+                <p class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Recuperando base de conocimiento...</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="magazine-footer">
+        <div class="footer-container">
+            <div class="footer-brand">
+                <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo" class="footer-logo">
+                <h2>Epistecnología</h2>
+                <p class="footer-slogan">Divulgación de conocimiento académico y cultural hecho con Sabiduría.</p>
+            </div>
+            
+            <div class="footer-editorial-info">
+                <h4>Propiedad Intelectual</h4>
+                <ul>
+                    <li><strong>DOI Plataforma:</strong> <a href="https://doi.org/10.5281/zenodo.16403615" target="_blank">10.5281/zenodo.16403615</a></li>
+                    <li><strong>Director / Editor:</strong> Henry Márquez</li>
+                    <li><strong>ORCID:</strong> <a href="https://orcid.org/0009-0008-3022-5207" target="_blank">0009-0008-3022-5207</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-links">
+                <h4>Navegación</h4>
+                <ul>
+                    <li><a href="/comunidad.html">Comunidad Global</a></li>
+                    <li><a href="/sala-publica.html">Ágoras en Vivo</a></li>
+                    <li><a href="#" onclick="document.getElementById('login-modal-trigger').click()">Acceso Investigadores</a></li>
+                    <li><a href="mailto:hmarquez@epistecnologia.com">Contacto Editorial</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; <span id="current-year"></span> Epistecnología. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <div id="login-modal-overlay" class="modal-overlay">
+        <div class="modal login-modal">
+            <header class="modal-header">
+                <h2>Accede a Epistecnología</h2>
+                <button id="login-modal-close-btn" class="modal-close-btn">&times;</button>
+            </header>
+            <main class="modal-content">
+                <p>Usa tu cuenta preferida para continuar. Al iniciar sesión, podrás publicar artículos, crear proyectos y debatir en la comunidad.</p>
+                <div class="login-options">
+                    <a href="#" class="login-provider-btn" data-provider="google"><i class="fa-brands fa-google"></i> Continuar con Google</a>
+                    <a href="#" class="login-provider-btn" data-provider="github"><i class="fa-brands fa-github"></i> Continuar con GitHub</a>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/app-v2.js"></script> 
+</body>
+</html>
