@@ -53,7 +53,11 @@ const StudioApp = {
     async init() {
         // Respetar tema guardado o del sistema, sin forzar
         const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-        if (savedTheme === 'dark') document.body.classList.add('dark-theme');
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-theme');
+            const themeBtn = document.getElementById('theme-switcher-studio');
+            if (themeBtn) themeBtn.innerHTML = '<i class="fa-solid fa-sun"></i>';
+        }
 
         const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
@@ -137,13 +141,12 @@ const StudioApp = {
             if(e.target.value) this.setProjectFocus(e.target.value);
         });
 
-        document.getElementById('theme-toggle')?.addEventListener('click', () => {
+        const themeBtn = document.getElementById('theme-switcher-studio');
+        themeBtn?.addEventListener('click', () => {
             document.body.classList.toggle('dark-theme');
             const isDark = document.body.classList.contains('dark-theme');
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            
-            // Nota: TinyMCE requiere recargar la página para cambiar su estilo interno (iframe),
-            // pero el resto de tu plataforma web sí cambiará inmediatamente.
+            themeBtn.innerHTML = isDark ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
         });
 
         // Autoguardado al escribir (Debounce)
@@ -308,24 +311,28 @@ const StudioApp = {
         const { data, error } = await this.supabase.from('posts').select('*, project_id(id, doi)').eq('id', postId).eq('user_id', this.userId).single();
         if (error || !data) { alert('No se pudo cargar el borrador.'); return; }
         
-        this.currentPost = { id: data.id, projectId: data.project_id.id };
+        this.currentPost = { id: data.id, projectId: data.project_id?.id || null };
         document.getElementById('post-title').value = data.title;
-        // Esperamos a que el editor esté listo
+        
         await this.editorInstance.isReady;
         
-        // Verificamos que sea un JSON válido (y no un HTML viejo)
-        if (data.content && typeof data.content === 'object') {
-            this.editorInstance.render(data.content);
-        } else {
-            console.warn("Borrador en formato HTML antiguo ignorado.");
-            this.editorInstance.render({ blocks: [] }); // Empieza limpio
+        try {
+            // Evaluamos si el JSON vino como objeto o como texto plano
+            let blocksData = data.content;
+            if (typeof blocksData === 'string') blocksData = JSON.parse(blocksData);
+            
+            if (blocksData && blocksData.blocks) {
+                await this.editorInstance.render(blocksData);
+            } else {
+                console.warn("Borrador vacío o en formato HTML.");
+                this.editorInstance.render({ blocks: [] });
+            }
+        } catch(e) {
+            console.error("Error cargando JSON:", e);
+            this.editorInstance.render({ blocks: [] });
         }
         
-        // Actualizar UI
-        this.setProjectFocus(data.project_id.id);
-        
-        // Simular que cargamos el texto de la red social (Si lo estuviéramos guardando en BD)
-        // Por ahora, como es nuevo, lo dejamos en blanco para que el usuario redacte.
+        if (this.currentPost.projectId) this.setProjectFocus(this.currentPost.projectId);
     },
 
     // --- 5. LOGICA DE AUTOGUARDADO (Silencioso) ---
@@ -482,38 +489,85 @@ const StudioApp = {
         const engine = document.getElementById('ai-image-engine').value;
         const resultsContainer = document.getElementById('ai-image-results');
 
-        if (promptInput.length < 10) {
-            resultsContainer.innerHTML = '<p style="color: red; font-size:0.85rem;">Describe la imagen con al menos 10 caracteres.</p>'; return;
-        }
+        if (promptInput.length < 10) return;
 
         const btn = document.getElementById('ai-generate-image-btn');
         btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Pintando...';
         resultsContainer.innerHTML = '';
 
         try {
-            // CORRECCIÓN: Llamamos a la API de imágenes, no a la de texto
             const { data, error } = await this.supabase.functions.invoke('generate-image', { 
                 body: { prompt: promptInput, style: style, ratio: ratio, engine: engine } 
             });
             if (error) throw error;
             
-            this.lastGeneratedImageBase64 = data.image; // Guardamos para la publicación omnicanal
+            // 1. MAGIA DE CANVAS PARA MARCA DE AGUA
+            const watermarkedBase64 = await new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width; canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
 
-            // Mostramos la imagen lista para abrir en el visor
-            resultsContainer.innerHTML = `
-                <div style="margin-top: 15px; border-radius: 8px; overflow: hidden; border: 1px solid var(--color-border); cursor: pointer;" onclick="document.getElementById('lightbox-img').src='${data.image}'; document.getElementById('lightbox-modal').style.display='flex';">
-                    <img src="${data.image}" style="width: 100%; display: block;" title="Clic para ampliar e insertar">
-                </div>
-                <p style="font-size: 0.75rem; color: var(--color-text-secondary); text-align: center; margin-top: 5px;"><i class="fa-solid fa-magnifying-glass-plus"></i> Clic en la imagen para opciones</p>
-            `;
+                    const watermarkSize = Math.max(16, Math.floor(canvas.height * 0.035));
+                    ctx.font = `bold ${watermarkSize}px Arial`;
+                    ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+                    ctx.textAlign = "right"; ctx.textBaseline = "bottom";
+                    ctx.shadowColor = "rgba(0, 0, 0, 0.9)"; ctx.shadowBlur = 8; 
+                    ctx.fillText("IA EPT ✨", canvas.width - (canvas.width * 0.02), canvas.height - (canvas.height * 0.02));
+                    
+                    resolve(canvas.toDataURL('image/jpeg', 0.95));
+                };
+                img.onerror = () => reject(new Error("Error procesando imagen."));
+                img.src = data.image; 
+            });
+
+            // 2. ENVIAR A LA BANDEJA DE ADJUNTOS (Galería)
+            const gallery = document.getElementById('media-gallery');
+            const emptyText = gallery.querySelector('.empty-tray-text');
+            if(emptyText) emptyText.remove();
+
+            const imgCard = document.createElement('div');
+            imgCard.style.cssText = "min-width: 120px; max-width: 150px; border-radius: 8px; overflow: hidden; border: 2px solid var(--color-accent); cursor: pointer; position: relative;";
+            imgCard.innerHTML = `<img src="${watermarkedBase64}" style="width:100%; height:80px; object-fit:cover; display:block;" onclick="document.getElementById('lightbox-img').src=this.src; document.getElementById('lightbox-modal').style.display='flex';">`;
+            gallery.prepend(imgCard);
+            
+            // 3. AUTO-ADJUNTAR A REDES SOCIALES
+            this.setSocialImage(watermarkedBase64);
+
+            resultsContainer.innerHTML = '<p style="color: #2ecc71; font-size:0.85rem;"><i class="fa-solid fa-check"></i> Imagen generada y adjuntada a tu Post de Redes.</p>';
 
         } catch (error) {
             resultsContainer.innerHTML = '<p style="color: red; font-size:0.85rem;">Error al generar imagen.</p>';
-            console.error(error);
         } finally {
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-solid fa-palette"></i> Pintar Imagen';
         }
+    },
+
+    setSocialImage(base64Data) {
+        this.socialImageBase64 = base64Data;
+        const previewContainer = document.getElementById('social-image-preview-container');
+        const previewImg = document.getElementById('social-image-preview');
+        if (previewContainer && previewImg) {
+            previewImg.src = base64Data;
+            previewContainer.style.display = 'block';
+        }
+    },
+    removeSocialImage() {
+        this.socialImageBase64 = null;
+        document.getElementById('social-image-preview-container').style.display = 'none';
+        document.getElementById('social-image-upload').value = '';
+    },
+    handleSocialImageUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        if (file.size > 1048576) { alert("La imagen pesa más de 1MB (Límite de Bluesky)."); return; }
+        const reader = new FileReader();
+        reader.onload = (e) => this.setSocialImage(e.target.result);
+        reader.readAsDataURL(file);
     },
 
     // --- NUEVAS FUNCIONES DE LA GALERÍA ---
@@ -647,7 +701,7 @@ const StudioApp = {
                     
                     // Verificamos si el usuario quiere adjuntar la imagen generada
                     const attachCheckbox = document.getElementById('checkbox-attach-image');
-                    const includeImage = attachCheckbox && attachCheckbox.checked && this.lastGeneratedImageBase64;
+                    const includeImage = !!this.socialImageBase64;
 
                     const payloadBluesky = {
                         postText: textForCommunity,
@@ -657,9 +711,9 @@ const StudioApp = {
                         linkThumb: linkThumb
                     };
 
-                    // Si hay imagen marcada, la añadimos al envío
+                    // Si hay imagen cargada o generada, la enviamos limpia sin el prefijo data:image
                     if (includeImage) {
-                        payloadBluesky.base64Image = this.lastGeneratedImageBase64;
+                        payloadBluesky.base64Image = this.socialImageBase64.split(',')[1];
                         payloadBluesky.imageMimeType = 'image/jpeg';
                     }
 

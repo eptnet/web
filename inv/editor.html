@@ -132,9 +132,23 @@
 
                 <div class="distribution-section">
                     <h3>2. Mensaje Redes Sociales</h3>
-                    <textarea id="social-post-text" rows="4" placeholder="¡He publicado un nuevo avance!"></textarea>
-                    <div class="char-counter">
-                        <span id="social-char-count">0</span> / <span id="social-char-limit">300</span>
+                    <div style="position: relative; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-background); padding: 10px;">
+                        <textarea id="social-post-text" rows="4" placeholder="¡He publicado un nuevo avance! Únete a la conversación..." style="border:none; background:transparent; box-shadow:none; padding:0; width:100%; resize:none; color:var(--color-text-primary); font-family:inherit;"></textarea>
+                        
+                        <div id="social-image-preview-container" style="display:none; position:relative; margin-top:10px;">
+                            <button type="button" onclick="StudioApp.removeSocialImage()" style="position:absolute; top:5px; right:5px; background:rgba(0,0,0,0.7); color:white; border:none; border-radius:50%; width:25px; height:25px; cursor:pointer; z-index:2;">&times;</button>
+                            <img id="social-image-preview" src="" style="width:100%; max-height:200px; object-fit:contain; border-radius:8px; border:1px solid var(--color-border); background-color:#1e293b;">
+                        </div>
+
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top: 1px dashed var(--color-border); padding-top: 10px;">
+                            <div style="display:flex; gap:10px;">
+                                <input type="file" id="social-image-upload" accept="image/jpeg, image/png" style="display:none;" onchange="StudioApp.handleSocialImageUpload(event)">
+                                <button class="icon-btn" style="width:30px; height:30px; font-size:0.9rem;" onclick="document.getElementById('social-image-upload').click()" title="Adjuntar imagen"><i class="fa-solid fa-image"></i></button>
+                            </div>
+                            <div class="char-counter" style="margin:0;">
+                                <span id="social-char-count">0</span> / <span id="social-char-limit">300</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
