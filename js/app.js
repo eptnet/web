@@ -125,15 +125,15 @@ document.addEventListener('mainReady', () => {
             // Un bento estático para la llamada a la acción de Substack
             allPostsCTA: `
                 <div class="bento-box bento-box--4x3 bento-substack-featured mobile-full-width" 
-                    data-url="https://publicaciones.substack.com/" 
-                    style="background-image: url('https://i.ibb.co/hJ5jsbv9/Leonardo-Phoenix-10-A-vibrant-and-dynamic-scene-depicting-the-2.jpg'); cursor: pointer;">
+                    data-url="https://publicaciones.epistecnologia.com/" 
+                    style="background-image: url('https://i.ibb.co/FL1LMXPK/7b4da18ac81f.jpg'); cursor: pointer;">
                     <div class="card-content">
                         <div class="featured-text">
                             <h4>Explora Todas Nuestras Publicaciones</h4>
                             <p>Lee todos nuestros artículos, investigaciones y posts directamente en EPT News.</p>
                         </div>
                         <span class="cta-button">
-                            <i class="fa-solid fa-arrow-right"></i> Ir a Substack
+                            <i class="fa-solid fa-arrow-right"></i> Ir a la Revista
                         </span>
                     </div>
                 </div>
@@ -290,9 +290,8 @@ document.addEventListener('mainReady', () => {
     function createNextEventHTML(session) {
         const eventDate = new Date(session.scheduled_at);
         const day = eventDate.getDate();
-        const month = eventDate.toLocaleDateString('es-ES', { month: 'long' });
+        const month = eventDate.toLocaleDateString('es-ES', { month: 'short' }).toUpperCase();
         const weekday = eventDate.toLocaleDateString('es-ES', { weekday: 'long' });
-        // Forzamos el formato de 24h para evitar confusiones
         const time = eventDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false });
 
         let eventType = 'PRÓXIMO EVENTO';
@@ -300,29 +299,33 @@ document.addEventListener('mainReady', () => {
         const now = new Date();
 
         if (session.status === 'EN VIVO') {
-            eventType = '<span class="live-indicator">AHORA EN VIVO</span>';
+            eventType = '<span class="live-indicator"><i class="fa-solid fa-circle-dot"></i> EN VIVO</span>';
         } else if (eventDate < now) {
-            eventType = 'EVENTO FINALIZADO';
+            eventType = 'FINALIZADO';
             statusText = 'Esta sesión ha concluido';
         }
         
-        // Fallback por si no hay imagen en la base de datos
         const thumbnailUrl = session.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg';
 
+        // NUEVO LAYOUT: Tarjeta Dividida (Split Card)
         return `
-            <div class="bento-next-event" style="background-image: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.7)), url('${thumbnailUrl}');">
-                <div class="event-date-box">
-                    <div class="event-type">${eventType}</div>
-                    <div class="date-day">${day}</div>
-                    <div class="date-month">${month}</div>
+            <div class="bento-next-event-split">
+                <div class="event-image-side">
+                    <img src="${thumbnailUrl}" alt="${session.session_title}">
+                    <span class="event-type-badge">${eventType}</span>
                 </div>
-                <div class="event-details">
-                    <div>
-                        <h4>${session.session_title}</h4>
-                        <p class="event-description">${session.description || ''}</p>
-                        <p class="event-time-info">${statusText}</p>
+                
+                <div class="event-content-side">
+                    <div class="event-date-minimal">
+                        <span class="day">${day}</span>
+                        <span class="month">${month}</span>
                     </div>
-                    <a href="/live.html?sesion=${session.id}" class="cta-button">Ir al Evento</a>
+                    <div class="event-details-text">
+                        <h4>${session.session_title}</h4>
+                        <p class="event-description">${session.description || 'Únete a nuestra próxima sesión en el Ágora.'}</p>
+                        <p class="event-time-info"><i class="fa-regular fa-clock"></i> ${statusText}</p>
+                    </div>
+                    <a href="/live.html?sesion=${session.id}" class="cta-button-solid">Ir al Evento</a>
                 </div>
             </div>
         `;

@@ -1146,71 +1146,140 @@ body.dark-theme .ticker-row img:hover {
 
 /* --- INICIO: ESTILOS PARA NUEVOS BENTOS DE INICIO --- */
 
-/* 1. Bento "Próximo Evento" */
-#next-event-bento {
-    padding: 0;
-    overflow: hidden;
-}
-.bento-next-event {
+/* --- INICIO: NUEVO BENTO PRÓXIMO EVENTO (SPLIT LAYOUT) --- */
+#next-event-bento { padding: 0; overflow: hidden; }
+
+.bento-next-event-split {
+    display: flex;
     width: 100%;
     height: 100%;
-    display: flex;
-    background-size: cover;
-    background-position: center;
-    color: white;
+    background-color: var(--color-surface);
 }
-.event-date-box {
-    flex: 0 0 35%; /* Ocupa el 35% del ancho */
-    background-color: rgba(var(--color-accent-rgb), 0.8); /* Añadimos transparencia (0.8) */
+
+/* Lado izquierdo: Imagen inmersiva más ancha */
+.event-image-side {
+    flex: 0 0 55%; /* Aumentamos al 55% para achicar el lado derecho del texto */
+    position: relative;
+    overflow: hidden;
+    background-color: #0b0f19; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.event-image-side img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Volvemos a cover para que llene todo el espacio elegantemente */
+    display: block;
+}
+
+.event-type-badge {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background: var(--color-accent);
+    color: white;
+    padding: 6px 14px;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+/* Lado derecho: Contenido e Información */
+.event-content-side {
+    flex: 1;
     padding: 2rem;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    text-align: center;
+    justify-content: space-between;
 }
-.date-day {
-    font-size: 6rem;
-    font-weight: 700;
+
+.event-date-minimal {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    color: var(--color-accent);
+    margin-bottom: 0.5rem;
+}
+
+.event-date-minimal .day {
+    font-size: 2.5rem;
+    font-weight: 800;
     line-height: 1;
 }
-.date-month {
-    font-size: 1.5rem;
-    font-weight: 500;
-    text-transform: capitalize;
-}
-.date-weekday {
-    font-size: 1rem;
-    margin-top: 1rem;
-    opacity: 0.8;
-}
-.live-indicator {
+
+.event-date-minimal .month {
+    font-size: 1.2rem;
     font-weight: 700;
-    animation: pulse-live 2s infinite;
 }
-.event-details {
-    padding: 2rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
+
+.event-details-text h4 {
+    font-size: 1.4rem;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+    color: var(--color-text-primary);
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Máximo 2 líneas para el título */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
-.event-details h4 {
-    font-size: 1.8rem;
+
+.event-details-text .event-description {
+    font-size: 0.95rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 1rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 3; /* Máximo 3 líneas de descripción */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.event-time-info {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
     margin-bottom: 1.5rem;
 }
-.event-details .cta-button {
-    display: inline-block;
+
+/* Botón llamativo pero limpio */
+.cta-button-solid {
     align-self: flex-start;
-    background-color: var(--color-surface);
-    color: var(--color-text-primary);
-    padding: 0.75rem 1.5rem;
-    border-radius: 25px;
+    background-color: var(--color-accent);
+    color: white;
+    padding: 10px 24px;
+    border-radius: 50px;
     text-decoration: none;
     font-weight: 600;
-    transition: transform 0.2s ease;
+    transition: background 0.2s, transform 0.2s;
 }
-.event-details .cta-button:hover {
-    transform: scale(1.05);
+
+.cta-button-solid:hover {
+    background-color: #9c2319;
+    transform: translateY(-2px);
+    color: white;
 }
+
+/* Adaptación perfecta a Móvil */
+@media (max-width: 768px) {
+    .bento-next-event-split {
+        flex-direction: column;
+    }
+    .event-image-side {
+        flex: none;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 16 / 9; /* Magia moderna: Fuerza el contenedor a ser exactamente 16:9 en celulares */
+    }
+    .event-content-side {
+        padding: 1.5rem;
+    }
+    .event-details-text h4 { font-size: 1.2rem; }
+    .event-date-minimal .day { font-size: 2rem; }
+}
+/* --- FIN: NUEVO BENTO PRÓXIMO EVENTO --- */
 
 /* 2. Bento "Ver Todas las Publicaciones" */
 .all-posts-cta {
@@ -1524,7 +1593,7 @@ body.dark-theme #section-hero {
 .bridge-logos-row img {
     height: 45px; /* Altura fija para uniformidad */
     width: auto;  /* Ancho automático */
-    object-fit: contain;
+    object-fit: cover;
     filter: grayscale(1) opacity(0.7); /* Gris por defecto */
     transition: all 0.3s ease;
 }
