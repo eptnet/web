@@ -724,7 +724,9 @@ const ComunidadApp = {
     // REEMPLAZA ESTAS DOS FUNCIONES en comunidad.js
 
     openPostModal() {
-        if (document.querySelector('.modal-overlay')) return; // Evita abrir múltiples modales
+        const modalContainer = document.getElementById('modal-container');
+        // CORRECCIÓN: Comprobamos si el contenedor específico de modales dinámicos ya tiene algo adentro
+        if (modalContainer && modalContainer.innerHTML.trim() !== '') return; 
 
         const template = document.getElementById('post-form-template');
         if (!template) {
@@ -732,34 +734,20 @@ const ComunidadApp = {
             return;
         }
         
-        const modalContainer = document.getElementById('modal-container');
         const modalNode = template.content.cloneNode(true);
-        
-        // Obtenemos una referencia al overlay que acabamos de clonar
         const modalOverlay = modalNode.querySelector('.modal-overlay');
         
-        // Personalizar y añadir listeners al clon del modal
-        modalNode.querySelector('#modal-user-avatar').src = this.userProfile.avatar_url || 'https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(userName)}';
+        modalNode.querySelector('#modal-user-avatar').src = this.userProfile?.avatar_url || `https://api.dicebear.com/9.x/shapes/svg?seed=invitado`;
         modalNode.querySelector('.modal-close-btn').addEventListener('click', () => this.closePostModal());
         
-        const form = modalNode.querySelector('form');
-        // form.addEventListener('submit', (e) => {
-        //    e.preventDefault();
-       //     this.handleCreatePost(e.target);
-        // });
-
         const textArea = modalNode.querySelector('textarea');
         textArea.addEventListener('input', (e) => {
             this.updateCharCounter(e);
             this.detectLinkInText(e.target.value);
         });
 
-        // Añadimos el modal (aún invisible) al DOM
         modalContainer.appendChild(modalNode);
 
-        // --- LA SOLUCIÓN MÁGICA ---
-        // Forzamos un pequeño reflow del navegador y luego añadimos la clase
-        // '.is-visible' para que la transición de CSS se active correctamente.
         requestAnimationFrame(() => {
             modalOverlay.classList.add('is-visible');
         });
@@ -861,39 +849,52 @@ const ComunidadApp = {
     },
 
     // ==========================================
-    // NUEVOS MÓDULOS DE LA BARRA LATERAL (SIDEBAR)
+    // MÓDULOS DE LA COMUNIDAD (Historias, Eventos, Investigadores)
     // ==========================================
 
-    // 1. Cargar Últimas Publicaciones (Desde knowledge_base)
     async renderLatestPublications() {
-        const list = document.getElementById('rss-publications-list');
+        const list = document.getElementById('feed-publications-stories');
         if (!list) return;
-        
         try {
             const { data, error } = await this.supabase
                 .from('knowledge_base')
-                .select('title, url')
+                .select('title, url, image_url')
                 .eq('source_type', 'article')
                 .order('published_at', { ascending: false })
-                .limit(3);
-                
+                .limit(8);
+
             if (error) throw error;
 
             if (data && data.length > 0) {
-                list.innerHTML = data.map(pub => `
-                    <li>
-                        <a href="${pub.url}" target="_blank" style="text-decoration: none; display: block; padding: 0.2rem 0; transition: transform 0.2s;">
-                            <span style="display: block; font-weight: 600; color: var(--color-primary-text); font-size: 0.9rem; margin-bottom: 4px; line-height: 1.3;">${pub.title}</span>
-                            <span style="font-size: 0.75rem; color: var(--color-accent); font-weight: 600;">Leer artículo <i class="fa-solid fa-arrow-right" style="font-size: 0.7rem;"></i></span>
-                        </a>
-                    </li>
-                `).join('');
+                list.style.display = 'flex';
+                list.style.gap = '12px';
+                list.style.overflowX = 'auto';
+                list.style.paddingBottom = '10px';
+                list.style.scrollbarWidth = 'none';
+
+                list.innerHTML = data.map(pub => {
+                    const img = pub.image_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg';
+                    return `
+                        <li onclick="ComunidadApp.openPublicationModal('${pub.url}')" style="min-width: 120px; width: 120px; height: 170px; border-radius: 12px; overflow: hidden; position: relative; cursor: pointer; flex-shrink: 0; border: 1px solid var(--color-border); box-shadow: var(--shadow-soft); transition: transform 0.2s;">
+                            <img src="${img}" style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1;">
+                            <div style="position: absolute; bottom: 0; left: 0; width: 100%; padding: 30px 10px 10px 10px; background: linear-gradient(to top, rgba(0,0,0,0.95), rgba(0,0,0,0.4), transparent); z-index: 2;">
+                                <span style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; color: white; font-size: 0.75rem; font-weight: 700; line-height: 1.3; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">${pub.title}</span>
+                            </div>
+                        </li>
+                    `;
+                }).join('');
+                
+                list.querySelectorAll('li').forEach(item => {
+                    item.addEventListener('mouseenter', () => item.style.transform = 'scale(1.03)');
+                    item.addEventListener('mouseleave', () => item.style.transform = 'scale(1)');
+                });
+
             } else {
-                list.innerHTML = '<li><span class="trend-topic">No hay publicaciones recientes.</span></li>';
+                list.innerHTML = '<p class="trend-topic" style="padding-left:10px;">No hay artículos recientes.</p>';
             }
-        } catch (error) {
-            console.error("Error al cargar publicaciones:", error);
-            list.innerHTML = '<li><span class="trend-topic">Error al cargar la revista.</span></li>';
+        } catch (e) { 
+            console.error("Error cargando revista:", e); 
+            list.innerHTML = '<p class="trend-topic" style="padding-left:10px;">Error al cargar.</p>';
         }
     },
 
@@ -901,29 +902,32 @@ const ComunidadApp = {
     async renderSidebarEvents() {
         const list = document.getElementById('sidebar-event-list');
         if (!list) return;
-
         try {
-            const { data, error } = await this.supabase
-                .from('sessions')
+            const { data, error } = await this.supabase.from('sessions')
                 .select('id, session_title, scheduled_at, status')
+                .eq('is_archived', false)
                 .order('scheduled_at', { ascending: false })
                 .limit(10); 
                 
             if (error) throw error;
 
             if (data && data.length > 0) {
-                // Filtramos localmente para tener 2 futuros y 2 pasados
-                const upcoming = data.filter(s => s.status === 'PROGRAMADO').reverse().slice(0, 2);
-                const past = data.filter(s => s.status === 'FINALIZADO' || s.status === 'ARCHIVADO').slice(0, 2);
+                const now = new Date();
+                
+                // MAGIA: Filtramos estrictamente por FECHA. 
+                // Si la fecha es mayor a AHORA, es Próximamente. Si ya pasó, es Grabación.
+                const upcoming = data.filter(s => new Date(s.scheduled_at) > now).reverse().slice(0, 2);
+                const past = data.filter(s => new Date(s.scheduled_at) <= now).slice(0, 2);
                 
                 let html = '';
                 
                 upcoming.forEach(s => {
-                    const date = new Date(s.scheduled_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
+                    const dateObj = new Date(s.scheduled_at);
+                    const dateStr = dateObj.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
                     html += `
                         <li class="upcoming-event" style="margin-bottom: 0.8rem; border-left: 3px solid var(--color-accent); padding-left: 10px;">
-                            <a href="/l/${s.id}" style="text-decoration: none; color: var(--color-primary-text);">
-                                <strong style="color: var(--color-accent); font-size: 0.75rem; display: block; text-transform: uppercase;">Próximamente (${date})</strong>
+                            <a href="/live.html?sesion=${s.id}" style="text-decoration: none; color: var(--color-primary-text);">
+                                <strong style="color: var(--color-accent); font-size: 0.75rem; display: block; text-transform: uppercase;">Próximamente (${dateStr})</strong>
                                 <span style="font-size: 0.85rem; font-weight: 600; line-height: 1.3; display: block; margin-top: 3px;">${s.session_title}</span>
                             </a>
                         </li>`;
@@ -932,7 +936,7 @@ const ComunidadApp = {
                 past.forEach(s => {
                     html += `
                         <li class="past-event" style="opacity: 0.7; margin-bottom: 0.8rem; padding-left: 10px;">
-                            <a href="/l/${s.id}" style="text-decoration: none; color: var(--color-primary-text);">
+                            <a href="/live.html?sesion=${s.id}" style="text-decoration: none; color: var(--color-primary-text);">
                                 <strong style="color: var(--color-secondary-text); font-size: 0.75rem; display: block; text-transform: uppercase;">Grabación</strong>
                                 <span style="font-size: 0.85rem; line-height: 1.3; display: block; margin-top: 3px;">${s.session_title}</span>
                             </a>
@@ -946,6 +950,40 @@ const ComunidadApp = {
         } catch (error) {
             console.error("Error al cargar eventos:", error);
             list.innerHTML = '<li><span class="trend-topic">Error al cargar la agenda.</span></li>';
+        }
+    },
+
+    async renderFeaturedMembers() {
+        const container = document.getElementById('featured-members-list');
+        if (!container) return;
+        try {
+            const { data: projects, error: projErr } = await this.supabase.from('projects').select('user_id').order('created_at', { ascending: false }).limit(40);
+            if (projErr) throw projErr;
+
+            // Traemos hasta 8 investigadores para que se active el scroll horizontal
+            const uniqueUserIds = [...new Set(projects.map(p => p.user_id))].slice(0, 8);
+
+            if (uniqueUserIds.length === 0) {
+                container.innerHTML = '<p class="trend-topic" style="padding-left:10px;">Aún no hay investigadores destacados.</p>';
+                return;
+            }
+
+            const { data: profiles, error: profErr } = await this.supabase.from('profiles').select('id, display_name, username, avatar_url').in('id', uniqueUserIds);
+            if (profErr) throw profErr;
+
+            // Renderizamos en formato "Story"
+            container.innerHTML = profiles.map(p => `
+                <div class="story-item" data-username="${p.username}">
+                    <div class="story-avatar-container">
+                        <img src="${p.avatar_url || `https://api.dicebear.com/9.x/shapes/svg?seed=${p.username}`}" class="story-avatar">
+                    </div>
+                    <span class="story-username">${p.display_name.split(' ')[0]}</span>
+                </div>
+            `).join('');
+
+        } catch (error) {
+            console.error("Error Featured:", error);
+            container.innerHTML = '<p class="trend-topic" style="padding-left:10px;">Error al cargar.</p>';
         }
     },
 
@@ -1136,91 +1174,6 @@ const ComunidadApp = {
         if (isPlaying || document.getElementById('persistent-audio-player').classList.contains('is-visible')) {
             audioEl.play().catch(e => console.log("Autoplay bloquedo", e));
             document.getElementById('player-play-btn').innerHTML = '<i class="fa-solid fa-pause"></i>';
-        }
-    },
-
-    // ==========================================
-    // SIDEBAR DATA (RSS y Base de Datos)
-    // ==========================================
-    async renderLatestPublications() {
-        const list = document.getElementById('rss-publications-list');
-        if (!list) return;
-        try {
-            // Consultamos tu tabla knowledge_base directamente
-            const { data, error } = await this.supabase
-                .from('knowledge_base')
-                .select('title, url')
-                .order('published_at', { ascending: false })
-                .limit(4);
-
-            if (error) throw error;
-
-            if (data && data.length > 0) {
-                list.innerHTML = data.map(pub => `
-                    <li>
-                        <a href="${pub.url}" target="_blank" style="text-decoration: none; display: block; padding: 0.2rem 0; transition: transform 0.2s;">
-                            <span style="display: block; font-weight: 600; color: var(--color-primary-text); font-size: 0.9rem; margin-bottom: 4px; line-height: 1.3;">${pub.title}</span>
-                            <span style="font-size: 0.75rem; color: var(--color-accent); font-weight: 600;">Leer artículo <i class="fa-solid fa-arrow-right" style="font-size: 0.7rem;"></i></span>
-                        </a>
-                    </li>
-                `).join('');
-            } else {
-                list.innerHTML = '<li><span class="trend-topic">No hay publicaciones recientes.</span></li>';
-            }
-        } catch (e) { 
-            console.error("Error cargando revista desde BD:", e); 
-            list.innerHTML = '<li><span class="trend-topic">No se pudieron cargar las publicaciones.</span></li>';
-        }
-    },
-
-    async renderSidebarEvents() {
-        const list = document.getElementById('sidebar-event-list');
-        if (!list) return;
-        try {
-            const { data } = await this.supabase.from('sessions').select('id, session_title, scheduled_at, status').order('scheduled_at', { ascending: false }).limit(10); 
-            if (data) {
-                const upcoming = data.filter(s => s.status === 'PROGRAMADO').reverse().slice(0, 2);
-                const past = data.filter(s => s.status === 'FINALIZADO' || s.status === 'ARCHIVADO').slice(0, 2);
-                
-                let html = upcoming.map(s => `<li class="upcoming-event" style="margin-bottom: 0.8rem; border-left: 3px solid var(--color-accent); padding-left: 10px;"><a href="/l/${s.id}" style="text-decoration: none; color: var(--color-primary-text);"><strong style="color: var(--color-accent); font-size: 0.75rem; display: block; text-transform: uppercase;">Próximamente</strong><span style="font-size: 0.85rem; font-weight: 600; line-height: 1.3; display: block; margin-top: 3px;">${s.session_title}</span></a></li>`).join('');
-                html += past.map(s => `<li class="past-event" style="opacity: 0.7; margin-bottom: 0.8rem; padding-left: 10px;"><a href="/l/${s.id}" style="text-decoration: none; color: var(--color-primary-text);"><strong style="color: var(--color-secondary-text); font-size: 0.75rem; display: block; text-transform: uppercase;">Grabación</strong><span style="font-size: 0.85rem; line-height: 1.3; display: block; margin-top: 3px;">${s.session_title}</span></a></li>`).join('');
-                
-                list.innerHTML = html || '<li><span class="trend-topic">No hay eventos por mostrar.</span></li>';
-            }
-        } catch (e) { console.error(e); }
-    },
-
-    async renderFeaturedMembers() {
-        const container = document.getElementById('featured-members-list');
-        if (!container) return;
-        try {
-            const { data: projects, error: projErr } = await this.supabase.from('projects').select('user_id').order('created_at', { ascending: false }).limit(40);
-            if (projErr) throw projErr;
-
-            // Traemos hasta 8 investigadores para que se active el scroll horizontal
-            const uniqueUserIds = [...new Set(projects.map(p => p.user_id))].slice(0, 8);
-
-            if (uniqueUserIds.length === 0) {
-                container.innerHTML = '<p class="trend-topic" style="padding-left:10px;">Aún no hay investigadores destacados.</p>';
-                return;
-            }
-
-            const { data: profiles, error: profErr } = await this.supabase.from('profiles').select('id, display_name, username, avatar_url').in('id', uniqueUserIds);
-            if (profErr) throw profErr;
-
-            // Renderizamos en formato "Story"
-            container.innerHTML = profiles.map(p => `
-                <div class="story-item" data-username="${p.username}">
-                    <div class="story-avatar-container">
-                        <img src="${p.avatar_url || `https://api.dicebear.com/9.x/shapes/svg?seed=${p.username}`}" class="story-avatar">
-                    </div>
-                    <span class="story-username">${p.display_name.split(' ')[0]}</span>
-                </div>
-            `).join('');
-
-        } catch (error) {
-            console.error("Error Featured:", error);
-            container.innerHTML = '<p class="trend-topic" style="padding-left:10px;">Error al cargar.</p>';
         }
     },
 
