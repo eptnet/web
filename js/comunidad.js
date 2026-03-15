@@ -852,30 +852,36 @@ const ComunidadApp = {
     // MÓDULOS DE LA COMUNIDAD (Historias, Eventos, Investigadores)
     // ==========================================
 
+    // Variable temporal para guardar los datos de las historias en pantalla
+    currentStoriesData: [],
+
     async renderLatestPublications() {
         const list = document.getElementById('feed-publications-stories');
         if (!list) return;
         try {
+            // Traemos TODOS los datos de la base de conocimiento para armar el resumen
             const { data, error } = await this.supabase
                 .from('knowledge_base')
-                .select('title, url, image_url')
-                .eq('source_type', 'publicación')
+                .select('title, url, image_url, description, author_name, published_at')
                 .order('published_at', { ascending: false })
                 .limit(8);
 
             if (error) throw error;
 
             if (data && data.length > 0) {
+                // Guardamos los datos en la app para que el modal los pueda leer después
+                this.currentStoriesData = data;
+
                 list.style.display = 'flex';
                 list.style.gap = '12px';
                 list.style.overflowX = 'auto';
                 list.style.paddingBottom = '10px';
                 list.style.scrollbarWidth = 'none';
 
-                list.innerHTML = data.map(pub => {
+                list.innerHTML = data.map((pub, index) => {
                     const img = pub.image_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg';
                     return `
-                        <li onclick="ComunidadApp.openPublicationModal('${pub.url}')" style="min-width: 120px; width: 120px; height: 170px; border-radius: 12px; overflow: hidden; position: relative; cursor: pointer; flex-shrink: 0; border: 1px solid var(--color-border); box-shadow: var(--shadow-soft); transition: transform 0.2s;">
+                        <li onclick="ComunidadApp.openPublicationModal(${index})" style="min-width: 120px; width: 120px; height: 170px; border-radius: 12px; overflow: hidden; position: relative; cursor: pointer; flex-shrink: 0; border: 1px solid var(--color-border); box-shadow: var(--shadow-soft); transition: transform 0.2s;">
                             <img src="${img}" style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1;">
                             <div style="position: absolute; bottom: 0; left: 0; width: 100%; padding: 30px 10px 10px 10px; background: linear-gradient(to top, rgba(0,0,0,0.95), rgba(0,0,0,0.4), transparent); z-index: 2;">
                                 <span style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; color: white; font-size: 0.75rem; font-weight: 700; line-height: 1.3; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">${pub.title}</span>
@@ -1265,6 +1271,85 @@ const ComunidadApp = {
         } finally {
             loader.style.display = 'none';
         }
+    },
+
+    // ==========================================
+    // MODAL DE LECTURA (RESUMEN NATIVO BASE DE DATOS)
+    // ==========================================
+    openPublicationModal(index) {
+        // Recuperamos los datos del artículo seleccionado
+        const pub = this.currentStoriesData[index];
+        if (!pub) return;
+
+        console.log("Abriendo resumen nativo:", pub.title);
+        
+        let modalContainer = document.getElementById('modal-container');
+        if (!modalContainer) {
+            modalContainer = document.createElement('div');
+            modalContainer.id = 'modal-container';
+            document.body.appendChild(modalContainer);
+        }
+        
+        const img = pub.image_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg';
+        const dateStr = new Date(pub.published_at).toLocaleDateString('es-ES', { month: 'long', day: 'numeric', year: 'numeric' });
+        const author = pub.author_name || 'Redacción EPT';
+        
+        // Cortamos la descripción a 250 caracteres para un resumen perfecto y añadimos "..."
+        let desc = pub.description || 'Lee el artículo completo en nuestra revista oficial.';
+        if (desc.length > 250) desc = desc.substring(0, 250) + '...';
+
+        modalContainer.innerHTML = `
+            <div class="modal-overlay" id="pub-iframe-overlay" style="z-index: 9999; display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px);">
+                
+                <div class="modal" style="width: 95%; max-width: 550px; height: auto; max-height: 90vh; padding: 0; position: relative; overflow-y: auto; background: var(--color-surface); border-radius: 16px; box-shadow: 0 15px 50px rgba(0,0,0,0.5); transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                    
+                    <div style="width: 100%; height: 220px; position: relative;">
+                        <button class="modal-close-btn" style="position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.5); border: none; font-size: 1.5rem; color: white; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; backdrop-filter: blur(4px);">&times;</button>
+                        <img src="${img}" style="width: 100%; height: 100%; object-fit: cover;">
+                        <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; background: linear-gradient(to top, var(--color-surface), transparent);"></div>
+                    </div>
+
+                    <div style="padding: 0 2rem 2rem 2rem; position: relative; z-index: 2; margin-top: -20px;">
+                        <span style="background: var(--color-accent); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">Revista</span>
+                        
+                        <h2 style="margin: 15px 0 10px 0; font-size: 1.4rem; color: var(--color-primary-text); line-height: 1.3;">${pub.title}</h2>
+                        
+                        <div style="display: flex; gap: 15px; color: var(--color-secondary-text); font-size: 0.85rem; margin-bottom: 20px; font-weight: 500;">
+                            <span><i class="fa-solid fa-pen-nib"></i> ${author}</span>
+                            <span><i class="fa-regular fa-calendar"></i> ${dateStr}</span>
+                        </div>
+                        
+                        <p style="color: var(--color-primary-text); font-size: 0.95rem; line-height: 1.6; margin-bottom: 25px; opacity: 0.9;">
+                            ${desc}
+                        </p>
+                        
+                        <a href="${pub.url}" target="_blank" class="btn-primary" style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 24px; font-size: 1rem; width: 100%; box-shadow: 0 4px 15px rgba(183, 42, 30, 0.4);">
+                            Leer artículo completo <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        `;
+        
+        const overlay = document.getElementById('pub-iframe-overlay');
+        const modalBox = overlay.querySelector('.modal');
+        document.body.style.overflow = 'hidden'; 
+        
+        setTimeout(() => {
+            overlay.classList.add('is-visible');
+            modalBox.style.transform = 'scale(1)';
+        }, 10);
+        
+        const closeFn = () => {
+            overlay.classList.remove('is-visible');
+            modalBox.style.transform = 'scale(0.95)';
+            document.body.style.overflow = '';
+            setTimeout(() => { modalContainer.innerHTML = ''; }, 300);
+        };
+        
+        overlay.querySelector('.modal-close-btn').addEventListener('click', closeFn);
+        overlay.addEventListener('click', (e) => { if(e.target === overlay) closeFn(); });
     },
 
     // ==========================================
