@@ -13,18 +13,18 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Epistecnología | Plataforma de Divulgación Científica y Cultural</title>
-    <meta name="description" content="Epistecnología: Un ecosistema para la divulgación de conocimiento académico y cultural hecho con Sabiduría.">
+    <meta name="description" content="Epistecnología: Un ecosistema para la divulgación de conocimiento hecho con Sabiduría.">
 
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://epistecnologia.com/">
     <meta property="og:title" content="Epistecnología | Plataforma de Divulgación Científica y Cultural">
-    <meta property="og:description" content="Un ecosistema para la divulgación de conocimiento académico y cultural hecho con Sabiduría.">
+    <meta property="og:description" content="Un ecosistema para la divulgación de conocimiento con Sabiduría.">
     <meta property="og:image" content="https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg">
 
     <meta name="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://epistecnologia.com/">
     <meta property="twitter:title" content="Epistecnología | Plataforma de Divulgación Científica y Cultural">
-    <meta property="twitter:description" content="Un ecosistema para la divulgación de conocimiento académico y cultural hecho con Sabiduría.">
+    <meta property="twitter:description" content="Un ecosistema para la divulgación de conocimiento hecho con Sabiduría.">
     <meta property="twitter:image" content="https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg">
 
     <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
@@ -37,18 +37,47 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 </head>
 <body>
-    
+    <div id="global-plexus-bg" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1;">
+        <canvas id="plexus-canvas"></canvas>
+    </div>
+
+    <section id="section-search">
+            <h2 class="search-prompt">¿Qué chispa de curiosidad<br>quieres encender hoy?</h2>
+
+            <div class="search-bar-wrapper">
+                <input type="text" class="search-input-cine" placeholder="Busca por autor, tema o escribe una duda..." id="main-search-input">
+                <button class="search-btn-cine" aria-label="Buscar">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
+            </div>
+
+        
+            <div class="floating-tag tag-1" onclick="window.fillSearch('Inteligencia Artificial')">#InteligenciaArtificial</div>
+            <div class="floating-tag tag-2" onclick="window.fillSearch('Filosofía')">#Filosofía</div>
+            <div class="floating-tag tag-3" onclick="window.fillSearch('Podcast')">#Podcast</div>
+            <div class="floating-tag tag-4" onclick="window.fillSearch('Historia')">#Historia</div>
+            <div class="floating-tag tag-5" onclick="window.fillSearch('Sociología')">#Sociología</div>
+            <div class="floating-tag tag-6" onclick="window.fillSearch('Tomás')">#Tomás de Aquino</div>
+        
+            <div id="search-results-area" style="width: 100%; max-width: 1400px; margin-top: 2rem; display: none; z-index: 20;"></div>
+
+        <div class="scroll-down-indicator" onclick="document.getElementById('section-hero').scrollIntoView({behavior: 'smooth'})">
+            <p>Descubre Epistecnología</p>
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+        </section>
+
     <div class="cinematic-wrapper">
 
         <section class="cinematic-section" id="section-hero">
-            <canvas id="plexus-canvas"></canvas>
+            
             <img src="https://img.icons8.com/?size=100&id=ozSAxwo0stkR&format=png&color=000000" class="floating-obj mouse-reactive" data-speed="2" style="top: 40%; right: 15%; width: 100px; opacity: 0.1;" alt="conocimiento">
             <div class="cinematic-content">
-                <h1 style="font-family: 'Playfair Display', serif; font-size: clamp(2.5rem, 5vw, 4.5rem); line-height: 1.1; margin-bottom: 1.5rem;">
+                <h1 style="font-family: 'Playfair Display', serif; font-size: clamp(2.5rem, 5vw, 4.5rem); line-height: 1.1; margin-bottom: 1.5rem; text-align: center;">
                     Tu conocimiento es tu legado.<br>Haz que perdure para siempre.
                 </h1>
                 
-                <p style="font-size: 1.2rem; opacity: 0.9; max-width: 800px; margin: 0 auto 2.5rem auto; line-height: 1.6;">
+                <p style="font-size: 1.2rem; opacity: 0.9; max-width: 800px; margin: 0 auto 2.5rem auto; line-height: 1.6; text-align: center;">
                     Unimos la Sabiduría Cultural con el rigor de la Ciencia y creamos Epistecnología, un espacio donde tu conocimiento obtiene el respaldo que merecen, sin perder tu esencia.
                 </p>
                 
@@ -60,8 +89,8 @@
                 </div>
 
                 <div style="margin-top: 5rem;">
-                    <h4 style="font-family: 'Playfair Display', serif; font-size: 1.5rem; margin-bottom: 0.5rem;">The Scientific Bridge</h4>
-                    <p style="font-size: 0.9rem; opacity: 0.7; margin-bottom: 1.5rem;">Donde la vanguardia tecnológica respalda tu creatividad.</p>
+                    <h4 style="font-family: 'Playfair Display', serif; font-size: 1.5rem; margin-bottom: 0.5rem; text-align: center;">The Scientific Bridge</h4>
+                    <p style="font-size: 0.9rem; opacity: 0.7; margin-bottom: 1.5rem; text-align: center;">Donde la vanguardia tecnológica respalda tu creatividad.</p>
                     
                     <div class="bridge-logos-row">
                         <img src="https://i.ibb.co/Lq8sLDW/CERN-logo-PNG1.png" alt="CERN" title="CERN">
@@ -167,28 +196,16 @@
             </div>
         </section>
 
+        <nav class="stack-nav">
+            <ul>
+                <li data-target="section-hero" class="active" title="Inicio"></li>
+                <li data-target="section-library" title="Librería"></li>
+                <li data-target="section-cern" title="Tecnología"></li>
+                <li data-target="section-magazine" title="Revista"></li>
+                <li data-target="section-search" title="Buscador"></li>
+            </ul>
+        </nav>
     </div> 
-    
-    <section id="section-search">
-        <h2 class="search-prompt">¿Qué chispa de curiosidad<br>quieres encender hoy?</h2>
-
-        <div class="search-bar-wrapper">
-            <input type="text" class="search-input-cine" placeholder="Busca por autor, tema o escribe una duda..." id="main-search-input">
-            <button class="search-btn-cine" aria-label="Buscar">
-                <i class="fa-solid fa-magnifying-glass"></i>
-            </button>
-        </div>
-
-        <div class="floating-tag tag-1" onclick="window.fillSearch('Inteligencia Artificial')">#InteligenciaArtificial</div>
-        <div class="floating-tag tag-2" onclick="window.fillSearch('Filosofía')">#Filosofía</div>
-        <div class="floating-tag tag-3" onclick="window.fillSearch('Podcast')">#Podcast</div>
-        <div class="floating-tag tag-4" onclick="window.fillSearch('Historia')">#Historia</div>
-        <div class="floating-tag tag-5" onclick="window.fillSearch('Sociología')">#Sociología</div>
-        <div class="floating-tag tag-6" onclick="window.fillSearch('Tomás')">#Tomás de Aquino</div>
-
-        <div id="search-results-area" style="width: 100%; max-width: 1400px; margin-top: 4rem; display: none;">
-            </div>
-    </section>
 
     <div id="bento-grid-anchor"></div>
 

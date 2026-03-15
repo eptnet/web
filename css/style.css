@@ -6,7 +6,7 @@
 
 /* --- 1. CONFIGURACIÓN GLOBAL Y VARIABLES --- */
 :root {
-    --color-background: #f0f2f5;
+    --color-background: #f0f2f5b5;
     --color-surface: #ffffff;
     --color-text-primary: #1c1e21;
     --color-text-secondary: #65676b;
@@ -1021,7 +1021,7 @@ input[type="range"]::-moz-range-thumb { border: none; border-radius: 50%; backgr
     flex-shrink: 0;
     min-width: 100%;
     /* Aplicamos la animación */
-    animation: ticker-animation 50s linear infinite;
+    animation: ticker-animation 20s linear infinite;
 }
 
 .ticker-row.reverse {
@@ -1480,159 +1480,120 @@ body.dark-theme .ticker-row img:hover {
 /* --- FIN: ESTILOS PARA BENTO SUBSTACK DESTACADO --- */
 
 /* ==========================================================================
-   ESTILO CINEMÁTICO FLUIDO (SIN SNAP)
+   NUEVO SISTEMA: STACKING CARDS (TARJETAS APILADAS + GLASSMORPHISM)
    ========================================================================== */
 
-/* 1. Contenedor Fluido */
+/* 1. Contenedor que permite el scroll infinito */
 .cinematic-wrapper {
     width: 100%;
-    overflow: hidden; /* Evita scroll horizontal */
     position: relative;
-    /* Eliminamos scroll-snap para que sea suave y natural */
+    padding-bottom: 20vh; /* Espacio para hacer scroll tras la última tarjeta */
 }
 
-/* 2. Secciones Cinemáticas (Full Screen pero fluidas) */
+/* 2. Las Tarjetas (La magia del position: sticky) */
 .cinematic-section {
-    position: relative;
-    min-height: 100vh; /* Mínimo pantalla completa, pero puede crecer */
-    width: 100%;
+    position: sticky;
+    top: 90px; /* Se queda pegada justo debajo del menú superior */
+    height: calc(100vh - 110px);
+    width: calc(100% - 2rem);
+    max-width: 1400px;
+    margin: 0 auto 80vh auto; /* El 80vh es la distancia que el usuario debe scrollear para que llegue la siguiente tarjeta */
+    
+    border-radius: 32px;
+    box-shadow: 0 -15px 40px rgba(0,0,0,0.1), 0 20px 50px rgba(0,0,0,0.3);
+    
+    /* Efecto Glassmorphism (Cristal) */
+    background: rgba(255, 255, 255, 0.5); /* Cristal claro por defecto */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-top: 2px solid rgba(255, 255, 255, 0.8); /* Brillo superior del cristal */
+    
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    padding: 4rem 1rem; /* Padding para móviles */
-}
-
-/* 3. Overlay Oscuro (Legibilidad) */
-.cinematic-overlay {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.9));
-    z-index: 1;
-}
-
-.cinematic-content {
-    position: relative;
+    overflow: hidden;
     z-index: 10;
-    max-width: 1100px;
-    width: 100%;
-    text-align: center;
-    /* Animación suave al aparecer */
+    transition: filter 0.3s;
+}
+
+/* Cristal en Modo Oscuro */
+body.dark-theme .cinematic-section {
+    background: rgba(25, 28, 33, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 -15px 40px rgba(0,0,0,0.4), 0 20px 50px rgba(0,0,0,0.6);
+}
+
+/* 3. Limpieza de fondos antiguos para que el Plexus brille */
+.cinematic-overlay { display: none; } /* Ya no necesitamos el oscurecedor */
+
+#section-library { background-image: none; }
+#section-cern { background-image: none; }
+#section-magazine { background-color: transparent; }
+
+/* Inyectamos sutilmente las imágenes de fondo dentro del cristal */
+#section-library::before {
+    content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
+    background-image: url('https://i.ibb.co/xqP7mCzM/luke-tanis-y-EQ9-TOa-L5-FM-unsplash.jpg');
+    background-size: cover; background-position: center; opacity: 0.15; z-index: -1; mix-blend-mode: luminosity;
+}
+#section-cern::before {
+    content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
+    background-image: url('https://i.ibb.co/ymsYS3z4/CERN-202108-102-106.jpg');
+    background-size: cover; background-position: center; opacity: 0.15; z-index: -1; mix-blend-mode: luminosity;
+}
+
+/* 4. Ajustes para que el contenido encaje en las tarjetas */
+.magazine-layout, .magazine-slider-container { height: 100%; } /* Evita que la revista se desborde */
+#section-hero .cinematic-content { padding-top: 0; } /* Centrado perfecto */
+#section-search { min-height: auto; }
+
+/* 5. El Navegador Lateral (Puntos) */
+.stack-nav {
+    position: fixed;
+    right: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 25px !important;
+    /* Añadimos la transición suave para que no desaparezcan de golpe */
+    transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+
+/* Nueva clase que el JS usará para ocultar la barra */
+.stack-nav.is-hidden {
     opacity: 0;
-    animation: fadeInUp 1.2s ease forwards;
+    visibility: hidden;
+    pointer-events: none;
+}
+.stack-nav li {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--color-border);
+    cursor: pointer; transition: all 0.3s;
+    list-style: none;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+.stack-nav li:hover { background: var(--color-text-secondary); transform: scale(1.2); }
+.stack-nav li.active {
+    background: var(--color-accent);
+    transform: scale(1.5);
+    border: 2px solid var(--color-surface);
 }
 
-@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-/* --- SECCIÓN 1: HERO (Adaptable a Dark Mode) --- */
-#section-hero {
-    background-color: #f9f7f2; /* Hueso en modo claro */
-    color: #1c1e21;
-    transition: background-color 0.3s, color 0.3s;
-}
-
-/* Aseguramos que el contenido esté ENCIMA del Plexus */
-#section-hero .cinematic-content {
-    position: relative;
-    z-index: 10; 
-}
-
-/* Lógica Dark Mode para el Hero */
-body.dark-theme #section-hero {
-    background-color: #121212; /* Oscuro profundo */
-    color: #e4e6eb;
-}
-
-/* Botones del Hero */
-.hero-btn-group {
-    display: flex;
-    gap: 1.5rem;
-    justify-content: center;
-    margin-top: 3rem;
-    flex-wrap: wrap;
-}
-
-.btn-cine-primary {
-    background-color: var(--color-accent);
-    color: white;
-    padding: 1rem 2.5rem;
-    border-radius: 50px;
-    font-weight: 700;
-    text-decoration: none;
-    transition: transform 0.2s, box-shadow 0.2s;
-    border: none;
-    box-shadow: 0 4px 15px rgba(183, 42, 30, 0.3);
-}
-.btn-cine-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(183, 42, 30, 0.5); }
-
-.btn-cine-secondary {
-    background-color: transparent;
-    border: 2px solid currentColor; /* Toma el color del texto (se adapta a dark mode) */
-    color: inherit;
-    padding: 0.9rem 2rem;
-    border-radius: 50px;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.2s;
-}
-.btn-cine-secondary:hover { background: rgba(128, 128, 128, 0.1); }
-
-/* --- LOGOS UNIFORMES --- */
-.bridge-logos-row {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 3rem;
-    margin-top: 2rem;
-    flex-wrap: wrap;
-}
-
-.bridge-logos-row img {
-    height: 45px; /* Altura fija para uniformidad */
-    width: auto;  /* Ancho automático */
-    object-fit: cover;
-    filter: grayscale(1) opacity(0.7); /* Gris por defecto */
-    transition: all 0.3s ease;
-}
-
-/* En modo oscuro, invertimos los logos negros para que se vean blancos */
-body.dark-theme .bridge-logos-row img {
-    filter: grayscale(1) invert(1) opacity(0.8);
-}
-
-.bridge-logos-row img:hover {
-    filter: grayscale(0) invert(0) opacity(1); /* Color original al hover */
-    transform: scale(1.1);
-}
-
-/* --- SECCIONES 1.1 (Estilo NatGeo) --- */
-/* Estas secciones siempre tienen texto blanco porque tienen foto de fondo oscura */
-#section-library, #section-cern, #section-magazine {
-    color: white; 
-}
-
-#section-library {
-    background-image: url('https://i.ibb.co/xqP7mCzM/luke-tanis-y-EQ9-TOa-L5-FM-unsplash.jpg?q=80&w=2070&auto=format&fit=crop');
-    align-items: flex-start; /* Texto a la izquierda */
-}
-
-#section-library .cinematic-content {
-    text-align: left;
-    margin-left: 5%;
-    max-width: 650px;
-    /* Caja de cristal esmerilado */
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(10px);
-    padding: 3rem;
-    border-left: 5px solid var(--color-accent);
-    border-radius: 0 10px 10px 0;
-}
-
-#section-cern {
-    background-image: url('https://i.ibb.co/ymsYS3z4/CERN-202108-102-106.jpg?q=80&w=2070&auto=format&fit=crop');
+/* 6. Móviles */
+@media (max-width: 768px) {
+    .stack-nav { display: none; }
+    .cinematic-section { 
+        top: 70px; 
+        height: calc(100vh - 80px); 
+        width: 95%; 
+        margin-bottom: 20vh; 
+        border-radius: 20px;
+    }
 }
 
 /* ==========================================================================
@@ -2020,4 +1981,228 @@ body.dark-theme .bridge-logos-row img {
     .search-prompt {
         font-size: 2rem;
     }
+}
+/* ==========================================================================
+   AJUSTES DE TARJETAS, LOGOS Y UX/UI MÓVIL (STACKING CARDS)
+   ========================================================================== */
+
+/* 1. Ajuste del tamaño de las tarjetas (Más elegantes, compactas y menos anchas) */
+.cinematic-section {
+    top: 105px; /* Más abajo del menú para que respire */
+    height: calc(100vh - 140px); /* Tarjetas menos altas */
+    max-width: 1100px; /* Tarjetas menos anchas (antes 1400px) */
+    margin: 0 auto 65vh auto; /* Scroll un poco más rápido entre cartas */
+}
+
+/* 2. Reparar el tamaño gigante de los Logos (CERN, Zenodo, etc.) */
+.bridge-logos-row {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+.bridge-logos-row img {
+    height: 40px; /* Altura máxima controlada para que no exploten */
+    width: auto;
+    object-fit: contain;
+    filter: grayscale(100%) opacity(0.6); /* Look corporativo grisáceo */
+    transition: 0.3s ease;
+}
+.bridge-logos-row img:hover {
+    filter: grayscale(0%) opacity(1); /* Toman color al pasar el ratón */
+}
+
+/* 3. Estilos para los botones del Hero (Para que no se vean como texto plano) */
+.hero-btn-group {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+}
+.btn-cine-primary {
+    background: var(--color-accent);
+    color: white;
+    padding: 12px 28px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 1rem;
+    border: 2px solid var(--color-accent);
+    transition: all 0.3s ease;
+}
+.btn-cine-primary:hover { 
+    background: transparent; 
+    color: var(--color-accent); 
+    transform: translateY(-3px); 
+}
+
+.btn-cine-secondary {
+    background: transparent;
+    color: var(--color-text-primary);
+    padding: 12px 28px;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 1rem;
+    border: 2px solid var(--color-border);
+    transition: all 0.3s ease;
+}
+.btn-cine-secondary:hover { 
+    border-color: var(--color-text-primary); 
+    transform: translateY(-3px); 
+}
+body.dark-theme .btn-cine-secondary { color: white; border-color: rgba(255,255,255,0.3); }
+body.dark-theme .btn-cine-secondary:hover { border-color: white; }
+
+/* 4. Optimización UX/UI extrema para Celulares */
+@media (max-width: 768px) {
+    .cinematic-section { 
+        top: 80px; 
+        height: calc(100vh - 100px); 
+        width: 92%; 
+        margin-bottom: 20vh; 
+        border-radius: 24px;
+    }
+    
+    .cinematic-content {
+        padding: 1.5rem 1rem; /* Más espacio lateral para respirar */
+    }
+    
+    /* Ajustar textos para que no se desborden ni se monten */
+    .cinematic-content h1 { 
+        font-size: 2.2rem !important; 
+        margin-bottom: 1rem !important; 
+    }
+    .cinematic-content p { 
+        font-size: 1rem !important; 
+        line-height: 1.5 !important; 
+        margin-bottom: 1.5rem !important;
+    }
+    .font-display { 
+        font-size: 2rem !important; 
+    }
+    
+    /* Botones de acción 100% anchos y apilados (Estilo App) */
+    .hero-btn-group { 
+        flex-direction: column; 
+        gap: 10px; 
+        width: 100%; 
+        max-width: 320px; 
+        margin: 0 auto; 
+    }
+    .btn-cine-primary, .btn-cine-secondary { 
+        width: 100%; 
+        text-align: center; 
+        padding: 12px; 
+    }
+    
+    /* Logos del CERN aún más pequeños en móvil */
+    .bridge-logos-row { gap: 1rem; }
+    .bridge-logos-row img { height: 28px; }
+}
+/* ==========================================================================
+   OPTIMIZACIONES FINALES DE TARJETAS Y BUSCADOR
+   ========================================================================== */
+
+/* 1. Darle "Aire" y centrado perfecto a las tarjetas de cristal */
+.cinematic-section {
+    top: 15vh !important; /* Más separadas del techo */
+    height: 70vh !important; /* Más bajitas para dar aire arriba y abajo */
+    min-height: 500px;
+    max-width: 1100px !important;
+    margin: 0 auto 80vh auto !important; /* Mucho espacio entre ellas para el efecto */
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Centrado vertical absoluto */
+    align-items: center;
+}
+
+/* 2. Solución Móvil: Evitar cortes dejando que hagan scroll por dentro */
+@media (max-width: 768px) {
+    .cinematic-section { 
+        top: 10vh !important; 
+        height: 80vh !important; 
+        width: 90% !important; 
+        padding: 1.5rem 1rem;
+        overflow-y: auto; /* CRÍTICO: Si el texto es muy largo, se hace scroll dentro de la tarjeta sin cortarlo */
+        justify-content: flex-start; /* En móvil es mejor que empiece desde arriba */
+    }
+    .cinematic-content {
+        margin-top: 1rem;
+        text-align: center;
+    }
+}
+
+/* 3. Separar los puntitos de navegación */
+.stack-nav { gap: 25px !important; }
+
+/* 4. Estilos del Nuevo Buscador (Hero Independiente) */
+.hero-search-section {
+    min-height: calc(100vh - 70px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem 1rem;
+    position: relative;
+    z-index: 2;
+}
+.scroll-down-indicator {
+    position: absolute;
+    bottom: 30px;
+    text-align: center;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    animation: bounce 2s infinite;
+    transition: color 0.3s;
+}
+.scroll-down-indicator:hover { color: var(--color-accent); }
+.scroll-down-indicator p { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; font-weight: 600; }
+.scroll-down-indicator i { font-size: 1.5rem; }
+
+/* Modificamos las etiquetas flotantes para que convivan bien aquí */
+.hero-search-section .floating-tag { position: relative; display: inline-block; animation: none; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; margin: 0 5px; }
+
+/* 5. Transparencia para ver el Plexus en el Bento Grid */
+main.container { background-color: transparent !important; }
+/* ==========================================================================
+   EFECTO "DARK GLASSMORPHISM" (Tarjetas oscuras en tema claro)
+   ========================================================================== */
+
+/* 1. Oscurecemos el cristal de las tarjetas */
+.cinematic-section {
+    background: rgba(15, 18, 22, 0.75) !important; /* Cristal oscuro y elegante */
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important; /* Borde muy sutil */
+    border-top: 1px solid rgba(255, 255, 255, 0.25) !important; /* Brillo superior sutil */
+    box-shadow: 0 -15px 40px rgba(0,0,0,0.3), 0 20px 50px rgba(0,0,0,0.4) !important;
+}
+
+/* 2. Forzamos que todo el texto dentro de las tarjetas sea blanco/claro para que contraste */
+.cinematic-section,
+.cinematic-section h1, 
+.cinematic-section h2, 
+.cinematic-section h3, 
+.cinematic-section h4, 
+.cinematic-section p {
+    color: #f4f7f9 !important;
+}
+
+/* 3. Reducimos la opacidad de los textos secundarios para crear jerarquía visual */
+.cinematic-section p {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* 4. Ajustamos los botones secundarios para que se vean bien sobre el fondo oscuro */
+.cinematic-section .btn-cine-secondary {
+    color: white !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.cinematic-section .btn-cine-secondary:hover {
+    border-color: white !important;
+    background: rgba(255, 255, 255, 0.1) !important;
 }

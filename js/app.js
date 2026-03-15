@@ -67,7 +67,7 @@ document.addEventListener('mainReady', () => {
 
         // DESPUÉS
         logos: `
-            <div class="bento-box bento-box--4x1 mobile-full-width logo-ticker-bento" data-id="static-logos">
+            <div class="bento-box bento-box--4x2 bento-style--flat mobile-full-width logo-ticker-bento" data-id="static-logos">
                 <div class="logo-ticker-track">
                     <div class="ticker-row">
                         <img src="https://i.ibb.co/3V9MS9N/1024px-Universita-t-Potsdam-logo-svg.png" alt="Universität Potsdam">
@@ -97,22 +97,20 @@ document.addEventListener('mainReady', () => {
             </div>`,
         
             subs: `
-                <div class="bento-box bento-box--2x3 mobile-full-width bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;">
+                <div class="bento-box bento-box--3x2 mobile-full-width bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;">
                     <div class="card-content">
-                        <h3>Nuestro cóntenido en tu email</h3
-                        <p>Suscríbete a la revista.</p>
-                        <br/>
+                        
                         <iframe src="https://publicaciones.epistecnologia.com/embed" 
                             width="100%" 
-                            height="50%" 
-                            style="border:1px solid #EEE; background:white;" 
+                            height="100%" 
+                            style="border:1px solid #2b2b2b ratio:10 ; background:transparet;" 
                             frameborder="0" scrolling="no">
                         </iframe>
                     </div>
                 </div>`,
                 
             zenodo: `
-                <div class="bento-box zenodo-module bento-box--2x3 mobile-full-width" data-id="static-zenodo" style="background-image: url('https://i.ibb.co/x8JbV61H/a-futuristic-digital-artwork-depicting-a-k9-Jb0c-3-R0u8by-Ev-GGOrw-x-Ait-Jamg-RCat9-GLc-O810jg.jpg'); cursor: pointer;">
+                <div class="bento-box zenodo-module bento-box--1x2 mobile-full-width" data-id="static-zenodo" style="background-image: url('https://i.ibb.co/x8JbV61H/a-futuristic-digital-artwork-depicting-a-k9-Jb0c-3-R0u8by-Ev-GGOrw-x-Ait-Jamg-RCat9-GLc-O810jg.jpg'); cursor: pointer;">
                     <div class="card-content">
                         <h3>Únete a la Comunidad</h3>
                         <p>Publica tus trabajos, obtén un DOI y forma parte de nuestro ecosistema de conocimiento abierto.</p>
@@ -120,7 +118,9 @@ document.addEventListener('mainReady', () => {
                 </div>`,
 
             // Un placeholder que llenaremos dinámicamente con el próximo evento
-            nextEventPlaceholder: `<div class="bento-box bento-box--4x3 mobile-full-width" id="next-event-bento"></div>`,
+            nextEventPlaceholder: `
+                <div class="bento-box bento-box--4x3 mobile-full-width" id="next-event-bento">
+                </div>`,
 
             // Un bento estático para la llamada a la acción de Substack
             allPostsCTA: `
@@ -152,20 +152,23 @@ document.addEventListener('mainReady', () => {
     const grid_layout = [
 
         { type: 'module', id: 'nextEventPlaceholder' }, // <-- NUEVO EVENTO AQUÍ
+        
+        { type: 'module', id: 'welcome' },
+        { type: 'module', id: 'stories' },
 
+        { type: 'module', id: 'logos' },
+                
         { type: 'post' }, 
         { type: 'post' }, 
         { type: 'post' }, 
         { type: 'post' },
-
-        { type: 'module', id: 'welcome' },
-        { type: 'module', id: 'podcastPlayer' },
         
         { type: 'module', id: 'zenodo' },
         { type: 'module', id: 'subs' },
-        
-        { type: 'module', id: 'stories' },
+                
         { type: 'module', id: 'videoFeatured' },
+        { type: 'module', id: 'podcastPlayer' },
+
         { type: 'module', id: 'quote' },
 
         { type: 'post' }, 
@@ -177,8 +180,7 @@ document.addEventListener('mainReady', () => {
         { type: 'post' }, 
         { type: 'post' }, 
         { type: 'post' },
-
-        { type: 'module', id: 'logos' },
+        
         { type: 'module', id: 'end' }
     ];
 
@@ -321,7 +323,7 @@ document.addEventListener('mainReady', () => {
                         <span class="month">${month}</span>
                     </div>
                     <div class="event-details-text">
-                        <h4>${session.session_title}</h4>
+                        <h4>${session.session_title}</h4></br>
                         <p class="event-description">${session.description || 'Únete a nuestra próxima sesión en el Ágora.'}</p>
                         <p class="event-time-info"><i class="fa-regular fa-clock"></i> ${statusText}</p>
                     </div>
@@ -785,7 +787,7 @@ document.addEventListener('mainReady', () => {
                         </div>
                         <div class="modal-cta-container">
                             <a href="${post.link}" target="_blank" class="modal-cta-button modal-cta-button--primary">Seguir leyendo</a>
-                            <a href="https://publicaciones.epistecnologia.com/" target="_blank" class="modal-cta-button">Suscribirse al Newsletter</a>
+                            <a href="https://publicaciones.epistecnologia.com/" target="_blank" class="modal-cta-button">Suscribirse a la revista</a>
                         </div>
                     </article>
                 </div>
@@ -979,6 +981,64 @@ document.addEventListener('mainReady', () => {
 
 
 });
+
+    // ==========================================
+    // NAVEGACIÓN DE TARJETAS APILADAS (STACK NAV)
+    // ==========================================
+    function initStackCards() {
+        const sections = document.querySelectorAll('.cinematic-section');
+        const navDots = document.querySelectorAll('.stack-nav li');
+        const stackNav = document.querySelector('.stack-nav');
+        const wrapper = document.querySelector('.cinematic-wrapper');
+
+        // 1. Observador para iluminar el punto correcto
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    navDots.forEach(dot => dot.classList.remove('active'));
+                    const activeDot = document.querySelector(`.stack-nav li[data-target="${entry.target.id}"]`);
+                    if (activeDot) activeDot.classList.add('active');
+                }
+            });
+        }, { 
+            rootMargin: "-45% 0px -45% 0px" 
+        });
+
+        sections.forEach(sec => observer.observe(sec));
+
+        // 2. Click en los puntos para viajar
+        navDots.forEach(dot => {
+            dot.addEventListener('click', () => {
+                const targetId = dot.getAttribute('data-target');
+                const targetSec = document.getElementById(targetId);
+                if (targetSec) {
+                    targetSec.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        // 3. NUEVO: Observador para ocultar la barra si no estamos en la zona de tarjetas
+        if (wrapper && stackNav) {
+            const wrapperObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    // Si el contenedor de tarjetas está en la pantalla, mostramos los puntos
+                    if (entry.isIntersecting) {
+                        stackNav.classList.remove('is-hidden');
+                    } else {
+                        // Si ya salimos del contenedor (hacia el grid o hacia el buscador), los ocultamos
+                        stackNav.classList.add('is-hidden');
+                    }
+                });
+            }, { 
+                threshold: 0,
+                rootMargin: "-70% 0px -70% 0px" // Desaparecen un poco antes de salir de la pantalla por completo
+            });
+            wrapperObserver.observe(wrapper);
+        }
+    }
+    
+    // Inicializar la función
+    initStackCards();
 
 /* ==========================================================================
    3. SISTEMA DE INTELIGENCIA: BÚSQUEDA Y SINCRONIZACIÓN (V3.0)
