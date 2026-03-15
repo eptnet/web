@@ -859,7 +859,7 @@ const ComunidadApp = {
             const { data, error } = await this.supabase
                 .from('knowledge_base')
                 .select('title, url, image_url')
-                .eq('source_type', 'article')
+                .eq('source_type', 'publicación')
                 .order('published_at', { ascending: false })
                 .limit(8);
 
