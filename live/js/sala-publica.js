@@ -122,6 +122,8 @@ const PublicRoomApp = {
             if (error || !data) throw error;
             this.sessionData = data;
 
+            this.updateMetaTags();
+
             // Inicializar la sección de comentarios en la parte inferior
             this.setupCommentsSection(this.sessionData);
 
@@ -140,6 +142,32 @@ const PublicRoomApp = {
             console.error("Error al cargar la sala:", error);
             document.getElementById('session-title').textContent = "Error al cargar los datos del evento.";
         }
+    },
+
+    // ==========================================
+    // ACTUALIZAR ETIQUETAS PARA COMPARTIR EN REDES
+    // ==========================================
+    updateMetaTags() {
+        if (!this.sessionData) return;
+        
+        const title = `${this.sessionData.session_title} | EPT Live`;
+        const desc = this.sessionData.description || 'Únete a la conversación en este evento en vivo de Epistecnología.';
+        const image = this.sessionData.thumbnail_url || 'https://i.ibb.co/ZRmgqZ6h/eptlive-rrss.jpg';
+        const url = window.location.href;
+
+        // Actualiza el título de la pestaña del navegador
+        document.title = title;
+
+        // Actualiza las etiquetas ocultas Open Graph (og:) para WhatsApp, Facebook, etc.
+        const ogTitle = document.getElementById('meta-og-title');
+        const ogDesc = document.getElementById('meta-og-desc');
+        const ogImg = document.getElementById('meta-og-image');
+        const ogUrl = document.getElementById('meta-og-url');
+
+        if (ogTitle) ogTitle.setAttribute('content', title);
+        if (ogDesc) ogDesc.setAttribute('content', desc);
+        if (ogImg) ogImg.setAttribute('content', image);
+        if (ogUrl) ogUrl.setAttribute('content', url);
     },
 
     renderUI() {

@@ -327,7 +327,7 @@ document.addEventListener('mainReady', () => {
                         <p class="event-description">${session.description || 'Únete a nuestra próxima sesión en el Ágora.'}</p>
                         <p class="event-time-info"><i class="fa-regular fa-clock"></i> ${statusText}</p>
                     </div>
-                    <a href="/live.html?sesion=${session.id}" class="cta-button-solid">Ir al Evento</a>
+                    <a href="/l/${session.id}" class="cta-button-solid">Ir al Evento</a>
                 </div>
             </div>
         `;

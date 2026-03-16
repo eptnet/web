@@ -1724,17 +1724,23 @@ body {
 }
 .hero-tv-overlay {
     position: absolute; inset: 0;
-    background: linear-gradient(0deg, var(--color-background) 0%, rgba(18,18,18,0.7) 50%, rgba(18,18,18,0.3) 100%),
+    background: linear-gradient(0deg, var(--color-background) 0%, rgba(18, 18, 18, 0.561) 50%, rgba(18,18,18,0.3) 100%),
                 linear-gradient(90deg, var(--color-background) 0%, transparent 50%);
     z-index: 2;
     pointer-events: none; /* MAGIA: Permite que el ratón "atraviese" el degradado y toque el video */
 }
+/* 2. Alineación a la línea amarilla (Izquierda absoluta del contenedor) */
 .hero-tv-content {
     position: relative;
     z-index: 3;
-    max-width: 800px;
+    
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* <-- MAGIA 3: Pega la etiqueta, el texto y el botón a la izquierda */
+    text-align: left;
     animation: fadeInUp 1s ease;
-    pointer-events: auto; /* Los botones frontales siguen funcionando */
+    pointer-events: auto;
 }
 /* Estilo para el reproductor incrustado en el fondo */
 .hero-video-wrapper iframe {
@@ -1743,12 +1749,45 @@ body {
     border: none;
     pointer-events: auto;
 }
-.hero-tv-content .badge { margin-bottom: 1rem; display: inline-block; padding: 6px 12px; border-radius: 4px; font-weight: 800; letter-spacing: 1px; font-size: 0.85rem;}
+.hero-tv-content .badge { 
+    margin-bottom: 1rem; 
+    display: inline-block; 
+    padding: 6px 12px; 
+    border-radius: 4px; 
+    font-weight: 800; 
+    letter-spacing: 1px; 
+    font-size: 0.85rem;
+}
 .badge.live { background: #e50914; color: white; animation: pulse 2s infinite; }
 .badge.upcoming { background: rgba(255,255,255,0.2); backdrop-filter: blur(5px); color: white; }
 
-.hero-title { font-size: clamp(2.5rem, 5vw, 4.5rem); font-weight: 900; line-height: 1.1; margin: 0 0 1rem 0; color: #fff; text-shadow: 0 4px 20px rgba(0,0,0,0.5); }
-.hero-desc { font-size: 1.2rem; color: rgba(255,255,255,0.8); line-height: 1.6; margin-bottom: 2rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.hero-title { 
+    /* Reducimos el tamaño máximo de 4.5rem a 3.2rem para que sea más discreto */
+    font-size: clamp(1.8rem, 3.5vw, 3.2rem); 
+    font-weight: 900; 
+    line-height: 1.15; 
+    margin: 0 0 1rem 0; 
+    color: #fff; 
+    text-shadow: 0 4px 20px rgba(0,0,0,0.7); /* Sombra un poco más fuerte para contraste */
+    max-width: 700px;
+    /* CRÍTICO: Evita que palabras súper largas rompan la caja */
+    word-wrap: break-word; 
+    overflow-wrap: anywhere; 
+}
+
+.hero-desc { 
+    /* Reducimos el tamaño de la fuente para que no sea tan invasivo */
+    font-size: 1.05rem; 
+    max-width: 650px; /* Acortamos el ancho máximo de lectura */
+    color: rgba(255,255,255,0.85); 
+    line-height: 1.6; 
+    margin-bottom: 2rem; 
+    display: -webkit-box; 
+    -webkit-line-clamp: 3; 
+    -webkit-box-orient: vertical; 
+    overflow: hidden; 
+}
+
 .hero-actions { display: flex; gap: 1rem; }
 .btn-tv-primary { background: white; color: black; padding: 12px 30px; border-radius: 8px; font-weight: 700; font-size: 1.1rem; border: none; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; text-decoration: none;}
 .btn-tv-primary:hover { background: rgba(255,255,255,0.8); transform: scale(1.05); }
@@ -1789,16 +1828,45 @@ body {
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 /* --- CORRECCIONES RESPONSIVE (MÓVIL) --- */
 @media (max-width: 768px) {
+    /* Arreglo raíz para que NADA pueda desbordar la pantalla hacia los lados */
+    body, .live-main-content { overflow-x: hidden; }
+
     .search-bar-tv { width: 100%; margin-bottom: 1rem; }
     .search-bar-tv input { font-size: 16px; /* Evita zoom automático en iOS */ }
+    
     .categories-rail { 
         padding-bottom: 15px; 
-        -webkit-overflow-scrolling: touch; /* Scroll suave en móviles */
-        margin: 0 -20px; /* Expande el scroll hasta los bordes de la pantalla */
-        padding-left: 20px; padding-right: 20px;
+        -webkit-overflow-scrolling: touch; 
+        margin: 0 -1rem; 
+        padding-left: 1rem; padding-right: 1rem;
     }
-    .hero-tv { height: auto; min-height: 60vh; padding-bottom: 2rem; }
-    .hero-title { font-size: 2.2rem; }
+    
+    .hero-tv { 
+        height: auto; 
+        min-height: 55vh; /* Reducimos la altura en móvil para que no ocupe toda la pantalla */
+        padding-top: 4rem;
+        padding-bottom: 2rem; 
+    }
+    
+    .hero-tv-content {
+        width: 100%;
+        padding-right: 1rem; /* Asegura que el texto respire y no se pegue a la derecha */
+    }
+
+    .hero-title { 
+        /* Escala dinámicamente y limita el tamaño en celular */
+        font-size: clamp(1.6rem, 6vw, 2.2rem) !important; 
+        line-height: 1.2;
+        /* Magia CSS para forzar el salto de línea y no estirar la pantalla */
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+    }
+    
+    .hero-desc {
+        font-size: 0.95rem;
+        -webkit-line-clamp: 4; /* Damos una línea extra de contexto en móvil */
+    }
 }
 /* --- INICIO: ESTILOS MEJORADOS PARA EL FOOTER --- */
 

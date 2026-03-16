@@ -468,3 +468,20 @@ body.dark-theme {
     text-overflow: ellipsis;
     width: 100%;
 }
+/* ==========================================================================
+   AJUSTES MÓVILES PARA LA COMUNIDAD (PWA)
+   ========================================================================== */
+@media (max-width: 768px) {
+    .fab {
+        bottom: 85px !important; /* Lo subimos para que respete los 65px del menú móvil */
+        right: 1.2rem !important;
+        width: 50px !important; /* Un poquito más pequeño para no estorbar la lectura */
+        height: 50px !important;
+        font-size: 1.2rem !important;
+    }
+    
+    /* Le damos espacio extra al final del feed para que el menú no tape el último post */
+    .main-column-feed {
+        padding-bottom: 70px;
+    }
+}

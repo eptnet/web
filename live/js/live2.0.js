@@ -48,9 +48,9 @@ const LiveAppV2 = {
                 .single();
 
             // Pintar Avatar
-            const avatarUrl = profile?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
+            const avatarUrl = profile?.avatar_url || 'https://api.dicebear.com/9.x/shapes/svg?seed=invitado_${randomSeed}';
             if (avatarLink) {
-                avatarLink.href = `/@${profile?.username || ''}`; // Ruta limpia de perfil
+                avatarLink.href = `/inv/profile.html`;
                 avatarLink.innerHTML = `<img src="${avatarUrl}" alt="Mi Perfil" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid var(--color-accent); display: block;">`;
             }
 
