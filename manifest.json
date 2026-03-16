@@ -2,7 +2,7 @@
   "name": "Epistecnología",
   "short_name": "EPT",
   "description": "Plataforma de Divulgación Científica y Cultural",
-  "start_url": "/comunidad.html",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#18191a",
   "theme_color": "#b72a1e",
