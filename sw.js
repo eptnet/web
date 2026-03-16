@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ept-pwa-v1';
+const CACHE_NAME = 'ept-pwa-v2';
 
 // 1. Instalación del Service Worker
 self.addEventListener('install', (event) => {
