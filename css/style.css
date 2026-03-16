@@ -2291,111 +2291,40 @@ main.container { background-color: transparent !important; }
     }
 }
 /* ==========================================================================
-   PWA APP HUB (Solo visible al abrir desde el icono instalado)
+   PWA APP HUB (Dashboard Exclusivo app.html)
    ========================================================================== */
 .pwa-app-hub {
-    display: none; /* Oculto por defecto en la web normal */
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: var(--color-background);
+    padding: calc(env(safe-area-inset-top, 20px) + 2rem) 1.5rem 80px 1.5rem; 
+    animation: fade-in-up 0.5s ease;
 }
 
-/* La magia ocurre aquí: Detecta si la web está en modo "Aplicación Instalada" */
-@media (display-mode: standalone) {
-    /* 1. Ocultamos el héroe de la web clásica y el footer para limpiar la pantalla */
-    .hero-container,
-    .desktop-nav,
-    .site-footer,
-    main.container {
-        display: none !important;
-    }
+.pwa-header { margin-bottom: 2.5rem; }
+.pwa-header h2 { font-size: 2.2rem; margin-bottom: 5px; color: var(--color-text-primary); font-family: var(--font-serif); }
+.pwa-header p { color: var(--color-text-secondary); font-size: 1.1rem; }
 
-    /* 2. Mostramos el Dashboard Móvil */
-    .pwa-app-hub {
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh;
-        background-color: var(--color-background);
-        /* padding-top: env(safe-area-inset-top) protege la cámara del iPhone */
-        padding: calc(env(safe-area-inset-top, 20px) + 2rem) 1.5rem 80px 1.5rem; 
-        animation: fade-in-up 0.5s ease;
-    }
-
-    .pwa-header {
-        margin-bottom: 2.5rem;
-    }
-    
-    .pwa-header h2 {
-        font-size: 2.2rem;
-        margin-bottom: 5px;
-        color: var(--color-text-primary);
-        font-family: var(--font-serif); /* Usamos tu fuente elegante */
-    }
-    
-    .pwa-header p {
-        color: var(--color-text-secondary);
-        font-size: 1.1rem;
-    }
-
-    /* Cuadrícula de 2x2 perfecta */
-    .pwa-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-        flex-grow: 1;
-        align-content: start;
-    }
-
-    .pwa-card {
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
-        border-radius: 24px;
-        padding: 1.5rem 1rem;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        text-decoration: none;
-        color: var(--color-text-primary);
-        box-shadow: 0 8px 20px rgba(0,0,0,0.04);
-        transition: transform 0.2s, box-shadow 0.2s;
-        aspect-ratio: 1 / 1; /* Cuadrados perfectos */
-        -webkit-tap-highlight-color: transparent; /* Quita el cuadro azul feo de Android al tocar */
-    }
-
-    .icon-wrapper {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        background: var(--color-background);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 15px;
-        font-size: 1.8rem;
-        color: var(--color-text-secondary);
-    }
-    
-    /* El botón destacado (EPT Live) */
-    .pwa-card.highlight {
-        background: var(--color-accent);
-        border: none;
-        color: white;
-        box-shadow: 0 10px 25px rgba(183, 42, 30, 0.4);
-    }
-    
-    .pwa-card.highlight .icon-wrapper {
-        background: rgba(255, 255, 255, 0.2);
-        color: white;
-    }
-
-    .pwa-card span {
-        font-weight: 700;
-        font-size: 1.05rem;
-    }
-
-    .pwa-card:active {
-        transform: scale(0.95); /* Efecto de "botón presionado" físico */
-    }
-    
-    /* Adaptación para el menú inferior que ya creamos */
-    body { padding-bottom: 0 !important; }
+.pwa-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; flex-grow: 1; align-content: start;
 }
+
+.pwa-card {
+    background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 24px;
+    padding: 1.5rem 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; text-decoration: none; color: var(--color-text-primary);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.04); transition: transform 0.2s, box-shadow 0.2s;
+    aspect-ratio: 1 / 1; -webkit-tap-highlight-color: transparent; 
+}
+
+.icon-wrapper {
+    width: 60px; height: 60px; border-radius: 50%; background: var(--color-background);
+    display: flex; align-items: center; justify-content: center; margin-bottom: 15px;
+    font-size: 1.8rem; color: var(--color-text-secondary);
+}
+
+.pwa-card.highlight { background: var(--color-accent); border: none; color: white; box-shadow: 0 10px 25px rgba(183, 42, 30, 0.4); }
+.pwa-card.highlight .icon-wrapper { background: rgba(255, 255, 255, 0.2); color: white; }
+.pwa-card span { font-weight: 700; font-size: 1.05rem; }
+.pwa-card:active { transform: scale(0.95); }

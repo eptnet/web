@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epistecnología App</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#b72a1e">
+    <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="pwa-app-hub">
+        <div class="pwa-header">
+            <h2>Bienvenido 👋</h2>
+            <p>¿Qué descubriremos hoy?</p>
+        </div>
+        
+        <div class="pwa-grid">
+            <a href="/comunidad.html" class="pwa-card">
+                <div class="icon-wrapper"><i class="fa-solid fa-users"></i></div>
+                <span>Comunidad</span>
+            </a>
+            
+            <a href="/live.html" class="pwa-card highlight">
+                <div class="icon-wrapper"><i class="fa-solid fa-satellite-dish"></i></div>
+                <span>EPT Live</span>
+            </a>
+            
+            <a href="https://publicaciones.epistecnologia.com/" target="_blank" class="pwa-card">
+                <div class="icon-wrapper"><i class="fa-solid fa-newspaper"></i></div>
+                <span>Revista</span>
+            </a>
+            
+            <button class="pwa-card" id="pwa-profile-btn" onclick="document.getElementById('mobile-more-btn').click();">
+                <div class="icon-wrapper"><i class="fa-solid fa-user"></i></div>
+                <span>Mi Perfil</span>
+            </button>
+        </div>
+    </div>
+
+    <nav class="mobile-nav">
+        <a href="/#bento-grid-anchor" class="mobile-nav__link active" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
+        <a href="/comunidad.html" class="mobile-nav__link" aria-label="Comunidad"><i class="fa-solid fa-users"></i></a>
+        <a href="/live.html" class="mobile-nav__link" aria-label="EPT Live"><i class="fa-solid fa-satellite-dish"></i></a>
+        <a href="https://publicaciones.epistecnologia.com/" target="_blank" class="mobile-nav__link" aria-label="Revista"><i class="fa-solid fa-newspaper"></i></a>
+        <button class="mobile-nav__link" id="mobile-more-btn" aria-label="Perfil"><i class="fa-solid fa-user"></i></button>
+    </nav>
+
+    <div class="mobile-more-menu" id="mobile-more-menu">
+        <div class="mobile-more-menu__content">
+            <a href="#" data-provider="google" id="login-google-btn-mobile" class="mobile-more-menu__item login-provider-btn"><i class="fa-brands fa-google"></i><span>Iniciar con Google</span></a>
+            <a href="#" data-provider="github" id="login-github-btn-mobile" class="mobile-more-menu__item login-provider-btn"><i class="fa-brands fa-github"></i><span>Iniciar con GitHub</span></a>
+            <hr style="border: none; border-top: 1px solid var(--color-border); margin: 0.5rem 0;">
+            <a href="/comunidad.html" id="community-btn-mobile" data-url="/comunidad.html" class="mobile-more-menu__item"><i class="fa-solid fa-users"></i><span>Comunidad</span></a>
+            <a href="/live.html#seccion-eventos" class="mobile-more-menu__item"><i class="fa-solid fa-calendar-days"></i><span>Eventos</span></a>
+            <hr style="border: none; border-top: 1px solid var(--color-border); margin: 0.5rem 0;">
+            <button class="mobile-more-menu__item" id="theme-switcher-mobile"><i class="fa-solid fa-moon"></i><span>Cambiar Tema</span></button>
+            <button class="mobile-more-menu__item" id="mobile-more-menu-close"><i class="fa-solid fa-xmark"></i><span>Cerrar</span></button>
+        </div>
+    </div>
+    <div class="overlay" id="overlay"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/main.js"></script>
+</body>
+</html>
