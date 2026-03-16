@@ -485,3 +485,51 @@ body.dark-theme {
         padding-bottom: 70px;
     }
 }
+/* ==========================================================================
+   TABS MÓVILES (Estilo App Nativa)
+   ========================================================================== */
+.community-mobile-tabs { display: none; }
+
+@media (max-width: 1024px) {
+    .community-mobile-tabs {
+        display: flex;
+        background: rgba(255, 255, 255, 0.85) !important;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        position: sticky;
+        top: 0px; /* Se pega justo debajo del header */
+        padding-top: env(safe-area-inset-top, 0px);
+        z-index: 900;
+        border-bottom: 1px solid var(--color-border);
+        margin: -1.5rem -1rem 1.5rem -1rem; /* Compensa el padding general */
+    }
+    body.dark-theme .community-mobile-tabs {
+        background: rgba(18, 20, 24, 0.85) !important;
+    }
+    .community-tab-btn {
+        flex: 1;
+        padding: 14px 0;
+        background: transparent;
+        border: none;
+        border-bottom: 3px solid transparent;
+        color: var(--color-secondary-text);
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+    .community-tab-btn.active {
+        color: var(--color-accent);
+        border-bottom-color: var(--color-accent);
+    }
+    
+    /* Magia: Ocultar columnas que no están activas en móvil */
+    .community-layout > main, .community-layout > aside {
+        display: none;
+    }
+    .community-layout > .is-active-tab {
+        display: flex;
+        flex-direction: column;
+        animation: fadeIn 0.3s ease;
+    }
+}

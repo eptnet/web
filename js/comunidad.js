@@ -145,6 +145,28 @@ const ComunidadApp = {
                 if (username) this.openProfileModal(username);
             }
 
+            // --- TABS MÓVILES (NAVEGACIÓN APP) ---
+            const tabBtn = target.closest('.community-tab-btn');
+            if (tabBtn) {
+                // Quitar 'active' de todos los botones
+                document.querySelectorAll('.community-tab-btn').forEach(b => b.classList.remove('active'));
+                tabBtn.classList.add('active'); // Activar el presionado
+                
+                // Ocultar todas las columnas
+                document.getElementById('feed-tab').classList.remove('is-active-tab');
+                document.getElementById('profile-tab').classList.remove('is-active-tab');
+                document.getElementById('explore-tab').classList.remove('is-active-tab');
+                
+                // Mostrar solo la columna seleccionada
+                const targetId = tabBtn.getAttribute('data-target');
+                const activeColumn = document.getElementById(targetId);
+                if (activeColumn) activeColumn.classList.add('is-active-tab');
+                
+                // Subir suavemente al inicio de la pestaña
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+
             // --- ABRIR IMAGEN EN PANTALLA COMPLETA (Solución definitiva) ---
             const embedImg = target.closest('.post-embed-image img');
             if (embedImg) {

@@ -53,9 +53,15 @@
     </header>
 
     <div class="page-container">
+        <div class="community-mobile-tabs hidden-desktop">
+            <button class="community-tab-btn active" data-target="feed-tab">Feed</button>
+            <button class="community-tab-btn" data-target="profile-tab">Perfil</button>
+            <button class="community-tab-btn" data-target="explore-tab">TV y Más</button>
+        </div>
+
         <div class="community-layout">
 
-            <aside class="left-column">
+            <aside class="left-column" id="profile-tab">
 
                 <div class="bento-box user-panel-box">
                     <div id="user-panel-loading">Cargando tu perfil...</div>
@@ -82,7 +88,7 @@
                 </div>
             </aside>
 
-            <main class="main-column-feed">
+            <main class="main-column-feed is-active-tab" id="feed-tab">
                 <div class="stories-wrapper bento-box" style="padding: 1rem; margin-bottom: 1.5rem;">
                     <h4 style="margin: 0 0 12px 0; font-size: 0.9rem; color: var(--color-secondary-text); font-weight: 700;">
                         <i class="fa-solid fa-star" style="color:#facc15;"></i> Destacados
@@ -123,7 +129,7 @@
                 </div>
             </main>
 
-            <aside class="right-column">
+            <aside class="right-column" id="explore-tab">
 
                 <div class="bento-box live-247-box" style="padding: 0; overflow: hidden; margin-bottom: 1.5rem; display: flex; flex-direction: column;">
                     <div class="live-badge-247"><span class="pulse-dot"></span> EN VIVO 24/7</div>
@@ -328,10 +334,11 @@
     </div>
 
     <nav class="mobile-nav">
-        <a href="/" class="mobile-nav__link active" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
-        <a href="https://publicaciones.epistecnologia.com/" class="mobile-nav__link" aria-label="Newsletter"><i class="fa-solid fa-newspaper"></i></a>
-        <a href="/live.html" class="mobile-nav__link" id="nav-live-mobile" aria-label="En Vivo"><i class="fa-solid fa-satellite-dish"></i></a>
-        <button class="mobile-nav__link" id="mobile-more-btn" aria-label="Más opciones"><i class="fa-solid fa-bars"></i></button>
+        <a href="/" class="mobile-nav__link" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
+        <a href="/comunidad.html" class="mobile-nav__link active" aria-label="Comunidad"><i class="fa-solid fa-users"></i></a>
+        <a href="/live.html" class="mobile-nav__link" aria-label="EPT Live"><i class="fa-solid fa-satellite-dish"></i></a>
+        <a href="https://publicaciones.epistecnologia.com/" target="_blank" class="mobile-nav__link" aria-label="Revista"><i class="fa-solid fa-newspaper"></i></a>
+        <button class="mobile-nav__link" id="mobile-more-btn" aria-label="Perfil"><i class="fa-solid fa-user"></i></button>
     </nav>
 
     <div class="mobile-more-menu" id="mobile-more-menu">
