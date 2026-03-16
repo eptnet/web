@@ -181,13 +181,38 @@ body.dark-theme .dropdown-content { box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
     border-top-right-radius: var(--border-radius); 
     box-shadow: 0 -5px 15px rgba(0,0,0,0.1); 
     transform: translateY(100%); 
-    transition: transform 0.3s ease-out; 
+    transition: transform 0.3s ease-out;
+    max-height: 85vh; 
+    overflow-y: auto; 
 } 
 .mobile-more-menu.is-visible { 
     transform: translateY(0); 
 }
-.mobile-more-menu__content { padding: 1.5rem; } 
-.mobile-more-menu__item { display: flex; align-items: center; gap: 1rem; padding: 1rem; font-size: 1rem; font-weight: 500; color: var(--color-text-primary); border-radius: 8px; } .mobile-more-menu__item:hover, .mobile-more-menu__item:active { background-color: var(--color-background); } .mobile-more-menu__item i { width: 24px; text-align: center; font-size: 1.2rem; color: var(--color-text-secondary); }
+.mobile-more-menu__content { 
+    padding: 1.5rem; 
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+} 
+.mobile-more-menu__item { 
+    display: flex; 
+    align-items: center; 
+    gap: 1rem; 
+    padding: 1rem; 
+    font-size: 1rem; 
+    font-weight: 500; 
+    color: var(--color-text-primary); 
+    border-radius: 8px; 
+} 
+.mobile-more-menu__item:hover, .mobile-more-menu__item:active { 
+    background-color: var(--color-background); 
+} 
+.mobile-more-menu__item i { 
+    width: 24px; 
+    text-align: center; 
+    font-size: 1.2rem; 
+    color: var(--color-text-secondary); 
+}
 
 /* 4.2 BENTO GRID */
 /* DESPUÉS */
