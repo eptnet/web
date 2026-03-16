@@ -202,17 +202,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const overlay = document.getElementById('overlay');
 
         // Función para abrir el menú
-        const openMobileMenu = () => {
-            // Hacemos visibles el menú y el fondo oscuro
+        const openMobileMenu = (e) => {
+            if (e) e.preventDefault(); // Evita que la pantalla salte hacia arriba al hacer clic
+            // Hacemos visibles el menú y el fondo oscuro de forma segura
             mobileMoreMenu?.classList.add('is-visible');
             overlay?.classList.add('is-visible');
-            // Opcional: Evita que el contenido de la página se desplace mientras el menú está abierto
+            // Evita que el contenido de la página se desplace mientras el menú está abierto
             document.body.style.overflow = 'hidden'; 
         };
 
         // Función para cerrar el menú
         const closeMobileMenu = () => {
-            // Ocultamos el menú y el fondo oscuro
+            // Ocultamos el menú y el fondo oscuro de forma segura
             mobileMoreMenu?.classList.remove('is-visible');
             overlay?.classList.remove('is-visible');
             // Restaura el scroll de la página
@@ -224,6 +225,11 @@ document.addEventListener('DOMContentLoaded', () => {
         mobileMoreMenuClose?.addEventListener('click', closeMobileMenu); // Cierra el menú desde su botón "Cerrar"
         overlay?.addEventListener('click', closeMobileMenu); // Cierra el menú al hacer clic en el fondo oscuro
         
+        // MAGIA EXTRA SEGURA: Cierre automático al tocar enlaces dentro del menú
+        mobileMoreMenu?.querySelectorAll('a, .login-provider-btn').forEach(link => {
+            link.addEventListener('click', closeMobileMenu);
+        });
+
         document.body.addEventListener('click', (e) => {
             // Buscamos si el clic ocurrió en cualquier botón con la clase .login-provider-btn
             const providerBtn = e.target.closest('.login-provider-btn');
