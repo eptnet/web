@@ -713,7 +713,7 @@ const ComunidadApp = {
             const externalData = embed.external || (embed.media && embed.media.external);
             
             // 1. DIBUJA VIDEOS DE BLUESKY
-            if (embed.$type === 'app.bsky.embed.video' || (embed.media && embed.media.$type === 'app.bsky.embed.video')) {
+            if (embed.$type.startsWith('app.bsky.embed.video') || (embed.media && embed.media.$type === 'app.bsky.embed.video')) {
                 const videoData = embed.video || (embed.media && embed.media.video) || embed;
                 const rkey = post.uri.split('/').pop();
                 embedHtml = `
