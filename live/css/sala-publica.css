@@ -68,6 +68,36 @@ body.tv-mode-dark { margin: 0; font-family: 'Inter', sans-serif; background: var
     margin-top: 0; 
     white-space: pre-wrap; /* Esta línea mágica respeta los saltos de línea automáticos */
 }
+/* --- LÓGICA DE DESCRIPCIÓN TIPO YOUTUBE --- */
+.desc-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.desc-collapsed {
+    display: -webkit-box;
+    -webkit-line-clamp: 4; /* Cortará el texto exactamente a las 4 líneas */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.btn-toggle-desc {
+    background: transparent;
+    border: none;
+    color: white;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 5px 0 0 0;
+    margin-top: 5px;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.btn-toggle-desc:hover {
+    color: #38bdf8; /* Azul característico al pasar el mouse */
+}
 .btn-primary { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; transition: 0.2s; }
 .btn-primary:hover { background: #962218; transform: translateY(-2px); }
 
@@ -393,4 +423,24 @@ body.tv-mode-dark { margin: 0; font-family: 'Inter', sans-serif; background: var
         overflow-wrap: break-word;
         word-break: break-word; /* CRÍTICO: Obliga a romper enlaces o correos largos */
     }
+}
+/* --- ESTILOS PARA EL POST ANCLA DEL HILO --- */
+.anchor-comment {
+    background: rgba(56, 189, 248, 0.05); /* Fondo sutil celeste/Epistecnología */
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+}
+
+.anchor-badge {
+    background: #38bdf8;
+    color: #0f172a;
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 8px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }

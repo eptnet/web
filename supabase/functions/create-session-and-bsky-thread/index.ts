@@ -1,4 +1,5 @@
-// ARCHIVO FINAL Y COMPLETO CON LÓGICA DE MINIATURA
+// ARCHIVO FINAL: /supabase/functions/create-session-and-bsky-thread/index.ts
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { BskyAgent } from 'npm:@atproto/api'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -68,12 +69,21 @@ serve(async (req) => {
 
         const directLink = `https://epistecnologia.com/l/${savedSession.id}`;
         
-        // --- LÓGICA DE VISTA PREVIA Y MINIATURA ---
-        const previewData = await getLinkPreview(directLink);
+        // --- LÓGICA DE VISTA PREVIA Y MINIATURA CORREGIDA ---
+        // 1. Usamos la imagen de ImgBB que nos mandó el frontend
+        let finalThumbUrl = sessionData.thumbnail_url; 
+        let previewData = null;
+
+        // 2. Si por algún motivo no hay imagen de ImgBB, hacemos el escaneo de respaldo
+        if (!finalThumbUrl) {
+            previewData = await getLinkPreview(directLink);
+            finalThumbUrl = previewData?.thumb;
+        }
+
         let imageBlob = null;
-        if (previewData && previewData.thumb) {
+        if (finalThumbUrl) {
             try {
-                const imageResponse = await fetch(previewData.thumb);
+                const imageResponse = await fetch(finalThumbUrl);
                 if (imageResponse.ok) {
                     const imageData = await imageResponse.arrayBuffer();
                     const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
@@ -93,8 +103,8 @@ serve(async (req) => {
                 $type: 'app.bsky.embed.external',
                 external: {
                     uri: directLink,
-                    title: previewData?.title || sessionData.session_title,
-                    description: previewData?.description || 'Evento en vivo de Epistecnología',
+                    title: sessionData.session_title, // Usamos el título real que el usuario escribió
+                    description: sessionData.description || previewData?.description || 'Evento en vivo de Epistecnología',
                     thumb: imageBlob || undefined
                 }
             }

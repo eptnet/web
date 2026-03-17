@@ -184,6 +184,31 @@ const PublicRoomApp = {
 
         document.getElementById('session-title').textContent = s.title || s.session_title;
         document.getElementById('session-desc').textContent = s.description || 'Únete a la conversación en esta sesión especial de Epistecnología.';
+        
+        // --- LÓGICA DE MOSTRAR MÁS / MENOS (Tipo YouTube) ---
+        setTimeout(() => {
+            const descP = document.getElementById('session-desc');
+            const toggleBtn = document.getElementById('btn-toggle-desc');
+            
+            if (descP && toggleBtn) {
+                // Comprobamos si el texto real (scrollHeight) es mayor que la caja colapsada de 4 líneas (clientHeight)
+                if (descP.scrollHeight > descP.clientHeight) {
+                    toggleBtn.classList.remove('hidden'); // Mostramos el botón
+                    
+                    toggleBtn.addEventListener('click', () => {
+                        const isCollapsed = descP.classList.contains('desc-collapsed');
+                        if (isCollapsed) {
+                            descP.classList.remove('desc-collapsed');
+                            toggleBtn.textContent = 'Mostrar menos';
+                        } else {
+                            descP.classList.add('desc-collapsed');
+                            toggleBtn.textContent = 'Mostrar más';
+                        }
+                    });
+                }
+            }
+        }, 100); // Pequeño retraso para permitir que el navegador dibuje el texto primero
+
         document.getElementById('session-project').innerHTML = `<i class="fa-solid fa-folder-open"></i> ${s.project_title ? s.project_title.substring(0,25)+'...' : 'General'}`;
         document.getElementById('session-date').innerHTML = `<i class="fa-regular fa-clock"></i> ${new Date(s.scheduled_at).toLocaleString('es-ES', { dateStyle: 'long', timeStyle: 'short' })}`;
         
@@ -398,7 +423,7 @@ const PublicRoomApp = {
         // 2. ESCUCHA LOS COMENTARIOS DE BLUESKY (Viene de la Edge Function)
         this.realtimeChannel.on('broadcast', { event: 'new_chat_message' }, (payload) => {
             // SOLO se pinta en la caja inferior de comentarios
-            this.appendCommentMessage(payload.payload, false);
+            this.appendCommentMessage(payload.payload, true);
         });
 
         // 4C. DETECCIÓN DEL CAMBIO DE ESTADO (TRANSICIÓN SUAVE)
@@ -637,19 +662,76 @@ const PublicRoomApp = {
             
             commentsFeed.innerHTML = '';
             
+            // 1. Mostrar SIEMPRE el mensaje original (El post Ancla del evento) al tope
+            if (chatData.anchorPost) {
+                this.appendCommentMessage(chatData.anchorPost, false, true); // El 'true' activa el diseño de Ancla
+            }
+
             if (!chatData.messages || chatData.messages.length === 0) {
-                commentsFeed.innerHTML = '<p class="text-muted text-center" style="margin-top:20px;">Sé el primero en iniciar la conversación.</p>';
+                commentsFeed.insertAdjacentHTML('beforeend', '<p class="text-muted text-center empty-msg" style="margin-top:20px;">Sé el primero en iniciar la conversación.</p>');
                 return;
             }
 
-            // Renderizar la lista
-            chatData.messages.forEach(msg => {
+            // 2. Invertimos el arreglo para que los comentarios MÁS RECIENTES salgan arriba
+            const sortedMessages = chatData.messages.reverse();
+            sortedMessages.forEach(msg => {
                 this.appendCommentMessage(msg, false);
             });
 
         } catch (error) {
             console.error("Error al cargar comentarios:", error);
             commentsFeed.innerHTML = '<p class="text-muted text-center">No se pudieron cargar los comentarios.</p>';
+        }
+    },
+
+    appendCommentMessage(message, prepend = false, isAnchor = false) {
+        const feed = document.getElementById('comments-feed');
+        if (!feed || !message || !message.author || !message.record) return;
+
+        // ¡ELIMINADA LA REGLA QUE OCULTABA EL ANUNCIO! Ahora lo renderizamos a propósito.
+
+        const div = document.createElement('div');
+        div.className = `comment-item ${isAnchor ? 'anchor-comment' : ''}`;
+        
+        let dateStr = '';
+        if (message.record.createdAt || message.indexedAt) {
+            const d = new Date(message.record.createdAt || message.indexedAt);
+            dateStr = `<span style="font-size:0.75rem; color:var(--text-muted); margin-left: 8px;">${d.toLocaleDateString()}</span>`;
+        }
+
+        // Si es el post original, le inyectamos una etiqueta dorada/azul
+        const anchorBadge = isAnchor ? `<span class="anchor-badge">Post Original</span>` : '';
+
+        div.innerHTML = `
+            <div class="comment-item-avatar">
+                <img src="${message.author.avatar || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="Avatar">
+            </div>
+            <div class="comment-item-content">
+                <div class="comment-item-header">
+                    <span class="comment-author-name">${message.author.displayName || message.author.handle}</span>
+                    <span class="comment-author-handle">@${message.author.handle}</span>
+                    ${anchorBadge}
+                    ${dateStr}
+                </div>
+                <p class="comment-text">${message.record.text.replace(/\n/g, '<br>')}</p>
+            </div>
+        `;
+
+        // Lógica inteligente de inserción: Si agregamos un comentario nuevo (prepend), 
+        // lo colocamos DEBAJO del Ancla, pero ENCIMA de los demás comentarios.
+        if (prepend) {
+            const firstChild = feed.firstElementChild;
+            if (firstChild && firstChild.classList.contains('anchor-comment')) {
+                if (firstChild.nextSibling) {
+                    feed.insertBefore(div, firstChild.nextSibling);
+                } else {
+                    feed.appendChild(div);
+                }
+            } else {
+                feed.insertBefore(div, feed.firstChild);
+            }
+        } else {
+            feed.appendChild(div);
         }
     },
 
@@ -698,43 +780,6 @@ const PublicRoomApp = {
         } finally {
             submitBtn.disabled = true; 
             submitBtn.innerHTML = 'Comentar';
-        }
-    },
-
-    appendCommentMessage(message, prepend = false) {
-        const feed = document.getElementById('comments-feed');
-        if (!feed || !message || !message.author || !message.record) return;
-
-        // Regla de seguridad: Ocultar el "Anchor Post" automático de la sala para que no parezca un comentario normal
-        if (message.record.text && message.record.text.includes("🔴 ¡EVENTO EN VIVO!")) return;
-
-        const div = document.createElement('div');
-        div.className = 'comment-item';
-        
-        let dateStr = '';
-        if (message.record.createdAt || message.indexedAt) {
-            const d = new Date(message.record.createdAt || message.indexedAt);
-            dateStr = `<span style="font-size:0.75rem; color:var(--text-muted); margin-left: 8px;">${d.toLocaleDateString()}</span>`;
-        }
-
-        div.innerHTML = `
-            <div class="comment-item-avatar">
-                <img src="${message.author.avatar || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="Avatar">
-            </div>
-            <div class="comment-item-content">
-                <div class="comment-item-header">
-                    <span class="comment-author-name">${message.author.displayName || message.author.handle}</span>
-                    <span class="comment-author-handle">@${message.author.handle}</span>
-                    ${dateStr}
-                </div>
-                <p class="comment-text">${message.record.text.replace(/\n/g, '<br>')}</p>
-            </div>
-        `;
-
-        if (prepend) {
-            feed.insertBefore(div, feed.firstChild);
-        } else {
-            feed.appendChild(div);
         }
     },
 
