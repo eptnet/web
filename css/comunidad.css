@@ -733,11 +733,12 @@ body.dark-theme {
         justify-content: flex-start !important;
     }
     
-    /* Achicamos la foto y el texto */
+    /* Achicamos la foto, el texto y forzamos el corte con puntos suspensivos */
     .persistent-audio-player.is-minimized .track-info {
-        width: auto !important; 
-        flex-grow: 1; 
+        flex: 1 1 0% !important; /* Absorbe el espacio disponible pero permite encogerse */
+        min-width: 0 !important; /* CRÍTICO: Obliga a Flexbox a respetar el límite de la pantalla */
         margin-bottom: 0 !important;
+        overflow: hidden !important;
     }
     .persistent-audio-player.is-minimized .track-info img {
         width: 35px !important; 
