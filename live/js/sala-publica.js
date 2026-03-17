@@ -345,31 +345,14 @@ const PublicRoomApp = {
         const eptTab = document.querySelector('.chat-tab[data-target="ept-chat"]');
         const bskyPanel = document.getElementById('ept-chat');
         const isLive = s.status === 'EN VIVO';
-        const hasExternalChat = (s.platform === 'youtube' || s.platform === 'twitch') && s.platform_id;
 
+        // Nos aseguramos de ocultar cualquier rastro del chat nativo de otras plataformas
         if (nativeTab) nativeTab.classList.add('hidden');
         if (nativePanel) nativePanel.innerHTML = '';
+        
+        // Activamos por defecto y como única opción nuestro Chat EPT
         if (eptTab) eptTab.classList.add('active');
         if (bskyPanel) bskyPanel.classList.add('active');
-
-        if (hasExternalChat) {
-            const isTwitch = s.platform === 'twitch';
-            const brandColor = isTwitch ? '#a855f7' : '#ef4444';
-            const brandIcon = isTwitch ? 'fa-twitch' : 'fa-youtube';
-            const popoutUrl = isTwitch ? `https://www.twitch.tv/popout/${s.platform_id}/chat?darkpopout` : `https://www.youtube.com/live_chat?v=${s.platform_id}&dark_theme=1`;
-            const contextMeta = document.querySelector('.context-meta');
-            
-            if (contextMeta && !document.getElementById('btn-external-popout')) {
-                const btnHtml = `
-                    <a href="${popoutUrl}" id="btn-external-popout" target="_blank" 
-                       onclick="window.open(this.href, 'ChatExterno', 'width=400,height=600,left=200,top=100,toolbar=0,resizable=1'); return false;" 
-                       class="btn-primary" style="background-color:${brandColor}; border:none; text-decoration:none; padding: 6px 14px; font-size: 0.85rem; margin-right: auto; display: flex; align-items: center; gap: 8px;">
-                        <i class="fa-brands ${brandIcon}"></i> Chat externo
-                    </a>
-                `;
-                contextMeta.insertAdjacentHTML('beforeend', btnHtml);
-            }
-        }
 
         const authOverlay = document.getElementById('bsky-auth-overlay');
         const chatInput = document.getElementById('bsky-chat-input');
@@ -378,6 +361,7 @@ const PublicRoomApp = {
 
         if (chatFeed) chatFeed.innerHTML = ''; 
 
+        // Lógica de finalización de evento
         if (!isLive && s.status !== 'PROGRAMADO') {
             if (authOverlay) {
                 authOverlay.classList.remove('hidden');
@@ -386,6 +370,7 @@ const PublicRoomApp = {
             return;
         }
 
+        // Lógica de validación de usuario
         if (this.currentUserProfile) {
             if (authOverlay) authOverlay.classList.add('hidden');
             if (chatInput) { chatInput.disabled = false; chatInput.placeholder = "Escribe un mensaje..."; }
