@@ -617,3 +617,67 @@ body.dark-theme {
         animation: fadeIn 0.3s ease;
     }
 }
+/* ==========================================================================
+   ADAPTACIÓN MÓVIL EXACTA DEL REPRODUCTOR DE PODCAST (PWA)
+   ========================================================================== */
+@media (max-width: 768px) {
+    /* 1. Elevar el reproductor por encima del menú móvil */
+    .persistent-audio-player {
+        /* 70px es el alto promedio del nav móvil + el margen de seguridad del iPhone */
+        bottom: calc(70px + env(safe-area-inset-bottom, 0px)) !important;
+        padding: 10px 15px !important;
+        border-radius: 16px 16px 0 0; /* Bordes redondeados para que parezca una tarjeta flotante */
+    }
+
+    /* 2. Reorganizar la cuadrícula para que todo quepa perfecto */
+    .player-content {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+    }
+
+    /* 3. La carátula y el título toman la parte superior (dejando espacio a la X) */
+    .track-info {
+        width: calc(100% - 40px) !important;
+        gap: 10px !important;
+    }
+    .track-info img {
+        width: 42px !important; 
+        height: 42px !important;
+    }
+
+    /* 4. Reubicar el botón de cerrar en la esquina superior derecha */
+    #player-close-btn {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+    }
+
+    /* 5. La línea de tiempo toma el 100% del ancho debajo del título */
+    .player-timeline {
+        width: 100% !important;
+        max-width: 100% !important;
+        order: 2; /* Lo pasamos al medio */
+        margin-top: 5px;
+    }
+
+    /* 6. Centrar los botones de reproducción en la parte inferior */
+    .player-controls {
+        width: 100% !important;
+        justify-content: center !important;
+        order: 3; /* Lo pasamos abajo del todo */
+        gap: 25px !important;
+        margin-top: 5px;
+    }
+
+    /* 7. Ocultar el volumen (En móvil se usan los botones físicos del celular) */
+    .player-volume {
+        display: none !important;
+    }
+
+    /* 8. Ajustar el panel de la lista de reproducción para que no se desborde de la pantalla */
+    .podcast-playlist-panel {
+        width: calc(100vw - 30px) !important;
+        left: 15px !important;
+        bottom: calc(100% + 10px) !important;
+    }
+}
