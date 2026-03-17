@@ -99,21 +99,105 @@ body.dark-theme {
 .community-nav-link.active { background-color: var(--color-accent-light); color: var(--color-accent); }
 .community-nav-link i { width: 24px; font-size: 1.1rem; text-align: center; }
 
-/* --- COLUMNA CENTRAL --- */
-.create-post-box h4 { margin: 0 0 1rem 0; font-size: 1.1rem; color: var(--color-primary-text); font-weight: 700; }
-.textarea-container { position: relative; margin-bottom: 1rem; width: 100%; }
-#post-text, .post-modal textarea, #reply-form textarea {
-    width: 100%; min-height: 100px; padding: 1.2rem; border: 2px solid transparent;
-    border-radius: var(--border-radius-sm); background-color: var(--color-background);
-    color: var(--color-primary-text); resize: none; font-size: 1.05rem; transition: all var(--transition-speed);
+/* ==========================================================================
+   INTERFAZ CREAR POST (Estilo Nativo Profesional)
+   ========================================================================== */
+.create-post-box h4 { display: none; } /* Ocultar el h4 que generaba JS viejo */
+.create-post-box { padding: 1.5rem 1.5rem 0.5rem 1.5rem !important; }
+
+.clean-post-form .textarea-container { 
+    display: flex; 
+    gap: 12px; 
+    align-items: flex-start;
+    width: 100%;
 }
-#post-text:focus, .post-modal textarea:focus {
-    border-color: var(--color-accent); background-color: var(--color-surface); outline: none; box-shadow: 0 0 0 4px var(--color-accent-light);
+
+.clean-post-form .post-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
 }
-.char-counter {
-    position: absolute; bottom: 12px; right: 12px; font-size: 0.8rem; font-weight: 600;
-    color: var(--color-secondary-text); background: var(--color-surface); padding: 2px 8px;
-    border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+
+.clean-post-form .post-input-wrapper {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Magia: Quitar los bordes del textarea por completo */
+.clean-post-form textarea {
+    width: 100%;
+    min-height: 80px;
+    border: none !important;
+    background: transparent !important;
+    color: var(--color-primary-text) !important;
+    font-size: 1.25rem;
+    line-height: 1.4;
+    font-family: inherit;
+    resize: none;
+    outline: none !important;
+    box-shadow: none !important;
+    padding: 8px 0;
+}
+
+.clean-post-form textarea::placeholder {
+    color: var(--color-secondary-text);
+    opacity: 0.6;
+}
+
+/* Iconos de acción (Azules estilo Bluesky/Twitter) */
+.clean-post-form .create-post-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--color-background);
+    padding-top: 10px;
+    margin-top: 10px;
+}
+
+.clean-post-form .action-icons {
+    display: flex;
+    gap: 4px;
+}
+
+.clean-post-form .post-action-icon {
+    background: transparent;
+    border: none;
+    color: #0085ff; /* Color de link estándar profesional */
+    font-size: 1.2rem;
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.clean-post-form .post-action-icon:hover:not(.disabled-icon) {
+    background: rgba(0, 133, 255, 0.1);
+}
+
+.clean-post-form .post-action-icon.disabled-icon {
+    color: var(--color-secondary-text);
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Botón estilo Píldora redondeada */
+.btn-pill {
+    border-radius: 9999px !important;
+    padding: 8px 20px !important;
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+}
+
+.form-submit-area {
+    display: flex;
+    align-items: center;
 }
 .feed-container { display: flex; flex-direction: column; gap: 1.2rem; margin-top: 1.5rem; }
 .feed-post { padding: 1.5rem; border: 1px solid transparent; word-wrap: break-word; }

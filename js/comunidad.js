@@ -248,62 +248,70 @@ const ComunidadApp = {
     },
 
     addFormEventListeners(container) {
-        // El listener para 'submit' ha sido ELIMINADO de aquí para evitar duplicados.
-        // La gestión del 'submit' ahora se hace de forma centralizada y única en `addEventListeners`.
-
-        // Mantenemos los listeners para los elementos internos del formulario que no son 'submit'.
-        container.querySelector('#post-text')?.addEventListener('input', (e) => {
+        // Enlaza el texto para los links y contadores
+        container.querySelector('textarea')?.addEventListener('input', (e) => {
             this.updateCharCounter(e);
-            this.detectLinkInText(e.target.value); // Aquí sí existe la "e"
+            this.detectLinkInText(e.target.value); 
         });
 
-        const imageUploadBtn = container.querySelector('#image-upload-btn');
-        const imageUploadInput = container.querySelector('#image-upload-input');
+        // Enlaza la subida de imágenes usando CLASES relativas al contenedor actual
+        const imageUploadBtn = container.querySelector('.image-upload-btn') || container.querySelector('#image-upload-btn');
+        const imageUploadInput = container.querySelector('.image-upload-input') || container.querySelector('#image-upload-input');
         const removeImageBtn = container.querySelector('.remove-image-btn');
 
-        imageUploadBtn?.addEventListener('click', () => imageUploadInput.click());
-        imageUploadInput?.addEventListener('change', (e) => this.handleImageSelection(e));
-        removeImageBtn?.addEventListener('click', () => this.removeSelectedImage());
+        if (imageUploadBtn && imageUploadInput) {
+            imageUploadBtn.addEventListener('click', () => imageUploadInput.click());
+            imageUploadInput.addEventListener('change', (e) => this.handleImageSelection(e, container));
+        }
+        if (removeImageBtn) {
+            removeImageBtn.addEventListener('click', () => this.removeSelectedImage(container));
+        }
     },
 
     toggleCreatePostBox() {
         const container = document.querySelector('.create-post-box');
         if (!container) return;
 
-        if (this.bskyCreds && (this.userProfile.role === 'researcher' || this.userProfile.role === 'admin')) {
-            // Si es investigador y está conectado, mostramos el formulario completo.
-            container.innerHTML = `
-                <h4>Comparte tu conocimiento</h4>
-                <form id="create-post-form">
-                    <div class="textarea-container">
-                        <textarea id="post-text" name="post-text" placeholder="¿Qué estás investigando hoy?" maxlength="300" required></textarea>
-                        
-                        <div id="link-preview-loader" style="display:none; font-size: 0.8rem; margin: 10px 0; color: var(--color-accent);">
-                            <i class="fa-solid fa-spinner fa-spin"></i> Generando vista previa...
-                        </div>
-                        <div id="link-preview-editor" class="link-preview-card" style="display:none; margin-bottom: 15px; position: relative;"></div>
-                    </div>
+        if (this.bskyCreds && (this.userProfile.role === 'researcher' || this.userProfile.role === 'admin')) if (this.bskyCreds && (this.userProfile.role === 'researcher' || this.userProfile.role === 'admin')) {
+            // Generamos la URL del avatar correctamente
+            const avatarUrl = this.userProfile.avatar_url || `https://api.dicebear.com/9.x/shapes/svg?seed=${this.userProfile.username || 'user'}`;
 
-                    <div id="image-preview-container" class="image-preview-container" style="display: none;">
-                        <button type="button" class="remove-image-btn">&times;</button>
-                        <img id="image-preview" src="#" alt="Vista previa de la imagen">
+            // Inyectamos la estructura limpia estilo Bluesky
+            container.innerHTML = `
+                <form id="create-post-form" class="clean-post-form">
+                    <div class="textarea-container">
+                        <img id="inline-user-avatar" src="${avatarUrl}" class="post-avatar">
+                        <div class="post-input-wrapper">
+                            <textarea id="post-text" name="post-text" placeholder="¿Qué hay de nuevo, investigador?" maxlength="300" required></textarea>
+                            
+                            <div id="link-preview-loader" style="display:none; font-size: 0.8rem; margin: 10px 0; color: var(--color-accent);">
+                                <i class="fa-solid fa-spinner fa-spin"></i> Generando vista previa...
+                            </div>
+                            <div id="link-preview-editor" class="link-preview-card" style="display:none; margin-bottom: 15px; position: relative;"></div>
+                            
+                            <div id="image-preview-container" class="image-preview-container" style="display: none;">
+                                <button type="button" class="remove-image-btn">&times;</button>
+                                <img id="image-preview" src="#" alt="Vista previa de la imagen">
+                            </div>
+                        </div>
                     </div>
 
                     <div class="create-post-actions">
                         <div class="action-icons">
                             <input type="file" id="image-upload-input" accept="image/jpeg, image/png" style="display: none;">
                             <button type="button" id="image-upload-btn" class="post-action-icon" title="Añadir imagen">
-                                <i class="fa-solid fa-image"></i>
+                                <i class="fa-regular fa-image"></i>
                             </button>
+                            <button type="button" class="post-action-icon disabled-icon" title="GIF (Próximamente)"><i class="fa-solid fa-square-poll-vertical"></i></button>
+                            <button type="button" class="post-action-icon disabled-icon" title="Emojis (Próximamente)"><i class="fa-regular fa-face-smile"></i></button>
                         </div>
                         <div class="form-submit-area">
                             <span class="char-counter">300</span>
-                            <button type="submit" id="submit-post-btn" class="btn btn-primary">Publicar</button>
+                            <button type="submit" id="submit-post-btn" class="btn btn-primary btn-pill">Publicar</button>
                         </div>
                     </div>
                 </form>
             `;
-            // Re-adjuntamos listeners para el nuevo contenido
             this.addFormEventListeners(container);
             
         } else if (this.bskyCreds) {
@@ -315,44 +323,37 @@ const ComunidadApp = {
         }
     },
 
-    handleImageSelection(event) {
+    handleImageSelection(event, container) {
         const file = event.target.files[0];
-        const previewContainer = document.getElementById('image-preview-container');
-        const previewImage = document.getElementById('image-preview');
+        const previewContainer = container.querySelector('.image-preview-container') || document.getElementById('image-preview-container');
+        const previewImage = container.querySelector('.image-preview') || document.getElementById('image-preview');
 
         if (!file) {
-            this.selectedImageFile = null;
-            previewContainer.style.display = 'none';
+            this.removeSelectedImage(container);
             return;
         }
-
-        // Validación básica de la imagen
-        if (file.size > 1000000) { // Límite de 1MB (límite de Bluesky para blobs)
-            alert("La imagen es demasiado grande. El máximo es 1MB.");
-            event.target.value = ''; // Limpiamos el selector de archivos
-            return;
-        }
-        if (!['image/jpeg', 'image/png'].includes(file.type)) {
-            alert("Formato de imagen no válido. Solo se permiten JPG y PNG.");
-            event.target.value = '';
+        if (file.size > 1000000) { 
+            alert("La imagen es demasiado pesada para Bluesky (máximo 1MB).");
+            event.target.value = ''; 
             return;
         }
 
         this.selectedImageFile = file;
-
-        // Usamos FileReader para mostrar la vista previa
         const reader = new FileReader();
         reader.onload = (e) => {
-            previewImage.src = e.target.result;
-            previewContainer.style.display = 'block';
+            if(previewImage) previewImage.src = e.target.result;
+            if(previewContainer) previewContainer.style.display = 'block';
         };
         reader.readAsDataURL(file);
     },
 
-    removeSelectedImage() {
+    removeSelectedImage(container) {
         this.selectedImageFile = null;
-        document.getElementById('image-upload-input').value = '';
-        document.getElementById('image-preview-container').style.display = 'none';
+        const input = container ? container.querySelector('input[type="file"]') : document.getElementById('image-upload-input');
+        const previewContainer = container ? container.querySelector('.image-preview-container') : document.getElementById('image-preview-container');
+        
+        if (input) input.value = '';
+        if (previewContainer) previewContainer.style.display = 'none';
     },
 
     // --- LÓGICA DE INTERACCIÓN (Versión Actualizada) ---
@@ -652,27 +653,38 @@ const ComunidadApp = {
         const isLiked = !!post.viewer?.like;
         const postDate = new Date(post.indexedAt).toLocaleString('es-ES', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
 
-        // --- INICIO DE LA MODIFICACIÓN (Miniaturas Reparadas) ---
+        // --- PROCESAMIENTO NATIVO DE MULTIMEDIA (AT PROTOCOL) ---
         let embedHtml = '';
         const embed = post.embed;
         
         if (embed) {
-            // Extraemos los datos omitiendo el problema del sufijo #view de Bluesky
-            // También contemplamos si vienen anidados (recordWithMedia)
+            // Extracción segura soportando posts citados y anidamientos
             const imagesData = embed.images || (embed.media && embed.media.images);
             const externalData = embed.external || (embed.media && embed.media.external);
-
-            if (imagesData && imagesData.length > 0) {
-                // Renderizado para Imágenes con OnClick
+            
+            // 1. DIBUJA VIDEOS DE BLUESKY
+            if (embed.$type === 'app.bsky.embed.video' || (embed.media && embed.media.$type === 'app.bsky.embed.video')) {
+                const videoData = embed.video || (embed.media && embed.media.video) || embed;
+                const rkey = post.uri.split('/').pop();
                 embedHtml = `
-                    <div class="post-embed-image">
-                        <img src="${imagesData[0].thumb}" alt="${imagesData[0].alt || 'Imagen adjunta'}" loading="lazy" onclick="ComunidadApp.openImageLightbox(this.src)">
+                    <div class="post-embed-video" style="position: relative; margin-top: 12px; cursor: pointer; border-radius: 12px; overflow: hidden; border: 1px solid var(--color-border);" onclick="window.open('https://bsky.app/profile/${author.handle}/post/${rkey}', '_blank')">
+                        <img src="${videoData.thumbnail || 'https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png'}" style="width: 100%; display: block; filter: brightness(0.85);">
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.6); border-radius: 50%; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); backdrop-filter: blur(4px); transition: transform 0.2s;">
+                            <i class="fa-solid fa-play" style="color: white; font-size: 1.5rem; margin-left: 5px;"></i>
+                        </div>
                     </div>`;
-            } else if (externalData) {
-                // Renderizado para Enlaces/Eventos (La miniatura que faltaba)
+            }
+            // 2. DIBUJA IMÁGENES
+            else if (imagesData && imagesData.length > 0) {
+                embedHtml = `
+                    <div class="post-embed-image" style="margin-top: 12px;">
+                        <img src="${imagesData[0].thumb}" alt="${imagesData[0].alt || 'Imagen adjunta'}" loading="lazy" onclick="ComunidadApp.openImageLightbox(this.src)" style="width: 100%; border-radius: 12px; border: 1px solid var(--color-border); cursor: zoom-in;">
+                    </div>`;
+            } 
+            // 3. DIBUJA TARJETAS DE ENLACES (LINK PREVIEWS)
+            else if (externalData) {
                 let hostname = 'Enlace externo';
                 try { hostname = new URL(externalData.uri).hostname; } catch(e) {}
-
                 embedHtml = `
                     <a href="${externalData.uri}" target="_blank" rel="noopener noreferrer" class="link-preview-card" style="display: block; text-decoration: none; color: inherit; border: 1px solid var(--color-border); border-radius: 12px; overflow: hidden; margin-top: 12px; background: var(--color-surface); transition: transform 0.2s;">
                         ${externalData.thumb ? `<img src="${externalData.thumb}" alt="Vista previa" class="link-preview-image" style="width: 100%; height: 200px; object-fit: cover; border-bottom: 1px solid var(--color-border);">` : ''}
@@ -681,8 +693,7 @@ const ComunidadApp = {
                             <p class="link-preview-description" style="margin: 0 0 10px 0; font-size: 0.85rem; color: var(--color-secondary-text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4;">${externalData.description || ''}</p>
                             <p class="link-preview-uri" style="margin: 0; font-size: 0.75rem; color: var(--color-accent); font-weight: 600;"><i class="fa-solid fa-link"></i> ${hostname}</p>
                         </div>
-                    </a>
-                `;
+                    </a>`;
             }
         }
         // --- FIN DE LA MODIFICACIÓN ---
@@ -769,6 +780,7 @@ const ComunidadApp = {
         });
 
         modalContainer.appendChild(modalNode);
+        this.addFormEventListeners(modalContainer);
 
         requestAnimationFrame(() => {
             modalOverlay.classList.add('is-visible');
