@@ -758,4 +758,15 @@ window.StudioApp = StudioApp;
 
 document.addEventListener('DOMContentLoaded', () => {
     StudioApp.init();
+
+    // --- NUEVO: Lógica del botón de opciones en móvil ---
+    const mobileBtn = document.getElementById('mobile-selectors-btn');
+    const topbar = document.querySelector('.studio-topbar');
+    
+    if (mobileBtn && topbar) {
+        mobileBtn.addEventListener('click', () => {
+            topbar.classList.toggle('show-selectors');
+            mobileBtn.classList.toggle('active'); // Pinta el botón de rojo cuando está abierto
+        });
+    }
 });

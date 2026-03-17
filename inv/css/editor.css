@@ -534,3 +534,87 @@ body.dark-theme ::selection { background: rgba(183, 42, 30, 0.4); color: white; 
 body.dark-theme h1.ce-header, body.dark-theme h2.ce-header, body.dark-theme h3.ce-header {
     color: #f8fafc;
 }
+/* ==========================================================================
+   MODO 100% MOBILE-FIRST PARA EL ESTUDIO OMNICANAL (Con Menú Colapsable)
+   ========================================================================== */
+/* Ocultamos el botón en PC */
+.mobile-only-btn { display: none; }
+
+@media (max-width: 768px) {
+    .studio-body { overflow-y: auto !important; }
+    
+    .studio-workspace {
+        padding: 10px !important; height: auto !important;
+        display: flex !important; flex-direction: column !important; gap: 15px !important;
+    }
+
+    .studio-topbar {
+        height: auto !important; min-height: auto; padding: 15px 15px !important;
+        display: grid !important; gap: 12px 10px !important; align-items: center;
+        grid-template-columns: auto auto 1fr auto auto auto !important;
+    }
+
+    .topbar-left, .topbar-right { display: contents !important; }
+
+    /* -- FILA 1: Controles -- */
+    .back-btn { grid-column: 1; grid-row: 1; width: 35px; height: 35px; }
+    .studio-logo { grid-column: 2; grid-row: 1; height: 28px; margin: 0; }
+    
+    /* El nuevo botón de ajustes se posiciona en el espacio libre y se adapta al tema */
+    #mobile-selectors-btn { 
+        display: flex !important; grid-column: 3; grid-row: 1; justify-self: end;
+        width: 35px; height: 35px; background: transparent; 
+        border: 1px solid var(--color-border); /* Toma el borde claro/oscuro automáticamente */
+        color: inherit; /* Toma el color de texto claro/oscuro automáticamente */
+        border-radius: 8px; justify-content: center; align-items: center;
+        cursor: pointer; transition: 0.2s;
+    }
+    
+    /* Al estar activo, se pinta del color de tu marca y forzamos el icono a blanco */
+    #mobile-selectors-btn.active { 
+        background: var(--color-accent, #b72a1e); 
+        border-color: transparent; 
+        color: white !important; 
+    }
+
+    .save-status { grid-column: 4; grid-row: 1; font-size: 0 !important; justify-self: end; }
+    .save-status i { font-size: 1.2rem !important; margin: 0; }
+    #theme-switcher-studio { grid-column: 5; grid-row: 1; width: 35px; height: 35px; }
+    #logout-btn { grid-column: 6; grid-row: 1; width: 35px; height: 35px; }
+
+    /* -- FILAS 2 y 3: Ocultas por defecto -- */
+    .project-focus-selector { display: none !important; }
+
+    /* -- CUANDO SE ACTIVA EL BOTÓN (Se adaptan al tema claro/oscuro) -- */
+    .studio-topbar.show-selectors .project-focus-selector:nth-of-type(1) {
+        display: flex !important; grid-column: 1 / 7; grid-row: 2;
+        margin-left: 0 !important; justify-content: space-between;
+        background: var(--color-surface, #fff); /* Usa el fondo de las tarjetas de tu tema */
+        border: 1px solid var(--color-border);
+        border-radius: 8px; padding: 8px 12px;
+        animation: fadeInDown 0.2s ease;
+    }
+    .studio-topbar.show-selectors .project-focus-selector:nth-of-type(2) {
+        display: flex !important; grid-column: 1 / 7; grid-row: 3;
+        margin-left: 0 !important; justify-content: space-between;
+        background: var(--color-surface, #fff); /* Usa el fondo de las tarjetas de tu tema */
+        border: 1px solid var(--color-border);
+        border-radius: 8px; padding: 8px 12px;
+        animation: fadeInDown 0.3s ease;
+    }
+
+    .project-focus-selector label { font-size: 0.8rem; white-space: nowrap; }
+    .project-focus-selector select { max-width: 60%; text-align: right; font-size: 0.9rem; }
+
+    /* -- OPTIMIZACIÓN DEL ÁREA DEL EDITOR -- */
+    .col-editor { order: -1; min-height: 60vh; padding: 15px !important; border-radius: 12px !important; }
+    .col-sidebar { order: 2; padding: 15px !important; border-radius: 12px !important; }
+    .editor-title-input { font-size: 1.6rem !important; }
+    .sidebar-tabs, .ai-tabs { flex-wrap: wrap; }
+    .sidebar-tab-btn, .ai-tab-btn { flex-grow: 1; text-align: center; font-size: 0.8rem; }
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
