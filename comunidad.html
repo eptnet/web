@@ -111,7 +111,7 @@
                     <h4>Comparte tu conocimiento</h4>
                     <form id="create-post-form">
                         <div class="textarea-container">
-                            <img id="inline-user-avatar" src="https://i.ibb.co/61fJv24/default-avatar.png" class="post-avatar">
+                            <img id="inline-user-avatar" src="https://api.dicebear.com/9.x/shapes/svg?seed=${p.username}" class="post-avatar">
                             <textarea id="post-text" name="post-text" placeholder="¿Qué estás investigando hoy?" maxlength="300" required></textarea>
                             <div id="link-preview-loader" style="display:none; font-size: 0.8rem; margin: 10px 0; color: var(--color-accent);">
                                 <i class="fa-solid fa-spinner fa-spin"></i> Generando vista previa...
@@ -349,6 +349,8 @@
         </div>
 
         <div id="player-content" class="player-content">
+            <button id="player-minimize-btn" title="Minimizar reproductor"><i class="fa-solid fa-chevron-down"></i></button>
+            
             <div class="track-info">
                 <img id="player-track-image" src="https://placehold.co/56x56/242526/e4e6eb?text=EPT" alt="Carátula">
                 <div class="track-text"> <p id="player-track-title">Selecciona un episodio</p>

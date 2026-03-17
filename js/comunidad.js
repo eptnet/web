@@ -456,7 +456,7 @@ const ComunidadApp = {
         if (!container) return;
 
         const author = {
-            avatar: this.userProfile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png',
+            avatar: this.userProfile.avatar_url || 'https://api.dicebear.com/9.x/shapes/svg?seed=invitado_${randomSeed}',
             displayName: this.userProfile.display_name,
             handle: this.bskyCreds.handle
         };
@@ -1111,6 +1111,15 @@ const ComunidadApp = {
     currentEpisodeIndex: 0,
 
     setupAudioPlayer() {
+        // --- NUEVO: Lógica de Minimizar en Móvil ---
+        const minimizeBtn = document.getElementById('player-minimize-btn');
+        const playerContainer = document.getElementById('persistent-audio-player');
+        
+        if (minimizeBtn) {
+            minimizeBtn.addEventListener('click', () => {
+                playerContainer.classList.toggle('is-minimized');
+            });
+        }
         const audioEl = document.getElementById('hidden-audio-source');
         const playBtn = document.getElementById('player-play-btn');
         const closeBtn = document.getElementById('player-close-btn');
@@ -1118,7 +1127,7 @@ const ComunidadApp = {
         const currentTimeEl = document.getElementById('player-current-time');
         const durationEl = document.getElementById('player-duration');
         const volumeSlider = document.getElementById('player-volume-slider');
-        const playerContainer = document.getElementById('persistent-audio-player');
+        //*const playerContainer = document.getElementById('persistent-audio-player');*//
         const playlistPanel = document.getElementById('podcast-playlist-panel');
         
         // 1. Play / Pause
@@ -1265,6 +1274,10 @@ const ComunidadApp = {
             audioEl.play().catch(e => console.log("Autoplay bloquedo", e));
             document.getElementById('player-play-btn').innerHTML = '<i class="fa-solid fa-pause"></i>';
         }
+        
+        // Expandir automáticamente si estaba minimizado
+        const playerContainer = document.getElementById('persistent-audio-player');
+        if (playerContainer) playerContainer.classList.remove('is-minimized');
     },
 
     openProfileModal(username) {

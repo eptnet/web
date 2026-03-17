@@ -618,66 +618,147 @@ body.dark-theme {
     }
 }
 /* ==========================================================================
-   ADAPTACIÓN MÓVIL EXACTA DEL REPRODUCTOR DE PODCAST (PWA)
+   FIX: REPRODUCTOR DE PODCAST EN MÓVIL WEB Y PWA
    ========================================================================== */
 @media (max-width: 768px) {
-    /* 1. Elevar el reproductor por encima del menú móvil */
+    /* 1. Elevar el reproductor sobre la barra de navegación móvil (aprox 65px) */
     .persistent-audio-player {
-        /* 70px es el alto promedio del nav móvil + el margen de seguridad del iPhone */
-        bottom: calc(70px + env(safe-area-inset-bottom, 0px)) !important;
-        padding: 10px 15px !important;
-        border-radius: 16px 16px 0 0; /* Bordes redondeados para que parezca una tarjeta flotante */
+        bottom: calc(65px + env(safe-area-inset-bottom, 0px)) !important;
+        padding: 12px 15px !important;
+        border-radius: 16px 16px 0 0 !important; /* Parecerá una tarjeta que emerge */
+        border-bottom: 1px solid var(--color-border);
     }
 
-    /* 2. Reorganizar la cuadrícula para que todo quepa perfecto */
+    /* 2. Romper la fila única y permitir que los elementos bajen (Wrap) */
     .player-content {
         flex-wrap: wrap !important;
+        justify-content: center !important;
         gap: 8px !important;
     }
 
-    /* 3. La carátula y el título toman la parte superior (dejando espacio a la X) */
+    /* --- FILA 1: Carátula, Títulos y Botón Cerrar --- */
     .track-info {
-        width: calc(100% - 40px) !important;
-        gap: 10px !important;
+        width: calc(100% - 40px) !important; /* Deja espacio para la X */
+        max-width: none !important;
+        margin-bottom: 5px;
     }
     .track-info img {
-        width: 42px !important; 
-        height: 42px !important;
+        width: 45px !important; 
+        height: 45px !important;
     }
-
-    /* 4. Reubicar el botón de cerrar en la esquina superior derecha */
     #player-close-btn {
         position: absolute;
         top: 15px;
         right: 15px;
     }
 
-    /* 5. La línea de tiempo toma el 100% del ancho debajo del título */
+    /* --- FILA 2: Línea de tiempo (Ocupa el 100% del ancho) --- */
     .player-timeline {
         width: 100% !important;
-        max-width: 100% !important;
-        order: 2; /* Lo pasamos al medio */
+        max-width: none !important;
+        order: 2; /* Obligamos a que baje a la segunda posición */
         margin-top: 5px;
     }
 
-    /* 6. Centrar los botones de reproducción en la parte inferior */
+    /* --- FILA 3: Controles centrados y grandes --- */
     .player-controls {
         width: 100% !important;
         justify-content: center !important;
-        order: 3; /* Lo pasamos abajo del todo */
-        gap: 25px !important;
+        gap: 30px !important; /* Más separación para no equivocarse al tocar */
+        order: 3; /* Obligamos a que baje a la última posición */
         margin-top: 5px;
     }
 
-    /* 7. Ocultar el volumen (En móvil se usan los botones físicos del celular) */
+    /* Ocultamos el control de volumen (en móvil se usan los botones físicos del celular) */
     .player-volume {
         display: none !important;
     }
 
-    /* 8. Ajustar el panel de la lista de reproducción para que no se desborde de la pantalla */
+    /* Ajuste para que la lista de episodios emergente no se salga de los bordes del celular */
     .podcast-playlist-panel {
         width: calc(100vw - 30px) !important;
         left: 15px !important;
-        bottom: calc(100% + 10px) !important;
+        bottom: calc(100% + 5px) !important;
+        max-height: 50vh !important;
+    }
+
+    /* --- BOTÓN DE MINIMIZAR --- */
+    #player-minimize-btn {
+        display: block; /* Lo mostramos en móvil */
+        position: absolute;
+        top: -12px; /* Flotando en el borde superior */
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        color: var(--color-secondary-text);
+        width: 36px;
+        height: 24px;
+        border-radius: 12px 12px 0 0;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
+    }
+
+    /* Transición suave para todo el reproductor */
+    .persistent-audio-player {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+
+    /* ==========================================================================
+       ESTADO MINIMIZADO (Cuando se activa por JS)
+       ========================================================================== */
+    .persistent-audio-player.is-minimized {
+        padding: 8px 15px !important;
+    }
+    
+    /* Cambiamos la flecha hacia arriba */
+    .persistent-audio-player.is-minimized #player-minimize-btn i {
+        transform: rotate(180deg);
+    }
+    
+    /* Ocultamos lo que no es necesario (Línea de tiempo, adelante/atrás, playlist) */
+    .persistent-audio-player.is-minimized .player-timeline,
+    .persistent-audio-player.is-minimized #player-rewind-btn,
+    .persistent-audio-player.is-minimized #player-forward-btn,
+    .persistent-audio-player.is-minimized #player-playlist-btn {
+        display: none !important;
+    }
+    
+    /* Forzamos a que vuelva a ser una sola fila (como en escritorio) */
+    .persistent-audio-player.is-minimized .player-content {
+        flex-wrap: nowrap !important;
+        justify-content: flex-start !important;
+    }
+    
+    /* Achicamos la foto y el texto */
+    .persistent-audio-player.is-minimized .track-info {
+        width: auto !important; 
+        flex-grow: 1; 
+        margin-bottom: 0 !important;
+    }
+    .persistent-audio-player.is-minimized .track-info img {
+        width: 35px !important; 
+        height: 35px !important;
+    }
+    
+    /* Reacomodamos el botón de Play y la X de cerrar en la misma fila */
+    .persistent-audio-player.is-minimized .player-controls {
+        width: auto !important; 
+        order: 2 !important; 
+        margin-top: 0 !important; 
+        gap: 10px !important;
+    }
+    .persistent-audio-player.is-minimized #player-play-btn {
+        width: 35px !important; 
+        height: 35px !important; 
+        font-size: 0.9rem !important;
+    }
+    .persistent-audio-player.is-minimized #player-close-btn {
+        position: static !important; /* Lo sacamos de la esquina superior */
+        order: 3 !important; 
+        margin-left: 5px !important;
     }
 }
