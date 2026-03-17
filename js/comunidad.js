@@ -548,18 +548,68 @@ const ComunidadApp = {
     },
     
     /**
-     * Maneja el evento de "Comentar".
+     * Intercepta el clic en "Comentar" y abre el lector de hilos nativo.
      */
     async handleReply(button) {
         const postElement = button.closest('.feed-post');
-        const handle = postElement.querySelector('.post-handle').textContent.substring(1);
         const postUri = postElement.dataset.uri;
-        const rkey = postUri.split('/').pop();
+        this.openThreadReaderModal(postUri);
+    },
+
+    /**
+     * Abre el modal inmersivo, descarga el hilo de Bluesky y lo dibuja.
+     */
+    async openThreadReaderModal(postUri) {
+        const template = document.getElementById('thread-reader-template');
+        if (!template) return;
+
+        const modalContainer = document.getElementById('modal-container');
+        modalContainer.innerHTML = ''; // Limpiamos previos
+        const modalNode = template.content.cloneNode(true);
         
-        const webUrl = `https://bsky.app/profile/${handle}/post/${rkey}`;
+        // Listener para cerrar
+        modalNode.querySelector('.modal-close-btn').addEventListener('click', () => this.closePostModal());
         
-        // Abre el post en una nueva pestaña para que la conversación continúe en Bluesky
-        window.open(webUrl, '_blank');
+        modalContainer.appendChild(modalNode);
+
+        const loader = document.getElementById('thread-loader');
+        const contentBox = document.getElementById('thread-content');
+        const anchorContainer = document.getElementById('thread-anchor-post');
+        const repliesContainer = document.getElementById('thread-replies');
+
+        try {
+            // Llamamos a tu Edge Function experta en hilos
+            const { data, error } = await this.supabase.functions.invoke('bsky-get-post-thread', {
+                body: { postUri: postUri }
+            });
+
+            if (error) throw error;
+
+            // 1. Dibujamos el post principal usando la función súper-vitaminada que ya tenemos
+            if (data.anchorPost) {
+                // Modificamos el diseño del post principal para quitarle el hover/bordes y hacerlo plano
+                const anchorHtml = this.createPostHtml(data.anchorPost).replace('bento-box', '').replace('border: 1px solid transparent;', 'border: none;');
+                anchorContainer.innerHTML = anchorHtml;
+            }
+
+            // 2. Dibujamos las respuestas
+            if (data.messages && data.messages.length > 0) {
+                const repliesHtml = data.messages.map(msg => {
+                    // Reutilizamos createPostHtml pero le damos un estilo de "comentario" (fondo distinto, sin márgenes grandes)
+                    return this.createPostHtml(msg).replace('bento-box', '').replace('padding: 1.5rem;', 'padding: 1rem 1.5rem; background: var(--color-surface); border: none; border-bottom: 1px solid var(--color-background);');
+                }).join('');
+                repliesContainer.innerHTML = repliesHtml;
+            } else {
+                repliesContainer.innerHTML = `<p style="text-align: center; padding: 2rem; color: var(--color-secondary-text);">Aún no hay respuestas. ¡Sé el primero en comentar!</p>`;
+            }
+
+            loader.style.display = 'none';
+            contentBox.style.display = 'block';
+
+        } catch (err) {
+            console.error("Error al cargar el hilo:", err);
+            loader.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="color: var(--color-accent); font-size: 2rem;"></i><p>No se pudo cargar la conversación.</p>`;
+        }
     },
 
     openReplyModal(postData) {

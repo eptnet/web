@@ -34,7 +34,7 @@ serve(async (_req) => {
     if (topLevelPostsOnly.length === 0) return new Response("OK - No new posts found", { status: 200 });
 
     const postsToCache = topLevelPostsOnly.map(({ post }) => {
-        const postData = {
+        const postData: any = {
             uri: post.uri, cid: post.cid,
             author_did: post.author.did, author_handle: post.author.handle,
             author_display_name: post.author.displayName, author_avatar_url: post.author.avatar,
@@ -44,21 +44,36 @@ serve(async (_req) => {
             embed_image_url: null, embed_external_uri: null,
             embed_external_title: null, embed_external_description: null,
             embed_external_thumb: null,
+            embed_video_thumb: null,      // <--- NUEVA COLUMNA AÑADIDA
+            embed_video_playlist: null    // <--- NUEVA COLUMNA AÑADIDA
         };
 
         if (post.embed) {
-            // --- INICIO DE LA CORRECCIÓN CLAVE ---
-            // Usamos startsWith() para ignorar el sufijo '#view'
+            // 1. IMÁGENES
             if (post.embed.$type.startsWith('app.bsky.embed.images') && post.embed.images) {
                 postData.embed_image_url = post.embed.images[0]?.thumb;
             } 
+            // 2. ENLACES EXTERNOS (Artículos, YouTube, etc.)
             else if (post.embed.$type.startsWith('app.bsky.embed.external') && post.embed.external) {
                 postData.embed_external_uri = post.embed.external.uri;
                 postData.embed_external_title = post.embed.external.title;
                 postData.embed_external_description = post.embed.external.description;
                 postData.embed_external_thumb = post.embed.external.thumb;
             }
-            // --- FIN DE LA CORRECCIÓN CLAVE ---
+            // 3. VIDEOS NATIVOS DE BLUESKY (Directos)
+            else if (post.embed.$type.startsWith('app.bsky.embed.video')) {
+                postData.embed_video_playlist = post.embed.playlist;
+                postData.embed_video_thumb = post.embed.thumbnail;
+            }
+            // 4. CONTENIDO MULTIMEDIA ANIDADO (Citas con video/imagen)
+            else if (post.embed.$type.startsWith('app.bsky.embed.recordWithMedia') && post.embed.media) {
+                if (post.embed.media.$type.startsWith('app.bsky.embed.video')) {
+                    postData.embed_video_playlist = post.embed.media.playlist;
+                    postData.embed_video_thumb = post.embed.media.thumbnail;
+                } else if (post.embed.media.$type.startsWith('app.bsky.embed.images') && post.embed.media.images) {
+                    postData.embed_image_url = post.embed.media.images[0]?.thumb;
+                }
+            }
         }
         return postData;
     });

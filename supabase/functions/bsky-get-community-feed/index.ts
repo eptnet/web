@@ -22,14 +22,24 @@ serve(async (_req) => {
     const finalFeed = cachedFeed.map(post => {
       let embed = undefined;
 
-      // Si hay imagen directa guardada (aunque en tu tabla actual manejas principalmente links)
-      if (post.embed_image_url) {
+      // 1. PRIMERO BUSCAMOS SI HAY VIDEO NATIVO DE BLUESKY
+      if (post.embed_video_playlist || post.embed_video_thumb) {
+        embed = {
+          $type: 'app.bsky.embed.video',
+          video: {
+            playlist: post.embed_video_playlist || '',
+            thumbnail: post.embed_video_thumb || ''
+          }
+        };
+      }
+      // 2. Si no hay video, buscamos imagen
+      else if (post.embed_image_url) {
         embed = { 
           $type: 'app.bsky.embed.images', 
           images: [{ thumb: post.embed_image_url, alt: 'Imagen' }] 
         };
       } 
-      // Si es un enlace externo (YouTube/Web)
+      // 3. Si no, buscamos enlace externo (YouTube, artículos, etc.)
       else if (post.embed_external_uri) {
         embed = {
           $type: 'app.bsky.embed.external',
@@ -37,7 +47,7 @@ serve(async (_req) => {
             uri: post.embed_external_uri,
             title: post.embed_external_title || '',
             description: post.embed_external_description || '',
-            thumb: post.embed_external_thumb // URL de la imagen que guardamos en create-post
+            thumb: post.embed_external_thumb
           }
         };
       }

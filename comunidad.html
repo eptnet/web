@@ -309,6 +309,33 @@
             </div>
     </template>
 
+    <template id="thread-reader-template">
+        <div class="modal-overlay is-visible" style="z-index: 3500;">
+            <div class="modal-content post-modal" style="max-width: 650px; background: var(--color-background); padding: 0;">
+                
+                <div class="modal-header" style="position: sticky; top: 0; background: var(--color-surface); z-index: 10; border-bottom: 1px solid var(--color-border); padding: 1rem 1.5rem;">
+                    <h3 style="margin: 0; font-size: 1.1rem;"><i class="fa-solid fa-comments" style="color: var(--color-accent);"></i> Conversación</h3>
+                    <button class="modal-close-btn">&times;</button>
+                </div>
+                
+                <div class="modal-body" style="padding: 0;">
+                    <div id="thread-loader" style="padding: 3rem; text-align: center; color: var(--color-secondary-text);">
+                        <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>
+                        <p style="margin-top: 10px;">Cargando respuestas...</p>
+                    </div>
+
+                    <div id="thread-content" style="display: none;">
+                        <div id="thread-anchor-post" style="background: var(--color-surface); border-bottom: 1px solid var(--color-border);"></div>
+                        
+                        <div style="padding: 10px 1.5rem; font-size: 0.85rem; font-weight: bold; color: var(--color-secondary-text); text-transform: uppercase; letter-spacing: 1px;">Respuestas</div>
+                        <div id="thread-replies" style="display: flex; flex-direction: column; gap: 2px;"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </template>
+
     <div id="persistent-audio-player" class="persistent-audio-player" style="display: none;">
         <audio id="hidden-audio-source" style="display: none;"></audio> 
         
