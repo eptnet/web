@@ -169,7 +169,6 @@ const ControlRoom = {
     },
 
     async setupRealtimeChat() {
-        // 1. CARGAMOS EL HISTORIAL DE MENSAJES PRIMERO
         const { data: pastMessages } = await this.supabase
             .from('live_chat_messages')
             .select('*')
@@ -181,7 +180,6 @@ const ControlRoom = {
             pastMessages.forEach(msg => this.renderIncomingMessage(msg));
         }
 
-        // 2. UNIFICAMOS TODO EN UN SOLO CANAL (El secreto para el 100% Realtime)
         this.realtimeChannel = this.supabase.channel(`room_${this.sessionId}`, {
             config: { presence: { key: this.userProfile?.id || 'director' } }
         });
@@ -192,11 +190,13 @@ const ControlRoom = {
                 const counterEl = document.getElementById('control-viewer-count');
                 if (counterEl) counterEl.innerHTML = `<i class="fa-solid fa-eye"></i> ${Object.keys(state).length}`;
             })
-            // Escuchamos los mensajes nuevos (Con filtro de sesión)
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_chat_messages', filter: `session_id=eq.${this.sessionId}` }, (payload) => {
-                this.renderIncomingMessage(payload.new);
+            // NUEVO: Escuchamos SIN FILTRO para evadir el bug de BIGINT
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_chat_messages' }, (payload) => {
+                // Filtramos aquí en JS (¡Esto garantiza el 100% realtime!)
+                if (payload.new.session_id == this.sessionId) {
+                    this.renderIncomingMessage(payload.new);
+                }
             })
-            // Escuchamos los borrados (SIN filtro de sesión para evitar el bloqueo de Postgres)
             .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'live_chat_messages' }, (payload) => {
                 const msgEl = document.getElementById(`ctrl-msg-${payload.old.id}`);
                 if (msgEl) msgEl.remove();
@@ -218,7 +218,7 @@ const ControlRoom = {
         // Limpiamos rápido para que se sienta fluido
         input.value = '';
 
-        const displayName = `👑 ${this.userProfile?.display_name || 'Director'} (Organizador)`;
+        const displayName = `👑 ${this.userProfile?.display_name || 'Director'}`;
 
         // Calculamos el tiempo de video para tus aportes
         let videoTime = null;
@@ -283,15 +283,22 @@ const ControlRoom = {
     },
 
     async promoteToBluesky(messageId, authorName, text, timestamp) {
-        if (!confirm(`¿Enviar el aporte de ${authorName} al hilo oficial de Bluesky?`)) return;
+        if (!confirm(`¿Enviar el aporte a Bluesky?`)) return;
         
         const btn = document.querySelector(`#ctrl-msg-${messageId} .fa-bluesky`);
         if(btn) { btn.className = 'fa-solid fa-spinner fa-spin'; }
 
         try {
-            // FORMATO ULTRACORTO (Para no gastar los 300 caracteres)
-            const timeBadge = timestamp && timestamp !== 'En Vivo' ? ` [${timestamp}]` : '';
-            const formattedText = `🎙️: "${text}"\n\n— ${authorName}${timeBadge}`;
+            // 1. Limpiamos iconos y textos extra
+            let cleanName = authorName.replace('👑', '').replace('(Organizador)', '').trim();
+            // 2. Tomamos solo el primer nombre
+            let shortName = cleanName.split(' ')[0];
+            // 3. Por si acaso, lo cortamos a un máximo prudente
+            if (shortName.length > 10) shortName = shortName.substring(0, 10);
+
+            // 4. FORMATO ULTRA CORTO
+            const timeBadge = (timestamp && timestamp !== 'En Vivo') ? ` [${timestamp}]` : '';
+            const formattedText = `🎙️: "${text}"\n— ${shortName}${timeBadge}`;
             
             const { error } = await this.supabase.functions.invoke('bsky-create-reply', {
                 body: {
@@ -302,10 +309,9 @@ const ControlRoom = {
             if (error) throw error;
             
             if(btn) { btn.className = 'fa-solid fa-check'; btn.style.color = '#10b981'; }
-            console.log("Comentario enviado a Bluesky con éxito.");
         } catch (error) {
             if(btn) { btn.className = 'fa-brands fa-bluesky'; }
-            alert("Error al enviar a Bluesky. Revisa tu sesión.");
+            alert("Error al enviar a Bluesky. REVISA LA SESIÓN"); 
         }
     },
 

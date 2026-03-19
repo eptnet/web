@@ -414,11 +414,14 @@ const PublicRoomApp = {
                 const counter = document.getElementById('viewer-count');
                 if (counter) counter.textContent = Object.keys(state).length;
             })
-            // Mensajes nuevos
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_chat_messages', filter: `session_id=eq.${this.sessionId}` }, (payload) => {
-                this.renderIncomingMessage(payload.new);
+            // Mensajes nuevos (SIN FILTRO en la base de datos)
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_chat_messages' }, (payload) => {
+                // Filtro infalible en JavaScript
+                if (payload.new.session_id == this.sessionId) {
+                    this.renderIncomingMessage(payload.new);
+                }
             })
-            // Borrados (Sin filtro)
+            // Borrados
             .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'live_chat_messages' }, (payload) => {
                 const msgEl = document.getElementById(`msg-${payload.old.id}`);
                 if (msgEl) msgEl.remove();
@@ -546,15 +549,20 @@ const PublicRoomApp = {
     },
 
     async promoteToBluesky(messageId, authorName, text, timestamp) {
-        if (!confirm(`¿Enviar el comentario de ${authorName} al hilo oficial de Bluesky?`)) return;
+        if (!confirm(`¿Enviar el comentario al hilo de Bluesky?`)) return;
         
         const btn = document.querySelector(`#msg-${messageId} .fa-bluesky`);
         if(btn) { btn.className = 'fa-solid fa-spinner fa-spin'; }
 
         try {
-            // FORMATO ULTRACORTO
-            const timeBadge = timestamp && timestamp !== 'En Vivo' ? ` [${timestamp}]` : '';
-            const formattedText = `🎙️: "${text}"\n\n— ${authorName}${timeBadge}`;
+            // Limpiador automático
+            let cleanName = authorName.replace('👑', '').replace('(Organizador)', '').trim();
+            let shortName = cleanName.split(' ')[0];
+            if (shortName.length > 10) shortName = shortName.substring(0, 10);
+
+            // FORMATO ULTRA CORTO
+            const timeBadge = (timestamp && timestamp !== 'En Vivo') ? ` [${timestamp}]` : '';
+            const formattedText = `🎙️: "${text}"\n— ${shortName}${timeBadge}`;
             
             const { error } = await this.supabase.functions.invoke('bsky-create-reply', {
                 body: {
@@ -565,10 +573,10 @@ const PublicRoomApp = {
             if (error) throw error;
             
             if(btn) { btn.className = 'fa-solid fa-check'; btn.style.color = '#10b981'; }
-            alert("¡Comentario inmortalizado en el Ágora de Bluesky!");
+            alert("¡Enviado a Bluesky!");
         } catch (error) {
             if(btn) { btn.className = 'fa-brands fa-bluesky'; }
-            alert("Error al enviar a Bluesky. Puede que la sesión haya expirado.");
+            alert("Error al enviar a Bluesky.");
         }
     },
 
