@@ -389,19 +389,7 @@ const PublicRoomApp = {
         const viewersBadge = document.getElementById('viewers-badge');
         if (viewersBadge) viewersBadge.classList.remove('hidden');
 
-        const trackingId = this.currentUserProfile ? this.currentUserProfile.display_name : `guest_${Math.random().toString(36).substr(2, 9)}`;
-
-        this.realtimeChannel = this.supabase.channel(`room_${this.sessionId}`, {
-            config: { presence: { key: trackingId }, broadcast: { self: true } }
-        });
-
-        this.realtimeChannel.on('presence', { event: 'sync' }, () => {
-            const state = this.realtimeChannel.presenceState();
-            const counter = document.getElementById('viewer-count');
-            if (counter) counter.textContent = Object.keys(state).length;
-        });
-
-        // 1. CARGAMOS LOS MENSAJES ANTERIORES (PERSISTENCIA AL RECARGAR PÁGINA)
+        // 1. CARGAMOS LOS MENSAJES ANTERIORES
         const { data: pastMessages } = await this.supabase
             .from('live_chat_messages')
             .select('*')
@@ -413,23 +401,33 @@ const PublicRoomApp = {
             pastMessages.forEach(msg => this.renderIncomingMessage(msg));
         }
 
-        // 2. ESCUCHAMOS LA BASE DE DATOS EN LUGAR DEL BROADCAST
-        this.supabase.channel(`public:live_chat_messages:${this.sessionId}`)
+        const trackingId = this.currentUserProfile ? this.currentUserProfile.display_name : `guest_${Math.random().toString(36).substr(2, 9)}`;
+
+        // 2. UNIFICAMOS TODO EN EL CANAL PRINCIPAL
+        this.realtimeChannel = this.supabase.channel(`room_${this.sessionId}`, {
+            config: { presence: { key: trackingId }, broadcast: { self: true } }
+        });
+
+        this.realtimeChannel
+            .on('presence', { event: 'sync' }, () => {
+                const state = this.realtimeChannel.presenceState();
+                const counter = document.getElementById('viewer-count');
+                if (counter) counter.textContent = Object.keys(state).length;
+            })
+            // Mensajes nuevos
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_chat_messages', filter: `session_id=eq.${this.sessionId}` }, (payload) => {
                 this.renderIncomingMessage(payload.new);
             })
-            .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'live_chat_messages', filter: `session_id=eq.${this.sessionId}` }, (payload) => {
+            // Borrados (Sin filtro)
+            .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'live_chat_messages' }, (payload) => {
                 const msgEl = document.getElementById(`msg-${payload.old.id}`);
-                if (msgEl) msgEl.remove(); // Borrado mágico en tiempo real para todos
-            }).subscribe();
-
-        // 3. ESCUCHAMOS LOS COMENTARIOS DE BLUESKY (Para la caja inferior)
-        this.realtimeChannel.on('broadcast', { event: 'new_chat_message' }, (payload) => {
-            this.appendCommentMessage(payload.payload, false);
-        });
-
-        // 4. DETECCIÓN DEL CAMBIO DE ESTADO (TRANSICIÓN SUAVE)
-        this.supabase.channel(`public:sessions`)
+                if (msgEl) msgEl.remove();
+            })
+            // Comentarios de Bsky
+            .on('broadcast', { event: 'new_chat_message' }, (payload) => {
+                this.appendCommentMessage(payload.payload, false);
+            })
+            // Cambio de estado de la sesión
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${this.sessionId}` }, (payload) => {
                 const newStatus = payload.new.status;
                 const isNowLive = (newStatus === 'EN VIVO' || newStatus === 'EN_VIVO');
@@ -440,7 +438,6 @@ const PublicRoomApp = {
                     const badge = document.getElementById('status-badge');
                     if(badge) { badge.className = 'badge live'; badge.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> EN VIVO'; }
                     this.handlePlayerAndCountdown(); 
-                
                 } else if (payload.new.status === 'FINALIZADO' && this.sessionData.status !== 'FINALIZADO') {
                     this.sessionData.status = 'FINALIZADO';
                     const badge = document.getElementById('status-badge');
@@ -449,24 +446,21 @@ const PublicRoomApp = {
                     this.setupChats(); 
                 }
                 
-                // DETECTAR CAMBIOS EN LA ENCUESTA
                 if (payload.new.poll_status !== this.sessionData.poll_status || JSON.stringify(payload.new.active_emojis) !== JSON.stringify(this.sessionData.active_emojis)) {
                     this.sessionData.poll_status = payload.new.poll_status;
                     this.sessionData.active_emojis = payload.new.active_emojis;
                     this.renderLivePoll();
                 }
-            }).subscribe();
-
-        this.realtimeChannel.subscribe(async (status) => {
-            // ESCUCHAR LOS VOTOS DE LA ENCUESTA
-            this.supabase.channel(`public:poll_votes`)
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'poll_votes', filter: `session_id=eq.${this.sessionId}` }, (payload) => {
-                    const emoji = payload.new.emoji;
-                    this.pollCounts[emoji] = (this.pollCounts[emoji] || 0) + 1;
-                    this.updatePollCountersUI();
-            }).subscribe();
-            if (status === 'SUBSCRIBED') await this.realtimeChannel.track({ online_at: new Date().toISOString() });
-        });
+            })
+            // Votos de la encuesta
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'poll_votes', filter: `session_id=eq.${this.sessionId}` }, (payload) => {
+                const emoji = payload.new.emoji;
+                this.pollCounts[emoji] = (this.pollCounts[emoji] || 0) + 1;
+                this.updatePollCountersUI();
+            })
+            .subscribe(async (status) => {
+                if (status === 'SUBSCRIBED') await this.realtimeChannel.track({ online_at: new Date().toISOString() });
+            });
     },
 
     async sendChatMessage() {
@@ -554,15 +548,14 @@ const PublicRoomApp = {
     async promoteToBluesky(messageId, authorName, text, timestamp) {
         if (!confirm(`¿Enviar el comentario de ${authorName} al hilo oficial de Bluesky?`)) return;
         
-        // Bloqueamos el botón visualmente
         const btn = document.querySelector(`#msg-${messageId} .fa-bluesky`);
         if(btn) { btn.className = 'fa-solid fa-spinner fa-spin'; }
 
         try {
-            // Formateamos cómo se verá en Bluesky
-            const formattedText = `🎙️ Aporte de la Audiencia:\n"${text}"\n\n— ${authorName} (Marca de tiempo: ${timestamp})`;
+            // FORMATO ULTRACORTO
+            const timeBadge = timestamp && timestamp !== 'En Vivo' ? ` [${timestamp}]` : '';
+            const formattedText = `🎙️: "${text}"\n\n— ${authorName}${timeBadge}`;
             
-            // Llamamos a tu Edge Function existente para responder al hilo
             const { error } = await this.supabase.functions.invoke('bsky-create-reply', {
                 body: {
                     replyText: formattedText,

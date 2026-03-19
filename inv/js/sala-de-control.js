@@ -169,26 +169,7 @@ const ControlRoom = {
     },
 
     async setupRealtimeChat() {
-        this.realtimeChannel = this.supabase.channel(`room_${this.sessionId}`, {
-            config: { presence: { key: this.userProfile?.id || 'director' } }
-        });
-
-        this.realtimeChannel
-            .on('presence', { event: 'sync' }, () => {
-                const state = this.realtimeChannel.presenceState();
-                const count = Object.keys(state).length;
-                const counterEl = document.getElementById('control-viewer-count');
-                if (counterEl) counterEl.innerHTML = `<i class="fa-solid fa-eye"></i> ${count}`;
-            })
-            .subscribe(async (status) => {
-                if (status === 'SUBSCRIBED') {
-                    const loaderMsg = document.querySelector('.chat-system-msg');
-                    if (loaderMsg) loaderMsg.remove();
-                    await this.realtimeChannel.track({ user: 'Director', online_at: new Date().toISOString() });
-                }
-            });
-
-        // 1. CARGAMOS EL HISTORIAL DE MENSAJES (Persistencia para el Director)
+        // 1. CARGAMOS EL HISTORIAL DE MENSAJES PRIMERO
         const { data: pastMessages } = await this.supabase
             .from('live_chat_messages')
             .select('*')
@@ -200,15 +181,33 @@ const ControlRoom = {
             pastMessages.forEach(msg => this.renderIncomingMessage(msg));
         }
 
-        // 2. ESCUCHAMOS LA BASE DE DATOS PARA NUEVOS MENSAJES Y BORRADOS
-        this.supabase.channel(`control:live_chat_messages:${this.sessionId}`)
+        // 2. UNIFICAMOS TODO EN UN SOLO CANAL (El secreto para el 100% Realtime)
+        this.realtimeChannel = this.supabase.channel(`room_${this.sessionId}`, {
+            config: { presence: { key: this.userProfile?.id || 'director' } }
+        });
+
+        this.realtimeChannel
+            .on('presence', { event: 'sync' }, () => {
+                const state = this.realtimeChannel.presenceState();
+                const counterEl = document.getElementById('control-viewer-count');
+                if (counterEl) counterEl.innerHTML = `<i class="fa-solid fa-eye"></i> ${Object.keys(state).length}`;
+            })
+            // Escuchamos los mensajes nuevos (Con filtro de sesión)
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_chat_messages', filter: `session_id=eq.${this.sessionId}` }, (payload) => {
                 this.renderIncomingMessage(payload.new);
             })
-            .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'live_chat_messages', filter: `session_id=eq.${this.sessionId}` }, (payload) => {
+            // Escuchamos los borrados (SIN filtro de sesión para evitar el bloqueo de Postgres)
+            .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'live_chat_messages' }, (payload) => {
                 const msgEl = document.getElementById(`ctrl-msg-${payload.old.id}`);
-                if (msgEl) msgEl.remove(); // Se borra también de la vista del director
-            }).subscribe();
+                if (msgEl) msgEl.remove();
+            })
+            .subscribe(async (status) => {
+                if (status === 'SUBSCRIBED') {
+                    const loaderMsg = document.querySelector('.chat-system-msg');
+                    if (loaderMsg) loaderMsg.remove();
+                    await this.realtimeChannel.track({ user: 'Director', online_at: new Date().toISOString() });
+                }
+            });
     },
 
     async sendMessage() {
@@ -290,7 +289,9 @@ const ControlRoom = {
         if(btn) { btn.className = 'fa-solid fa-spinner fa-spin'; }
 
         try {
-            const formattedText = `🎙️ Aporte en vivo:\n"${text}"\n\n— ${authorName} (Marca de tiempo: ${timestamp})`;
+            // FORMATO ULTRACORTO (Para no gastar los 300 caracteres)
+            const timeBadge = timestamp && timestamp !== 'En Vivo' ? ` [${timestamp}]` : '';
+            const formattedText = `🎙️: "${text}"\n\n— ${authorName}${timeBadge}`;
             
             const { error } = await this.supabase.functions.invoke('bsky-create-reply', {
                 body: {
@@ -301,7 +302,6 @@ const ControlRoom = {
             if (error) throw error;
             
             if(btn) { btn.className = 'fa-solid fa-check'; btn.style.color = '#10b981'; }
-            // Pequeña notificación visual sin interrumpir
             console.log("Comentario enviado a Bluesky con éxito.");
         } catch (error) {
             if(btn) { btn.className = 'fa-brands fa-bluesky'; }
