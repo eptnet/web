@@ -168,30 +168,101 @@ const ControlRoom = {
         }
     },
 
-    setupRealtimeChat() {
+    async setupRealtimeChat() {
         this.realtimeChannel = this.supabase.channel(`room_${this.sessionId}`, {
             config: { presence: { key: this.userProfile?.id || 'director' } }
         });
 
         this.realtimeChannel
-            .on('broadcast', { event: 'chat_message' }, (payload) => this.renderIncomingMessage(payload.payload))
             .on('presence', { event: 'sync' }, () => {
                 const state = this.realtimeChannel.presenceState();
                 const count = Object.keys(state).length;
-                
-                // CORRECCIÓN DEL ID DEL CONTADOR (Ahora sí coincide con el HTML)
                 const counterEl = document.getElementById('control-viewer-count');
                 if (counterEl) counterEl.innerHTML = `<i class="fa-solid fa-eye"></i> ${count}`;
             })
-            .subscribe((status) => {
+            .subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') {
-                    // CORRECCIÓN DEL HISTORIAL: Solo removemos el mensaje de carga en lugar de todo el chat
                     const loaderMsg = document.querySelector('.chat-system-msg');
                     if (loaderMsg) loaderMsg.remove();
-                    
-                    this.realtimeChannel.track({ user: 'Director', online_at: new Date().toISOString() });
+                    await this.realtimeChannel.track({ user: 'Director', online_at: new Date().toISOString() });
                 }
             });
+
+        // 1. CARGAMOS EL HISTORIAL DE MENSAJES (Persistencia para el Director)
+        const { data: pastMessages } = await this.supabase
+            .from('live_chat_messages')
+            .select('*')
+            .eq('session_id', this.sessionId)
+            .order('created_at', { ascending: true })
+            .limit(100);
+        
+        if (pastMessages) {
+            pastMessages.forEach(msg => this.renderIncomingMessage(msg));
+        }
+
+        // 2. ESCUCHAMOS LA BASE DE DATOS PARA NUEVOS MENSAJES Y BORRADOS
+        this.supabase.channel(`control:live_chat_messages:${this.sessionId}`)
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_chat_messages', filter: `session_id=eq.${this.sessionId}` }, (payload) => {
+                this.renderIncomingMessage(payload.new);
+            })
+            .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'live_chat_messages', filter: `session_id=eq.${this.sessionId}` }, (payload) => {
+                const msgEl = document.getElementById(`ctrl-msg-${payload.old.id}`);
+                if (msgEl) msgEl.remove(); // Se borra también de la vista del director
+            }).subscribe();
+    },
+
+    async sendMessage() {
+        const input = document.getElementById('control-chat-input');
+        const text = input.value.trim();
+        if (!text) return;
+
+        // Limpiamos rápido para que se sienta fluido
+        input.value = '';
+
+        const displayName = `👑 ${this.userProfile?.display_name || 'Director'} (Organizador)`;
+
+        // Calculamos el tiempo de video para tus aportes
+        let videoTime = null;
+        if (this.sessionData.status === 'EN VIVO' || this.sessionData.status === 'EN_VIVO') {
+            const start = new Date(this.sessionData.scheduled_at).getTime();
+            const now = new Date().getTime();
+            const diff = Math.max(0, Math.floor((now - start) / 1000));
+            const h = Math.floor(diff / 3600).toString().padStart(2, '0');
+            const m = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
+            const s = (diff % 60).toString().padStart(2, '0');
+            videoTime = `${h}:${m}:${s}`;
+        }
+
+        // GUARDAMOS TU MENSAJE COMO DIRECTOR EN LA BASE DE DATOS
+        await this.supabase.from('live_chat_messages').insert([{
+            session_id: this.sessionId,
+            user_name: displayName,
+            user_avatar: this.userProfile?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png',
+            message: text,
+            is_director: true,
+            video_timestamp: videoTime
+        }]);
+    },
+
+    renderIncomingMessage(msg) {
+        const feed = document.getElementById('control-chat-feed');
+        if (!feed) return;
+
+        const isDir = msg.is_director ? 'is-director' : '';
+        const timeStr = msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        // Le asignamos el ID mágico para que se pueda borrar si lo eliminas
+        const msgHtml = `
+            <div id="ctrl-msg-${msg.id}" class="chat-msg">
+                <div class="chat-msg-header">
+                    <span class="chat-msg-author ${isDir}">${msg.user_name}</span>
+                    <span class="chat-msg-time">${timeStr}</span>
+                </div>
+                <p class="chat-msg-text">${msg.message}</p>
+            </div>
+        `;
+        feed.insertAdjacentHTML('beforeend', msgHtml);
+        feed.scrollTop = feed.scrollHeight; 
     },
 
     setupEventListeners() {
@@ -213,45 +284,6 @@ const ControlRoom = {
             emojiPickerContainer.style.display = 'none';
             chatInput.focus();
         });
-    },
-
-    sendMessage() {
-        const input = document.getElementById('control-chat-input');
-        const text = input.value.trim();
-        if (!text) return;
-
-        const displayName = `👑 ${this.userProfile?.display_name || 'Director'} (Organizador)`;
-
-        const messageData = {
-            user: displayName,
-            avatar: this.userProfile?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png',
-            text: text,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            isDirector: true
-        };
-
-        this.realtimeChannel.send({ type: 'broadcast', event: 'chat_message', payload: messageData });
-        
-        // CORRECCIÓN DEL ECO: Mostramos nuestro propio mensaje inmediatamente
-        this.renderIncomingMessage(messageData);
-        
-        input.value = '';
-    },
-
-    renderIncomingMessage(msg) {
-        const feed = document.getElementById('control-chat-feed');
-        const isDir = msg.isDirector ? 'is-director' : '';
-        const msgHtml = `
-            <div class="chat-msg">
-                <div class="chat-msg-header">
-                    <span class="chat-msg-author ${isDir}">${msg.user}</span>
-                    <span class="chat-msg-time">${msg.timestamp}</span>
-                </div>
-                <p class="chat-msg-text">${msg.text}</p>
-            </div>
-        `;
-        feed.insertAdjacentHTML('beforeend', msgHtml);
-        feed.scrollTop = feed.scrollHeight; 
     },
 
     // ==========================================
