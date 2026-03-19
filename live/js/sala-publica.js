@@ -690,7 +690,7 @@ const PublicRoomApp = {
         }
 
         // Si es el post original, le inyectamos una etiqueta dorada/azul
-        const anchorBadge = isAnchor ? `<span class="anchor-badge">Post Original</span>` : '';
+        const anchorBadge = isAnchor ? `<span class="anchor-badge">Primer Comentario</span>` : '';
 
         div.innerHTML = `
             <div class="comment-item-avatar">
