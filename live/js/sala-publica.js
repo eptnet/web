@@ -319,7 +319,7 @@ const PublicRoomApp = {
         }
 
         // 3. ESTADO: EN VIVO (ABRIR TELÓN)
-        if (s.status === 'EN VIVO') {
+        if (s.status === 'EN VIVO' || s.status === 'EN_VIVO') { // <-- Agrega el || s.status === 'EN_VIVO'
             overlay.classList.add('hidden');
             clearInterval(this.countdownTimer);
 
@@ -411,13 +411,18 @@ const PublicRoomApp = {
             this.appendCommentMessage(payload.payload, true);
         });
 
-        // 4C. DETECCIÓN DEL CAMBIO DE ESTADO (TRANSICIÓN SUAVE)
+        // 4C. DETECCIÓN DEL CAMBIO DE ESTADO (TRANSICIÓN SUAVE Y A PRUEBA DE BALAS)
         this.supabase.channel(`public:sessions`)
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${this.sessionId}` }, (payload) => {
                 
-                if (payload.new.status === 'EN VIVO' && this.sessionData.status !== 'EN VIVO') {
+                // NORMALIZAMOS EL ESTADO: Aceptamos "EN VIVO" o "EN_VIVO"
+                const newStatus = payload.new.status;
+                const isNowLive = (newStatus === 'EN VIVO' || newStatus === 'EN_VIVO');
+                const wasNotLive = (this.sessionData.status !== 'EN VIVO' && this.sessionData.status !== 'EN_VIVO');
+
+                if (isNowLive && wasNotLive) {
                     console.log("¡El director abrió el telón!");
-                    this.sessionData.status = 'EN VIVO';
+                    this.sessionData.status = 'EN VIVO'; // Lo guardamos con espacio internamente
                     const badge = document.getElementById('status-badge');
                     if(badge) { badge.className = 'badge live'; badge.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> EN VIVO'; }
                     this.handlePlayerAndCountdown(); // Abre el telón suavemente

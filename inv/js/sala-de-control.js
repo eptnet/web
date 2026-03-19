@@ -79,7 +79,6 @@ const ControlRoom = {
         const btnAction = document.getElementById('btn-stream-action');
         const badge = document.getElementById('live-status-badge');
 
-        // Limpiamos clases previas
         btnAction.className = ''; badge.className = 'status-badge';
 
         if (status === 'PROGRAMADO' || !status) {
@@ -89,7 +88,7 @@ const ControlRoom = {
             btnAction.innerHTML = '<i class="fa-solid fa-play"></i> Iniciar Transmisión Pública';
             btnAction.disabled = false;
             btnAction.onclick = () => this.startBroadcast();
-        } else if (status === 'EN_VIVO') {
+        } else if (status === 'EN VIVO' || status === 'EN_VIVO') { // <-- AHORA ENTIENDE AMBOS
             badge.classList.add('status-live');
             badge.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> EN VIVO';
             btnAction.className = 'btn-stop-stream';
@@ -113,7 +112,8 @@ const ControlRoom = {
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Iniciando...';
         btn.disabled = true;
 
-        const { error } = await this.supabase.from('sessions').update({ status: 'EN_VIVO' }).eq('id', this.sessionId);
+        // CORRECCIÓN VITAL: Ahora envía "EN VIVO" con espacio
+        const { error } = await this.supabase.from('sessions').update({ status: 'EN VIVO' }).eq('id', this.sessionId);
         
         if (error) {
             alert("Error al iniciar: " + error.message);
@@ -121,12 +121,11 @@ const ControlRoom = {
             return;
         }
 
-        this.sessionData.status = 'EN_VIVO';
-        this.updateStreamControlsUI('EN_VIVO');
+        this.sessionData.status = 'EN VIVO';
+        this.updateStreamControlsUI('EN VIVO');
 
-        // Avisar a todas las salas públicas que el evento empezó
         if (this.realtimeChannel) {
-            this.realtimeChannel.send({ type: 'broadcast', event: 'stream_status_changed', payload: { status: 'EN_VIVO' } });
+            this.realtimeChannel.send({ type: 'broadcast', event: 'stream_status_changed', payload: { status: 'EN VIVO' } });
         }
     },
 
