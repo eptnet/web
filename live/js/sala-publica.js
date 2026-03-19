@@ -927,4 +927,6 @@ const PublicRoomApp = {
     }
 };
 
+// Exponemos la app para que funcionen los botones HTML
+window.PublicRoomApp = PublicRoomApp;
 document.addEventListener('DOMContentLoaded', () => PublicRoomApp.init());

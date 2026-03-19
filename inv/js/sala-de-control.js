@@ -251,18 +251,62 @@ const ControlRoom = {
         const isDir = msg.is_director ? 'is-director' : '';
         const timeStr = msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
-        // Le asignamos el ID mágico para que se pueda borrar si lo eliminas
+        // LOS BOTONES MÁGICOS DEL DIRECTOR
+        const modControls = `
+            <div style="margin-left: auto; display:flex; gap: 10px;">
+                <button onclick="ControlRoom.promoteToBluesky('${msg.id}', '${msg.user_name}', \`${msg.message.replace(/'/g, "\\'")}\`, '${msg.video_timestamp || 'En Vivo'}')" title="Enviar a Bluesky" style="background:transparent; border:none; color:#38bdf8; cursor:pointer; font-size:0.95rem; transition:0.2s;"><i class="fa-brands fa-bluesky"></i></button>
+                <button onclick="ControlRoom.deleteChatMessage('${msg.id}')" title="Borrar mensaje" style="background:transparent; border:none; color:#ef4444; cursor:pointer; font-size:0.95rem; transition:0.2s;"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        `;
+
         const msgHtml = `
-            <div id="ctrl-msg-${msg.id}" class="chat-msg">
-                <div class="chat-msg-header">
+            <div id="ctrl-msg-${msg.id}" class="chat-msg" style="display:flex; flex-direction:column;">
+                <div class="chat-msg-header" style="display:flex; width:100%; align-items:center;">
                     <span class="chat-msg-author ${isDir}">${msg.user_name}</span>
                     <span class="chat-msg-time">${timeStr}</span>
+                    ${modControls}
                 </div>
-                <p class="chat-msg-text">${msg.message}</p>
+                <p class="chat-msg-text" style="margin-top:5px;">${msg.message}</p>
             </div>
         `;
         feed.insertAdjacentHTML('beforeend', msgHtml);
         feed.scrollTop = feed.scrollHeight; 
+    },
+
+    // --- LAS DOS FUNCIONES DE MAGIA PARA EL DIRECTOR ---
+    async deleteChatMessage(messageId) {
+        if (!confirm("🚨 ¿Borrar este mensaje de todas las pantallas?")) return;
+        try {
+            await this.supabase.from('live_chat_messages').delete().eq('id', messageId);
+        } catch (e) {
+            console.error("Error borrando:", e);
+        }
+    },
+
+    async promoteToBluesky(messageId, authorName, text, timestamp) {
+        if (!confirm(`¿Enviar el aporte de ${authorName} al hilo oficial de Bluesky?`)) return;
+        
+        const btn = document.querySelector(`#ctrl-msg-${messageId} .fa-bluesky`);
+        if(btn) { btn.className = 'fa-solid fa-spinner fa-spin'; }
+
+        try {
+            const formattedText = `🎙️ Aporte en vivo:\n"${text}"\n\n— ${authorName} (Marca de tiempo: ${timestamp})`;
+            
+            const { error } = await this.supabase.functions.invoke('bsky-create-reply', {
+                body: {
+                    replyText: formattedText,
+                    parentPost: { uri: this.sessionData.bsky_chat_thread_uri, cid: this.sessionData.bsky_chat_thread_cid }
+                }
+            });
+            if (error) throw error;
+            
+            if(btn) { btn.className = 'fa-solid fa-check'; btn.style.color = '#10b981'; }
+            // Pequeña notificación visual sin interrumpir
+            console.log("Comentario enviado a Bluesky con éxito.");
+        } catch (error) {
+            if(btn) { btn.className = 'fa-brands fa-bluesky'; }
+            alert("Error al enviar a Bluesky. Revisa tu sesión.");
+        }
     },
 
     setupEventListeners() {
@@ -383,4 +427,6 @@ const ControlRoom = {
     },
 };
 
+// Exponemos la app para que los botones HTML la encuentren
+window.ControlRoom = ControlRoom;
 document.addEventListener('DOMContentLoaded', () => ControlRoom.init());
