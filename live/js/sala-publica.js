@@ -387,7 +387,7 @@ const PublicRoomApp = {
 
     async setupRealtimeChannel() {
         const viewersBadge = document.getElementById('viewers-badge');
-        viewersBadge.classList.remove('hidden');
+        if (viewersBadge) viewersBadge.classList.remove('hidden');
 
         const trackingId = this.currentUserProfile ? this.currentUserProfile.display_name : `guest_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -397,45 +397,59 @@ const PublicRoomApp = {
 
         this.realtimeChannel.on('presence', { event: 'sync' }, () => {
             const state = this.realtimeChannel.presenceState();
-            document.getElementById('viewer-count').textContent = Object.keys(state).length;
+            const counter = document.getElementById('viewer-count');
+            if (counter) counter.textContent = Object.keys(state).length;
         });
 
-        // 1. ESCUCHA EL CHAT LATERAL (Viene de la Sala de Control o usuarios nativos)
-        this.realtimeChannel.on('broadcast', { event: 'chat_message' }, (payload) => {
-            this.renderIncomingMessage(payload.payload);
-        });
+        // 1. CARGAMOS LOS MENSAJES ANTERIORES (PERSISTENCIA AL RECARGAR PÁGINA)
+        const { data: pastMessages } = await this.supabase
+            .from('live_chat_messages')
+            .select('*')
+            .eq('session_id', this.sessionId)
+            .order('created_at', { ascending: true })
+            .limit(100);
+        
+        if (pastMessages) {
+            pastMessages.forEach(msg => this.renderIncomingMessage(msg));
+        }
 
-        // 2. ESCUCHA LOS COMENTARIOS DE BLUESKY (Viene de la Edge Function)
+        // 2. ESCUCHAMOS LA BASE DE DATOS EN LUGAR DEL BROADCAST
+        this.supabase.channel(`public:live_chat_messages:${this.sessionId}`)
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_chat_messages', filter: `session_id=eq.${this.sessionId}` }, (payload) => {
+                this.renderIncomingMessage(payload.new);
+            })
+            .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'live_chat_messages', filter: `session_id=eq.${this.sessionId}` }, (payload) => {
+                const msgEl = document.getElementById(`msg-${payload.old.id}`);
+                if (msgEl) msgEl.remove(); // Borrado mágico en tiempo real para todos
+            }).subscribe();
+
+        // 3. ESCUCHAMOS LOS COMENTARIOS DE BLUESKY (Para la caja inferior)
         this.realtimeChannel.on('broadcast', { event: 'new_chat_message' }, (payload) => {
-            // SOLO se pinta en la caja inferior de comentarios
-            this.appendCommentMessage(payload.payload, true);
+            this.appendCommentMessage(payload.payload, false);
         });
 
-        // 4C. DETECCIÓN DEL CAMBIO DE ESTADO (TRANSICIÓN SUAVE Y A PRUEBA DE BALAS)
+        // 4. DETECCIÓN DEL CAMBIO DE ESTADO (TRANSICIÓN SUAVE)
         this.supabase.channel(`public:sessions`)
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${this.sessionId}` }, (payload) => {
-                
-                // NORMALIZAMOS EL ESTADO: Aceptamos "EN VIVO" o "EN_VIVO"
                 const newStatus = payload.new.status;
                 const isNowLive = (newStatus === 'EN VIVO' || newStatus === 'EN_VIVO');
                 const wasNotLive = (this.sessionData.status !== 'EN VIVO' && this.sessionData.status !== 'EN_VIVO');
 
                 if (isNowLive && wasNotLive) {
-                    console.log("¡El director abrió el telón!");
-                    this.sessionData.status = 'EN VIVO'; // Lo guardamos con espacio internamente
+                    this.sessionData.status = 'EN VIVO';
                     const badge = document.getElementById('status-badge');
                     if(badge) { badge.className = 'badge live'; badge.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> EN VIVO'; }
-                    this.handlePlayerAndCountdown(); // Abre el telón suavemente
+                    this.handlePlayerAndCountdown(); 
                 
                 } else if (payload.new.status === 'FINALIZADO' && this.sessionData.status !== 'FINALIZADO') {
-                    console.log("¡El director cerró el evento!");
                     this.sessionData.status = 'FINALIZADO';
                     const badge = document.getElementById('status-badge');
                     if(badge) { badge.className = 'badge vod'; badge.innerHTML = '<i class="fa-solid fa-flag-checkered"></i> FINALIZADO'; }
-                    this.handlePlayerAndCountdown(); // Cierra el telón suavemente
-                    this.setupChats(); // Deshabilita el chat automáticamente
+                    this.handlePlayerAndCountdown(); 
+                    this.setupChats(); 
                 }
-                // --- DETECTAR CAMBIOS EN LA ENCUESTA ---
+                
+                // DETECTAR CAMBIOS EN LA ENCUESTA
                 if (payload.new.poll_status !== this.sessionData.poll_status || JSON.stringify(payload.new.active_emojis) !== JSON.stringify(this.sessionData.active_emojis)) {
                     this.sessionData.poll_status = payload.new.poll_status;
                     this.sessionData.active_emojis = payload.new.active_emojis;
@@ -444,7 +458,7 @@ const PublicRoomApp = {
             }).subscribe();
 
         this.realtimeChannel.subscribe(async (status) => {
-            // 5. ESCUCHAR LOS VOTOS DE LA ENCUESTA
+            // ESCUCHAR LOS VOTOS DE LA ENCUESTA
             this.supabase.channel(`public:poll_votes`)
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'poll_votes', filter: `session_id=eq.${this.sessionId}` }, (payload) => {
                     const emoji = payload.new.emoji;
@@ -455,40 +469,114 @@ const PublicRoomApp = {
         });
     },
 
-    sendChatMessage() {
-        if (!this.currentUserProfile || !this.realtimeChannel) return;
+    async sendChatMessage() {
+        if (!this.currentUserProfile) return;
         const input = document.getElementById('bsky-chat-input');
         const text = input.value.trim();
         if (!text) return;
 
-        const messageData = {
-            user: this.currentUserProfile.display_name,
-            avatar: this.currentUserProfile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png',
-            text: text,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-
-        this.realtimeChannel.send({ type: 'broadcast', event: 'chat_message', payload: messageData });
+        // Limpiamos el input para que se sienta rápido (Optimistic UI)
         input.value = ''; 
+
+        // CALCULAMOS EL CÓDIGO DE TIEMPO (Tiempo transcurrido del evento)
+        let videoTime = null;
+        if (this.sessionData.status === 'EN VIVO' || this.sessionData.status === 'EN_VIVO') {
+            const start = new Date(this.sessionData.scheduled_at).getTime();
+            const now = new Date().getTime();
+            const diff = Math.max(0, Math.floor((now - start) / 1000));
+            const h = Math.floor(diff / 3600).toString().padStart(2, '0');
+            const m = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
+            const s = (diff % 60).toString().padStart(2, '0');
+            videoTime = `${h}:${m}:${s}`;
+        }
+
+        // GUARDAMOS EN LA BASE DE DATOS
+        await this.supabase.from('live_chat_messages').insert([{
+            session_id: this.sessionId,
+            user_name: this.currentUserProfile.display_name,
+            user_avatar: this.currentUserProfile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png',
+            message: text,
+            is_director: false,
+            video_timestamp: videoTime
+        }]);
     },
 
     renderIncomingMessage(msg) {
         const feed = document.getElementById('bsky-chat-feed');
+        if (!feed) return;
+
+        // Comprobamos si el usuario actual es el Director de esta sesión
+        const isDirector = this.currentUserProfile && this.sessionData.user_id === this.currentUserProfile.id;
+        
+        let modControls = '';
+        if (isDirector) {
+            // Botones mágicos de moderación y Bluesky solo visibles para el dueño
+            modControls = `
+                <div style="margin-left: auto; display:flex; gap: 8px;">
+                    <button onclick="PublicRoomApp.promoteToBluesky('${msg.id}', '${msg.user_name}', \`${msg.message.replace(/'/g, "\\'")}\`, '${msg.video_timestamp || 'En Vivo'}')" title="Enviar como aporte destacado a Bluesky" style="background:transparent; border:none; color:#38bdf8; cursor:pointer; font-size:1rem; transition:0.2s;"><i class="fa-brands fa-bluesky"></i></button>
+                    <button onclick="PublicRoomApp.deleteChatMessage('${msg.id}')" title="Borrar mensaje" style="background:transparent; border:none; color:#ef4444; cursor:pointer; font-size:1rem; transition:0.2s;"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            `;
+        }
+
+        const timeStr = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const directorCrown = msg.is_director ? '<i class="fa-solid fa-crown" style="font-size:0.75rem; margin-left:4px; color:#b72a1e;"></i>' : '';
+        const nameColor = msg.is_director ? '#b72a1e' : 'var(--text-main)';
+
         const msgHtml = `
-            <div style="display:flex; gap:10px; margin-bottom:15px; animation: fadeIn 0.3s ease;">
-                <img src="${msg.avatar}" style="width:32px; height:32px; border-radius:50%; object-fit:cover; flex-shrink:0;">
-                <div>
+            <div id="msg-${msg.id}" style="display:flex; gap:10px; margin-bottom:15px; animation: fadeIn 0.3s ease; width: 100%;">
+                <img src="${msg.user_avatar}" style="width:32px; height:32px; border-radius:50%; object-fit:cover; flex-shrink:0;">
+                <div style="flex-grow: 1;">
                     <div style="display:flex; align-items:baseline; gap:8px;">
-                        <span style="font-weight:700; font-size:0.9rem; color:var(--text-main);">${msg.user}</span>
-                        <span style="font-size:0.75rem; color:var(--text-muted);">${msg.timestamp}</span>
+                        <span style="font-weight:700; font-size:0.9rem; color:${nameColor};">${msg.user_name} ${directorCrown}</span>
+                        <span style="font-size:0.75rem; color:var(--text-muted);">${timeStr}</span>
+                        ${modControls}
                     </div>
                     <p style="margin:5px 0 0 0; font-size:0.95rem; color:rgba(255,255,255,0.9); line-height:1.4; word-break:break-word;">
-                        ${msg.text}
+                        ${msg.message}
                     </p>
                 </div>
             </div>`;
         feed.insertAdjacentHTML('beforeend', msgHtml);
         feed.scrollTop = feed.scrollHeight;
+    },
+
+    // --- NUEVAS FUNCIONES DE MODERACIÓN Y BLUESKY ---
+    async deleteChatMessage(messageId) {
+        if (!confirm("¿Borrar este mensaje para todos?")) return;
+        try {
+            await this.supabase.from('live_chat_messages').delete().eq('id', messageId);
+        } catch (e) {
+            console.error("Error borrando:", e);
+        }
+    },
+
+    async promoteToBluesky(messageId, authorName, text, timestamp) {
+        if (!confirm(`¿Enviar el comentario de ${authorName} al hilo oficial de Bluesky?`)) return;
+        
+        // Bloqueamos el botón visualmente
+        const btn = document.querySelector(`#msg-${messageId} .fa-bluesky`);
+        if(btn) { btn.className = 'fa-solid fa-spinner fa-spin'; }
+
+        try {
+            // Formateamos cómo se verá en Bluesky
+            const formattedText = `🎙️ Aporte de la Audiencia:\n"${text}"\n\n— ${authorName} (Marca de tiempo: ${timestamp})`;
+            
+            // Llamamos a tu Edge Function existente para responder al hilo
+            const { error } = await this.supabase.functions.invoke('bsky-create-reply', {
+                body: {
+                    replyText: formattedText,
+                    parentPost: { uri: this.sessionData.bsky_chat_thread_uri, cid: this.sessionData.bsky_chat_thread_cid }
+                }
+            });
+            if (error) throw error;
+            
+            if(btn) { btn.className = 'fa-solid fa-check'; btn.style.color = '#10b981'; }
+            alert("¡Comentario inmortalizado en el Ágora de Bluesky!");
+        } catch (error) {
+            if(btn) { btn.className = 'fa-brands fa-bluesky'; }
+            alert("Error al enviar a Bluesky. Puede que la sesión haya expirado.");
+        }
     },
 
     renderShareBar(session) {
