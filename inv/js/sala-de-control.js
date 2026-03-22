@@ -72,6 +72,27 @@ const ControlRoom = {
         // Iniciar el sistema de encuestas del Director
         this.pollCounts = {};
         await this.setupPollSystem();
+
+        // NUEVO: Lógica del botón de encender/apagar chat
+        this.sessionData.is_chat_active = session.is_chat_active !== false; // true por defecto
+        const btnToggleChat = document.getElementById('btn-toggle-chat');
+        if (btnToggleChat) {
+            btnToggleChat.innerHTML = this.sessionData.is_chat_active ? '<i class="fa-solid fa-toggle-on"></i>' : '<i class="fa-solid fa-toggle-off"></i>';
+            btnToggleChat.style.color = this.sessionData.is_chat_active ? '#10b981' : '#ef4444';
+            
+            btnToggleChat.onclick = async () => {
+                const newState = !this.sessionData.is_chat_active;
+                btnToggleChat.disabled = true;
+                
+                await this.supabase.from('sessions').update({ is_chat_active: newState }).eq('id', this.sessionId);
+                
+                this.sessionData.is_chat_active = newState;
+                btnToggleChat.innerHTML = newState ? '<i class="fa-solid fa-toggle-on"></i>' : '<i class="fa-solid fa-toggle-off"></i>';
+                btnToggleChat.style.color = newState ? '#10b981' : '#ef4444';
+                btnToggleChat.disabled = false;
+            };
+        }
+
         this.setupEventListeners();
     },
 
@@ -365,7 +386,8 @@ const ControlRoom = {
         // 3. Funciones de los Botones
         btnLaunch.addEventListener('click', async () => {
             const rawInput = document.getElementById('poll-emojis-input').value;
-            // Limpia y separa los emojis por comas, máximo 4.
+            // Capturamos la pregunta
+            const questionInput = document.getElementById('poll-question-input')?.value.trim() || ''; 
             const emojis = rawInput.split(',').map(e => e.trim()).filter(e => e).slice(0, 4);
             
             if (emojis.length === 0) { alert("Ingresa al menos 1 emoji."); return; }
@@ -373,8 +395,13 @@ const ControlRoom = {
             btnLaunch.disabled = true;
             btnLaunch.innerHTML = "Iniciando...";
             
-            // Enviamos la orden a la base de datos
-            await this.supabase.from('sessions').update({ poll_status: 'abierto', active_emojis: emojis }).eq('id', this.sessionId);
+            // Guardamos emojis y pregunta en la base de datos
+            await this.supabase.from('sessions').update({ 
+                poll_status: 'abierto', 
+                active_emojis: emojis,
+                poll_question: questionInput // Enviamos la pregunta
+            }).eq('id', this.sessionId);
+            
             this.renderPollControlUI('abierto', emojis);
         });
 

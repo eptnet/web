@@ -309,13 +309,30 @@ body.tv-mode-dark { margin: 0; font-family: 'Inter', sans-serif; background: var
     border-radius: 50%;
     object-fit: cover;
 }
+/* ¡NUEVO! Forzamos a la caja de texto a respetar el ancho de la pantalla */
+.comment-item-content {
+    min-width: 0; 
+    flex-grow: 1;
+}
+
 .comment-item-header {
     display: flex;
-    align-items: baseline;
+    align-items: center; /* 'center' alinea mejor la etiqueta dorada si salta de línea */
     gap: 8px;
     margin-bottom: 6px;
+    flex-wrap: wrap; /* CRÍTICO: Permite que el @handle o la etiqueta bajen a la siguiente línea si no caben */
 }
-.comment-author-name { font-weight: 600; font-size: 0.95rem; color: var(--text-main); }
+
+/* Opcional: Aseguramos que los nombres larguísimos se corten con puntos suspensivos */
+.comment-author-name { 
+    font-weight: 600; 
+    font-size: 0.95rem; 
+    color: var(--text-main); 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+    max-width: 100%; 
+}
 .comment-author-handle { font-size: 0.8rem; color: var(--text-muted); }
 .comment-text {
     font-size: 0.95rem;

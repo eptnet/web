@@ -53,7 +53,8 @@
                 
                 <div id="poll-collapsible-content" style="display: none; padding-top: 15px; margin-top: 10px; border-top: 1px solid #334155;">
                     <div id="poll-setup-area">
-                        <input type="text" id="poll-emojis-input" placeholder="Ej: 👍, 🤯, 👎">
+                        <input type="text" id="poll-question-input" placeholder="Ej: ¿Qué tema tocamos mañana?" style="width: 100%; background-color: #1e293b; border: 1px solid #334155; color: white; padding: 8px 12px; border-radius: 4px; margin-bottom: 10px; font-size:0.9rem;">
+                        <input type="text" id="poll-emojis-input" placeholder="Ej: 👍, 🤯, 🔥, ❤️">
                         <button id="btn-launch-poll" class="btn-start-stream" style="width:100%; justify-content:center; padding: 6px; margin-top:8px; font-size: 0.85rem;"><i class="fa-solid fa-bolt"></i> Iniciar Encuesta</button>
                     </div>
                     <div id="poll-results-area" class="hidden">
@@ -66,6 +67,7 @@
             <div class="chat-header">
                 <h3><i class="fa-solid fa-comments"></i> Chat del Auditorio</h3>
                 <span id="control-viewer-count" class="viewer-count"><i class="fa-solid fa-eye"></i> 0</span>
+                <button id="btn-toggle-chat" title="Apagar/Encender Chat" style="background:transparent; border:none; color:#10b981; font-size:1.2rem; cursor:pointer; transition:0.2s;"><i class="fa-solid fa-toggle-on"></i></button>
             </div>
             <div id="control-chat-feed" class="chat-feed">
                 <p class="chat-system-msg"><i class="fa-solid fa-circle-notch fa-spin"></i> Conectando al auditorio...</p>

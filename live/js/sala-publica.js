@@ -373,8 +373,16 @@ const PublicRoomApp = {
         // Lógica de validación de usuario
         if (this.currentUserProfile) {
             if (authOverlay) authOverlay.classList.add('hidden');
-            if (chatInput) { chatInput.disabled = false; chatInput.placeholder = "Escribe un mensaje..."; }
-            if (sendBtn) sendBtn.disabled = false;
+            
+            // Verificamos si el chat fue apagado por el director
+            if (s.is_chat_active === false) {
+                if (chatInput) { chatInput.disabled = true; chatInput.placeholder = "🔒 El moderador ha pausado el chat."; }
+                if (sendBtn) sendBtn.disabled = true;
+            } else {
+                if (chatInput) { chatInput.disabled = false; chatInput.placeholder = "Escribe un mensaje..."; }
+                if (sendBtn) sendBtn.disabled = false;
+            }
+            
             const btnEmoji = document.getElementById('btn-emoji');
             if (btnEmoji) btnEmoji.disabled = false;
         } else {
@@ -449,9 +457,31 @@ const PublicRoomApp = {
                     this.setupChats(); 
                 }
                 
-                if (payload.new.poll_status !== this.sessionData.poll_status || JSON.stringify(payload.new.active_emojis) !== JSON.stringify(this.sessionData.active_emojis)) {
+                // Activar/Desactivar Chat en Vivo
+                if (payload.new.is_chat_active !== this.sessionData.is_chat_active) {
+                    this.sessionData.is_chat_active = payload.new.is_chat_active;
+                    const chatInput = document.getElementById('bsky-chat-input');
+                    const sendBtn = document.getElementById('btn-send-bsky');
+                    
+                    if (this.sessionData.is_chat_active === false) {
+                        if(chatInput) { chatInput.disabled = true; chatInput.placeholder = "🔒 El moderador ha pausado el chat."; }
+                        if(sendBtn) { sendBtn.disabled = true; }
+                    } else {
+                        if (this.currentUserProfile) { // Solo si está logueado
+                            if(chatInput) { chatInput.disabled = false; chatInput.placeholder = "Escribe un mensaje..."; }
+                            if(sendBtn) { sendBtn.disabled = false; }
+                        }
+                    }
+                }
+    
+                // Cambios en la Encuesta Rápida
+                if (payload.new.poll_status !== this.sessionData.poll_status || 
+                    payload.new.poll_question !== this.sessionData.poll_question ||
+                    JSON.stringify(payload.new.active_emojis) !== JSON.stringify(this.sessionData.active_emojis)) {
+                    
                     this.sessionData.poll_status = payload.new.poll_status;
                     this.sessionData.active_emojis = payload.new.active_emojis;
+                    this.sessionData.poll_question = payload.new.poll_question;
                     this.renderLivePoll();
                 }
             })
@@ -779,7 +809,7 @@ const PublicRoomApp = {
         }
 
         // Si es el post original, le inyectamos una etiqueta dorada/azul
-        const anchorBadge = isAnchor ? `<span class="anchor-badge">Primer Comentario</span>` : '';
+        const anchorBadge = isAnchor ? `<span class="anchor-badge">Comentario <i class="fa-solid fa-thumbtack"></i></span>` : '';
 
         div.innerHTML = `
             <div class="comment-item-avatar">
@@ -880,16 +910,30 @@ const PublicRoomApp = {
 
         const isActive = this.sessionData.poll_status === 'abierto';
         const emojis = this.sessionData.active_emojis || [];
+        const question = this.sessionData.poll_question;
 
         if (isActive && emojis.length > 0) {
-            container.innerHTML = emojis.map(emj => `
+            let html = '';
+            
+            // Si hay pregunta, cambiamos el formato a columna para que quede arriba
+            if (question) {
+                html += `<div style="width: 100%; text-align: center; margin-bottom: 10px; font-weight: 600; color: white; font-size: 0.95rem;">${question}</div>`;
+                container.style.flexDirection = 'column';
+            } else {
+                container.style.flexDirection = 'row';
+            }
+
+            html += `<div style="display: flex; gap: 12px; justify-content: center; width: 100%;">`;
+            html += emojis.map(emj => `
                 <button class="poll-btn" data-emoji="${emj}" title="Votar ${emj}">
                     ${emj} <span class="poll-count" id="count-${encodeURIComponent(emj)}">${this.pollCounts[emj] || 0}</span>
                 </button>
             `).join('');
+            html += `</div>`;
+
+            container.innerHTML = html;
             container.classList.remove('hidden');
 
-            // Añadimos el listener a los botones nuevos
             container.querySelectorAll('.poll-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => this.submitVote(e.currentTarget));
             });
