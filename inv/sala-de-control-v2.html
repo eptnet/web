@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>SALA DE CONTROL V2.0 - Epistecnología</title>
+    <link rel="stylesheet" href="/inv/css/sala-de-control.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { display: flex; flex-direction: row !important; height: 100vh; overflow: hidden; }
+        .v2-main-nav { width: 70px; background-color: #0f172a; border-right: 1px solid #334155; display: flex; flex-direction: column; align-items: center; padding: 20px 0; gap: 25px; flex-shrink: 0; }
+        .nav-icon-btn { background: none; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer; padding: 10px; border-radius: 12px; transition: 0.2s; }
+        .nav-icon-btn.active { color: #facc15; background-color: rgba(250, 204, 21, 0.1); }
+        .v2-page-container { flex-grow: 1; height: 100%; overflow: hidden; background-color: #1e293b; }
+        .v2-tab-page { width: 100%; height: 100%; display: none; }
+        .v2-tab-page.active { display: block; }
+        .fullscreen-iframe { width: 100%; height: 100%; border: none; }
+
+        /* GRID ESTRICTO: 350px inamovibles para la derecha, 240px izquierda */
+        .studio-layout { display: grid; grid-template-columns: 240px 1fr 350px; grid-template-rows: 60px minmax(0, 1fr) 250px; height: 100%; }
+        
+        .studio-topbar { grid-column: 1 / 4; grid-row: 1 / 2; background-color: #0f172a; border-bottom: 1px solid #334155; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
+        
+        /* Columna Izquierda: Layouts */
+        .studio-presets { grid-column: 1 / 2; grid-row: 2 / 4; background-color: #1e293b; border-right: 1px solid #334155; padding: 15px; overflow-y: auto;}
+        .layout-botonera { display: flex; flex-direction: column; gap: 10px;}
+        .layout-btn { background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #e2e8f0; padding: 15px; cursor: pointer; text-align: center; transition: 0.2s; font-weight: bold; font-size: 0.95rem; line-height: 1.4;}
+        .layout-btn span { font-size: 0.75rem; font-weight: normal; color: #94a3b8; display: block; margin-top: 4px; }
+        .layout-btn.active { border-color: #facc15; background: rgba(250, 204, 21, 0.1); color: #facc15;}
+        .layout-btn.active span { color: #facc15; }
+        
+        /* Centro Superior: Monitor */
+        .studio-monitor { grid-column: 2 / 3; grid-row: 2 / 3; padding: 15px; background-color: #111827; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        .monitor-frame-container { width: 100%; max-width: 1000px; aspect-ratio: 16/9; background: black; border-radius: 12px; overflow: hidden; border: 2px solid #334155;}
+
+        /* Centro Inferior: 10 Slots */
+        .studio-inputs { grid-column: 2 / 3; grid-row: 3 / 4; background-color: #0f172a; border-top: 1px solid #334155; padding: 10px; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; overflow-y: auto;}
+        .talent-slot-card { background: #1e293b; border-radius: 8px; border: 1px solid #334155; padding: 8px; display: flex; flex-direction: column; gap: 5px;}
+        .talent-slot-card input { width: 100%; box-sizing: border-box; background: #0f172a; border: 1px solid #334155; color: white; padding: 5px; border-radius: 4px; font-size: 0.75rem;}
+        .toggle-btn, .btn-slot-setting { background: #334155; color: white; border: none; border-radius: 4px; padding: 4px; cursor: pointer; font-size: 0.7rem; flex-grow: 1;}
+        .btn-slot-setting.active { background-color: #38bdf8; color: #0f172a; font-weight: bold;}
+        .btn-visibility.active { background-color: #10b981; color: white; } 
+        .btn-visibility { background-color: #ef4444; color: white; } 
+
+        /* COLUMNA DERECHA: Chat y Encuesta blindados */
+        .studio-sidebar { grid-column: 3 / 4; grid-row: 2 / 4; background-color: #1e293b; border-left: 1px solid #334155; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+        .poll-control-panel { flex-shrink: 0; border-bottom: 1px solid #334155; background: #0f172a; padding: 12px; }
+        .control-chat-sidebar { display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; min-height: 0; }
+        .control-chat-feed { flex-grow: 1; overflow-y: auto; padding: 10px; }
+        .chat-input-area { flex-shrink: 0; padding: 10px; background: #0f172a; border-top: 1px solid #334155; display: flex; gap: 8px; align-items: center; }
+    </style>
+</head>
+<body>
+    <nav class="v2-main-nav">
+        <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" style="width: 40px; margin-bottom: 20px;">
+        <button class="nav-icon-btn active" data-target="page-reception" title="Recepción"><i class="fa-solid fa-headset"></i></button>
+        <button class="nav-icon-btn" data-target="page-studio" title="Estudio 2.0"><i class="fa-solid fa-clapperboard"></i></button>
+        <button class="nav-icon-btn" data-target="page-classic" title="Modo Clásico"><i class="fa-solid fa-television"></i></button>
+    </nav>
+
+    <main class="v2-page-container">
+        <div id="page-reception" class="v2-tab-page active"><iframe id="vdo-director-iframe" src="" class="fullscreen-iframe" allow="camera;microphone"></iframe></div>
+
+        <div id="page-studio" class="v2-tab-page">
+            <div class="studio-layout">
+                
+                <header class="studio-topbar">
+                    <h1 style="color: #e2e8f0; font-size: 1rem;"><i class="fa-solid fa-circle text-danger" style="color: #ef4444;"></i> Estudio Mixer</h1>
+                    <div><button id="btn-copy-obs-link" class="btn-start-stream" style="background:#334155;"><i class="fa-solid fa-link"></i> Link OBS</button></div>
+                </header>
+
+                <aside class="studio-presets">
+                    <h4 style="color:#94a3b8; font-size:0.8rem; margin-top:0; text-align: center;">DISEÑOS (PLANTILLAS)</h4>
+                    <div class="layout-botonera">
+                        <button class="layout-btn active" data-layout="mosaico">Diseño 1 <span>Mosaico Inteligente</span></button>
+                        <button class="layout-btn" data-layout="foco">Diseño 2 <span>Foco (Principal arriba)</span></button>
+                        <button class="layout-btn" data-layout="presentacion">Diseño 3 <span>Presentación PPT</span></button>
+                        <button class="layout-btn" data-layout="split">Diseño 4 <span>2 Split (Entrevista)</span></button>
+                        <button class="layout-btn" data-layout="full">Diseño 5 <span>1 Fullscreen</span></button>
+                    </div>
+                </aside>
+
+                <section class="studio-monitor">
+                    <div class="monitor-frame-container"><iframe id="studio-monitor-iframe" src="" class="fullscreen-iframe"></iframe></div>
+                </section>
+
+                <footer class="studio-inputs" id="slots-container">
+                    </footer>
+
+                <aside class="studio-sidebar">
+                    <div id="monitor-wrapper" style="display: none; background: #000; flex-shrink: 0; border-bottom: 1px solid #334155;">
+                        <div id="monitor-container" style="width: 100%; aspect-ratio: 16/9;"><iframe id="monitor-iframe" src="" allowfullscreen style="width:100%; height:100%; border:none;"></iframe></div>
+                    </div>
+
+                    <div id="poll-control-panel" class="poll-control-panel">
+                        <div class="poll-header" id="poll-toggle-btn" style="cursor: pointer; transition: 0.2s; user-select: none;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-chevron-down" id="poll-chevron" style="transition: transform 0.3s; font-size: 0.85rem; color: #94a3b8;"></i>
+                                <h3 style="margin: 0; font-size: 0.95rem; color: #e2e8f0;"><i class="fa-solid fa-chart-simple"></i> Encuestas</h3>
+                            </div>
+                            <span id="poll-status-indicator" class="status-badge status-waiting" style="padding: 2px 8px; font-size:0.7rem;">Cerrada</span>
+                        </div>
+                        <div id="poll-collapsible-content" style="display: none; padding-top: 15px; margin-top: 10px; border-top: 1px solid #334155;">
+                            <div id="poll-setup-area">
+                                <input type="text" id="poll-question-input" placeholder="Pregunta opcional..." style="width: 100%; background: #1e293b; border: 1px solid #334155; color: white; padding: 6px; border-radius: 4px; margin-bottom: 8px; font-size:0.8rem; box-sizing: border-box;">
+                                <input type="text" id="poll-emojis-input" placeholder="Ej: 👍, 🤯, 🔥" style="width: 100%; background: #1e293b; border: 1px solid #334155; color: white; padding: 6px; border-radius: 4px; font-size:0.8rem; box-sizing: border-box;">
+                                <button id="btn-launch-poll" class="btn-start-stream" style="width:100%; justify-content:center; padding: 6px; margin-top:8px; font-size: 0.85rem; box-sizing: border-box;"><i class="fa-solid fa-bolt"></i> Iniciar Encuesta</button>
+                            </div>
+                            <div id="poll-results-area" class="hidden">
+                                <div id="poll-counters" class="poll-counters"></div>
+                                <button id="btn-close-poll" class="btn-stop-stream" style="width:100%; justify-content:center; padding: 6px; margin-top:10px; font-size: 0.85rem; box-sizing: border-box;"><i class="fa-solid fa-stop"></i> Cerrar Encuesta</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="control-chat-sidebar">
+                        <div class="chat-header" style="padding: 10px 15px; border-bottom: 1px solid #334155;">
+                            <h3 style="margin:0; font-size:1rem; color:white;"><i class="fa-regular fa-comments"></i> Chat en Vivo</h3>
+                        </div>
+                        <div class="control-chat-feed" id="control-chat-feed"></div>
+                        <div class="chat-input-area">
+                            <input type="text" id="control-chat-input" placeholder="Mensaje de control..." style="flex-grow: 1; background: #1e293b; border: 1px solid #334155; color: white; padding: 8px; border-radius: 20px; outline: none; font-size: 0.85rem;">
+                            <button id="btn-send-control-chat" style="background: #38bdf8; border: none; width: 35px; height: 35px; border-radius: 50%; cursor: pointer;"><i class="fa-solid fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+                </aside>
+
+            </div>
+        </div>
+
+        <div id="page-classic" class="v2-tab-page"><iframe id="classic-room-iframe" src="" class="fullscreen-iframe"></iframe></div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/inv/js/sala-de-control-v2.js"></script>
+</body>
+</html>
