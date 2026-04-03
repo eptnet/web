@@ -1,156 +1,144 @@
-/* =================================================================
- * ARCHIVO: /inv/css/sala-de-control.css (Diseño 100% Sincronizado)
- * ================================================================= */
-
-body {
-    display: flex; 
-    flex-direction: column; 
-    height: 100vh; 
-    margin: 0;
-    font-family: system-ui, -apple-system, sans-serif;
-    background-color: #0f172a; 
-    color: white; 
-    overflow: hidden; /* Evita que toda la página haga scroll accidental */
+:root {
+    --bg-base: #0f172a;
+    --bg-card: #1e293b;
+    --border: #334155;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --accent: #38bdf8;
+    --success: #10b981;
+    --danger: #ef4444;
 }
 
-/* --- HEADER Y CONTROLES GREEN ROOM --- */
-.control-room-header {
-    display: flex; 
-    align-items: center; 
-    justify-content: space-between;
-    padding: 0.75rem 1.5rem; 
-    background-color: #1e293b;
-    border-bottom: 1px solid #334155; 
-    flex-shrink: 0; /* Candado 1: El header no se aplasta */
-}
+body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg-base); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+* { box-sizing: border-box; }
+.hidden { display: none !important; }
 
-.back-link { color: #94a3b8; text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; transition: 0.2s; }
+/* HEADER (Igual de elegante) */
+.control-room-header { height: 70px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; background: var(--bg-card); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.header-left { display: flex; align-items: center; gap: 15px; }
+.back-link { color: var(--text-muted); text-decoration: none; font-size: 0.95rem; font-weight: 600; transition: 0.2s; }
 .back-link:hover { color: white; }
-.control-room-header h2 { margin: 0; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 1.1rem; flex-grow: 1; margin: 0 20px;}
+.divider { width: 1px; height: 25px; background: var(--border); }
+#control-session-title { margin: 0; font-size: 1.2rem; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 400px; }
 
-.session-controls { display: flex; align-items: center; gap: 12px; }
+.session-controls { display: flex; align-items: center; gap: 15px; }
+.status-badge { padding: 8px 16px; border-radius: 6px; font-weight: 700; font-size: 0.9rem; border: 1px solid transparent; }
+.status-waiting { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border-color: rgba(245, 158, 11, 0.3); }
+.status-live { background: rgba(239, 68, 68, 0.1); color: var(--danger); border-color: rgba(239, 68, 68, 0.3); animation: pulse 2s infinite; }
+.status-ended { background: rgba(148, 163, 184, 0.1); color: var(--text-muted); border-color: rgba(148, 163, 184, 0.3); }
 
-/* Insignias de Estado */
-.status-badge { padding: 6px 14px; border-radius: 50px; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; letter-spacing: 0.5px;}
-.status-waiting { background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
-.status-live { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid #ef4444; animation: pulseRed 2s infinite; }
-.status-ended { background: #334155; color: #94a3b8; border: 1px solid #475569; }
+.btn-start-stream { background: var(--success); color: white; border: none; padding: 8px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+.btn-start-stream:hover:not(:disabled) { background: #059669; transform: translateY(-2px); }
+.btn-stop-stream { background: var(--danger); color: white; border: none; padding: 8px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+.btn-ended { background: var(--border); color: var(--text-muted); border: none; padding: 8px 20px; border-radius: 6px; font-weight: 600; cursor: not-allowed; }
+.btn-start-stream:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-edit-settings { color: var(--text-muted); font-size: 1.2rem; transition: 0.2s; }
+.btn-edit-settings:hover { color: white; }
 
-@keyframes pulseRed {
-    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-    70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-}
-
-/* Botones Dinámicos */
-.btn-start-stream, .btn-stop-stream, .btn-ended { border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; transition: 0.2s; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
-.btn-start-stream { background-color: #10b981; color: white; cursor: pointer; }
-.btn-start-stream:hover { background-color: #059669; transform: translateY(-2px); }
-.btn-stop-stream { background-color: #ef4444; color: white; cursor: pointer; }
-.btn-stop-stream:hover { background-color: #dc2626; transform: translateY(-2px); }
-.btn-ended { background-color: #334155; color: #94a3b8; cursor: not-allowed; }
-
-.btn-edit-settings { background: #334155; color: white; padding: 8px 12px; border-radius: 8px; text-decoration: none; transition: 0.2s; display: inline-flex;}
-.btn-edit-settings:hover { background: #475569; }
-
-/* --- LAYOUT PRINCIPAL --- */
-.control-layout { 
-    display: flex; 
-    flex-grow: 1; /* Ocupa el resto de la pantalla debajo del header */
-    overflow: hidden; 
-}
-
-/* PANEL IZQUIERDO: VDO Mixer con Zoom al 80% */
-.mixer-panel { 
+/* GRID PRINCIPAL (La magia adaptativa) */
+.dashboard-grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); 
+    gap: 20px; 
+    padding: 20px; 
     flex-grow: 1; 
-    background-color: #000; 
-    position: relative; 
-    overflow: hidden; /* Corta lo que sobre del iframe para no tener barras dobles */
+    overflow-y: auto; 
+    align-items: start; /* Para que las tarjetas no se estiren verticalmente solas */
 }
 
-#mixer-iframe { 
-    width: 100%; /* Al reducir el zoom al 80%, debemos agrandar el ancho y alto para compensar (100 / 0.8 = 125%) */
-    height: 100%;
-    transform: scale(1); 
-    transform-origin: top left;
-    border: none; 
-    display: block; 
-}
+.dashboard-column { display: flex; flex-direction: column; gap: 20px; height: 100%; max-height: calc(100vh - 110px); }
 
-/* --- PANEL DERECHO: SIDEBAR Y CHAT --- */
-.control-chat-sidebar { 
-    width: 350px; 
-    background-color: #1e293b; 
-    display: flex; 
-    flex-direction: column; 
-    border-left: 1px solid #334155; 
-    flex-shrink: 0; /* Candado 2: La barra lateral no se hace angosta */
-    height: 100%;
-}
+/* TARJETAS COMUNES */
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+.card h3 { margin: 0; font-size: 1.05rem; padding: 15px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.2); }
 
-/* MONITOR DEL DIRECTOR (YouTube) */
-#monitor-wrapper {
-    width: 100%;
-    background: #000;
-    border-bottom: 1px solid #334155;
-    flex-shrink: 0; /* Candado 3: El monitor NO se aplasta con los mensajes */
-}
+/* PANEL PRODUCCIÓN */
+.panel-produccion { padding-bottom: 15px; }
+.btn-giant { margin: 15px; padding: 15px; font-size: 1rem; border-radius: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: 0.2s; }
+.btn-primary { background: rgba(56, 189, 248, 0.1); color: var(--accent); border: 1px solid var(--accent); }
+.btn-primary:hover:not(:disabled) { background: var(--accent); color: var(--bg-base); }
+.btn-primary:disabled { opacity: 0.5; border-color: var(--border); color: var(--text-muted); cursor: not-allowed; }
 
-.chat-header { 
-    padding: 15px; 
-    background-color: #0f172a; 
-    border-bottom: 1px solid #334155; 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    flex-shrink: 0; /* Candado 4: El título del chat NO se aplasta */
-}
-.chat-header h3 { margin: 0; font-size: 1rem; color: #e2e8f0; display: flex; align-items: center; gap: 8px; }
-.viewer-count { font-size: 0.85rem; color: #10b981; background: rgba(16, 185, 129, 0.1); padding: 4px 8px; border-radius: 50px; font-weight: 600;}
+.quick-links { display: flex; flex-direction: column; gap: 10px; padding: 0 15px; }
+.link-item { display: flex; justify-content: space-between; align-items: center; background: var(--bg-base); padding: 10px 15px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.9rem; color: var(--text-muted); }
+.btn-copy { background: transparent; border: none; color: var(--accent); cursor: pointer; transition: 0.2s; padding: 5px; }
+.btn-copy:hover { transform: scale(1.1); color: white; }
 
-/* Historial del chat (LA ÚNICA ZONA FLUIDA) */
-.chat-feed { 
-    flex-grow: 1; /* Esto es clave: Se estira ocupando el espacio que dejen el monitor y el input */
-    padding: 15px; 
-    overflow-y: auto; /* La barra espaciadora sale AQUÍ y no en toda la página */
-    display: flex; 
-    flex-direction: column; 
-    gap: 12px; 
-}
-.chat-system-msg { text-align: center; color: #94a3b8; font-size: 0.85rem; margin: 0; }
+/* PANEL MONITOR */
+.delay-warning { font-size: 0.75rem; color: #f59e0b; margin-left: auto; font-weight: normal; }
+.monitor-container { width: 100%; aspect-ratio: 16/9; background: #000; }
+.monitor-container iframe { width: 100%; height: 100%; border: none; display: block; }
 
-.chat-msg { animation: fadeIn 0.2s ease; line-height: 1.4; background: #0f172a; padding: 10px 12px; border-radius: 8px; border: 1px solid #334155;}
-.chat-msg-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
-.chat-msg-author { font-weight: 600; font-size: 0.9rem; color: #38bdf8; }
-.chat-msg-author.is-director { color: #10b981; } 
-.chat-msg-time { font-size: 0.75rem; color: #64748b; }
-.chat-msg-text { margin: 0; font-size: 0.95rem; color: #f8fafc; word-break: break-word; }
+/* PANEL CHAT EN VIVO (Ocupa todo el alto) */
+.panel-chat { flex-grow: 1; }
+.chat-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.2); }
+.chat-actions { display: flex; gap: 15px; align-items: center; padding-right: 15px; }
+.viewer-count { color: var(--danger); font-weight: 700; font-size: 0.9rem; }
+#btn-toggle-chat { background: transparent; border: none; font-size: 1.3rem; cursor: pointer; transition: 0.2s; padding: 0; }
 
-/* Caja de Texto Inferior */
-.chat-input-area { 
-    padding: 15px; 
-    background-color: #0f172a; 
-    border-top: 1px solid #334155; 
-    display: flex; 
-    gap: 10px; 
-    flex-shrink: 0; /* Candado 5: La caja de texto JAMÁS se esconderá hacia abajo */
-}
-#btn-emoji-control { background: transparent; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer; padding: 0 5px; transition: 0.2s; display: flex; align-items: center;}
+.chat-feed { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; min-height: 200px; }
+.chat-system-msg { text-align: center; color: var(--text-muted); font-size: 0.9rem; margin: auto; }
+.chat-msg-header { font-size: 0.85rem; margin-bottom: 4px; }
+.chat-msg-author { font-weight: 700; color: white; }
+.chat-msg-author.is-director { color: #f59e0b; }
+.chat-msg-time { color: var(--text-muted); font-size: 0.75rem; margin-left: 8px; }
+.chat-msg-text { margin: 0; font-size: 0.95rem; line-height: 1.4; color: rgba(255,255,255,0.9); }
+
+.chat-input-area { display: flex; padding: 15px; gap: 10px; border-top: 1px solid var(--border); background: var(--bg-base); position: relative; }
+#control-chat-input { flex-grow: 1; background: var(--bg-card); border: 1px solid var(--border); padding: 10px 15px; border-radius: 50px; color: white; outline: none; font-family: inherit; }
+#btn-send-control-chat { background: var(--accent); color: var(--bg-base); border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; transition: 0.2s; }
+#btn-emoji-control { background: transparent; border: none; color: var(--text-muted); font-size: 1.4rem; cursor: pointer; transition: 0.2s; padding: 0 5px; }
 #btn-emoji-control:hover { color: #facc15; }
-#control-chat-input { flex-grow: 1; background-color: #1e293b; border: 1px solid #334155; color: white; padding: 10px 15px; border-radius: 20px; outline: none; transition: 0.2s; }
-#control-chat-input:focus { border-color: #38bdf8; }
-#btn-send-control-chat { background-color: #38bdf8; color: #0f172a; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s; flex-shrink: 0;}
-#btn-send-control-chat:hover { background-color: #0ea5e9; transform: scale(1.05); }
+.emoji-picker-wrapper { position: absolute; bottom: 65px; left: 15px; z-index: 9999; }
 
-@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+/* PANEL ENCUESTA */
+.poll-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: rgba(0,0,0,0.2); user-select: none; }
+.poll-title-wrap { display: flex; align-items: center; gap: 10px; }
+.poll-title-wrap h3 { padding: 0; border: none; background: transparent; }
+.badge-mini { font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; border: 1px solid transparent; }
+.poll-content { padding: 15px; border-top: 1px solid var(--border); }
+#poll-setup-area input { width: 100%; background: var(--bg-base); border: 1px solid var(--border); color: white; padding: 10px; border-radius: 6px; margin-bottom: 10px; outline: none; }
+.btn-action { width: 100%; padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; color: white; }
+.btn-green { background: var(--success); }
+.btn-green:hover { background: #059669; }
+.btn-red { background: var(--danger); }
+.btn-red:hover { background: #dc2626; }
 
-/* --- PANEL DE VOTACIONES (DIRECTOR) --- */
-.poll-control-panel { background: #0f172a; border-bottom: 1px solid #334155; padding: 12px 15px; flex-shrink: 0; }
-.poll-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.poll-header h3 { margin: 0; font-size: 0.95rem; color: #e2e8f0; display: flex; align-items: center; gap: 8px; }
-#poll-emojis-input { width: 100%; background-color: #1e293b; border: 1px solid #334155; color: white; padding: 8px 12px; border-radius: 8px; outline: none; transition: 0.2s; font-size: 1rem;}
-#poll-emojis-input:focus { border-color: #facc15; }
-.poll-counters { display: grid; grid-template-columns: repeat(auto-fit, minmax(50px, 1fr)); gap: 8px; }
-.poll-counter-item { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 8px 0; text-align: center; display: flex; flex-direction: column; gap: 2px;}
-.poll-counter-emoji { font-size: 1.4rem; line-height: 1; }
-.poll-counter-value { font-weight: 700; font-size: 1.1rem; color: #38bdf8; }
+.poll-counters { display: flex; gap: 15px; justify-content: center; margin-bottom: 15px; flex-wrap: wrap; }
+.poll-counter-item { display: flex; flex-direction: column; align-items: center; background: var(--bg-base); border: 1px solid var(--border); border-radius: 8px; padding: 10px 15px; min-width: 60px; }
+.poll-counter-emoji { font-size: 1.5rem; margin-bottom: 5px; }
+.poll-counter-value { font-weight: 700; font-size: 1.1rem; color: var(--accent); }
+
+/* PANEL ÁGORA (BLUESKY MONITOR) */
+.panel-agora { flex-grow: 1; }
+.agora-header { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.2); }
+.agora-header h3 { padding: 0; border: none; background: transparent; }
+#btn-refresh-bsky { background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; transition: 0.2s; }
+#btn-refresh-bsky:hover { color: white; transform: rotate(180deg); }
+.agora-feed { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; min-height: 200px; }
+.bsky-comment { background: var(--bg-base); border: 1px solid var(--border); border-radius: 8px; padding: 12px; display: flex; gap: 10px; }
+.bsky-comment img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+.bsky-comment-body { flex-grow: 1; min-width: 0; }
+.bsky-author { font-size: 0.85rem; font-weight: 700; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.bsky-text { margin: 5px 0 0 0; font-size: 0.85rem; color: rgba(255,255,255,0.8); word-break: break-word; line-height: 1.4;}
+
+.hidden-desktop { display: none !important; }
+
+/* --- RESPONSIVE MOBILE --- */
+@media (max-width: 992px) {
+    /* Reparación de la Cabecera para que no se pierdan los botones */
+    .control-room-header { height: auto; flex-direction: column; align-items: flex-start; padding: 15px; gap: 15px; }
+    #control-session-title { white-space: normal; text-align: left; max-width: 100%; }
+    .session-controls { width: 100%; display: flex; flex-wrap: wrap; justify-content: stretch; }
+    .session-controls .status-badge, .session-controls .btn-start-stream, .session-controls .btn-stop-stream, .session-controls .btn-ended { flex-grow: 1; justify-content: center; text-align: center; }
+
+    /* Reparación del Grid */
+    .dashboard-grid { grid-template-columns: 1fr; overflow-y: visible; padding: 10px; }
+    .dashboard-column { max-height: none; height: auto; }
+    body { overflow-y: auto; }
+    .chat-feed, .agora-feed { min-height: 300px; max-height: 400px; }
+
+    /* Clases mágicas de visualización */
+    .hidden-mobile { display: none !important; }
+    .hidden-desktop { display: flex !important; }
+}

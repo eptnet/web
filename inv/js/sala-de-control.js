@@ -1,12 +1,11 @@
 // =================================================================
-// ARCHIVO: /inv/js/sala-de-control.js (Versión Definitiva 100%)
+// ARCHIVO: /inv/js/sala-de-control.js (Dashboard Vertical 100%)
 // =================================================================
 
 const ControlRoom = {
     supabase: null,
     sessionId: null,
     sessionData: null,
-    iframe: null,
     realtimeChannel: null,
     userProfile: null,
 
@@ -17,7 +16,6 @@ const ControlRoom = {
         
         const params = new URLSearchParams(window.location.search);
         this.sessionId = params.get('id');
-        this.iframe = document.getElementById('mixer-iframe');
 
         if (!this.sessionId) {
             document.body.innerHTML = '<h1 style="text-align:center; margin-top:50px;">Error: No se ha proporcionado un ID de sesión.</h1>';
@@ -36,32 +34,67 @@ const ControlRoom = {
         document.getElementById('control-session-title').textContent = session.session_title;
         document.title = `🔴 Control - ${session.session_title}`;
 
-        // 1. Cargar SIEMPRE el VDO Mixer en el panel izquierdo (El lienzo de trabajo)
-        if (session.director_url) {
-            this.iframe.src = session.director_url;
-        } else {
-            this.iframe.src = 'about:blank';
-            this.iframe.style.background = '#000 url("https://placehold.co/1280x720/000000/38bdf8?text=Esperando+Señal...") center / contain no-repeat';
+        // 1. Configurar Links: Extracción Automática y Segura
+        const btnMixer = document.getElementById('btn-open-mixer');
+        const directorUrl = session.director_url || '';
+        
+        // CORRECCIÓN: Extraemos el Room ID para forzar el enlace correcto y evadir errores de la BD
+        let roomMatch = directorUrl.match(/room=([^&]+)/);
+        let roomId = roomMatch ? roomMatch[1] : '';
+        
+        // Construimos las URLs perfectas según la documentación de VDO Ninja
+        const guestUrl = roomId ? `https://vdo.ninja/alpha/?room=${roomId}` : (session.viewer_url || '');
+        const obsUrl = roomId ? `https://vdo.ninja/alpha/?scene=0&showlabels=0&room=${roomId}&layout&whepshare=https://use1.meshcast.io/whep/${roomId}&cleanoutput` : (session.scene_url || '');
+
+        if (directorUrl) {
+            btnMixer.disabled = false;
+            btnMixer.onclick = () => window.open(directorUrl, '_blank');
         }
 
-        // 2. Cargar el Monitor en la columna derecha (Arriba del chat)
+        this.setupCopyButton('btn-copy-director', directorUrl, "URL de Director no disponible");
+        this.setupCopyButton('btn-copy-guest', guestUrl, "URL de Invitado no disponible");
+        this.setupCopyButton('btn-copy-obs', obsUrl, "URL de Escena no disponible");
+
+        // Lógica del Iframe IRL (Cámara integrada independiente)
+        const btnActivateCamera = document.getElementById('btn-activate-camera');
+        const selfCameraWrapper = document.getElementById('self-camera-wrapper');
+        const selfCameraIframe = document.getElementById('self-camera-iframe');
+
+        if (btnActivateCamera) {
+            btnActivateCamera.onclick = () => {
+                if (selfCameraWrapper.classList.contains('hidden')) {
+                    if (guestUrl) {
+                        selfCameraIframe.src = guestUrl;
+                        selfCameraWrapper.classList.remove('hidden');
+                        btnActivateCamera.innerHTML = '<i class="fa-solid fa-video-slash"></i> Apagar mi cámara';
+                        btnActivateCamera.className = 'btn-action btn-red';
+                    } else {
+                        alert('El enlace de invitado no está disponible en esta sesión.');
+                    }
+                } else {
+                    selfCameraIframe.src = '';
+                    selfCameraWrapper.classList.add('hidden');
+                    btnActivateCamera.innerHTML = '<i class="fa-solid fa-video"></i> Entrar a la transmisión';
+                    btnActivateCamera.className = 'btn-action btn-green';
+                }
+            };
+        }
+
+        // 2. Cargar el Monitor de Retorno (Solo visual)
         const monitorWrapper = document.getElementById('monitor-wrapper');
         const monitorIframe = document.getElementById('monitor-iframe');
         
         if (session.platform === 'youtube' && session.platform_id && !session.platform_id.includes('http')) {
-            monitorWrapper.style.display = 'block';
+            monitorWrapper.style.display = 'flex';
             monitorIframe.src = `https://www.youtube.com/embed/${session.platform_id}?autoplay=1&mute=1`;
         } else if (session.platform === 'twitch' && session.platform_id) {
-            monitorWrapper.style.display = 'block';
+            monitorWrapper.style.display = 'flex';
             monitorIframe.src = `https://player.twitch.tv/?channel=${session.platform_id}&parent=${window.location.hostname || 'localhost'}&muted=true`;
-        } else {
-            monitorWrapper.style.display = 'none';
         }
 
-        // Actualizar la interfaz de botones (Green Room)
+        // 3. Inicializar resto de sistemas
         this.updateStreamControlsUI(session.status);
 
-        // Cargar perfil y chat
         const { data: { user } } = await this.supabase.auth.getUser();
         if (user) {
             const { data: profile } = await this.supabase.from('profiles').select('*').eq('id', user.id).single();
@@ -69,12 +102,12 @@ const ControlRoom = {
         }
 
         this.setupRealtimeChat();
-        // Iniciar el sistema de encuestas del Director
+        
         this.pollCounts = {};
         await this.setupPollSystem();
 
-        // NUEVO: Lógica del botón de encender/apagar chat
-        this.sessionData.is_chat_active = session.is_chat_active !== false; // true por defecto
+        // Control On/Off Chat
+        this.sessionData.is_chat_active = session.is_chat_active !== false;
         const btnToggleChat = document.getElementById('btn-toggle-chat');
         if (btnToggleChat) {
             btnToggleChat.innerHTML = this.sessionData.is_chat_active ? '<i class="fa-solid fa-toggle-on"></i>' : '<i class="fa-solid fa-toggle-off"></i>';
@@ -83,9 +116,7 @@ const ControlRoom = {
             btnToggleChat.onclick = async () => {
                 const newState = !this.sessionData.is_chat_active;
                 btnToggleChat.disabled = true;
-                
                 await this.supabase.from('sessions').update({ is_chat_active: newState }).eq('id', this.sessionId);
-                
                 this.sessionData.is_chat_active = newState;
                 btnToggleChat.innerHTML = newState ? '<i class="fa-solid fa-toggle-on"></i>' : '<i class="fa-solid fa-toggle-off"></i>';
                 btnToggleChat.style.color = newState ? '#10b981' : '#ef4444';
@@ -93,7 +124,26 @@ const ControlRoom = {
             };
         }
 
+        // Cargar Ágora
+        this.loadBlueskyComments();
+        document.getElementById('btn-refresh-bsky').onclick = () => this.loadBlueskyComments();
+
         this.setupEventListeners();
+    },
+
+    setupCopyButton(btnId, valueToCopy, errorMsg) {
+        const btn = document.getElementById(btnId);
+        if (!btn) return;
+        btn.onclick = () => {
+            if (!valueToCopy) { alert(errorMsg); return; }
+            navigator.clipboard.writeText(valueToCopy);
+            btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+            btn.style.color = '#10b981';
+            setTimeout(() => {
+                btn.innerHTML = '<i class="fa-solid fa-copy"></i>';
+                btn.style.color = '';
+            }, 2000);
+        };
     },
 
     updateStreamControlsUI(status) {
@@ -109,7 +159,7 @@ const ControlRoom = {
             btnAction.innerHTML = '<i class="fa-solid fa-play"></i> Iniciar Transmisión Pública';
             btnAction.disabled = false;
             btnAction.onclick = () => this.startBroadcast();
-        } else if (status === 'EN VIVO' || status === 'EN_VIVO') { // <-- AHORA ENTIENDE AMBOS
+        } else if (status === 'EN VIVO' || status === 'EN_VIVO') {
             badge.classList.add('status-live');
             badge.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> EN VIVO';
             btnAction.className = 'btn-stop-stream';
@@ -127,79 +177,46 @@ const ControlRoom = {
     },
 
     async startBroadcast() {
-        if (!confirm("¿Seguro que deseas INICIAR la transmisión pública? Esto abrirá el telón en el Ágora para que los espectadores comiencen a ver el evento.")) return;
-
+        if (!confirm("¿Seguro que deseas INICIAR la transmisión pública?")) return;
         const btn = document.getElementById('btn-stream-action');
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Iniciando...';
         btn.disabled = true;
 
-        // CORRECCIÓN VITAL: Ahora envía "EN VIVO" con espacio
         const { error } = await this.supabase.from('sessions').update({ status: 'EN VIVO' }).eq('id', this.sessionId);
-        
-        if (error) {
-            alert("Error al iniciar: " + error.message);
-            this.updateStreamControlsUI('PROGRAMADO');
-            return;
-        }
+        if (error) { alert("Error al iniciar: " + error.message); this.updateStreamControlsUI('PROGRAMADO'); return; }
 
         this.sessionData.status = 'EN VIVO';
         this.updateStreamControlsUI('EN VIVO');
-
-        if (this.realtimeChannel) {
-            this.realtimeChannel.send({ type: 'broadcast', event: 'stream_status_changed', payload: { status: 'EN VIVO' } });
-        }
+        if (this.realtimeChannel) this.realtimeChannel.send({ type: 'broadcast', event: 'stream_status_changed', payload: { status: 'EN VIVO' } });
     },
 
     async stopBroadcast() {
-        if (!confirm("🚨 PELIGRO: ¿Seguro que deseas FINALIZAR la transmisión? Esto cortará la señal permanentemente y cerrará el evento para todos los espectadores.")) return;
-
+        if (!confirm("🚨 PELIGRO: ¿Seguro que deseas FINALIZAR la transmisión de forma permanente?")) return;
         const btn = document.getElementById('btn-stream-action');
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Finalizando Evento...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Finalizando...';
         btn.disabled = true;
 
         try {
-            // 1. Cambiamos estado en Base de Datos
             const { error } = await this.supabase.from('sessions').update({ status: 'FINALIZADO' }).eq('id', this.sessionId);
             if (error) throw error;
 
-            // 2. Si es de YouTube API, enviamos la orden para cortarlo de raíz
             if (this.sessionData.platform === 'youtube' && this.sessionData.platform_id && !this.sessionData.platform_id.includes('http')) {
-                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Cortando señal en YouTube...';
-                
-                const { error: fnError } = await this.supabase.functions.invoke('stop-youtube-live', {
-                    body: { broadcastId: this.sessionData.platform_id }
-                });
-                
-                if (fnError) console.error("Aviso: Error al intentar detener YouTube remotamente.", fnError);
+                await this.supabase.functions.invoke('stop-youtube-live', { body: { broadcastId: this.sessionData.platform_id } });
             }
 
             this.sessionData.status = 'FINALIZADO';
             this.updateStreamControlsUI('FINALIZADO');
-
-            // 3. Avisar a las salas públicas que se acabó el evento
-            if (this.realtimeChannel) {
-                this.realtimeChannel.send({ type: 'broadcast', event: 'stream_status_changed', payload: { status: 'FINALIZADO' } });
-            }
-
-            alert("El evento ha sido finalizado con éxito.");
-
+            if (this.realtimeChannel) this.realtimeChannel.send({ type: 'broadcast', event: 'stream_status_changed', payload: { status: 'FINALIZADO' } });
         } catch (err) {
             alert("Error al finalizar: " + err.message);
-            this.updateStreamControlsUI('EN_VIVO');
+            this.updateStreamControlsUI('EN VIVO');
         }
     },
 
     async setupRealtimeChat() {
         const { data: pastMessages } = await this.supabase
-            .from('live_chat_messages')
-            .select('*')
-            .eq('session_id', this.sessionId)
-            .order('created_at', { ascending: true })
-            .limit(100);
-        
-        if (pastMessages) {
-            pastMessages.forEach(msg => this.renderIncomingMessage(msg));
-        }
+            .from('live_chat_messages').select('*').eq('session_id', this.sessionId).order('created_at', { ascending: true }).limit(100);
+        if (pastMessages) pastMessages.forEach(msg => this.renderIncomingMessage(msg));
 
         this.realtimeChannel = this.supabase.channel(`room_${this.sessionId}`, {
             config: { presence: { key: this.userProfile?.id || 'director' } }
@@ -211,16 +228,16 @@ const ControlRoom = {
                 const counterEl = document.getElementById('control-viewer-count');
                 if (counterEl) counterEl.innerHTML = `<i class="fa-solid fa-eye"></i> ${Object.keys(state).length}`;
             })
-            // NUEVO: Escuchamos SIN FILTRO para evadir el bug de BIGINT
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_chat_messages' }, (payload) => {
-                // Filtramos aquí en JS (¡Esto garantiza el 100% realtime!)
-                if (payload.new.session_id == this.sessionId) {
-                    this.renderIncomingMessage(payload.new);
-                }
+                if (payload.new.session_id == this.sessionId) this.renderIncomingMessage(payload.new);
             })
             .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'live_chat_messages' }, (payload) => {
                 const msgEl = document.getElementById(`ctrl-msg-${payload.old.id}`);
                 if (msgEl) msgEl.remove();
+            })
+            // NUEVO: Escuchar nuevos comentarios de Bluesky y auto-actualizar
+            .on('broadcast', { event: 'new_chat_message' }, () => {
+                this.loadBlueskyComments(); // Refresca silenciosamente
             })
             .subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') {
@@ -235,32 +252,18 @@ const ControlRoom = {
         const input = document.getElementById('control-chat-input');
         const text = input.value.trim();
         if (!text) return;
-
-        // Limpiamos rápido para que se sienta fluido
         input.value = '';
 
         const displayName = `👑 ${this.userProfile?.display_name || 'Director'}`;
-
-        // Calculamos el tiempo de video para tus aportes
         let videoTime = null;
         if (this.sessionData.status === 'EN VIVO' || this.sessionData.status === 'EN_VIVO') {
-            const start = new Date(this.sessionData.scheduled_at).getTime();
-            const now = new Date().getTime();
-            const diff = Math.max(0, Math.floor((now - start) / 1000));
-            const h = Math.floor(diff / 3600).toString().padStart(2, '0');
-            const m = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
-            const s = (diff % 60).toString().padStart(2, '0');
-            videoTime = `${h}:${m}:${s}`;
+            const diff = Math.max(0, Math.floor((new Date().getTime() - new Date(this.sessionData.scheduled_at).getTime()) / 1000));
+            videoTime = `${Math.floor(diff / 3600).toString().padStart(2, '0')}:${Math.floor((diff % 3600) / 60).toString().padStart(2, '0')}:${(diff % 60).toString().padStart(2, '0')}`;
         }
 
-        // GUARDAMOS TU MENSAJE COMO DIRECTOR EN LA BASE DE DATOS
         await this.supabase.from('live_chat_messages').insert([{
-            session_id: this.sessionId,
-            user_name: displayName,
-            user_avatar: this.userProfile?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png',
-            message: text,
-            is_director: true,
-            video_timestamp: videoTime
+            session_id: this.sessionId, user_name: displayName, user_avatar: this.userProfile?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png',
+            message: text, is_director: true, video_timestamp: videoTime
         }]);
     },
 
@@ -271,7 +274,6 @@ const ControlRoom = {
         const isDir = msg.is_director ? 'is-director' : '';
         const timeStr = msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
-        // LOS BOTONES MÁGICOS DEL DIRECTOR
         const modControls = `
             <div style="margin-left: auto; display:flex; gap: 10px;">
                 <button onclick="ControlRoom.promoteToBluesky('${msg.id}', '${msg.user_name}', \`${msg.message.replace(/'/g, "\\'")}\`, '${msg.video_timestamp || 'En Vivo'}')" title="Enviar a Bluesky" style="background:transparent; border:none; color:#38bdf8; cursor:pointer; font-size:0.95rem; transition:0.2s;"><i class="fa-brands fa-bluesky"></i></button>
@@ -293,46 +295,90 @@ const ControlRoom = {
         feed.scrollTop = feed.scrollHeight; 
     },
 
-    // --- LAS DOS FUNCIONES DE MAGIA PARA EL DIRECTOR ---
     async deleteChatMessage(messageId) {
         if (!confirm("🚨 ¿Borrar este mensaje de todas las pantallas?")) return;
-        try {
-            await this.supabase.from('live_chat_messages').delete().eq('id', messageId);
-        } catch (e) {
-            console.error("Error borrando:", e);
-        }
+        try { await this.supabase.from('live_chat_messages').delete().eq('id', messageId); } catch (e) { console.error("Error borrando:", e); }
     },
 
     async promoteToBluesky(messageId, authorName, text, timestamp) {
         if (!confirm(`¿Enviar el aporte a Bluesky?`)) return;
-        
         const btn = document.querySelector(`#ctrl-msg-${messageId} .fa-bluesky`);
         if(btn) { btn.className = 'fa-solid fa-spinner fa-spin'; }
 
         try {
-            // 1. Limpiamos iconos y textos extra
-            let cleanName = authorName.replace('👑', '').replace('(Organizador)', '').trim();
-            // 2. Tomamos solo el primer nombre
-            let shortName = cleanName.split(' ')[0];
-            // 3. Por si acaso, lo cortamos a un máximo prudente
+            let shortName = authorName.replace('👑', '').replace('(Organizador)', '').trim().split(' ')[0];
             if (shortName.length > 10) shortName = shortName.substring(0, 10);
 
-            // 4. FORMATO ULTRA CORTO
             const timeBadge = (timestamp && timestamp !== 'En Vivo') ? ` [${timestamp}]` : '';
             const formattedText = `🎙️: "${text}"\n— ${shortName}${timeBadge}`;
             
             const { error } = await this.supabase.functions.invoke('bsky-create-reply', {
-                body: {
-                    replyText: formattedText,
-                    parentPost: { uri: this.sessionData.bsky_chat_thread_uri, cid: this.sessionData.bsky_chat_thread_cid }
-                }
+                body: { replyText: formattedText, parentPost: { uri: this.sessionData.bsky_chat_thread_uri, cid: this.sessionData.bsky_chat_thread_cid } }
             });
             if (error) throw error;
-            
             if(btn) { btn.className = 'fa-solid fa-check'; btn.style.color = '#10b981'; }
         } catch (error) {
             if(btn) { btn.className = 'fa-brands fa-bluesky'; }
-            alert("Error al enviar a Bluesky. REVISA LA SESIÓN"); 
+            alert("Error al enviar a Bluesky."); 
+        }
+    },
+
+    // --- NUEVO: MONITOR DEL ÁGORA BLUESKY ---
+    async loadBlueskyComments() {
+        const feed = document.getElementById('bsky-monitor-feed');
+        if (!feed || !this.sessionData.bsky_chat_thread_uri) {
+            if(feed) feed.innerHTML = '<p class="text-muted text-center" style="font-size:0.85rem; margin-top:20px;">No hay hilo vinculado.</p>';
+            return;
+        }
+
+        try {
+            const { data: chatData, error } = await this.supabase.functions.invoke('bsky-get-post-thread', { 
+                body: { postUri: this.sessionData.bsky_chat_thread_uri } 
+            });
+            if (error) throw error;
+            
+            feed.innerHTML = '';
+
+            // Función renderizadora con escudos anti-errores
+            const renderMsg = (msg, isAnchor) => {
+                if(!msg || !msg.author) return;
+                
+                const record = msg.record || {};
+                const text = record.text || ''; // Escudo por si el post no tiene texto
+                const dateVal = record.createdAt || msg.indexedAt;
+                const dateStr = dateVal ? new Date(dateVal).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
+                
+                const anchorStyle = isAnchor ? 'border-left: 3px solid #38bdf8; background: rgba(56, 189, 248, 0.05);' : '';
+                const anchorBadge = isAnchor ? '<span style="background:#38bdf8; color:#0f172a; font-size:0.6rem; padding:2px 4px; border-radius:4px; margin-left:5px;">ANCLA</span>' : '';
+                
+                feed.insertAdjacentHTML('beforeend', `
+                    <div class="bsky-comment" style="${anchorStyle}">
+                        <img src="${msg.author.avatar || 'https://i.ibb.co/61fJv24/default-avatar.png'}">
+                        <div class="bsky-comment-body">
+                            <span class="bsky-author">${msg.author.displayName || msg.author.handle} ${anchorBadge} <span style="font-weight:normal; font-size:0.75rem; color:#94a3b8; margin-left:5px;">${dateStr}</span></span>
+                            <p class="bsky-text" style="margin-top: 5px; font-size: 0.9rem;">${text.replace(/\n/g, '<br>')}</p>
+                        </div>
+                    </div>
+                `);
+            };
+
+            // Dibujamos el primer post
+            if (chatData.anchorPost) {
+                renderMsg(chatData.anchorPost, true);
+            }
+
+            if (!chatData.messages || chatData.messages.length === 0) {
+                feed.insertAdjacentHTML('beforeend', '<p class="text-muted text-center" style="font-size:0.85rem; margin-top:20px;">Sin respuestas aún.</p>');
+                return;
+            }
+
+            // Dibujamos los comentarios
+            const sortedMessages = [...chatData.messages].reverse();
+            sortedMessages.forEach(msg => renderMsg(msg, false));
+
+        } catch (error) {
+            console.error("Error cargando Bsky:", error);
+            feed.innerHTML = '<p class="text-muted text-center" style="color:#ef4444; font-size:0.85rem;">Error al cargar comentarios.</p>';
         }
     },
 
@@ -345,63 +391,40 @@ const ControlRoom = {
         sendBtn.addEventListener('click', () => this.sendMessage());
         chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') this.sendMessage(); });
 
-        emojiBtn.addEventListener('click', () => {
-            const isHidden = emojiPickerContainer.style.display === 'none';
-            emojiPickerContainer.style.display = isHidden ? 'block' : 'none';
-        });
-
+        emojiBtn.addEventListener('click', () => { emojiPickerContainer.classList.toggle('hidden'); });
         document.querySelector('emoji-picker').addEventListener('emoji-click', event => {
             chatInput.value += event.detail.unicode;
-            emojiPickerContainer.style.display = 'none';
+            emojiPickerContainer.classList.add('hidden');
             chatInput.focus();
         });
     },
 
-    // ==========================================
-    // SISTEMA DE VOTACIÓN (SALA DE CONTROL)
-    // ==========================================
     async setupPollSystem() {
-        // --- Lógica del Panel Colapsable (Acordeón) ---
         const pollToggleBtn = document.getElementById('poll-toggle-btn');
         const pollContent = document.getElementById('poll-collapsible-content');
         const pollChevron = document.getElementById('poll-chevron');
 
         pollToggleBtn.addEventListener('click', () => {
-            const isHidden = pollContent.style.display === 'none';
-            pollContent.style.display = isHidden ? 'block' : 'none';
-            pollChevron.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+            pollContent.classList.toggle('hidden');
+            pollChevron.style.transform = pollContent.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
         });
+        
         const btnLaunch = document.getElementById('btn-launch-poll');
         const btnClose = document.getElementById('btn-close-poll');
         
-        // 1. Cargar votos existentes
         const { data: votes } = await this.supabase.from('poll_votes').select('emoji').eq('session_id', this.sessionId);
-        if (votes) {
-            votes.forEach(v => { this.pollCounts[v.emoji] = (this.pollCounts[v.emoji] || 0) + 1; });
-        }
+        if (votes) votes.forEach(v => { this.pollCounts[v.emoji] = (this.pollCounts[v.emoji] || 0) + 1; });
 
-        // 2. Configurar la Interfaz Inicial
         this.renderPollControlUI(this.sessionData.poll_status, this.sessionData.active_emojis);
 
-        // 3. Funciones de los Botones
         btnLaunch.addEventListener('click', async () => {
             const rawInput = document.getElementById('poll-emojis-input').value;
-            // Capturamos la pregunta
             const questionInput = document.getElementById('poll-question-input')?.value.trim() || ''; 
             const emojis = rawInput.split(',').map(e => e.trim()).filter(e => e).slice(0, 4);
-            
             if (emojis.length === 0) { alert("Ingresa al menos 1 emoji."); return; }
 
-            btnLaunch.disabled = true;
-            btnLaunch.innerHTML = "Iniciando...";
-            
-            // Guardamos emojis y pregunta en la base de datos
-            await this.supabase.from('sessions').update({ 
-                poll_status: 'abierto', 
-                active_emojis: emojis,
-                poll_question: questionInput // Enviamos la pregunta
-            }).eq('id', this.sessionId);
-            
+            btnLaunch.disabled = true; btnLaunch.innerHTML = "Iniciando...";
+            await this.supabase.from('sessions').update({ poll_status: 'abierto', active_emojis: emojis, poll_question: questionInput }).eq('id', this.sessionId);
             this.renderPollControlUI('abierto', emojis);
         });
 
@@ -411,7 +434,6 @@ const ControlRoom = {
             this.renderPollControlUI('cerrado', []);
         });
 
-        // 4. Escuchar votos en Tiempo Real
         this.supabase.channel('control-poll-votes')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'poll_votes', filter: `session_id=eq.${this.sessionId}` }, (payload) => {
                 const emoji = payload.new.emoji;
@@ -431,18 +453,13 @@ const ControlRoom = {
         const btnClose = document.getElementById('btn-close-poll');
 
         if (status === 'abierto') {
-            setupArea.classList.add('hidden');
-            resultsArea.classList.remove('hidden');
-            indicator.className = 'status-badge status-live';
-            indicator.innerHTML = 'Activa';
+            setupArea.classList.add('hidden'); resultsArea.classList.remove('hidden');
+            indicator.className = 'badge-mini status-live'; indicator.innerHTML = 'Activa';
             this.updatePollCountersUI(emojis);
         } else {
-            setupArea.classList.remove('hidden');
-            resultsArea.classList.add('hidden');
-            indicator.className = 'status-badge status-waiting';
-            indicator.innerHTML = 'Cerrada';
-            btnLaunch.disabled = false;
-            btnLaunch.innerHTML = '<i class="fa-solid fa-bolt"></i> Iniciar Encuesta';
+            setupArea.classList.remove('hidden'); resultsArea.classList.add('hidden');
+            indicator.className = 'badge-mini status-waiting'; indicator.innerHTML = 'Cerrada';
+            btnLaunch.disabled = false; btnLaunch.innerHTML = '<i class="fa-solid fa-bolt"></i> Iniciar Encuesta';
         }
         btnClose.disabled = false;
     },
@@ -450,16 +467,11 @@ const ControlRoom = {
     updatePollCountersUI(activeEmojis) {
         const container = document.getElementById('poll-counters');
         if (!container) return;
-        
         container.innerHTML = activeEmojis.map(emj => `
-            <div class="poll-counter-item">
-                <span class="poll-counter-emoji">${emj}</span>
-                <span class="poll-counter-value">${this.pollCounts[emj] || 0}</span>
-            </div>
+            <div class="poll-counter-item"><span class="poll-counter-emoji">${emj}</span><span class="poll-counter-value">${this.pollCounts[emj] || 0}</span></div>
         `).join('');
-    },
+    }
 };
 
-// Exponemos la app para que los botones HTML la encuentren
 window.ControlRoom = ControlRoom;
 document.addEventListener('DOMContentLoaded', () => ControlRoom.init());
