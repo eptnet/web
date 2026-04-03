@@ -69,9 +69,9 @@ body {
 }
 
 #mixer-iframe { 
-    width: 125%; /* Al reducir el zoom al 80%, debemos agrandar el ancho y alto para compensar (100 / 0.8 = 125%) */
-    height: 125%;
-    transform: scale(0.8); 
+    width: 100%; /* Al reducir el zoom al 80%, debemos agrandar el ancho y alto para compensar (100 / 0.8 = 125%) */
+    height: 100%;
+    transform: scale(1); 
     transform-origin: top left;
     border: none; 
     display: block; 
