@@ -57,7 +57,7 @@ body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg-base); 
 .card h3 { margin: 0; font-size: 1.05rem; padding: 15px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.2); }
 
 /* PANEL PRODUCCIÓN */
-.panel-produccion { padding-bottom: 15px; }
+.panel-produccion { padding-bottom: 0px; }
 .btn-giant { margin: 15px; padding: 15px; font-size: 1rem; border-radius: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: 0.2s; }
 .btn-primary { background: rgba(56, 189, 248, 0.1); color: var(--accent); border: 1px solid var(--accent); }
 .btn-primary:hover:not(:disabled) { background: var(--accent); color: var(--bg-base); }
@@ -128,26 +128,25 @@ body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg-base); 
 
 .hidden-desktop { display: none !important; }
 
-/* --- RESPONSIVE TABLET Y MOBILE --- */
+/* --- RESPONSIVE WORKSPACE (Adaptabilidad Perfecta) --- */
+
 @media (max-width: 1200px) {
-    /* En pantallas medianas, bajamos a 2 columnas */
-    .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
-    .col-span-2 { grid-column: span 2; } 
-    .row-span-2 { grid-row: auto; }
+    /* En pantallas medianas (Tablets), el chat pasa abajo y todo fluye */
+    .dashboard-workspace { flex-direction: column !important; overflow-y: auto !important; }
+    .workspace-left { overflow-y: visible !important; }
+    .workspace-right { min-height: 500px; }
 }
 
 @media (max-width: 992px) {
-    /* En celulares, todo es 1 sola columna hacia abajo */
-    .dashboard-grid { grid-template-columns: 1fr; display: flex; flex-direction: column; padding: 10px; }
-    .col-span-2 { grid-column: span 1; }
+    /* En celulares, todo a 1 sola columna hacia abajo */
+    .workspace-tools-grid { grid-template-columns: 1fr !important; }
     
     .control-room-header { height: auto; flex-direction: column; align-items: flex-start; padding: 15px; gap: 15px; }
     #control-session-title { white-space: normal; text-align: left; max-width: 100%; }
+    
     .session-controls { width: 100%; display: flex; flex-wrap: wrap; justify-content: stretch; }
     .session-controls .status-badge, .session-controls .btn-start-stream, .session-controls .btn-stop-stream, .session-controls .btn-ended { flex-grow: 1; justify-content: center; text-align: center; }
-
-    body { overflow-y: auto; }
-    .chat-feed, .agora-feed { min-height: 300px; max-height: 400px; }
+    
     .hidden-mobile { display: none !important; }
     .hidden-desktop { display: flex !important; }
 }
