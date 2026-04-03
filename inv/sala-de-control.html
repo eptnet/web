@@ -29,55 +29,99 @@
         </div>
     </header>
 
-    <main class="dashboard-grid">
+    <main class="dashboard-workspace" style="display: flex; gap: 20px; padding: 20px; flex-grow: 1; overflow: hidden;">
         
-        <section class="dashboard-column" style="overflow-y: auto; padding-right: 5px; gap: 20px;">
+        <div class="workspace-left" style="flex: 2; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; padding-right: 5px;">
             
-            <div class="card panel-produccion" style="flex-shrink: 0;">
-                <button id="btn-open-mixer" class="btn-giant btn-primary" disabled style="margin: 15px 15px 10px 15px;">
-                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Mixer de Video (VDO)
-                </button>
+            <div class="card panel-camera" style="border: 2px solid #10b981; background: #0f172a; flex-shrink: 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(16, 185, 129, 0.1); padding: 15px; border-bottom: 1px solid #10b981;">
+                    <h3 style="margin: 0; color: #10b981; background: transparent; padding: 0; border: none;">
+                        <i class="fa-solid fa-camera"></i> Mi Cámara (IRL) / Mixer
+                    </h3>
+                    <button id="btn-activate-camera" class="btn-action btn-green" style="width: auto; padding: 8px 20px; margin: 0;">
+                        <i class="fa-solid fa-video"></i> Entrar a la transmisión
+                    </button>
+                </div>
                 
-                <div class="quick-links" style="padding: 0 15px 15px 15px;">
-                    <div class="link-item">
-                        <span><i class="fa-solid fa-wand-magic-sparkles"></i> Enlace de Director</span>
-                        <button class="btn-copy" id="btn-copy-director" title="Copiar"><i class="fa-solid fa-copy"></i></button>
-                    </div>
-                    <div class="link-item">
-                        <span><i class="fa-solid fa-user-plus"></i> Enlace para Invitados</span>
-                        <button class="btn-copy" id="btn-copy-guest" title="Copiar"><i class="fa-solid fa-copy"></i></button>
-                    </div>
-                    <div class="link-item">
-                        <span><i class="fa-solid fa-layer-group"></i> Enlace para OBS</span>
-                        <button class="btn-copy" id="btn-copy-obs" title="Copiar"><i class="fa-solid fa-copy"></i></button>
+                <div style="padding: 15px;">
+                    <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 0; margin-bottom: 15px;">Transmite o modera directamente desde este dispositivo. El espacio se adaptará automáticamente a la cantidad de invitados.</p>
+                    
+                    <div id="self-camera-wrapper" class="hidden" style="width: 100%; aspect-ratio: 16/9; min-height: 400px; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5); transition: 0.3s;">
+                        <iframe id="self-camera-iframe" src="" allow="camera; microphone; display-capture; autoplay" style="width: 100%; height: 100%; border: none; display: block;"></iframe>
                     </div>
                 </div>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;">
-                <button id="btn-activate-camera" class="btn-action btn-green" style="padding: 12px; font-size: 1rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
-                    <i class="fa-solid fa-camera"></i> Entrar con mi cámara (IRL)
-                </button>
+            <div class="workspace-tools-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
                 
-                <div id="self-camera-wrapper" class="hidden" style="width: 100%; min-height: 280px; background: #000; border-radius: 12px; overflow: hidden; border: 1px solid #38bdf8; box-shadow: 0 4px 15px rgba(0,0,0,0.4); transition: 0.3s;">
-                    <iframe id="self-camera-iframe" src="" allow="camera; microphone; display-capture; autoplay" style="width: 100%; height: 100%; border: none; display: block;"></iframe>
-                </div>
+                <section class="dashboard-column">
+                    <div class="card panel-produccion">
+                        <h3><i class="fa-solid fa-layer-group"></i> Enlaces y Producción</h3>
+                        <button id="btn-open-mixer" class="btn-giant btn-primary" disabled style="margin: 15px 15px 5px 15px;">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Mixer Avanzado (Pestaña)
+                        </button>
+                        <div class="quick-links" style="padding: 10px 15px 15px 15px;">
+                            <div class="link-item">
+                                <span><i class="fa-solid fa-wand-magic-sparkles"></i> Enlace Director</span>
+                                <button class="btn-copy" id="btn-copy-director" title="Copiar"><i class="fa-solid fa-copy"></i></button>
+                            </div>
+                            <div class="link-item">
+                                <span><i class="fa-solid fa-user-plus"></i> Enlace Invitados</span>
+                                <button class="btn-copy" id="btn-copy-guest" title="Copiar"><i class="fa-solid fa-copy"></i></button>
+                            </div>
+                            <div class="link-item">
+                                <span><i class="fa-solid fa-video"></i> Enlace OBS</span>
+                                <button class="btn-copy" id="btn-copy-obs" title="Copiar"><i class="fa-solid fa-copy"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card panel-monitor" id="monitor-wrapper" style="display:none;">
+                        <h3><i class="fa-solid fa-tv"></i> Señal Pública <span class="delay-warning"><i class="fa-solid fa-triangle-exclamation"></i> 20s retraso</span></h3>
+                        <div id="monitor-container" class="monitor-container">
+                            <iframe id="monitor-iframe" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="dashboard-column">
+                    <div class="card panel-poll">
+                        <div class="poll-header" id="poll-toggle-btn">
+                            <div class="poll-title-wrap">
+                                <i class="fa-solid fa-chevron-down" id="poll-chevron"></i>
+                                <h3><i class="fa-solid fa-chart-simple"></i> Encuesta</h3>
+                            </div>
+                            <span id="poll-status-indicator" class="badge-mini status-waiting">Cerrada</span>
+                        </div>
+                        
+                        <div id="poll-collapsible-content" class="poll-content hidden">
+                            <div id="poll-setup-area">
+                                <input type="text" id="poll-question-input" placeholder="Pregunta (Ej: ¿De dónde nos ven?)">
+                                <input type="text" id="poll-emojis-input" placeholder="Ej: 👍, 🤯, 🔥">
+                                <button id="btn-launch-poll" class="btn-action btn-green"><i class="fa-solid fa-bolt"></i> Iniciar Encuesta</button>
+                            </div>
+                            <div id="poll-results-area" class="hidden">
+                                <div id="poll-counters" class="poll-counters"></div>
+                                <button id="btn-close-poll" class="btn-action btn-red"><i class="fa-solid fa-stop"></i> Cerrar Encuesta</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card panel-agora" style="flex-grow: 1;">
+                        <div class="agora-header">
+                            <h3><i class="fa-brands fa-bluesky"></i> Comentarios del Ágora</h3>
+                            <button id="btn-refresh-bsky" title="Actualizar"><i class="fa-solid fa-rotate-right"></i></button>
+                        </div>
+                        <div id="bsky-monitor-feed" class="agora-feed">
+                            <p class="text-muted text-center" style="font-size:0.85rem; margin-top:20px;">Cargando conversación...</p>
+                        </div>
+                    </div>
+                </section>
             </div>
+        </div>
 
-            <div id="monitor-wrapper" style="display:none; flex-shrink: 0;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 0 5px;">
-                    <span style="font-weight: 600; font-size: 0.95rem; color: #94a3b8;"><i class="fa-solid fa-tv"></i> Señal Pública</span>
-                    <span class="delay-warning" style="color: #f59e0b; font-size: 0.8rem; margin: 0;"><i class="fa-solid fa-triangle-exclamation"></i> 20s retraso</span>
-                </div>
-                <div id="monitor-container" style="width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; border: 1px solid #334155; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-                    <iframe id="monitor-iframe" src="" allow="autoplay; encrypted-media" allowfullscreen style="width: 100%; height: 100%; border: none; display: block;"></iframe>
-                </div>
-            </div>
-
-        </section>
-
-        <section class="dashboard-column">
-            <div class="card panel-chat">
+        <div class="workspace-right" style="flex: 1; display: flex; flex-direction: column; min-width: 320px;">
+            <div class="card panel-chat" style="height: 100%; display: flex; flex-direction: column;">
                 <div class="chat-header">
                     <h3><i class="fa-solid fa-comments"></i> Chat en Vivo</h3>
                     <div class="chat-actions">
@@ -86,12 +130,12 @@
                     </div>
                 </div>
                 
-                <div id="control-chat-feed" class="chat-feed">
+                <div id="control-chat-feed" class="chat-feed" style="flex-grow: 1;">
                     <p class="chat-system-msg"><i class="fa-solid fa-circle-notch fa-spin"></i> Conectando al auditorio...</p>
                 </div>
                 
-                <div class="chat-input-area">
-                    <div id="emoji-picker-container-control" class="hidden emoji-picker-wrapper">
+                <div class="chat-input-area" style="position: relative;">
+                    <div id="emoji-picker-container-control" class="hidden emoji-picker-wrapper" style="display: none; position: absolute; bottom: 65px; left: 15px; z-index: 9999;">
                         <emoji-picker class="dark"></emoji-picker>
                     </div>
                     <button id="btn-emoji-control" title="Añadir emoji"><i class="fa-regular fa-face-smile"></i></button>
@@ -99,41 +143,8 @@
                     <button id="btn-send-control-chat" title="Enviar"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <section class="dashboard-column">
-            <div class="card panel-poll">
-                <div class="poll-header" id="poll-toggle-btn">
-                    <div class="poll-title-wrap">
-                        <i class="fa-solid fa-chevron-down" id="poll-chevron"></i>
-                        <h3><i class="fa-solid fa-chart-simple"></i> Encuesta</h3>
-                    </div>
-                    <span id="poll-status-indicator" class="badge-mini status-waiting">Cerrada</span>
-                </div>
-                
-                <div id="poll-collapsible-content" class="poll-content hidden">
-                    <div id="poll-setup-area">
-                        <input type="text" id="poll-question-input" placeholder="Pregunta (Ej: ¿De dónde nos ven?)">
-                        <input type="text" id="poll-emojis-input" placeholder="Ej: 👍, 🤯, 🔥">
-                        <button id="btn-launch-poll" class="btn-action btn-green"><i class="fa-solid fa-bolt"></i> Iniciar Encuesta</button>
-                    </div>
-                    <div id="poll-results-area" class="hidden">
-                        <div id="poll-counters" class="poll-counters"></div>
-                        <button id="btn-close-poll" class="btn-action btn-red"><i class="fa-solid fa-stop"></i> Cerrar Encuesta</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card panel-agora">
-                <div class="agora-header">
-                    <h3><i class="fa-brands fa-bluesky"></i> Comentarios del Ágora</h3>
-                    <button id="btn-refresh-bsky" title="Actualizar"><i class="fa-solid fa-rotate-right"></i></button>
-                </div>
-                <div id="bsky-monitor-feed" class="agora-feed">
-                    <p class="text-muted text-center" style="font-size:0.85rem; margin-top:20px;">Cargando conversación...</p>
-                </div>
-            </div>
-        </section>
     </main>
 
     <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>

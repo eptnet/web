@@ -349,7 +349,7 @@ const ControlRoom = {
                 const dateStr = dateVal ? new Date(dateVal).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
                 
                 const anchorStyle = isAnchor ? 'border-left: 3px solid #38bdf8; background: rgba(56, 189, 248, 0.05);' : '';
-                const anchorBadge = isAnchor ? '<span style="background:#38bdf8; color:#0f172a; font-size:0.6rem; padding:2px 4px; border-radius:4px; margin-left:5px;">ANCLA</span>' : '';
+                const anchorBadge = isAnchor ? '<span style="background:#38bdf8; color:#0f172a; font-size:0.6rem; padding:2px 4px; border-radius:4px; margin-left:5px;"><i class="fa-solid fa-thumbtack"></i></span>' : '';
                 
                 feed.insertAdjacentHTML('beforeend', `
                     <div class="bsky-comment" style="${anchorStyle}">

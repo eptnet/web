@@ -35,18 +35,22 @@ body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg-base); 
 .btn-edit-settings { color: var(--text-muted); font-size: 1.2rem; transition: 0.2s; }
 .btn-edit-settings:hover { color: white; }
 
-/* GRID PRINCIPAL (La magia adaptativa) */
+/* GRID PRINCIPAL (La magia adaptativa avanzada) */
 .dashboard-grid { 
     display: grid; 
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); 
+    grid-template-columns: repeat(3, 1fr); /* 3 columnas exactas */
     gap: 20px; 
     padding: 20px; 
     flex-grow: 1; 
     overflow-y: auto; 
-    align-items: start; /* Para que las tarjetas no se estiren verticalmente solas */
+    align-items: start; 
 }
 
-.dashboard-column { display: flex; flex-direction: column; gap: 20px; height: 100%; max-height: calc(100vh - 110px); }
+/* Clases maestras para expandir tarjetas */
+.col-span-2 { grid-column: span 2; }
+.row-span-2 { grid-row: span 2; height: 100%; }
+
+.dashboard-column { display: flex; flex-direction: column; gap: 20px; height: 100%; }
 
 /* TARJETAS COMUNES */
 .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
@@ -124,21 +128,26 @@ body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg-base); 
 
 .hidden-desktop { display: none !important; }
 
-/* --- RESPONSIVE MOBILE --- */
+/* --- RESPONSIVE TABLET Y MOBILE --- */
+@media (max-width: 1200px) {
+    /* En pantallas medianas, bajamos a 2 columnas */
+    .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+    .col-span-2 { grid-column: span 2; } 
+    .row-span-2 { grid-row: auto; }
+}
+
 @media (max-width: 992px) {
-    /* Reparación de la Cabecera para que no se pierdan los botones */
+    /* En celulares, todo es 1 sola columna hacia abajo */
+    .dashboard-grid { grid-template-columns: 1fr; display: flex; flex-direction: column; padding: 10px; }
+    .col-span-2 { grid-column: span 1; }
+    
     .control-room-header { height: auto; flex-direction: column; align-items: flex-start; padding: 15px; gap: 15px; }
     #control-session-title { white-space: normal; text-align: left; max-width: 100%; }
     .session-controls { width: 100%; display: flex; flex-wrap: wrap; justify-content: stretch; }
     .session-controls .status-badge, .session-controls .btn-start-stream, .session-controls .btn-stop-stream, .session-controls .btn-ended { flex-grow: 1; justify-content: center; text-align: center; }
 
-    /* Reparación del Grid */
-    .dashboard-grid { grid-template-columns: 1fr; overflow-y: visible; padding: 10px; }
-    .dashboard-column { max-height: none; height: auto; }
     body { overflow-y: auto; }
     .chat-feed, .agora-feed { min-height: 300px; max-height: 400px; }
-
-    /* Clases mágicas de visualización */
     .hidden-mobile { display: none !important; }
     .hidden-desktop { display: flex !important; }
 }
