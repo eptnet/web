@@ -2328,3 +2328,36 @@ main.container { background-color: transparent !important; }
 .pwa-card.highlight .icon-wrapper { background: rgba(255, 255, 255, 0.2); color: white; }
 .pwa-card span { font-weight: 700; font-size: 1.05rem; }
 .pwa-card:active { transform: scale(0.95); }
+
+/* ==========================================================================
+   ESTILOS DE CABECERA V3 (Botones, Gamificación y Toast)
+   ========================================================================== */
+
+/* Botón Acceder (Llamativo) */
+.btn-nav-access {
+    background-color: var(--color-accent); color: white; padding: 8px 20px;
+    border-radius: 50px; font-weight: 700; font-size: 0.9rem;
+    transition: 0.3s; border: 1px solid var(--color-accent); cursor: pointer;
+}
+.btn-nav-access:hover { background-color: transparent; color: var(--color-accent); }
+
+/* Estados del Botón Crear */
+.create-locked { opacity: 0.6; cursor: help !important; }
+.create-unlocked { color: var(--color-accent) !important; opacity: 1; }
+.create-unlocked i { color: var(--color-accent); }
+
+/* Ajuste para menús desplegados a la derecha (Perfil y Crear) */
+.dropdown-right { left: auto; right: 0; } 
+
+/* Avatar del usuario en el menú */
+.nav-icon-avatar { background: transparent; border: none; padding: 0; cursor: pointer; display: flex; }
+.nav-icon-avatar img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--color-border); object-fit: cover; }
+
+/* Notificación flotante (Toast) */
+#global-toast {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    background: #1e293b; color: white; padding: 12px 24px; border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3); z-index: 10000; font-size: 0.9rem;
+    border-left: 4px solid var(--color-accent); transition: 0.3s ease; pointer-events: none;
+}
+.toast-hidden { opacity: 0; visibility: hidden; bottom: 10px !important; }

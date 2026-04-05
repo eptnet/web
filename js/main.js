@@ -134,19 +134,88 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- FIN: LÓGICA DE NOTIFICACIONES ---
         // --- Funciones de UI ---
-        const showUserUI = (user) => {
+        const showUserUI = async (user) => {
+            const guestView = document.getElementById('guest-view');
+            const userView = document.getElementById('user-view');
             if (guestView) guestView.style.display = 'none';
             if (userView) userView.style.display = 'flex';
-            if (avatarLink && user) {
+            
+            // 1. Renderizar Avatar en la cabecera
+            const avatarBtn = document.getElementById('user-avatar-link');
+            if (avatarBtn && user) {
                 const avatarUrl = user.user_metadata?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
-                // El enlace del avatar ahora apunta a la nueva página de perfil
-                avatarLink.innerHTML = `<a href="/inv/profile.html"><img src="${avatarUrl}" alt="Avatar" style="width: 32px; height: 32px; border-radius: 50%;"></a>`;
+                avatarBtn.innerHTML = `<img src="${avatarUrl}" alt="Perfil">`;
             }
+
+            // 2. LÓGICA DE GAMIFICACIÓN (Validación de ORCID)
+            try {
+                const { data: profile } = await window.supabaseClient
+                    .from('profiles').select('orcid').eq('id', user.id).single();
+
+                const btnCreate = document.getElementById('btn-global-create');
+                const createIcon = document.getElementById('create-icon');
+                const dropdownContainer = document.getElementById('create-dropdown-container'); 
+
+                if (btnCreate && dropdownContainer) {
+                    if (profile && profile.orcid && profile.orcid !== '0000') {
+                        // ROL: AUTOR (Desbloqueado)
+                        btnCreate.classList.remove('create-locked');
+                        btnCreate.classList.add('create-unlocked');
+                        createIcon.className = 'fa-solid fa-circle-plus';
+                        btnCreate.onclick = null; 
+                        dropdownContainer.style.pointerEvents = 'auto'; // Habilita el submenú
+                    } else {
+                        // ROL: USUARIO/PARTICIPANTE (Bloqueado)
+                        dropdownContainer.style.pointerEvents = 'none'; // Deshabilita el submenú
+                        btnCreate.style.pointerEvents = 'auto'; 
+                        btnCreate.onclick = () => showToast("💡 Solo autores con ORCID validado pueden crear contenido. Ve a tu perfil para activarlo.");
+                    }
+                }
+            } catch (e) { console.error("Error validando perfil:", e); }
         };
+
         const showGuestUI = () => {
+            const guestView = document.getElementById('guest-view');
+            const userView = document.getElementById('user-view');
             if (userView) userView.style.display = 'none';
             if (guestView) guestView.style.display = 'flex';
+            
+            const btnCreate = document.getElementById('btn-global-create');
+            const dropdownContainer = document.getElementById('create-dropdown-container');
+            
+            if (btnCreate && dropdownContainer) {
+                dropdownContainer.style.pointerEvents = 'none'; // Deshabilita el submenú
+                btnCreate.style.pointerEvents = 'auto';
+                btnCreate.onclick = () => {
+                    showToast("🔑 Inicia sesión para comenzar a crear contenido.");
+                    setTimeout(() => document.getElementById('login-modal-trigger')?.click(), 1500);
+                };
+            }
         };
+
+        // MULTI-TRIGGER GLOBAL PARA EL MODAL DE ACCESO
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.trigger-login-modal')) {
+                e.preventDefault(); 
+                const modalOverlay = document.getElementById('login-modal-overlay');
+                if (modalOverlay) {
+                    modalOverlay.classList.add('is-visible'); // Abre directo el modal oscuro
+                } else {
+                    // Fallback si no encuentra el overlay
+                    document.getElementById('login-modal-trigger')?.click();
+                }
+            }
+        });
+
+        // FUNCIÓN PARA LA NOTIFICACIÓN FLOTANTE (TOAST)
+        window.showToast = (msg) => {
+            const toast = document.getElementById('global-toast');
+            if(!toast) return;
+            toast.innerHTML = msg;
+            toast.classList.remove('toast-hidden');
+            setTimeout(() => toast.classList.add('toast-hidden'), 4000);
+        };
+        
         const applyTheme = (theme) => {
             document.body.classList.toggle("dark-theme", theme === "dark");
             const iconClass = theme === "dark" ? "fa-sun" : "fa-moon";

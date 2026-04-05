@@ -638,12 +638,15 @@ document.addEventListener('mainReady', () => {
 
     // Actualizar en app.js para manejar el scroll entre las 3 secciones
     function initHero() {
+        // Seleccionamos el botón gigante de la landing (que ahora dice ACCEDER)
         const startBtn = document.getElementById('start-legacy-btn');
-        const searchSection = document.getElementById('search-portal');
-        const mainContent = document.querySelector('main.container'); 
+        
+        // Seleccionamos el ancla real donde empieza el menú/publicaciones
+        const targetSection = document.getElementById('bento-grid-anchor'); 
+        
         const desktopNav = document.querySelector('.desktop-nav');
 
-        // Botón "Comenzar" abre el registro
+        // Botón gigante "ACCEDER" abre el modal
         startBtn?.addEventListener('click', () => {
             document.getElementById('login-modal-trigger')?.click();
         });
@@ -651,9 +654,12 @@ document.addEventListener('mainReady', () => {
         // Control de transparencia del menú según la sección
         if (desktopNav) { 
             const checkNavPosition = () => { 
-                // El menú se vuelve sólido al entrar en la sección de búsqueda
-                const searchTop = searchSection.offsetTop;
-                desktopNav.classList.toggle('is-at-top', window.scrollY < searchTop - 50); 
+                // 🛡️ ESCUDO: Si el ancla no existe (ej. en /comunidad), no hacemos nada y evitamos el error
+                if (!targetSection) return; 
+
+                // El menú cambia su estado al llegar al ancla
+                const targetTop = targetSection.offsetTop;
+                desktopNav.classList.toggle('is-at-top', window.scrollY < targetTop - 50); 
             }; 
             window.addEventListener('scroll', checkNavPosition, { passive: true }); 
         }

@@ -84,7 +84,7 @@
                 </p>
                 
                 <div class="hero-btn-group">
-                    <button class="btn-cine-primary" onclick="document.getElementById('login-modal-trigger').click()">Comenzar mi Legado</button>
+                    <button class="btn-cine-primary trigger-login-modal" onclick="document.getElementById('login-modal-trigger').click()">ACCEDER</button>
                     <a href="#section-library" class="btn-cine-secondary">Saber más</a>
                     <a href="#section-search" class="btn-cine-secondary">Buscar</a>
                     <a href="#bento-grid-anchor" class="btn-cine-secondary" onclick="document.getElementById('bento-grid').scrollIntoView({behavior: 'smooth'})">Publicaciones</a>
@@ -218,41 +218,59 @@
             <a href="/" class="logo">
                 <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Epistecnologia Logo">
             </a>
+            
             <nav class="main-menu bento-box-nav">
-                <a href="/" class="nav-icon active" aria-label="Inicio"><i class="fa-solid fa-house"></i> <span class="nav-text">Inicio</span></a>
-                <a href="https://publicaciones.epistecnologia.com/" class="nav-icon" aria-label="Revista"><i class="fa-solid fa-newspaper"></i> <span class="nav-text">Revista</span></a>
-                <a href="/comunidad.html" id="community-btn-desktop" data-url="/comunidad.html" class="nav-icon" aria-label="Comunidad"><i class="fa-solid fa-users"></i> <span class="nav-text">Comunidad</span></a>
+                <a href="/" class="nav-icon active"><i class="fa-solid fa-house"></i> <span class="nav-text">Inicio</span></a>
+                <a href="https://publicaciones.epistecnologia.com/" class="nav-icon" target="_blank"><i class="fa-solid fa-newspaper"></i> <span class="nav-text">Revista</span></a>
+                <a href="/comunidad.html" class="nav-icon"><i class="fa-solid fa-users"></i> <span class="nav-text">Comunidad</span></a>
+                <a href="/live.html" class="nav-icon"><i class="fa-solid fa-tower-broadcast"></i> <span class="nav-text">Live</span></a>
                 
                 <div class="nav-dropdown">
-                    <button class="nav-icon" aria-label="Ejes Centrales">
-                        <i class="fa-solid fa-layer-group"></i> <span class="nav-text">Ejes centrales</span> <i class="fa-solid fa-chevron-down" style="font-size: 0.75rem; margin-left: 5px;"></i>
+                    <button class="nav-icon">
+                        <i class="fa-solid fa-layer-group"></i> <span class="nav-text">Ejes</span> <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem;"></i>
                     </button>
                     <div class="dropdown-content">
-                        <a href="https://epistecnologia.com/p/eje-historico-cultural"><i class="fa-solid fa-microscope"></i> Eje Histórico-Cultural</a>
-                        <a href="#"><i class="fa-solid fa-book-open"></i> Eje Científico-Tecnológico</a>
-                        <a href="#"><i class="fa-solid fa-brain"></i> Eje Sociotécnico</a>
+                        <a href="#"><i class="fa-solid fa-microscope"></i> Histórico-Cultural</a>
+                        <a href="#"><i class="fa-solid fa-book-open"></i> Científico-Tecnológico</a>
                     </div>
                 </div>
             </nav>
-            <div class="live-channels bento-box-nav">
-                <a href="/live.html" class="nav-icon" id="nav-live-desktop" aria-label="En Vivo"><i class="fa-solid fa-satellite-dish"></i></a>
-                <a href="/live.html#seccion-eventos" class="nav-icon" aria-label="Eventos"><i class="fa-solid fa-calendar-days"></i></a>
-                <a href="#" class="nav-icon" id="notifications-bell-icon" aria-label="Notificaciones"><i class="fa-solid fa-bell"></i></a>
-            </div>
-            <div class="user-actions bento-box-nav">
-                <div id="guest-view">
-                    <div id="login-menu-container">
-                        <button id="login-modal-trigger" class="nav-icon" aria-label="Iniciar sesión"><i class="fa-solid fa-user"></i></button>
+
+            <div class="actions-area bento-box-nav">
+                
+                <div class="nav-dropdown" id="create-dropdown-container">
+                    <button id="btn-global-create" class="nav-icon create-locked">
+                        <i class="fa-solid fa-lock" id="create-icon"></i> <span class="nav-text">Crear</span>
+                    </button>
+                    <div class="dropdown-content dropdown-right" id="create-options">
+                        <a href="/inv/dashboard.html"><i class="fa-solid fa-pen-to-square"></i> Publicar Artículo</a>
+                        <a href="/inv/dashboard.html"><i class="fa-solid fa-calendar-plus"></i> Agendar Evento</a>
+                        <a href="/comunidad.html"><i class="fa-solid fa-bolt"></i> Directo Rápido</a>
                     </div>
                 </div>
-                <div id="user-view" style="display: none;">
-                    <a href="/inv/dashboard.html" id="user-avatar-link" class="nav-icon" title="Ir al Dashboard"></a>
-                    <button id="logout-btn-header" class="nav-icon" title="Cerrar Sesión"><i class="fa-solid fa-right-from-bracket"></i></button>
+
+                <a href="#" class="nav-icon" id="notifications-bell-icon"><i class="fa-solid fa-bell"></i></a>
+                
+                <div id="guest-view">
+                    <button class="btn-nav-access trigger-login-modal">Acceder</button>
                 </div>
-                <button class="theme-switcher nav-icon" id="theme-switcher-desktop" aria-label="Cambiar tema"><i class="fa-solid fa-moon"></i></button>
+                
+                <div id="user-view" style="display: none;">
+                    <div class="nav-dropdown">
+                        <button id="user-avatar-link" class="nav-icon-avatar"></button>
+                        <div class="dropdown-content dropdown-right">
+                            <a href="/inv/profile.html"><i class="fa-solid fa-user"></i> Mi Perfil</a>
+                            <a href="#" id="logout-btn-header" style="color: #ef4444;"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</a>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="theme-switcher nav-icon" id="theme-switcher-desktop"><i class="fa-solid fa-moon"></i></button>
             </div>
         </div>
     </header>
+
+    <div id="global-toast" class="toast-hidden"></div>
 
     <main class="container">
         <div class="bento-grid" id="bento-grid"></div>
