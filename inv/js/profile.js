@@ -1074,3 +1074,23 @@ window.navigateToTabExternal = (tabId) => {
         window.scrollTo({ top: 0, behavior: 'smooth' }); // Subimos la pantalla
     }
 };
+
+// 4. Copiar datos de las tarjetas de apoyo (Yape / BCP)
+window.copySupportData = (elementId, btn) => {
+    const textToCopy = document.getElementById(elementId).innerText;
+    
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        // Guardamos el icono original
+        const originalHtml = btn.innerHTML;
+        // Ponemos el check verde de éxito
+        btn.innerHTML = '<i class="fa-solid fa-check" style="color: #10b981;"></i>';
+        
+        // Volvemos a la normalidad después de 2 segundos
+        setTimeout(() => { 
+            btn.innerHTML = originalHtml; 
+        }, 2000);
+    }).catch(err => {
+        console.error('Error al copiar: ', err);
+        alert("No se pudo copiar el texto. Intenta seleccionarlo manualmente.");
+    });
+};

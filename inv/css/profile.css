@@ -938,3 +938,81 @@ body:not(.dark-theme) .supporter-logos img {
         margin-bottom: 10px; 
     }
 }
+/* ==========================================================================
+   ESTILOS PARA LA PESTAÑA DE MEMBRESÍAS / APOYO MULTIOPCIÓN
+   ========================================================================== */
+
+.support-options-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+    padding: 10px 0;
+}
+
+.support-card {
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    padding: 24px 20px;
+    text-align: center;
+    transition: 0.3s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.support-card:hover { 
+    border-color: var(--color-accent); 
+    box-shadow: 0 10px 20px rgba(0,0,0,0.08); 
+    transform: translateY(-3px);
+}
+
+.support-icon { 
+    width: 60px; height: 60px; border-radius: 50%; display: flex; 
+    align-items: center; justify-content: center; font-size: 1.8rem; 
+    margin-bottom: 15px; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.support-icon.paypal { background: #003087; }
+.support-icon.yape { background: #742284; } /* Morado Yape */
+.support-icon.bank { background: #ff7800; } /* Naranja Banco */
+
+.support-card h4 { margin: 0 0 5px 0; font-size: 1.15rem; color: var(--color-primary); }
+.support-card p { font-size: 0.85rem; color: var(--color-secondary); margin-bottom: 15px; }
+
+.btn-support { 
+    display: inline-block; width: 100%; padding: 12px; border-radius: 50px; 
+    text-decoration: none; font-weight: 700; transition: 0.2s; font-size: 0.95rem;
+}
+.btn-paypal { background: #ffc439; color: #003087; border: 1px solid #ffc439; }
+.btn-paypal:hover { filter: brightness(0.95); transform: scale(1.02); }
+
+.qr-placeholder { 
+    width: 130px; height: 130px; background: white; border: 2px dashed #ccc; 
+    border-radius: 12px; margin-bottom: 15px; display: flex; align-items: center; 
+    justify-content: center; overflow: hidden; padding: 5px;
+}
+.qr-placeholder img { width: 100%; height: 100%; object-fit: contain; }
+
+.copy-box { 
+    display: flex; align-items: center; justify-content: space-between; 
+    background: var(--color-surface); border: 1px solid var(--color-border); 
+    padding: 10px 14px; border-radius: 8px; width: 100%; font-size: 0.95rem; 
+    font-weight: bold; color: var(--color-primary);
+}
+.copy-box-col { display: flex; flex-direction: column; align-items: flex-start; }
+.copy-box-col small { font-size: 0.65rem; color: var(--color-secondary); font-weight: normal; text-transform: uppercase; letter-spacing: 0.5px;}
+
+.copy-box button { 
+    background: rgba(183, 42, 30, 0.1); border: none; color: var(--color-accent); 
+    cursor: pointer; font-size: 1.1rem; transition: 0.2s; width: 36px; height: 36px;
+    border-radius: 8px; display: flex; justify-content: center; align-items: center;
+}
+.copy-box button:hover { background: var(--color-accent); color: white; transform: scale(1.05); }
+.mt-2 { margin-top: 10px; }
+
+.support-footer-note { 
+    text-align: center; margin-top: 30px; padding: 18px; 
+    background: rgba(183, 42, 30, 0.05); border-radius: 12px; 
+    font-size: 0.95rem; border: 1px dashed rgba(183, 42, 30, 0.3);
+}
+.support-footer-note a { color: var(--color-accent); font-weight: bold; text-decoration: underline; }
