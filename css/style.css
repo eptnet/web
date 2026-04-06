@@ -363,8 +363,35 @@ body.dark-theme .dropdown-content { box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
     transition: transform 0.3s ease;
 }
 .modal-overlay.is-visible .modal-container { transform: scale(1); }
-.modal-close-btn { position: absolute; top: -15px; right: -15px; width: 40px; height: 40px; background: white; color: black; border-radius: 50%; border: none; font-size: 1.5rem; line-height: 1; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 10; }
-/* 2. Reseteamos el padding del contenido principal para que la imagen y el grid ocupen todo */
+/* --- BOTÓN DE CERRAR MODAL OPTIMIZADO (LA 'X') --- */
+.modal-close-btn {
+    position: absolute; 
+    top: 15px; 
+    right: 15px; 
+    width: 44px; /* Botón más grande y fácil de tocar en móviles */
+    height: 44px; 
+    background: var(--color-background); /* Fondo sutil para que resalte */
+    color: var(--color-text-secondary); 
+    border-radius: 50%; /* Perfectamente redondo */
+    border: none; 
+    font-size: 1.3rem; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer; 
+    z-index: 100; /* Asegura que nada lo tape */
+    transition: all 0.2s ease;
+}
+
+.modal-close-btn:hover { 
+    background: #e2e8f0; /* Se oscurece un poco al pasar el ratón */
+    color: var(--color-accent); /* La X se pone roja */
+    transform: rotate(90deg); /* Detalle interactivo genial: la X gira */
+}
+
+/* Soporte para el tema oscuro */
+body.dark-theme .modal-close-btn { background: #334155; color: #cbd5e1; }
+body.dark-theme .modal-close-btn:hover { background: #475569; color: var(--color-accent); }/* 2. Reseteamos el padding del contenido principal para que la imagen y el grid ocupen todo */
 .modal-content { 
     flex-grow: 1; 
     overflow-y: auto; 
@@ -715,14 +742,6 @@ input[type="range"]::-moz-range-thumb { border: none; border-radius: 50%; backgr
 .modal-header h2 {
     font-size: 1.2rem;
     margin: 0;
-}
-
-.modal-close-btn {
-    font-size: 1.5rem;
-    cursor: pointer;
-    background: white;
-    border: none;
-    line-height: 1;
 }
 
 .modal-content {
@@ -2354,10 +2373,30 @@ main.container { background-color: transparent !important; }
 .nav-icon-avatar img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--color-border); object-fit: cover; }
 
 /* Notificación flotante (Toast) */
+/* --- NOTIFICACIÓN FLOTANTE (TOAST) OPTIMIZADA --- */
 #global-toast {
-    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-    background: #1e293b; color: white; padding: 12px 24px; border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.3); z-index: 10000; font-size: 0.9rem;
-    border-left: 4px solid var(--color-accent); transition: 0.3s ease; pointer-events: none;
+    position: fixed; 
+    top: 25px; /* Lo pasamos arriba para que esté en el campo visual del usuario */
+    left: 50%; 
+    transform: translateX(-50%);
+    background: #1e293b; 
+    color: white; 
+    padding: 16px 32px; /* Más espacio interior */
+    border-radius: 50px; /* Bordes totalmente redondeados, más amigable */
+    box-shadow: 0 15px 35px rgba(0,0,0,0.4); 
+    z-index: 10000; 
+    font-size: 1.05rem; /* Texto más grande y legible */
+    font-weight: 500;
+    border-bottom: 4px solid var(--color-accent); /* Acento en la parte inferior */
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Efecto de rebote al entrar */
+    pointer-events: none;
+    text-align: center;
+    min-width: 300px;
 }
-.toast-hidden { opacity: 0; visibility: hidden; bottom: 10px !important; }
+
+.toast-hidden { 
+    opacity: 0; 
+    visibility: hidden; 
+    top: -20px !important; /* Se esconde deslizándose hacia arriba */
+    transform: translateX(-50%) scale(0.9) !important; /* Se encoje un poquito al desaparecer */
+}
