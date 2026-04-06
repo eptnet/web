@@ -872,3 +872,53 @@ body.dark-theme {
         padding: 0 !important;
     }
 }
+/* ==========================================================================
+   FIX: GAMIFICACIÓN EN PANEL LATERAL (Comunidad)
+   ========================================================================== */
+
+.profile-badges-container {
+    display: flex; gap: 8px; justify-content: center; margin: 10px 0; flex-wrap: wrap;
+}
+
+.badge-icon {
+    width: 32px; height: 32px; border-radius: 50%; background: var(--color-background);
+    border: 1px solid var(--color-border); display: flex; align-items: center; justify-content: center;
+    color: var(--color-secondary-text); font-size: 1rem; filter: grayscale(100%); opacity: 0.4;
+    transition: all 0.3s ease;
+}
+
+/* Luces encendidas */
+.badge-icon.active-citizen { color: #10b981; filter: grayscale(0%); opacity: 1; background: #d1fae5; border-color: #10b981; transform: scale(1.05); }
+.badge-icon.active-social { color: #0085ff; filter: grayscale(0%); opacity: 1; background: #e0f2fe; border-color: #0085ff; transform: scale(1.05); }
+.badge-icon.active-academic { color: #a6ce39; filter: grayscale(0%); opacity: 1; background: #f4fce3; border-color: #a6ce39; transform: scale(1.05); }
+.badge-icon.active-founder { color: #f59e0b; background: #fef3c7; border-color: #f59e0b; filter: grayscale(0%); opacity: 1; transform: scale(1.05); }
+.badge-icon.active-divulgador { color: #8b5cf6; background: #ede9fe; border-color: #8b5cf6; filter: grayscale(0%); opacity: 1; transform: scale(1.05); }
+.badge-icon.active-member { color: #ec4899; background: #fce7f3; border-color: #ec4899; filter: grayscale(0%); opacity: 1; transform: scale(1.05); }
+
+/* Check PRO */
+.verified-check {
+    color: var(--color-accent); font-size: 0.85em; margin-left: 6px; vertical-align: middle;
+    filter: drop-shadow(0 2px 4px rgba(183, 42, 30, 0.3));
+}
+/* --- ESTILOS PARA SLOGAN Y BIO EN PANEL LATERAL --- */
+.user-panel-slogan {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-primary-text);
+    margin: 0.5rem 0;
+    font-style: italic;
+    opacity: 0.7;
+    line-height: 1.2;
+}
+
+.user-panel-bio {
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: var(--color-secondary-text);
+    margin-bottom: 1rem;
+    padding: 0 0.5rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 3; /* Cortamos a 3 líneas para que no se haga infinito */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}

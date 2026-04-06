@@ -312,7 +312,7 @@
             document.getElementById('badge-citizen')?.classList.add('active-citizen');
             if (hasBsky) document.getElementById('badge-social')?.classList.add('active-social');
             if (hasOrcid) document.getElementById('badge-academic')?.classList.add('active-academic');
-            if (new Date(profile.created_at) < new Date('2024-12-31')) document.getElementById('badge-founder')?.classList.add('active-founder');
+            if (new Date(profile.created_at) < new Date('2026-12-31')) document.getElementById('badge-founder')?.classList.add('active-founder');
             if (totalProjects >= 5) document.getElementById('badge-divulgador')?.classList.add('active-divulgador');
             if (profile.membership_tier && profile.membership_tier !== 'free') document.getElementById('badge-member')?.classList.add('active-member');
 

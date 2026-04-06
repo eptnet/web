@@ -60,22 +60,72 @@ const ComunidadApp = {
     /**
      * Muestra la información del usuario en el panel izquierdo.
      */
-    renderUserPanel() {
+    async renderUserPanel() {
         const loadingPanel = document.getElementById('user-panel-loading');
         const contentPanel = document.getElementById('user-panel-content');
         
         if (this.userProfile) {
             const userName = this.userProfile.display_name || 'Sin nombre';
-            // Magia DiceBear: Si no tiene foto, crea una usando su nombre
             const fallbackAvatar = `https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(userName)}`;
-            
             document.getElementById('user-panel-avatar').src = this.userProfile.avatar_url || fallbackAvatar;
-            document.getElementById('user-panel-name').textContent = userName;
+
+            // --- NUEVO: Cargar Slogan y Bio ---
+            const sloganEl = document.getElementById('user-panel-slogan');
+            const bioEl = document.getElementById('user-panel-bio');
+
+            if (this.userProfile.bio_short) {
+                sloganEl.textContent = `"${this.userProfile.bio_short}"`;
+                sloganEl.style.display = 'block';
+            } else {
+                sloganEl.style.display = 'none';
+            }
+
+            if (bioEl) {
+                bioEl.textContent = this.userProfile.bio || 'Divulgador en Epistecnología';
+            }
+            
+            // --- LÓGICA DE GAMIFICACIÓN ---
+            const hasOrcid = this.userProfile.orcid && this.userProfile.orcid !== '0000';
+            const hasBsky = !!this.bskyCreds;
+            
+            // 1. Nombre y Check PRO
+            document.getElementById('user-panel-name').innerHTML = `${userName} ${hasOrcid && hasBsky ? '<i class="fa-solid fa-circle-check verified-check" title="Divulgador Verificado"></i>' : ''}`;
+            
+            // 2. Mostrar contenedor e iluminar insignias básicas
+            const badgesContainer = document.getElementById('community-user-badges');
+            if (badgesContainer) badgesContainer.style.display = 'flex';
+
+            document.getElementById('badge-citizen')?.classList.add('active-citizen');
+            if (hasBsky) document.getElementById('badge-social')?.classList.add('active-social');
+            if (hasOrcid) document.getElementById('badge-academic')?.classList.add('active-academic');
+            
+            // 3. Insignia Fundador (Tu fecha límite oficial)
+            if (new Date(this.userProfile.created_at) < new Date('2026-12-31')) {
+                document.getElementById('badge-founder')?.classList.add('active-founder');
+            }
+            
+            // 4. Insignia Miembro Honorario
+            if (this.userProfile.membership_tier && this.userProfile.membership_tier !== 'free') {
+                document.getElementById('badge-member')?.classList.add('active-member');
+            }
+
+            // 5. Consultar proyectos para insignia de Divulgador
+            try {
+                const { count } = await this.supabase.from('projects')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('user_id', this.user.id);
+                if (count >= 5) document.getElementById('badge-divulgador')?.classList.add('active-divulgador');
+            } catch (e) { console.error("Error contando proyectos:", e); }
+            // ------------------------------
+            
         } else {
-            // Magia DiceBear para Invitado: Genera uno aleatorio
+            // MODO INVITADO
             const randomSeed = Math.floor(Math.random() * 10000);
             document.getElementById('user-panel-avatar').src = `https://api.dicebear.com/9.x/shapes/svg?seed=invitado_${randomSeed}`;
             document.getElementById('user-panel-name').textContent = 'Invitado Explorador';
+            
+            const badgesContainer = document.getElementById('community-user-badges');
+            if (badgesContainer) badgesContainer.style.display = 'none';
             
             const actionArea = document.getElementById('user-panel-bsky-status');
             if (actionArea) {
