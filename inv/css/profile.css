@@ -250,26 +250,203 @@ body.loading-profile .main-content {
     justify-content: center;
 }
 
-/* 2. Añade espacio y organización a los botones de la tarjeta de perfil */
-.profile-card-nav {
+/* --- INICIO: ESTILOS MEJORADOS PARA EL FOOTER --- */
+
+.site-footer {
+    padding: 3rem 0;
+    background-color: var(--color-background);
+    border-top: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-small);
+}
+
+.footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap; /* Para que se ajuste bien en pantallas medianas */
+    gap: 2rem;
+}
+
+.footer-column {
+    flex: 1;
+    min-width: 250px; /* Ancho mínimo para cada columna */
+}
+
+.footer-logo-text {
+    font-weight: 600;
+    color: var(--color-text-primary);
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.footer-heading {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: 1rem;
+}
+
+.footer-badges {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem; /* Esto añade el espacio que faltaba entre los botones */
-    margin: 1.5rem 0;
+    align-items: flex-start;
+    gap: 0.75rem;
 }
 
-/* 3. Estilo para el nuevo botón "Próximamente" */
-.profile-card-nav__link.is-coming-soon {
-    color: var(--color-secondary);
-    cursor: not-allowed;
-    background-color: var(--color-background);
-    opacity: 0.6;
+.footer-link {
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: color 0.2s ease;
 }
 
-.profile-card-nav__link.is-coming-soon:hover {
-    color: var(--color-secondary); /* Evita que cambie de color al pasar el cursor */
+.footer-link:hover {
+    color: var(--color-accent);
 }
 
+.footer-link i {
+    font-size: 1.2rem;
+}
+
+/* Redes Sociales Footer */
+.social-footer {
+    display: flex;
+    gap: 15px;
+}
+.social-footer a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background-color: var(--color-surface);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+.social-footer a:hover {
+    background-color: var(--color-accent);
+    color: white;
+    border-color: var(--color-accent);
+    transform: translateY(-3px);
+}
+
+/* Estilos para móvil */
+@media (max-width: 768px) {
+    .footer-content {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .footer-column {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .footer-badges {
+        align-items: center;
+    }
+}
+
+/* --- FIN: ESTILOS MEJORADOS PARA EL FOOTER --- */
+
+/* ==========================================================================
+   FIX: MENÚ GLOBAL V3 EN LIVE.HTML
+   ========================================================================== */
+
+/* 1. Prevenir que los botones se amontonen (Fix de ancho) */
+.desktop-nav .main-menu {
+    gap: 12px !important; 
+    justify-content: center;
+}
+
+.desktop-nav .main-menu .nav-icon,
+#create-dropdown-container .nav-icon {
+    width: auto !important;
+    min-width: max-content !important;
+    padding: 0 15px !important;
+    white-space: nowrap !important;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* 2. Botón Acceder (Estilo sólido) */
+.btn-nav-access {
+    background-color: var(--color-accent);
+    color: white !important;
+    padding: 8px 20px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    border: 1px solid var(--color-accent);
+    cursor: pointer;
+    transition: 0.3s;
+}
+.btn-nav-access:hover {
+    background-color: transparent;
+    color: var(--color-accent) !important;
+}
+
+/* 3. Toast en la parte superior */
+#global-toast {
+    position: fixed; 
+    top: 25px; 
+    left: 50%; 
+    transform: translateX(-50%);
+    background: #1e293b; 
+    color: white; 
+    padding: 16px 32px;
+    border-radius: 50px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.4); 
+    z-index: 10000; 
+    font-size: 1rem;
+    font-weight: 500;
+    border-bottom: 4px solid var(--color-accent);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    text-align: center;
+}
+.toast-hidden { opacity: 0; visibility: hidden; top: -20px !important; }
+
+/* 4. Optimización de la X del Modal */
+.modal-close-btn {
+    position: absolute; 
+    top: 15px; 
+    right: 15px; 
+    width: 44px; 
+    height: 44px; 
+    background: rgba(0,0,0,0.05); 
+    color: var(--color-primary); 
+    border-radius: 50%; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: 0.2s;
+    z-index: 100;
+}
+.modal-close-btn:hover {
+    background: #eee;
+    color: var(--color-accent);
+    transform: rotate(90deg);
+}
+
+/* Asegurar que el avatar se vea bien */
+.nav-icon-avatar img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid var(--color-border);
+    object-fit: cover;
+}
 
 /* --- FIN: Ajustes Finales de Perfil --- */
 
@@ -568,48 +745,62 @@ body.loading-profile .main-content {
     transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
-/* 3. Añadimos un efecto visual al pasar el cursor */
+/* --- ONBOARDING MODAL --- */
+.onboarding-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px);
+    display: none; align-items: center; justify-content: center; z-index: 9999;
+    padding: 20px;
+}
+.onboarding-overlay.is-visible { display: flex; }
+
+.onboarding-card {
+    background: var(--color-surface); width: 100%; max-width: 800px;
+    border-radius: 32px; padding: 40px; text-align: center;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+}
+.onboarding-header h2 { font-family: 'Playfair Display', serif; font-size: 2.2rem; margin-bottom: 10px; }
+
+.onboarding-options {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 40px 0;
+}
+.onboarding-option-card {
+    background: var(--color-background); border: 2px solid transparent;
+    padding: 30px; border-radius: 24px; cursor: pointer; transition: 0.3s;
+}
+.onboarding-option-card:hover { border-color: var(--color-accent); transform: translateY(-5px); }
+.option-icon { font-size: 3rem; color: var(--color-accent); margin-bottom: 15px; }
+.btn-option { 
+    width: 100%; padding: 10px; border-radius: 50px; border: 1px solid var(--color-accent);
+    background: transparent; color: var(--color-accent); font-weight: bold; margin-top: 15px;
+}
+.btn-option.primary { background: var(--color-accent); color: white; }
+
+/* --- REDISEÑO MENÚ DASHBOARD (Bento Style) --- */
+.profile-card-nav {
+    display: grid !important; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+    gap: 15px !important; border: none !important; margin-top: 30px !important;
+}
+.profile-card-nav__link {
+    background: var(--color-background) !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: 16px !important;
+    padding: 20px !important;
+    flex-direction: column !important; /* Icono arriba, texto abajo */
+    align-items: center !important;
+    text-align: center !important;
+    gap: 10px !important;
+    font-weight: 600 !important;
+    transition: 0.3s !important;
+}
 .profile-card-nav__link:hover {
-    background-color: var(--color-surface);
-    border-color: var(--color-accent);
-    color: var(--color-accent);
+    background: var(--color-surface) !important;
+    border-color: var(--color-accent) !important;
+    color: var(--color-accent) !important;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05) !important;
 }
+.profile-card-nav__link i { font-size: 1.5rem !important; margin: 0 !important; }
 
-/* 4. Estilo para el icono dentro del botón */
-.profile-card-nav__link i {
-    width: 20px; /* Ancho fijo para alineación */
-    text-align: center;
-    color: var(--color-secondary);
-    transition: color 0.2s ease;
-}
-
-/* 5. También cambiamos el color del icono al pasar el cursor */
-.profile-card-nav__link:hover i {
-    color: var(--color-accent);
-}
-/* ===================================================
-   ESTILO PARA EL BOTÓN DE APOYO
-   =================================================== */
-
-.profile-card-nav__link.support-btn {
-    /* Mantenemos los estilos base del botón, pero cambiamos el color de acento */
-    border-color: var(--color-accent);
-    color: var(--color-accent);
-}
-
-.profile-card-nav__link.support-btn i {
-    color: var(--color-accent);
-}
-
-/* Al pasar el cursor, lo hacemos más llamativo */
-.profile-card-nav__link.support-btn:hover {
-    background-color: var(--color-accent);
-    color: white; /* El color del texto cambia a blanco */
-}
-
-.profile-card-nav__link.support-btn:hover i {
-    color: white; /* El color del icono también cambia a blanco */
-}
 .supporter-logos {
     display: flex;
     justify-content: space-around;
@@ -624,4 +815,126 @@ body.loading-profile .main-content {
 /* Arreglo para logos blancos en tema claro */
 body:not(.dark-theme) .supporter-logos img {
     filter: invert(1);
+}
+/* ==========================================================================
+   SISTEMA DE GAMIFICACIÓN E INSIGNIAS
+   ========================================================================== */
+
+.profile-badges-container {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin: 10px 0 20px 0;
+}
+
+/* Estado Apagado (Gris y translúcido) */
+.badge-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-secondary);
+    font-size: 1.1rem;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Rebote suave */
+    filter: grayscale(100%);
+    opacity: 0.4;
+    cursor: help;
+}
+
+/* Estados Encendidos (A todo color y con brillo sutil) */
+.badge-icon.active-citizen {
+    color: #10b981; /* Verde esmeralda */
+    filter: grayscale(0%);
+    opacity: 1;
+    background: #d1fae5;
+    border-color: #10b981;
+    transform: scale(1.1);
+}
+
+.badge-icon.active-social {
+    color: #0085ff; /* Azul Bluesky */
+    filter: grayscale(0%);
+    opacity: 1;
+    background: #e0f2fe;
+    border-color: #0085ff;
+    transform: scale(1.1);
+}
+
+.badge-icon.active-academic {
+    color: #a6ce39; /* Verde ORCID */
+    filter: grayscale(0%);
+    opacity: 1;
+    background: #f4fce3;
+    border-color: #a6ce39;
+    transform: scale(1.1);
+}
+
+/* El Check de Verificación PRO junto al nombre */
+.verified-check {
+    color: var(--color-accent);
+    font-size: 0.8em;
+    margin-left: 6px;
+    vertical-align: middle;
+    filter: drop-shadow(0 2px 4px rgba(183, 42, 30, 0.3)); /* Brillo sutil con tu color de acento */
+}
+/* --- BANNER DE APOYO --- */
+.support-banner {
+    background: linear-gradient(90deg, var(--color-accent), #8b1d14);
+    color: white;
+    padding: 12px 0;
+    text-align: center;
+    font-size: 0.95rem;
+    position: relative;
+    z-index: 900;
+    display: none; /* Se activa por JS */
+}
+.support-banner a { color: white; text-decoration: underline; font-weight: bold; margin: 0 5px; }
+.close-banner {
+    position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;
+}
+
+/* --- NUEVAS INSIGNIAS --- */
+.badge-icon.active-founder { color: #f59e0b; background: #fef3c7; border-color: #f59e0b; filter: grayscale(0%); opacity: 1; }
+.badge-icon.active-divulgador { color: #8b5cf6; background: #ede9fe; border-color: #8b5cf6; filter: grayscale(0%); opacity: 1; }
+.badge-icon.active-member { color: #ec4899; background: #fce7f3; border-color: #ec4899; filter: grayscale(0%); opacity: 1; }
+
+/* --- RESPONSIVIDAD Y ESTILOS DEL MODAL DE ONBOARDING --- */
+
+/* Estilo para el botón de "Lo haré más tarde" */
+.onboarding-skip {
+    background: transparent;
+    border: none;
+    color: var(--color-secondary);
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-top: 10px;
+    transition: color 0.2s;
+}
+.onboarding-skip:hover { color: var(--color-accent); }
+
+/* Adaptación para móviles (Pantallas menores a 768px) */
+@media (max-width: 768px) {
+    .onboarding-options { 
+        grid-template-columns: 1fr; /* Pasa de 2 columnas a 1 columna */
+        gap: 15px; 
+        margin: 20px 0; 
+    }
+    .onboarding-card { 
+        padding: 25px 15px; 
+        max-height: 90vh; /* Evita que se salga de la pantalla verticalmente */
+        overflow-y: auto; /* Permite hacer scroll si el celular es muy pequeño */
+    }
+    .onboarding-header h2 { 
+        font-size: 1.6rem; 
+    }
+    .option-icon { 
+        font-size: 2.2rem; 
+        margin-bottom: 10px; 
+    }
 }

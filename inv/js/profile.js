@@ -38,6 +38,9 @@ const ProfileApp = {
             return;
         }
         this.currentUserProfile = userProfile;
+        // --- this.checkOnboarding(userProfile); ---
+        this.checkSupportBanner();
+        this.renderGamification(userProfile);
         
         const urlParams = new URLSearchParams(window.location.search);
         const profileIdFromUrl = urlParams.get('id');
@@ -151,14 +154,48 @@ const ProfileApp = {
             const { data: bskyCreds } = await this.supabase.from('bsky_credentials').select('handle').eq('user_id', profile.id).single();
             this.bskyCreds = bskyCreds;
 
+            this.checkOnboarding(profile, this.bskyCreds);
+
             const isMyOwnProfile = (profile.id === this.user.id);
             const isEditable = isMyOwnProfile;
             document.body.classList.toggle('public-view', !isEditable);
 
             // Poblar tarjeta lateral (sidebar)
             document.getElementById('profile-card-avatar').src = profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
-            document.getElementById('profile-card-name').textContent = profile.display_name || 'Sin nombre';
             document.getElementById('profile-card-bio').textContent = profile.bio || '';
+
+            // --- LÓGICA DE GAMIFICACIÓN E INSIGNIAS ---
+            const hasOrcid = profile.orcid && profile.orcid !== '0000';
+            const hasBsky = !!this.bskyCreds;
+
+            // 1. Encendemos las insignias correspondientes
+            const badgeCitizen = document.getElementById('badge-citizen');
+            const badgeSocial = document.getElementById('badge-social');
+            const badgeAcademic = document.getElementById('badge-academic');
+
+            if (badgeCitizen) badgeCitizen.classList.add('active-citizen'); // Siempre activo si está registrado
+            
+            if (hasBsky && badgeSocial) {
+                badgeSocial.classList.add('active-social');
+            } else if (badgeSocial) {
+                badgeSocial.classList.remove('active-social');
+            }
+
+            if (hasOrcid && badgeAcademic) {
+                badgeAcademic.classList.add('active-academic');
+            } else if (badgeAcademic) {
+                badgeAcademic.classList.remove('active-academic');
+            }
+
+            // 2. El Check de Creador PRO (Solo si tiene ORCID + Bluesky)
+            const isProCreator = hasOrcid && hasBsky;
+            const nameEl = document.getElementById('profile-card-name');
+            if (nameEl) {
+                const safeName = profile.display_name || 'Sin nombre';
+                // Usamos innerHTML para poder inyectar el icono si es PRO
+                nameEl.innerHTML = `${safeName} ${isProCreator ? '<i class="fa-solid fa-circle-check verified-check" title="Divulgador Verificado"></i>' : ''}`;
+            }
+            // --- FIN DE LÓGICA DE GAMIFICACIÓN ---
             
             const socialsContainer = document.getElementById('profile-card-socials');
             const substackIconSVG = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 3.604H1V5.495H15V3.604ZM1 7.208V16L8 12.074L15 16V7.208H1ZM15 0H1V1.89H15V0Z" fill="currentColor"/></svg>`;
@@ -926,8 +963,114 @@ const ProfileApp = {
             likeButton.disabled = false;
         }
     },
+
+    // --- LÓGICA DE ONBOARDING ---
+    checkOnboarding(profile, bskyCreds) {
+        // 1. Verificamos qué tiene conectado
+        const hasOrcid = profile.orcid && profile.orcid !== '0000';
+        const hasBsky = !!bskyCreds;
+
+        // 2. Si ya conectó CUALQUIERA de las dos cosas, ya completó el onboarding. ¡Abortamos!
+        if (hasOrcid || hasBsky) return;
+
+        // 3. Si no tiene nada, vemos si ya le dimos "Lo haré más tarde" en esta sesión
+        const alreadyShown = sessionStorage.getItem('onboarding_shown');
+
+        if (!alreadyShown) {
+            setTimeout(() => {
+                document.getElementById('onboarding-overlay').classList.add('is-visible');
+            }, 1000);
+        }
+    },
+
+    handleRoleSelection(role) {
+        // Guardamos que ya interactuó
+        sessionStorage.setItem('onboarding_shown', 'true');
+        document.getElementById('onboarding-overlay').classList.remove('is-visible');
+
+        if (role === 'author') {
+            // Lo llevamos directo a la sección de ORCID o abrimos el validador
+            showToast("🚀 ¡Excelente elección! Iniciando validación ORCID...");
+            setTimeout(() => {
+                // Si tienes un botón específico de ORCID, le hacemos clic
+                document.getElementById('connect-orcid-btn')?.scrollIntoView({behavior: 'smooth'});
+            }, 500);
+        } else {
+            showToast("📖 ¡Bienvenido Explorador! Conecta tu identidad digital.");
+            // Scroll hacia la sección de Bluesky
+            document.getElementById('connect-bsky-btn')?.scrollIntoView({behavior: 'smooth'});
+        }
+    },
+
+    // --- DENTRO DE ProfileApp ---
+        checkSupportBanner() {
+            if (!localStorage.getItem('support_banner_dismissed')) {
+                document.getElementById('support-banner').style.display = 'block';
+            }
+        },
+
+        async renderGamification(profile) {
+            // ... (lógica anterior de insignias Citizen, Social, Academic) ...
+
+            // 3. Insignia FUNDADOR (Ejemplo: registrado antes de Mayo 2024)
+            const registrationDate = new Date(profile.created_at);
+            const founderLimit = new Date('2026-12-31');
+            if (registrationDate < founderLimit) {
+                document.getElementById('badge-founder')?.classList.add('active-founder');
+            }
+
+            // 4. Insignia DIVULGADOR (+5 Proyectos/Eventos)
+            const { count } = await this.supabase
+                .from('projects')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', profile.id);
+            
+            if (count >= 5) {
+                document.getElementById('badge-divulgador')?.classList.add('active-divulgador');
+            }
+
+            // 5. Insignia MIEMBRO (Si tiene plan activo en tu tabla de suscripciones)
+            if (profile.membership_tier && profile.membership_tier !== 'free') {
+                document.getElementById('badge-member')?.classList.add('active-member');
+            }
+        },
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+// --- LÓGICA DE BANNER ---
+window.dismissBanner = () => {
+    document.getElementById('support-banner').style.display = 'none';
+    localStorage.setItem('support_banner_dismissed', 'true');
+};
+
+// Inicializar SOLAMENTE cuando main.js haya preparado Supabase
+document.addEventListener('mainReady', () => {
     ProfileApp.init();
+    // Exponemos la app globalmente para los botones onclick del HTML
+    window.ProfileApp = ProfileApp; 
 });
+
+// =================================================================
+// FUNCIONES GLOBALES (Para que los onclick del HTML las encuentren)
+// =================================================================
+
+// 1. Cerrar el modal de Onboarding ("Lo haré más tarde")
+window.closeOnboarding = () => {
+    sessionStorage.setItem('onboarding_shown', 'true');
+    document.getElementById('onboarding-overlay').classList.remove('is-visible');
+};
+
+// 2. Seleccionar Rol en el Onboarding
+window.selectOnboardingRole = (role) => {
+    if (window.ProfileApp) {
+        window.ProfileApp.handleRoleSelection(role);
+    }
+};
+
+// 3. Navegar a una pestaña desde el Banner u otros links externos
+window.navigateToTabExternal = (tabId) => {
+    const tabButton = document.querySelector(`[data-tab='${tabId}']`);
+    if (tabButton) {
+        tabButton.click(); // Simulamos un clic en el botón real de la pestaña
+        window.scrollTo({ top: 0, behavior: 'smooth' }); // Subimos la pantalla
+    }
+};

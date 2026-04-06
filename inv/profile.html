@@ -23,36 +23,91 @@
 
     <header class="desktop-nav">
         <div class="container">
-            <a href="/" class="logo"><img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Epistecnologia Logo"></a>
+            <a href="/" class="logo">
+                <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Epistecnologia Logo">
+            </a>
+            
             <nav class="main-menu bento-box-nav">
-                <a href="/" class="nav-icon" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
-                <a href="https://eptnews.substack.com/" class="nav-icon" aria-label="Newsletter"><i class="fa-solid fa-newspaper"></i></a>
-                <a href="/comunidad.html" class="nav-icon" aria-label="Comunidad"><i class="fa-solid fa-users"></i></a>
+                <a href="/" class="nav-icon active"><i class="fa-solid fa-house"></i> <span class="nav-text">Inicio</span></a>
+                <a href="/comunidad.html" class="nav-icon"><i class="fa-solid fa-users"></i> <span class="nav-text">Comunidad</span></a>
+                <a href="/live.html" class="nav-icon"><i class="fa-solid fa-tower-broadcast"></i> <span class="nav-text">Live</span></a>
+                <a href="https://publicaciones.epistecnologia.com/" class="nav-icon" target="_blank"><i class="fa-solid fa-newspaper"></i> <span class="nav-text">Revista</span></a>
+                
+                <div class="nav-dropdown">
+                    <button class="nav-icon">
+                        <i class="fa-solid fa-layer-group"></i> <span class="nav-text">Ejes</span> <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem;"></i>
+                    </button>
+                    <div class="dropdown-content">
+                        <a href="#"><i class="fa-solid fa-microscope"></i> Histórico-Cultural</a>
+                        <a href="#"><i class="fa-solid fa-book-open"></i> Científico-Tecnológico</a>
+                    </div>
+                </div>
             </nav>
-            <div class="live-channels bento-box-nav">
-                <a href="/live.html" class="nav-icon" id="nav-live-desktop" aria-label="En Vivo"><i class="fa-solid fa-satellite-dish"></i></a>
-                <a href="/live.html#seccion-eventos" class="nav-icon" aria-label="Eventos"><i class="fa-solid fa-calendar-days"></i></a>
-                <a href="#" class="nav-icon" id="notifications-bell-icon" aria-label="Notificaciones"><i class="fa-solid fa-bell"></i></a>
-            </div>
-            <div class="user-actions bento-box-nav">
+
+            <div class="actions-area bento-box-nav">
+                
+                <div class="nav-dropdown" id="create-dropdown-container">
+                    <button id="btn-global-create" class="nav-icon create-locked">
+                        <i class="fa-solid fa-lock" id="create-icon"></i> <span class="nav-text">Crear</span>
+                    </button>
+                    <div class="dropdown-content dropdown-right" id="create-options">
+                        <a href="/inv/dashboard.html"><i class="fa-solid fa-pen-to-square"></i> Publicar Artículo</a>
+                        <a href="/inv/dashboard.html"><i class="fa-solid fa-calendar-plus"></i> Agendar Evento</a>
+                        <a href="/comunidad.html"><i class="fa-solid fa-bolt"></i> Directo Rápido</a>
+                    </div>
+                </div>
+
+                <a href="#" class="nav-icon" id="notifications-bell-icon"><i class="fa-solid fa-bell"></i></a>
+                
                 <div id="guest-view">
-                    <button id="login-modal-trigger" class="nav-icon" aria-label="Iniciar sesión"><i class="fa-solid fa-user"></i></button>
+                    <button class="btn-nav-access trigger-login-modal">Acceder</button>
                 </div>
+                
                 <div id="user-view" style="display: none;">
-                    <a href="/inv/profile.html" id="user-avatar-link" class="nav-icon active" title="Mi Perfil"></a>
-                    <button id="logout-btn-header" class="nav-icon" title="Cerrar Sesión"><i class="fa-solid fa-right-from-bracket"></i></button>
+                    <div class="nav-dropdown">
+                        <button id="user-avatar-link" class="nav-icon-avatar"></button>
+                        <div class="dropdown-content dropdown-right">
+                            <a href="/inv/profile.html"><i class="fa-solid fa-user"></i> Mi Perfil</a>
+                            <a href="#" id="logout-btn-header" style="color: #ef4444;"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</a>
+                        </div>
+                    </div>
                 </div>
-                <button class="theme-switcher nav-icon" id="theme-switcher-desktop" aria-label="Cambiar tema"><i class="fa-solid fa-moon"></i></button>
+
+                <button class="theme-switcher nav-icon" id="theme-switcher-desktop"><i class="fa-solid fa-moon"></i></button>
+            </div>
+        </div>
+        <div id="support-banner" class="support-banner">
+            <div class="container">
+                <p>🫰 <strong>Epistecnología</strong> es una plataforma sin fines de lucro. Tu apoyo nos ayuda a seguir democratizando el conocimiento. 
+                <a href="https://www.paypal.com/ncp/payment/AVNL8CGY5A2FL" target="_blank">Aportar ahora</a> o explora nuestras <a href="#" onclick="navigateToTabExternal('tab-membresias'); dismissBanner(); return false;">Membresías</a>.</p>
+                <button class="close-banner" onclick="dismissBanner()">&times;</button>
             </div>
         </div>
     </header>
 
+    <div id="global-toast" class="toast-hidden"></div>
+
     <div class="page-container">
         <div class="profile-layout">
             <aside class="profile-sidebar">
+                
                 <div class="bento-box profile-card">
                     <img id="profile-card-avatar" class="profile-card__avatar" alt="Avatar de usuario">
                     <h2 id="profile-card-name">Cargando...</h2>
+                    <div class="profile-badges-container" id="profile-badges">
+                        <span class="badge-icon" id="badge-citizen" title="Explorador (Usuario Registrado)">
+                            <i class="fa-solid fa-seedling"></i>
+                        </span>
+                        <span class="badge-icon" id="badge-social" title="Voz Pública (Bluesky Conectado)">
+                            <i class="fa-brands fa-bluesky"></i>
+                        </span>
+                        <span class="badge-icon" id="badge-academic" title="Académico (ORCID Validado)">
+                            <i class="fa-brands fa-orcid"></i>
+                        </span>
+                        <span class="badge-icon" id="badge-founder" title="Fundador: De los primeros en creer en el proyecto"><i class="fa-solid fa-medal"></i></span>
+                        <span class="badge-icon" id="badge-divulgador" title="Divulgador: +5 aportes a la plataforma"><i class="fa-solid fa-bullhorn"></i></span>
+                        <span class="badge-icon" id="badge-member" title="Miembro de Honor: Colaborador económico"><i class="fa-solid fa-gem"></i></span>
+                    </div>
                     <p id="profile-card-orcid" class="profile-card__orcid"></p>
                     <p id="profile-card-bio"></p>
                     <div id="profile-card-socials" class="profile-card__socials"></div>
@@ -68,6 +123,9 @@
                     <button class="profile-tab-link" data-tab="tab-identidad"><i class="fa-brands fa-orcid"></i> <span>ID Académico</span></button>
                     <button class="profile-tab-link" data-tab="tab-proyectos"><i class="fa-solid fa-cloud-arrow-up"></i> <span>EPT DOI</span></button>
                     <button class="profile-tab-link" data-tab="tab-invitados"><i class="fa-solid fa-paper-plane"></i> <span>Invitados</span></button>
+                    
+                    <button class="profile-tab-link" data-tab="tab-membresias"><i class="fa-solid fa-crown"></i> <span>Membresías</span></button>
+                    <button class="profile-tab-link" data-tab="tab-servicios"><i class="fa-solid fa-handshake-angle"></i> <span>Servicios</span></button>
                 </nav>
 
                 <div id="tab-perfil" class="profile-tab-content active">
@@ -384,6 +442,32 @@
                         </div>
                     </div>
                 </div>
+
+                <div id="tab-membresias" class="profile-tab-content">
+                    <div class="bento-box">
+                        <div class="bento-header">
+                            <h3><i class="fa-solid fa-crown"></i> Apoyo y Membresías</h3>
+                            <p class="text-muted">Conviértete en un pilar fundamental de nuestra comunidad sin fines de lucro.</p>
+                        </div>
+                        <div class="bento-content" style="text-align: center; padding: 40px 20px;">
+                            <i class="fa-solid fa-gem" style="font-size: 3rem; color: var(--color-accent); margin-bottom: 15px;"></i>
+                            <p>Próximamente: Explora nuestros planes de apoyo y obtén tu insignia de Miembro Honorario.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-servicios" class="profile-tab-content">
+                    <div class="bento-box">
+                        <div class="bento-header">
+                            <h3><i class="fa-solid fa-handshake-angle"></i> Servicios Académicos y digitales</h3>
+                            <p class="text-muted">Herramientas avanzadas para potenciar tu divulgación.</p>
+                        </div>
+                        <div class="bento-content" style="text-align: center; padding: 40px 20px;">
+                            <i class="fa-solid fa-laptop-code" style="font-size: 3rem; color: var(--color-secondary); margin-bottom: 15px;"></i>
+                            <p>Próximamente: Servicios profesionales de revisión, diseño de ponencias y más.</p>
+                        </div>
+                    </div>
+                </div>
             </main>
         </div>
     </div>
@@ -428,7 +512,7 @@
     
     <nav class="mobile-nav">
         <a href="/" class="mobile-nav__link active" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
-        <a href="https://eptnews.substack.com/" class="mobile-nav__link" aria-label="Newsletter"><i class="fa-solid fa-newspaper"></i></a>
+        <a href="https://publicaciones.epistecnologiaa.com/" class="mobile-nav__link" aria-label="Newsletter"><i class="fa-solid fa-newspaper"></i></a>
         <a href="#" class="mobile-nav__link" aria-label="Explorar"><i class="fa-solid fa-search"></i></a>
         <a href="/live.html" class="mobile-nav__link" id="nav-live-mobile" aria-label="En Vivo"><i class="fa-solid fa-satellite-dish"></i></a>
         <button class="mobile-nav__link" id="mobile-more-btn" aria-label="Más opciones"><i class="fa-solid fa-bars"></i></button>
@@ -450,43 +534,83 @@
     
     <div class="overlay" id="overlay"></div>
 
-    <footer class="site-footer">
-        <div class="container footer-content">
-            <div class="footer-column">
-                <p class="footer-logo-text">Epistecnología</p>
-                <p>&copy; 2025 Todos los derechos reservados.</p>
+    <div id="onboarding-overlay" class="onboarding-overlay">
+        <div class="onboarding-card">
+            <div class="onboarding-header">
+                <h2>¡Bienvenido a Epistecnología!</h2>
+                <p>Para empezar, dinos cuál será tu rol principal en la red.</p>
             </div>
-            <div class="footer-column">
-                <h4 class="footer-heading">Propiedad Intelectual</h4>
-                <div class="footer-badges">
-                    <a href="https://doi.org/10.5281/zenodo.16403615" target="_blank" rel="noopener noreferrer" title="DOI de la Plataforma">
-                        <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.16403615.svg" alt="DOI">
-                    </a>
-                    <a href="https://orcid.org/0009-0008-3022-5207" class="footer-link" target="_blank" rel="noopener noreferrer" title="Perfil ORCID">
-                        <i class="fa-brands fa-orcid"></i> 0009-0008-3022-5207
-                    </a>
+            
+            <div class="onboarding-options">
+                <div class="onboarding-option-card" onclick="selectOnboardingRole('reader')">
+                    <div class="option-icon"><i class="fa-solid fa-book-open-reader"></i></div>
+                    <h3>Explorador</h3>
+                    <p>Quiero leer, dialogar en el Ágora y conectar en la Comunidad con otros investigadores.</p>
+                    <button class="btn-option">Conectar Bluesky</button>
+                </div>
+
+                <div class="onboarding-option-card" onclick="selectOnboardingRole('author')">
+                    <div class="option-icon"><i class="fa-solid fa-microscope"></i></div>
+                    <h3>Autor</h3>
+                    <p>Quiero publicar artículos, agendar eventos y transmitir en vivo.</p>
+                    <button class="btn-option primary">Validar con ORCID</button>
                 </div>
             </div>
+            
+            <button class="onboarding-skip" onclick="closeOnboarding()">Lo haré más tarde</button>
+        </div>
+    </div>
+
+    <footer class="site-footer">
+        <div class="container footer-content">
+            <div class="footer-column" style="max-width: 300px;">
+                <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Epistecnología Logo" style="height: 45px; margin-bottom: 1rem;">
+                <p class="footer-logo-text" style="font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--color-text-primary);">Epistecnología</p>
+                <p style="margin-bottom: 1.5rem;">Un ecosistema digital donde la tecnología se pone al servicio de la divulgación académica y cultural.</p>
+                <div class="social-footer">
+                    <a href="#" aria-label="X"><i class="fa-brands fa-x-twitter"></i></a>
+                    <a href="#" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                    <a href="#" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                </div>
+            </div>
+
             <div class="footer-column">
-                <h4 class="footer-heading">Contacto</h4>
+                <h4 class="footer-heading">Navegación</h4>
+                <div class="footer-badges">
+                    <a href="/" class="footer-link">Inicio</a>
+                    <a href="https://publicaciones.epistecnologia.com/" target="_blank" class="footer-link">Revista Oficial</a>
+                    <a href="/comunidad.html" class="footer-link">Comunidad Global</a>
+                    <a href="/live.html" class="footer-link">Ágoras y Eventos</a>
+                </div>
+            </div>
+
+            <div class="footer-column">
+                <h4 class="footer-heading">Identidad Intelectual</h4>
+                <div class="footer-badges">
+                    <a href="https://doi.org/10.5281/zenodo.16403615" target="_blank" rel="noopener noreferrer" title="DOI de la Plataforma">
+                        <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.16403615.svg" alt="DOI" style="margin-bottom: 5px;">
+                    </a>
+                    <a href="https://orcid.org/0009-0008-3022-5207" class="footer-link" target="_blank" rel="noopener noreferrer" title="Perfil ORCID">
+                        <i class="fa-brands fa-orcid" style="color:#A6CE39;"></i> ORCID Director
+                    </a>
+                    <p style="font-size: 0.8rem; margin-top: 10px; color: var(--color-text-secondary);"><strong>Director:</strong> Henry Márquez</p>
+                </div>
+            </div>
+
+            <div class="footer-column">
+                <h4 class="footer-heading">Contacto Editorial</h4>
                 <a href="mailto:hmarquez@epistecnologia.com" class="footer-link">
-                    <i class="fa-solid fa-envelope"></i> hmarquez@epistecnologia.com
+                    <i class="fa-solid fa-envelope" style="color: var(--color-accent);"></i> hmarquez@epistecnologia.com
                 </a>
             </div>
         </div>
+        
+        <div class="footer-bottom-bar">
+            <div class="container" style="text-align: center; border-top: 1px solid var(--color-border); padding-top: 2rem; margin-top: 2rem;">
+                <p>&copy; <script>document.write(new Date().getFullYear())</script> Epistecnología. Todos los derechos reservados.</p>
+            </div>
+        </div>
     </footer>
-    
-    <script type="text/javascript">
-    var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
-    (function(){
-    var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
-    s1.async=true;
-    s1.src='https://embed.tawk.to/688ee471171f1719311e6fde/1j1n2onlt';
-    s1.charset='UTF-8';
-    s1.setAttribute('crossorigin','*');
-    s0.parentNode.insertBefore(s1,s0);
-    })();
-    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/js/main.js"></script>
