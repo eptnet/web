@@ -252,6 +252,7 @@
 
         async function loadProfile(username) {
             try {
+                // 1. Cargar Perfil Principal
                 const { data: profile, error } = await window.supabaseClient
                     .from('profiles')
                     .select('*')
@@ -260,7 +261,19 @@
 
                 if (error || !profile) { show404(); return; }
 
-                renderProfileHeader(profile);
+                // 2. Cargar Credenciales para las insignias
+                const [bskyResponse, projectsResponse] = await Promise.all([
+                    window.supabaseClient.from('bsky_credentials').select('handle').eq('user_id', profile.id).single(),
+                    window.supabaseClient.from('projects').select('id').eq('user_id', profile.id)
+                ]);
+
+                const bskyCreds = bskyResponse.data;
+                const totalProjects = projectsResponse.data ? projectsResponse.data.length : 0;
+
+                // 3. Enviar todo al renderizador visual
+                renderProfileHeader(profile, bskyCreds, totalProjects);
+                
+                // 4. Cargar el resto de las pestañas
                 loadPublications(profile.display_name);
                 loadProjects(profile.id);
                 loadEvents(profile.id);
@@ -268,26 +281,42 @@
             } catch (err) { console.error(err); show404(); }
         }
 
-        function renderProfileHeader(profile) {
-            document.getElementById('p-name').textContent = profile.display_name || "Usuario";
+        function renderProfileHeader(profile, bskyCreds, totalProjects) {
+            // --- 1. DATOS BÁSICOS ---
+            document.getElementById('p-avatar').src = profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
+            document.getElementById('dynamic-favicon').href = profile.avatar_url || 'https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png';
             
-            // --- CORRECCIÓN DE ROL ---
-            // Si eres Admin, mostramos "Investigador". Si eres otro rol, mostramos ese rol.
             let displayRole = profile.role === 'admin' ? 'Investigador' : (profile.role || 'Miembro');
             document.getElementById('p-role').textContent = displayRole;
-
-            document.getElementById('p-avatar').src = profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
-            document.getElementById('dynamic-favicon').href = profile.avatar_url;
 
             const sloganEl = document.getElementById('p-slogan');
             if (profile.bio_short) {
                 sloganEl.textContent = `"${profile.bio_short}"`;
                 sloganEl.style.display = 'block';
             } else { sloganEl.style.display = 'none'; }
-
+            
             document.getElementById('p-bio').textContent = profile.bio || "";
 
-            // ORCID
+            // --- 2. LÓGICA DE GAMIFICACIÓN E INSIGNIAS ---
+            const badgesContainer = document.getElementById('profile-badges');
+            if (badgesContainer) badgesContainer.style.display = 'flex'; // Hacemos visibles las insignias
+            
+            const hasOrcid = profile.orcid && profile.orcid !== '0000';
+            const hasBsky = !!bskyCreds;
+            
+            // Nombre y Check de Verificación PRO
+            const safeName = profile.display_name || profile.username || 'Usuario';
+            document.getElementById('p-name').innerHTML = `${safeName} ${hasOrcid && hasBsky ? '<i class="fa-solid fa-circle-check verified-check" title="Divulgador Verificado"></i>' : ''}`;
+
+            // Encender Insignias
+            document.getElementById('badge-citizen')?.classList.add('active-citizen');
+            if (hasBsky) document.getElementById('badge-social')?.classList.add('active-social');
+            if (hasOrcid) document.getElementById('badge-academic')?.classList.add('active-academic');
+            if (new Date(profile.created_at) < new Date('2024-12-31')) document.getElementById('badge-founder')?.classList.add('active-founder');
+            if (totalProjects >= 5) document.getElementById('badge-divulgador')?.classList.add('active-divulgador');
+            if (profile.membership_tier && profile.membership_tier !== 'free') document.getElementById('badge-member')?.classList.add('active-member');
+
+            // --- 3. ORCID Y REDES SOCIALES ---
             const orcidContainer = document.getElementById('p-orcid-container');
             orcidContainer.innerHTML = '';
             if (profile.orcid) {
@@ -295,7 +324,6 @@
                 orcidContainer.innerHTML = `<a href="https://orcid.org/${orcidId}" target="_blank" style="background:#A6CE39; color:white; padding:4px 12px; border-radius:50px; text-decoration:none; font-size:0.8rem; font-weight:bold;"><i class="fa-brands fa-orcid"></i> ${orcidId}</a>`;
             }
 
-            // Redes
             const socialContainer = document.getElementById('p-socials');
             let socialHTML = '';
             if (profile.website_url) socialHTML += `<a href="${profile.website_url}" target="_blank" class="social-btn" title="Web"><i class="fa-solid fa-globe"></i></a>`;
@@ -305,10 +333,11 @@
             if (profile.x_url) socialHTML += `<a href="${profile.x_url}" target="_blank" class="social-btn"><i class="fa-brands fa-x-twitter"></i></a>`;
             if (profile.youtube_url) socialHTML += `<a href="${profile.youtube_url}" target="_blank" class="social-btn" style="color:red"><i class="fa-brands fa-youtube"></i></a>`;
             if (profile.instagram_url) socialHTML += `<a href="${profile.instagram_url}" target="_blank" class="social-btn" style="color:#E1306C"><i class="fa-brands fa-instagram"></i></a>`;
-            
             socialContainer.innerHTML = socialHTML;
-            document.title = `${profile.display_name} | Perfil Académico`;
+
+            document.title = `${safeName} | Perfil Académico`;
             
+            // --- 4. MOSTRAR PERFIL ---
             document.getElementById('loading').style.display = 'none';
             document.getElementById('profile-content').style.display = 'block';
         }
@@ -378,80 +407,6 @@
                         </div></a>`;
                 }).join('');
             } else { list.innerHTML = emptyState("Sin proyectos públicos."); }
-        }
-
-        async function fetchProfile() {
-            try {
-                // 1. Detección de Usuario (Por @username o ?id=)
-                const pathParts = window.location.pathname.split('@');
-                const urlParams = new URLSearchParams(window.location.search);
-                const profileId = urlParams.get('id');
-                const username = pathParts.length > 1 ? pathParts[1].replace(/\/$/, '') : null;
-
-                let query = supabase.from('profiles').select('*');
-                if (username) query = query.eq('username', username);
-                else if (profileId) query = query.eq('id', profileId);
-                else throw new Error("No se especificó un usuario válido.");
-
-                const { data: profile, error: profileError } = await query.single();
-                if (profileError || !profile) throw new Error('Perfil no encontrado');
-
-                // 2. Consulta paralela: Credenciales de Bluesky y Proyectos
-                const [bskyResponse, projectsResponse] = await Promise.all([
-                    supabase.from('bsky_credentials').select('handle').eq('user_id', profile.id).single(),
-                    supabase.from('projects').select('*').eq('user_id', profile.id)
-                ]);
-
-                const bskyCreds = bskyResponse.data;
-                const projects = projectsResponse.data || [];
-
-                // 3. Renderizado de Datos Básicos
-                document.getElementById('p-avatar').src = profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
-                document.getElementById('p-bio').textContent = profile.bio || 'Investigador en Epistecnología';
-                
-                // --- 4. LÓGICA DE GAMIFICACIÓN OPTIMIZADA ---
-                const badgesContainer = document.getElementById('profile-badges');
-                if (badgesContainer) badgesContainer.style.display = 'flex';
-                
-                const hasOrcid = profile.orcid && profile.orcid !== '0000';
-                const hasBsky = !!bskyCreds;
-                
-                // A) Nombre y Check PRO
-                const safeName = profile.display_name || profile.username || 'Usuario';
-                document.getElementById('p-name').innerHTML = `${safeName} ${hasOrcid && hasBsky ? '<i class="fa-solid fa-circle-check verified-check" title="Divulgador Verificado"></i>' : ''}`;
-
-                // B) Insignias Básicas
-                document.getElementById('badge-citizen')?.classList.add('active-citizen');
-                if (hasBsky) document.getElementById('badge-social')?.classList.add('active-social');
-                if (hasOrcid) document.getElementById('badge-academic')?.classList.add('active-academic');
-
-                // C) Insignia Fundador (Registrados en 2024 o antes)
-                if (new Date(profile.created_at) < new Date('2024-12-31')) {
-                    document.getElementById('badge-founder')?.classList.add('active-founder');
-                }
-
-                // D) Insignia Divulgador (+5 proyectos)
-                if (projects.length >= 5) {
-                    document.getElementById('badge-divulgador')?.classList.add('active-divulgador');
-                }
-
-                // E) Insignia Miembro Honorario
-                if (profile.membership_tier && profile.membership_tier !== 'free') {
-                    document.getElementById('badge-member')?.classList.add('active-member');
-                }
-
-                // 5. Renderizado de Redes y Publicaciones
-                if (typeof renderSocialLinks === 'function') renderSocialLinks(profile);
-                if (typeof renderProjects === 'function') renderProjects(projects);
-
-                // 6. ¡ÉXITO! Apagar pantalla de carga y mostrar perfil
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('profile-content').style.display = 'block';
-
-            } catch (error) {
-                console.error("Error crítico cargando perfil:", error);
-                show404(); // Muestra la vista de error
-            }
         }
 
         // --- EVENTOS ---
