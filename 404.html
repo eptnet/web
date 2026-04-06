@@ -124,6 +124,28 @@
         body.dark-theme .bio-wrapper { box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
         body.dark-theme .join-cta-card { background: var(--color-surface); border: 1px solid var(--color-border); }
         body.dark-theme .btn-cta-primary { background: var(--color-text-primary); color: var(--color-background); }
+
+        /* --- GAMIFICACIÓN E INSIGNIAS (bio.html) --- */
+        .profile-badges-container {
+            display: flex; gap: 8px; justify-content: center; margin: 5px 0 15px 0; flex-wrap: wrap;
+        }
+        .badge-icon {
+            width: 32px; height: 32px; border-radius: 50%; background: var(--color-background);
+            border: 1px solid var(--color-border); display: flex; align-items: center; justify-content: center;
+            color: var(--color-secondary); font-size: 1rem; filter: grayscale(100%); opacity: 0.4;
+            transition: all 0.3s ease;
+        }
+        .badge-icon.active-citizen { color: #10b981; filter: grayscale(0%); opacity: 1; background: #d1fae5; border-color: #10b981; transform: scale(1.05); }
+        .badge-icon.active-social { color: #0085ff; filter: grayscale(0%); opacity: 1; background: #e0f2fe; border-color: #0085ff; transform: scale(1.05); }
+        .badge-icon.active-academic { color: #a6ce39; filter: grayscale(0%); opacity: 1; background: #f4fce3; border-color: #a6ce39; transform: scale(1.05); }
+        .badge-icon.active-founder { color: #f59e0b; background: #fef3c7; border-color: #f59e0b; filter: grayscale(0%); opacity: 1; transform: scale(1.05); }
+        .badge-icon.active-divulgador { color: #8b5cf6; background: #ede9fe; border-color: #8b5cf6; filter: grayscale(0%); opacity: 1; transform: scale(1.05); }
+        .badge-icon.active-member { color: #ec4899; background: #fce7f3; border-color: #ec4899; filter: grayscale(0%); opacity: 1; transform: scale(1.05); }
+        
+        .verified-check {
+            color: var(--color-accent); font-size: 0.8em; margin-left: 6px; vertical-align: middle;
+            filter: drop-shadow(0 2px 4px rgba(183, 42, 30, 0.3));
+        }
     </style>
 </head>
 <body>
@@ -340,6 +362,34 @@
             const list = document.getElementById('list-projects');
             const { data: projects } = await window.supabaseClient.from('projects').select('*').eq('user_id', userId).order('created_at', { ascending: false });
 
+            // --- 4. LÓGICA DE GAMIFICACIÓN EN PERFIL PÚBLICO ---
+                document.getElementById('profile-badges').style.display = 'flex';
+                
+                const hasOrcid = profile.orcid && profile.orcid !== '0000';
+                const hasBsky = !!bsky;
+                
+                // A) Check de Creador PRO
+                if (hasOrcid && hasBsky) {
+                    const safeName = profile.display_name || profile.username;
+                    document.getElementById('p-name').innerHTML = `${safeName} <i class="fa-solid fa-circle-check verified-check" title="Divulgador Verificado"></i>`;
+                }
+
+                // B) Encender Insignias Básicas
+                document.getElementById('badge-citizen').classList.add('active-citizen');
+                if (hasBsky) document.getElementById('badge-social').classList.add('active-social');
+                if (hasOrcid) document.getElementById('badge-academic').classList.add('active-academic');
+
+                // C) Insignia Fundador (Ajusta la fecha de corte aquí)
+                const regDate = new Date(profile.created_at);
+                if (regDate < new Date('2024-12-31')) document.getElementById('badge-founder').classList.add('active-founder');
+
+                // D) Insignia Divulgador (+5 proyectos publicados)
+                if (projects && projects.length >= 5) document.getElementById('badge-divulgador').classList.add('active-divulgador');
+
+                // E) Insignia Miembro Honorario
+                if (profile.membership_tier && profile.membership_tier !== 'free') document.getElementById('badge-member').classList.add('active-member');
+                // ----------------------------------------------------
+                
             if (projects && projects.length > 0) {
                 list.innerHTML = projects.map(proj => {
                     let link = '#'; let badge = ''; let icon = 'fa-folder'; let target = '_self';
