@@ -123,7 +123,7 @@
                     <button class="profile-tab-link" data-tab="tab-identidad"><i class="fa-brands fa-orcid"></i> <span>ID Académico</span></button>
                     <button class="profile-tab-link" data-tab="tab-proyectos"><i class="fa-solid fa-cloud-arrow-up"></i> <span>EPT DOI</span></button>
                     <button class="profile-tab-link" data-tab="tab-invitados"><i class="fa-solid fa-paper-plane"></i> <span>Invitados</span></button>
-                    
+                    <button class="profile-tab-link" data-tab="tab-gestion"><i class="fa-solid fa-chart-line"></i> <span>Actividad</span></button>
                     <button class="profile-tab-link" data-tab="tab-membresias"><i class="fa-solid fa-crown"></i> <span>Membresías</span></button>
                     <button class="profile-tab-link" data-tab="tab-servicios"><i class="fa-solid fa-handshake-angle"></i> <span>Servicios</span></button>
                 </nav>
@@ -443,9 +443,60 @@
                     </div>
                 </div>
 
+                <div id="tab-gestion" class="profile-tab-content">
+                    <div class="main-column">
+                        <div class="bento-box">
+                            <div class="bento-header" style="text-align: center; margin-bottom: 25px;">
+                                <h3><i class="fa-solid fa-chart-pie" style="color: var(--color-accent);"></i> Centro de Mando</h3>
+                                <p class="text-muted">Administra tu historial y proyectos publicados.</p>
+                            </div>
+
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <i class="fa-solid fa-microscope stat-icon"></i>
+                                    <h2 id="stat-total-projects">0</h2>
+                                    <p>Proyectos</p>
+                                </div>
+                                <div class="stat-card">
+                                    <i class="fa-regular fa-calendar-check stat-icon"></i>
+                                    <h2 id="stat-total-events">0</h2>
+                                    <p>Eventos</p>
+                                </div>
+                                <div class="stat-card">
+                                    <i class="fa-solid fa-eye stat-icon"></i>
+                                    <h2 id="stat-total-views">0</h2>
+                                    <p>Vistas Totales</p>
+                                </div>
+                                <div class="stat-card">
+                                    <i class="fa-solid fa-users-viewfinder stat-icon"></i>
+                                    <h2 id="stat-total-live">0</h2>
+                                    <p>Picos en Vivo</p>
+                                </div>
+                            </div>
+
+                            <div class="management-section">
+                                <h4><i class="fa-solid fa-folder-open"></i> Mis Proyectos</h4>
+                                <ul id="manage-projects-list" class="manage-list">
+                                    <li style="text-align: center; color: #888;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando...</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="side-column">
+                        <div class="bento-box">
+                            <div class="management-section">
+                                <h4><i class="fa-regular fa-calendar-check"></i> Mis Eventos</h4>
+                                <ul id="manage-events-list" class="manage-list" style="max-height: 600px;">
+                                    <li style="text-align: center; color: #888;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando...</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="tab-membresias" class="profile-tab-content">
-                    <div class="bento-box">
-                        <div class="bento-header" style="text-align: center; margin-bottom: 25px;">
+                    <div class="bento-box full-width"> <div class="bento-header" style="text-align: center; margin-bottom: 25px;">
                             <h3><i class="fa-solid fa-heart" style="color: #e25555;"></i> Apoya a Epistecnología</h3>
                             <p class="text-muted">Elige tu método preferido para ayudarnos a mantener la plataforma independiente y sin fines de lucro.</p>
                         </div>
@@ -504,14 +555,12 @@
                 </div>
 
                 <div id="tab-servicios" class="profile-tab-content">
-                    <div class="bento-box">
-                        <div class="bento-header" style="text-align: center; margin-bottom: 25px;">
+                    <div class="bento-box full-width"> <div class="bento-header" style="text-align: center; margin-bottom: 25px;">
                             <h3><i class="fa-solid fa-handshake-angle" style="color: var(--color-accent);"></i> Servicios y Producción</h3>
                             <p class="text-muted">Potencia tu divulgación e institución con nuestras soluciones tecnológicas y producción de alta gama.</p>
                         </div>
 
                         <div class="services-grid">
-                            
                             <div class="service-card">
                                 <div class="service-icon audiovisual"><i class="fa-solid fa-video"></i></div>
                                 <h4>Audiovisual y Eventos</h4>
@@ -523,7 +572,6 @@
                                 </ul>
                                 <a href="https://wa.me/51993118573?text=Hola,%20deseo%20cotizar%20Producción%20Audiovisual" target="_blank" class="btn-service">Cotizar Producción</a>
                             </div>
-
                             <div class="service-card">
                                 <div class="service-icon events"><i class="fa-solid fa-ticket"></i></div>
                                 <h4>Gestión de Eventos</h4>
@@ -535,7 +583,6 @@
                                 </ul>
                                 <a href="https://wa.me/51993118573?text=Hola,%20deseo%20organizar%20un%20evento" target="_blank" class="btn-service">Organizar mi Evento</a>
                             </div>
-
                             <div class="service-card">
                                 <div class="service-icon mentoring"><i class="fa-solid fa-user-graduate"></i></div>
                                 <h4>Mentoría y Publicación</h4>
@@ -547,7 +594,6 @@
                                 </ul>
                                 <a href="https://wa.me/51993118573?text=Hola,%20deseo%20información%20sobre%20Mentoría" target="_blank" class="btn-service">Impulsar mi Perfil</a>
                             </div>
-
                             <div class="service-card">
                                 <div class="service-icon saas"><i class="fa-solid fa-server"></i></div>
                                 <h4>SaaS Marca Blanca</h4>
@@ -559,7 +605,6 @@
                                 </ul>
                                 <a href="https://wa.me/51993118573?text=Hola,%20deseo%20agendar%20una%20Demo%20B2B" target="_blank" class="btn-service">Agendar Demo B2B</a>
                             </div>
-
                         </div>
                     </div>
                 </div>

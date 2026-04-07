@@ -41,6 +41,7 @@ const ProfileApp = {
         // --- this.checkOnboarding(userProfile); ---
         this.checkSupportBanner();
         this.renderGamification(userProfile);
+        this.loadManagementData(this.user.id);
         
         const urlParams = new URLSearchParams(window.location.search);
         const profileIdFromUrl = urlParams.get('id');
@@ -1034,6 +1035,71 @@ const ProfileApp = {
                 document.getElementById('badge-member')?.classList.add('active-member');
             }
         },
+
+        async loadManagementData(userId) {
+            try {
+                const { data: projects } = await this.supabase.from('projects')
+                    .select('id, title, doi, microsite_is_public, created_at')
+                    .eq('user_id', userId).order('created_at', { ascending: false });
+                
+                const { data: events } = await this.supabase.from('sessions')
+                    .select('id, session_title, scheduled_at, status, peak_viewers, live_viewers')
+                    .eq('user_id', userId).order('scheduled_at', { ascending: false });
+
+                // Cálculos
+                let totalViews = 0;
+                let totalLive = 0;
+                if (events) {
+                    events.forEach(e => {
+                        totalViews += (e.peak_viewers || 0);
+                        totalLive += (e.live_viewers || 0);
+                    });
+                }
+
+                document.getElementById('stat-total-projects').textContent = projects ? projects.length : 0;
+                document.getElementById('stat-total-events').textContent = events ? events.length : 0;
+                document.getElementById('stat-total-views').textContent = totalViews;
+                document.getElementById('stat-total-live').textContent = totalLive;
+
+                // Lista Proyectos
+                const projList = document.getElementById('manage-projects-list');
+                if (projects && projects.length > 0) {
+                    projList.innerHTML = projects.map(p => {
+                        const badge = (p.doi || p.microsite_is_public) ? '<span class="badge-status badge-published">Publicado</span>' : '<span class="badge-status badge-draft">Borrador</span>';
+                        const date = new Date(p.created_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
+                        return `
+                        <li class="manage-item" id="manage-proj-${p.id}">
+                            <div class="manage-item-info">
+                                <p class="manage-item-title" title="${p.title || 'Proyecto sin título'}">${p.title || 'Proyecto sin título'}</p>
+                                <p class="manage-item-meta">${badge} <span>${date}</span></p>
+                            </div>
+                            <button class="btn-delete" onclick="deleteManagementItem('projects', '${p.id}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                        </li>`;
+                    }).join('');
+                } else { projList.innerHTML = '<li style="text-align: center; color: #888; padding: 20px;">Sin proyectos.</li>'; }
+
+                // Lista Eventos (Con Estadísticas)
+                const eventList = document.getElementById('manage-events-list');
+                if (events && events.length > 0) {
+                    eventList.innerHTML = events.map(e => {
+                        const isPast = e.status === 'ARCHIVADO' || new Date(e.scheduled_at) < new Date();
+                        const badge = isPast ? '<span class="badge-status badge-draft">Pasado</span>' : '<span class="badge-status badge-published">Próximo</span>';
+                        const date = new Date(e.scheduled_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
+                        
+                        const statsHtml = `<span class="event-stats-badge" title="Vistas / Pico en Vivo"><i class="fa-solid fa-eye"></i> ${e.peak_viewers || 0} &nbsp;<i class="fa-solid fa-users-viewfinder"></i> ${e.live_viewers || 0}</span>`;
+
+                        return `
+                        <li class="manage-item" id="manage-event-${e.id}">
+                            <div class="manage-item-info">
+                                <p class="manage-item-title" title="${e.session_title}">${e.session_title}</p>
+                                <p class="manage-item-meta">${badge} <span>${date}</span> ${statsHtml}</p>
+                            </div>
+                            <button class="btn-delete" onclick="deleteManagementItem('sessions', '${e.id}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                        </li>`;
+                    }).join('');
+                } else { eventList.innerHTML = '<li style="text-align: center; color: #888; padding: 20px;">Sin eventos.</li>'; }
+            } catch (error) { console.error("Error:", error); }
+        }
 };
 
 // --- LÓGICA DE BANNER ---
@@ -1093,4 +1159,31 @@ window.copySupportData = (elementId, btn) => {
         console.error('Error al copiar: ', err);
         alert("No se pudo copiar el texto. Intenta seleccionarlo manualmente.");
     });
+};
+
+// 5. Eliminar elemento desde el Centro de Mando
+window.deleteManagementItem = async (table, id) => {
+    if(!confirm("⚠️ ¿Estás seguro de que deseas eliminar este elemento? Esta acción es permanente y no se puede deshacer.")) return;
+    
+    try {
+        // Pedimos a Supabase que borre el registro
+        const { error } = await window.ProfileApp.supabase.from(table).delete().eq('id', id);
+        if (error) throw error;
+        
+        // Efecto visual: Desaparece suavemente
+        const elementId = table === 'projects' ? `manage-proj-${id}` : `manage-event-${id}`;
+        const row = document.getElementById(elementId);
+        row.style.opacity = '0';
+        setTimeout(() => row.style.display = 'none', 300);
+        
+        // Restar 1 al contador grande
+        const statId = table === 'projects' ? 'stat-total-projects' : 'stat-total-events';
+        const statEl = document.getElementById(statId);
+        statEl.textContent = Math.max(0, parseInt(statEl.textContent) - 1);
+        
+        showToast("Elemento eliminado correctamente");
+    } catch (err) {
+        console.error("Error al eliminar:", err);
+        alert("Hubo un error. Asegúrate de tener permisos para borrar este elemento.");
+    }
 };
