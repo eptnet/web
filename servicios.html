@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Servicios y Producción | Epistecnología by Enfoque 360</title>
+    <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        :root {
+            --color-landing-dark: #0a0e17; /* Azul noche profundo */
+            --color-landing-surface: #131b2c;
+            --color-landing-gold: #f59e0b;
+        }
+        body { background-color: var(--color-landing-dark); color: #f0f2f5; margin: 0; padding: 0; }
+        
+        /* HEADER TRANSPARENTE */
+        .landing-header { position: fixed; top: 0; width: 100%; z-index: 1000; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; background: rgba(10, 14, 23, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        
+        /* HERO & SPOTLIGHT */
+        .hero-landing { position: relative; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; overflow: hidden; padding: 20px; }
+        #spotlight { position: absolute; inset: 0; pointer-events: none; z-index: 2; transition: opacity 0.3s; }
+        #plexus-canvas { position: absolute; inset: 0; z-index: 1; opacity: 0.4; }
+        .hero-content { position: relative; z-index: 10; max-width: 900px; }
+        
+        .badge-pro { display: inline-flex; align-items: center; gap: 8px; background: rgba(183, 42, 30, 0.1); border: 1px solid rgba(183, 42, 30, 0.3); color: #ff6b6b; padding: 6px 16px; border-radius: 50px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 25px; }
+        .hero-title { font-size: clamp(2.5rem, 6vw, 4.5rem); font-family: 'Playfair Display', serif; line-height: 1.1; margin-bottom: 25px; background: linear-gradient(to right, #ffffff, #a0aab5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero-subtitle { font-size: 1.1rem; color: #a0aab5; line-height: 1.6; max-width: 700px; margin: 0 auto 40px; font-weight: 300; }
+        
+        /* GRID BENTO SERVICIOS */
+        .services-section { padding: 100px 20px; position: relative; z-index: 10; max-width: 1200px; margin: 0 auto; }
+        .services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; }
+        .s-card { background: var(--color-landing-surface); border: 1px solid rgba(255,255,255,0.05); border-radius: 24px; padding: 40px 30px; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: relative; overflow: hidden; }
+        .s-card:hover { transform: translateY(-10px); border-color: var(--color-accent); box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+        .s-card::before { content:''; position:absolute; top:0; left:0; width:100%; height:4px; background: var(--color-accent); transform: scaleX(0); transform-origin: left; transition: 0.4s; }
+        .s-card:hover::before { transform: scaleX(1); }
+        .s-icon { font-size: 2.5rem; color: white; margin-bottom: 20px; }
+        .s-card h3 { font-size: 1.5rem; margin-bottom: 15px; color: white; }
+        .s-card p { color: #8a94a1; font-size: 0.95rem; line-height: 1.5; margin-bottom: 20px; }
+        .s-features { list-style: none; padding: 0; margin: 0; }
+        .s-features li { color: #b0b3b8; font-size: 0.85rem; margin-bottom: 10px; display: flex; gap: 10px; }
+        .s-features li i { color: var(--color-landing-gold); margin-top: 3px; }
+
+        /* SECCIÓN PROPÓSITO & FORMULARIO */
+        .purpose-section { background: #05070a; padding: 100px 20px; border-top: 1px solid rgba(255,255,255,0.05); }
+        .purpose-container { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+        @media (max-width: 900px) { .purpose-container { grid-template-columns: 1fr; } }
+        
+        .purpose-text h2 { font-size: 2.5rem; font-family: 'Playfair Display', serif; margin-bottom: 20px; }
+        .purpose-text p { color: #a0aab5; line-height: 1.7; margin-bottom: 20px; font-size: 1.05rem; }
+        .legal-backing { display: flex; align-items: center; gap: 15px; margin-top: 30px; padding-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); }
+        .legal-backing img { height: 40px; opacity: 0.8; }
+        .legal-backing span { font-size: 0.8rem; color: #65676b; }
+
+        /* FORMULARIO E360 STYLE */
+        .smart-form { background: var(--color-landing-surface); padding: 40px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 25px 50px rgba(0,0,0,0.3); }
+        .form-group { margin-bottom: 25px; }
+        .smart-form label { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; color: #65676b; margin-bottom: 10px; font-weight: 700; }
+        .smart-form input[type="text"], .smart-form textarea, .smart-form select { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 15px; color: white; border-radius: 8px; font-family: inherit; transition: 0.3s; }
+        .smart-form input:focus, .smart-form textarea:focus, .smart-form select:focus { outline: none; border-color: var(--color-accent); background: rgba(0,0,0,0.5); }
+        
+        .btn-glow { background: var(--color-accent); color: white; border: none; padding: 18px 30px; width: 100%; border-radius: 8px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: 0.3s; text-transform: uppercase; letter-spacing: 1px; }
+        .btn-glow:hover { background: #d83526; box-shadow: 0 0 25px rgba(183, 42, 30, 0.4); transform: translateY(-2px); }
+
+        /* ==========================================================================
+           NUEVO: ESTRUCTURA Z-PATTERN PARA SERVICIOS (Full-Width)
+           ========================================================================== */
+        .feature-row { display: flex; align-items: center; gap: 80px; padding: 100px 20px; max-width: 1200px; margin: 0 auto; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .feature-row:nth-child(even) { flex-direction: row-reverse; }
+        @media (max-width: 900px) { .feature-row, .feature-row:nth-child(even) { flex-direction: column; text-align: center; gap: 50px; padding: 70px 20px; } }
+        
+        .feature-content { flex: 1; }
+        .feature-content h3 { font-size: 2.5rem; font-family: 'Playfair Display', serif; margin-bottom: 25px; color: white; line-height: 1.2;}
+        .feature-content p { color: #a0aab5; font-size: 1.1rem; line-height: 1.7; margin-bottom: 30px; }
+        
+        .feature-list { list-style: none; padding: 0; margin: 0 0 30px 0; }
+        .feature-list li { color: #e2e8f0; margin-bottom: 15px; display: flex; align-items: center; gap: 15px; font-size: 1.05rem; }
+        @media (max-width: 900px) { .feature-list li { justify-content: center; } }
+        
+        /* Animaciones SVG y Glassmorphism */
+        .feature-visual { flex: 1; position: relative; display: flex; justify-content: center; align-items: center; min-height: 400px; w-full; }
+        .visual-blob { position: absolute; width: 350px; height: 350px; border-radius: 50%; filter: blur(40px); opacity: 0.15; animation: pulseBlob 6s infinite alternate; z-index: 1; }
+        @keyframes pulseBlob { 0% { transform: scale(0.8); opacity: 0.1; } 100% { transform: scale(1.1); opacity: 0.25; } }
+        
+        .visual-glass { position: relative; z-index: 2; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(15px); border-radius: 30px; padding: 60px; text-align: center; box-shadow: 0 30px 60px rgba(0,0,0,0.5); transform: perspective(1000px) rotateY(-5deg); transition: 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .feature-row:nth-child(even) .visual-glass { transform: perspective(1000px) rotateY(5deg); }
+        .visual-glass:hover { transform: perspective(1000px) rotateY(0deg) translateY(-15px); border-color: rgba(255,255,255,0.15); }
+        
+        .floating-icon { animation: float 6s ease-in-out infinite; font-size: 6rem; display: block; margin-bottom: 20px;}
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-20px); } 100% { transform: translateY(0px); } }
+
+        /* Colores de acento por servicio */
+        .color-audio { background: linear-gradient(135deg, #10b981, #059669); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .color-event { background: linear-gradient(135deg, #f59e0b, #d97706); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .color-mentor { background: linear-gradient(135deg, #8b5cf6, #6d28d9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .color-saas { background: linear-gradient(135deg, #3b82f6, #1d4ed8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .bg-audio { background: #10b981; }
+        .bg-event { background: #f59e0b; }
+        .bg-mentor { background: #8b5cf6; }
+        .bg-saas { background: #3b82f6; }
+    </style>
+</head>
+<body>
+
+    <header class="landing-header">
+        <a href="/" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+            <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo" style="height: 35px;">
+            <span style="color: white; font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700;">Epistecnología</span>
+        </a>
+        <a href="/inv/profile.html" class="btn-glow" style="width: auto; padding: 10px 20px; font-size: 0.8rem; border-radius: 50px;">Ir a mi Perfil</a>
+    </header>
+
+    <section class="hero-landing">
+        <div id="spotlight"></div>
+        <canvas id="plexus-canvas"></canvas>
+        
+        <div class="hero-content">
+            <div class="badge-pro"><i class="fa-solid fa-bolt"></i> Studio Enfoque 360</div>
+            <h1 class="hero-title">Elevamos el nivel de tu divulgación institucional</h1>
+            <p class="hero-subtitle">Producción audiovisual de alta gama, plataformas SaaS B2B y gestión integral de eventos académicos. Tecnología de punta al servicio del conocimiento.</p>
+            
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <button onclick="document.getElementById('contacto').scrollIntoView({behavior: 'smooth'})" class="btn-glow" style="width: auto; border-radius: 50px;">Agendar Diagnóstico</button>
+                <button onclick="document.getElementById('servicios').scrollIntoView({behavior: 'smooth'})" style="background: transparent; border: 1px solid rgba(255,255,255,0.2); color: white; padding: 18px 30px; border-radius: 50px; font-weight: 700; cursor: pointer; transition: 0.3s;">Ver Servicios</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="servicios" style="position: relative; z-index: 10; padding-top: 50px;">
+        
+        <div class="feature-row">
+            <div class="feature-content">
+                <div style="color: #10b981; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; font-size: 0.8rem; margin-bottom: 10px;">Unidad 01</div>
+                <h3>Producción Audiovisual & Eventos</h3>
+                <p>Dirección y realización multicámara para congresos presenciales, híbridos o transmisiones remotas con calidad televisiva. Rompemos las barreras físicas para que el conocimiento llegue a donde tiene que llegar.</p>
+                <ul class="feature-list">
+                    <li><i class="fa-solid fa-camera" style="color: #10b981;"></i> Cobertura Multicámara Presencial 4K</li>
+                    <li><i class="fa-solid fa-satellite-dish" style="color: #10b981;"></i> Transmisiones Híbridas (Zoom/OBS a EPT Live)</li>
+                    <li><i class="fa-solid fa-microphone-lines" style="color: #10b981;"></i> Realización de Podcasts y Videos Divulgativos</li>
+                </ul>
+            </div>
+            <div class="feature-visual">
+                <div class="visual-blob bg-audio"></div>
+                <div class="visual-glass">
+                    <i class="fa-solid fa-video floating-icon color-audio"></i>
+                    <h4 style="color: white; font-size: 1.2rem; margin:0;">Streaming de Alta Gama</h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="feature-row">
+            <div class="feature-content">
+                <div style="color: #f59e0b; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; font-size: 0.8rem; margin-bottom: 10px;">Unidad 02</div>
+                <h3>Gestión Tecnológica de Eventos</h3>
+                <p>Olvídate del estrés organizativo. Creamos el ecosistema digital completo para tu congreso: desde la atracción de asistentes hasta el cierre con emisión automatizada de credenciales.</p>
+                <ul class="feature-list">
+                    <li><i class="fa-solid fa-laptop-code" style="color: #f59e0b;"></i> Landing Pages Institucionales de Alta Conversión</li>
+                    <li><i class="fa-solid fa-credit-card" style="color: #f59e0b;"></i> Pasarelas de Registro y Pagos Seguros</li>
+                    <li><i class="fa-solid fa-certificate" style="color: #f59e0b;"></i> Plataforma de Emisión de Certificados Verificables</li>
+                </ul>
+            </div>
+            <div class="feature-visual">
+                <div class="visual-blob bg-event"></div>
+                <div class="visual-glass">
+                    <i class="fa-solid fa-ticket floating-icon color-event"></i>
+                    <h4 style="color: white; font-size: 1.2rem; margin:0;">Ecosistema Integral</h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="feature-row">
+            <div class="feature-content">
+                <div style="color: #8b5cf6; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; font-size: 0.8rem; margin-bottom: 10px;">Unidad 03</div>
+                <h3>Mentoría & Validación Académica</h3>
+                <p>Acompañamiento estratégico 1 a 1 para investigadores y académicos. Te ayudamos a traducir la complejidad científica en un formato digerible, asegurando que tu trabajo no se pierda en el archivo.</p>
+                <ul class="feature-list">
+                    <li><i class="fa-solid fa-id-badge" style="color: #8b5cf6;"></i> Asesoría en Identidad Digital (ORCID / Bluesky)</li>
+                    <li><i class="fa-solid fa-fingerprint" style="color: #8b5cf6;"></i> Gestión y Asignación de Identificadores (DOI)</li>
+                    <li><i class="fa-solid fa-pen-nib" style="color: #8b5cf6;"></i> Corrección de Estilo Científico y Diseño Gráfico</li>
+                </ul>
+            </div>
+            <div class="feature-visual">
+                <div class="visual-blob bg-mentor"></div>
+                <div class="visual-glass">
+                    <i class="fa-solid fa-microscope floating-icon color-mentor"></i>
+                    <h4 style="color: white; font-size: 1.2rem; margin:0;">Impacto y Rigor</h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="feature-row">
+            <div class="feature-content">
+                <div style="color: #3b82f6; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; font-size: 0.8rem; margin-bottom: 10px;">Unidad 04</div>
+                <h3>Soluciones SaaS Marca Blanca</h3>
+                <p>Licencia el potente motor tecnológico de Epistecnología para tu universidad o centro de investigación. Despliega tu propia red social privada o plataforma de streaming institucional.</p>
+                <ul class="feature-list">
+                    <li><i class="fa-solid fa-users" style="color: #3b82f6;"></i> Módulo Privado de Comunidad y Foros Institucionales</li>
+                    <li><i class="fa-solid fa-play" style="color: #3b82f6;"></i> Automatización de Streaming a tus canales oficiales</li>
+                    <li><i class="fa-solid fa-cloud" style="color: #3b82f6;"></i> Desarrollo B2B Modular y Despliegue en tus servidores</li>
+                </ul>
+            </div>
+            <div class="feature-visual">
+                <div class="visual-blob bg-saas"></div>
+                <div class="visual-glass">
+                    <i class="fa-solid fa-server floating-icon color-saas"></i>
+                    <h4 style="color: white; font-size: 1.2rem; margin:0;">Infraestructura B2B</h4>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="contacto" class="purpose-section">
+        <div class="purpose-container">
+            <div class="purpose-text">
+                <h2>Impacto con Propósito</h2>
+                <p>No somos una agencia de marketing tradicional. Somos <strong>ingenieros y académicos</strong> construyendo infraestructura para la ciencia.</p>
+                <p>Al contratar cualquiera de nuestros servicios de producción o desarrollo, no solo obtienes un resultado de élite; <strong>estás financiando el sostenimiento de Epistecnología</strong> como plataforma abierta y gratuita para miles de investigadores en Latinoamérica.</p>
+                
+                <div class="legal-backing">
+                    <div>
+                        <span style="display: block; font-weight: bold; color: white; margin-bottom: 5px;">Representación Jurídica y Comercial:</span>
+                        <span>Todos los servicios son facturados y operados legalmente por <strong>Enfoque 360 SAC</strong>, garantizando seguridad y formalidad institucional en cada contrato.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="smart-form">
+                <h3 style="color: white; font-family: 'Playfair Display', serif; font-size: 1.8rem; margin: 0 0 5px 0;">Hablemos de tu Proyecto</h3>
+                <p style="color: #8a94a1; font-size: 0.9rem; margin-bottom: 30px;">Completa los datos y nuestro sistema preparará tu solicitud.</p>
+                
+                <form id="form-diagnosis">
+                    <div class="form-group">
+                        <label>Nombre o Institución</label>
+                        <input type="text" id="input-nombre" placeholder="Ej: Dr. Pérez / Universidad Nacional..." required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Perfil del Cliente</label>
+                        <select id="input-perfil" required>
+                            <option value="" disabled selected>Selecciona una opción...</option>
+                            <option value="Institución Académica">Universidad / Centro de Investigación</option>
+                            <option value="Investigador Independiente">Investigador / Divulgador Independiente</option>
+                            <option value="Empresa B2B">Corporativo / Empresa (SaaS/Eventos)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Servicio de Interés Principal</label>
+                        <select id="input-servicio" required>
+                            <option value="" disabled selected>Selecciona el área principal...</option>
+                            <option value="Producción Audiovisual (Streaming/Grabación)">Producción Audiovisual (Streaming/Grabación)</option>
+                            <option value="Gestión de Eventos y Landing Pages">Gestión de Eventos y Landing Pages</option>
+                            <option value="Mentoría / Asignación de DOI">Mentoría / Asignación de DOI</option>
+                            <option value="Desarrollo SaaS Marca Blanca">Desarrollo SaaS Marca Blanca</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Detalles del Requerimiento</label>
+                        <textarea id="input-necesidad" rows="4" placeholder="Describe brevemente la fecha, escala o necesidad técnica de tu proyecto..." required></textarea>
+                    </div>
+
+                    <button type="submit" class="btn-glow"><i class="fa-brands fa-whatsapp" style="font-size: 1.2rem; vertical-align: middle; margin-right: 8px;"></i> Solicitar Cotización</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // 1. Efecto Spotlight (Linterna)
+        const spotlight = document.getElementById('spotlight');
+        if(spotlight) {
+            document.addEventListener('mousemove', (e) => {
+                const x = e.clientX;
+                const y = e.clientY;
+                spotlight.style.background = `radial-gradient(800px circle at ${x}px ${y}px, rgba(183, 42, 30, 0.08), transparent 40%)`;
+            });
+        }
+
+        // 2. Formulario Inteligente (Cerebro Copywriter)
+        const formDiagnosis = document.getElementById('form-diagnosis');
+        if(formDiagnosis) {
+            formDiagnosis.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const nombre = document.getElementById('input-nombre').value;
+                const perfil = document.getElementById('input-perfil').value;
+                const servicio = document.getElementById('input-servicio').value;
+                const necesidad = document.getElementById('input-necesidad').value;
+                
+                let mensajeIntro = "";
+                if(perfil.includes("Institución")) {
+                    mensajeIntro = "Hola equipo de Epistecnología / Enfoque 360. Represento a una institución académica y necesitamos respaldo tecnológico.";
+                } else if(perfil.includes("Empresa")) {
+                    mensajeIntro = "Hola. Buscamos soluciones tecnológicas y de producción B2B de alto nivel.";
+                } else {
+                    mensajeIntro = "Hola. Soy investigador y busco servicios profesionales para potenciar mi divulgación.";
+                }
+
+                const mensajeFinal = `*SOLICITUD DE COTIZACIÓN (Studio)* 🚀\n\n${mensajeIntro}\n\n👤 *Cliente:* ${nombre}\n🎯 *Interés:* ${servicio}\n📝 *Detalles:* ${necesidad}\n\nMe gustaría agendar una llamada de diagnóstico.`;
+
+                // Tu número real de WhatsApp
+                const whatsappNumber = "51993118573";
+                const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(mensajeFinal)}`;
+                
+                window.open(url, '_blank');
+            });
+        }
+
+        // 3. Efecto Plexus (Red de Nodos) en Canvas
+        const canvas = document.getElementById('plexus-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = document.querySelector('.hero-landing').offsetHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.radius = Math.random() * 2;
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.fill();
+            }
+        }
+
+        for (let i = 0; i < 80; i++) particles.push(new Particle());
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            
+            // Conectar partículas cercanas
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < 120) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = `rgba(183, 42, 30, ${0.2 - distance/600})`; // Usa el rojo de Epistecnología para los enlaces
+                        ctx.lineWidth = 1;
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+        animate();
+    </script>
+</body>
+</html>
