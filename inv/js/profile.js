@@ -1187,3 +1187,26 @@ window.deleteManagementItem = async (table, id) => {
         alert("Hubo un error. Asegúrate de tener permisos para borrar este elemento.");
     }
 };
+
+// --- FUNCIONES PARA MEMBRESÍA Y PAGO ---
+
+window.openPaymentModal = (tier, price) => {
+    document.getElementById('modal-tier-name').textContent = tier;
+    document.getElementById('modal-tier-price').textContent = price;
+    document.getElementById('payment-modal-overlay').classList.add('is-visible');
+};
+
+window.closePaymentModal = () => {
+    document.getElementById('payment-modal-overlay').classList.remove('is-visible');
+    // Cerramos cualquier detalle abierto
+    document.querySelectorAll('.pm-detail').forEach(d => d.style.display = 'none');
+};
+
+window.togglePaymentDetail = (id) => {
+    const detail = document.getElementById(id);
+    const isVisible = detail.style.display === 'block';
+    // Cerramos todos primero
+    document.querySelectorAll('.pm-detail').forEach(d => d.style.display = 'none');
+    // Abrimos el seleccionado si no estaba visible
+    if (!isVisible) detail.style.display = 'block';
+};

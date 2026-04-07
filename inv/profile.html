@@ -496,60 +496,48 @@
                 </div>
 
                 <div id="tab-membresias" class="profile-tab-content">
-                    <div class="bento-box full-width"> <div class="bento-header" style="text-align: center; margin-bottom: 25px;">
-                            <h3><i class="fa-solid fa-heart" style="color: #e25555;"></i> Apoya a Epistecnología</h3>
-                            <p class="text-muted">Elige tu método preferido para ayudarnos a mantener la plataforma independiente y sin fines de lucro.</p>
-                        </div>
-                        
-                        <div class="support-options-grid">
-                            
-                            <div class="support-card">
-                                <div class="support-icon paypal"><i class="fa-brands fa-paypal"></i></div>
-                                <h4>PayPal / Tarjeta</h4>
-                                <p>Donación rápida e internacional.</p>
-                                <a href="https://www.paypal.com/ncp/payment/AVNL8CGY5A2FL" target="_blank" class="btn-support btn-paypal">Apoyar con PayPal</a>
-                            </div>
-
-                            <div class="support-card">
-                                <div class="support-icon yape">
-                                    <i class="fa-solid fa-mobile-screen-button"></i>
-                                </div>
-                                <h4>Yape / Plin</h4>
-                                <p>Transferencia rápida en Perú.</p>
-                                <div class="qr-placeholder">
-                                    <img src="https://i.ibb.co/xL3nC4y/qr-placeholder.png" alt="QR Yape" id="yape-qr-img">
-                                </div>
-                                <div class="copy-box">
-                                    <span id="yape-number">993 118 573</span> <button onclick="copySupportData('yape-number', this)" title="Copiar número"><i class="fa-regular fa-copy"></i></button>
-                                </div>
-                                <p style="font-size: 0.7rem; color: var(--color-secondary); margin-top: 8px;">A nombre de: Henry Márquez</p>
-                            </div>
-
-                            <div class="support-card">
-                                <div class="support-icon bank"><i class="fa-solid fa-building-columns"></i></div>
-                                <h4>Transferencia BCP</h4>
-                                <p>Banca móvil o internet.</p>
-                                
-                                <div class="copy-box mt-2">
-                                    <div class="copy-box-col">
-                                        <small>Cuenta Soles</small>
-                                        <span id="bcp-cuenta">193-0000000-0-00</span> </div>
-                                    <button onclick="copySupportData('bcp-cuenta', this)" title="Copiar Cuenta"><i class="fa-regular fa-copy"></i></button>
-                                </div>
-                                
-                                <div class="copy-box mt-2">
-                                    <div class="copy-box-col">
-                                        <small>CCI</small>
-                                        <span id="bcp-cci">002-193-000000000000-12</span> </div>
-                                    <button onclick="copySupportData('bcp-cci', this)" title="Copiar CCI"><i class="fa-regular fa-copy"></i></button>
-                                </div>
-                                <p style="font-size: 0.7rem; color: var(--color-secondary); margin-top: 8px;">A nombre de: Henry Márquez</p>
-                            </div>
-
+                    <div class="bento-box full-width">
+                        <div class="bento-header" style="text-align: center; margin-bottom: 30px;">
+                            <h3><i class="fa-solid fa-gem" style="color: #ec4899;"></i> Niveles de Membresía</h3>
+                            <p class="text-muted">Tu apoyo simbólico nos permite seguir democratizando el conocimiento científico y cultural.</p>
                         </div>
 
-                        <div class="support-footer-note">
-                            <p><i class="fa-solid fa-circle-check" style="color: #10b981;"></i> <strong>¿Hiciste un Yape o Transferencia?</strong> <a href="https://wa.me/51999999999?text=Hola,%20acabo%20de%20apoyar%20a%20Epistecnologia" target="_blank">Envíanos la captura por WhatsApp</a> para encender tu insignia de <strong>Miembro Honorario</strong> en tu perfil.</p>
+                        <div class="membership-tiers-grid">
+                            <div class="tier-card">
+                                <div class="tier-badge">Nivel 1</div>
+                                <h4>Simpatizante</h4>
+                                <div class="tier-price">S/ 10 <span>o $3 / único</span></div>
+                                <ul class="tier-benefits">
+                                    <li><i class="fa-solid fa-check"></i> Insignia de Miembro en perfil</li>
+                                    <li><i class="fa-solid fa-check"></i> Mención en el feed global</li>
+                                </ul>
+                                <button class="btn-tier" onclick="openPaymentModal('Simpatizante', 'S/ 10 o $3')">Elegir este nivel</button>
+                            </div>
+
+                            <div class="tier-card featured">
+                                <div class="tier-tag">Más Popular</div>
+                                <div class="tier-badge">Nivel 2</div>
+                                <h4>Socio Activo</h4>
+                                <div class="tier-price">S/ 20 <span>o $5 / mes</span></div>
+                                <ul class="tier-benefits">
+                                    <li><i class="fa-solid fa-check"></i> Insignia Especial de Socio</li>
+                                    <li><i class="fa-solid fa-check"></i> Acceso anticipado a eventos</li>
+                                    <li><i class="fa-solid fa-check"></i> Agradecimiento en la Revista</li>
+                                </ul>
+                                <button class="btn-tier" onclick="openPaymentModal('Socio Activo', 'S/ 20 o $5')">Suscribirme ahora</button>
+                            </div>
+
+                            <div class="tier-card">
+                                <div class="tier-badge">Nivel 3</div>
+                                <h4>Mecenas</h4>
+                                <div class="tier-price">S/ 50 <span>o $15 / mes</span></div>
+                                <ul class="tier-benefits">
+                                    <li><i class="fa-solid fa-check"></i> Insignia Dorada de Mecenas</li>
+                                    <li><i class="fa-solid fa-check"></i> Mención VIP en EPT Live</li>
+                                    <li><i class="fa-solid fa-check"></i> Publicación destacada anual</li>
+                                </ul>
+                                <button class="btn-tier" onclick="openPaymentModal('Mecenas', 'S/ 50 o $15')">Ser un Mecenas</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -751,6 +739,56 @@
             </div>
         </div>
     </footer>
+
+    <div id="payment-modal-overlay" class="onboarding-overlay">
+        <div class="onboarding-modal" style="max-width: 500px;">
+            <button class="modal-close-btn" onclick="closePaymentModal()">&times;</button>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h3 id="modal-tier-name">Nivel</h3>
+                <p class="text-muted">Has seleccionado el apoyo de: <strong id="modal-tier-price"></strong></p>
+            </div>
+
+            <div class="payment-methods-list">
+                <a href="https://www.paypal.com/ncp/payment/AVNL8CGY5A2FL" target="_blank" class="payment-method-item">
+                    <div class="pm-icon" style="background:#003087"><i class="fa-brands fa-paypal"></i></div>
+                    <div class="pm-info"><strong>PayPal / Tarjeta</strong><span>Pago internacional seguro</span></div>
+                    <i class="fa-solid fa-chevron-right"></i>
+                </a>
+
+                <div class="payment-method-item" onclick="togglePaymentDetail('detail-yape')">
+                    <div class="pm-icon" style="background:#742284"><i class="fa-solid fa-mobile-screen-button"></i></div>
+                    <div class="pm-info"><strong>Yape / Plin</strong><span>Transferencia rápida (Perú)</span></div>
+                    <i class="fa-solid fa-qrcode"></i>
+                </div>
+                <div id="detail-yape" class="pm-detail" style="display:none;">
+                    <img src="https://i.ibb.co/xL3nC4y/qr-placeholder.png" class="qr-small">
+                    <div class="copy-box">
+                        <span id="yape-num-modal">993 118 573</span>
+                        <button onclick="copySupportData('yape-num-modal', this)"><i class="fa-regular fa-copy"></i></button>
+                    </div>
+                </div>
+
+                <div class="payment-method-item" onclick="togglePaymentDetail('detail-bcp')">
+                    <div class="pm-icon" style="background:#ff7800"><i class="fa-solid fa-building-columns"></i></div>
+                    <div class="pm-info"><strong>BCP / Transferencia</strong><span>Cuenta corriente y CCI</span></div>
+                    <i class="fa-solid fa-caret-down"></i>
+                </div>
+                <div id="detail-bcp" class="pm-detail" style="display:none;">
+                    <div class="copy-box mt-2">
+                        <small>Cuenta:</small> <span id="bcp-c-modal">193-0000000-0-00</span>
+                        <button onclick="copySupportData('bcp-c-modal', this)"><i class="fa-regular fa-copy"></i></button>
+                    </div>
+                    <div class="copy-box mt-2">
+                        <small>CCI:</small> <span id="bcp-cci-modal">002-193-000000000000-12</span>
+                        <button onclick="copySupportData('bcp-cci-modal', this)"><i class="fa-regular fa-copy"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <p class="modal-footer-msg">Una vez realizado el pago, envíanos el comprobante por WhatsApp para activar tus beneficios.</p>
+            <a href="https://wa.me/51993118573?text=Hola,%20acabo%20de%20realizar%20mi%20pago%20de%20membresía" target="_blank" class="btn-primary" style="width:100%; text-decoration:none; display:block; text-align:center;">Enviar Comprobante</a>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/js/main.js"></script>
