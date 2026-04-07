@@ -1016,3 +1016,66 @@ body:not(.dark-theme) .supporter-logos img {
     font-size: 0.95rem; border: 1px dashed rgba(183, 42, 30, 0.3);
 }
 .support-footer-note a { color: var(--color-accent); font-weight: bold; text-decoration: underline; }
+
+/* ==========================================================================
+   ESTILOS PARA LA PESTAÑA DE SERVICIOS
+   ========================================================================== */
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+    padding: 10px 0;
+}
+
+.service-card {
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.service-card:hover {
+    border-color: var(--color-accent);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+    transform: translateY(-5px);
+}
+
+.service-icon {
+    width: 50px; height: 50px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem; margin-bottom: 20px; color: white;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+/* Colores por unidad de negocio */
+.service-icon.audiovisual { background: linear-gradient(135deg, #10b981, #059669); } /* Verde */
+.service-icon.events { background: linear-gradient(135deg, #f59e0b, #d97706); } /* Naranja */
+.service-icon.mentoring { background: linear-gradient(135deg, #8b5cf6, #6d28d9); } /* Morado */
+.service-icon.saas { background: linear-gradient(135deg, #3b82f6, #1d4ed8); } /* Azul */
+
+.service-card h4 {
+    margin: 0 0 15px 0; font-size: 1.15rem; color: var(--color-primary);
+}
+
+.service-features {
+    list-style: none; padding: 0; margin: 0 0 25px 0; flex-grow: 1;
+}
+.service-features li {
+    font-size: 0.85rem; color: var(--color-secondary); margin-bottom: 12px;
+    display: flex; align-items: flex-start; gap: 10px; line-height: 1.3;
+}
+.service-features li i {
+    color: var(--color-accent); font-size: 0.8rem; margin-top: 2px;
+}
+
+.btn-service {
+    display: block; width: 100%; text-align: center; padding: 12px;
+    border-radius: 8px; font-weight: 700; text-decoration: none;
+    background: transparent; border: 1px solid var(--color-accent);
+    color: var(--color-accent); transition: 0.2s; font-size: 0.95rem;
+}
+.btn-service:hover {
+    background: var(--color-accent); color: white;
+}
