@@ -1132,31 +1132,125 @@ body:not(.dark-theme) .supporter-logos img {
 }
 .btn-delete:hover { background: #ef4444; color: white; transform: scale(1.1) rotate(5deg); }
 
-/* --- DISEÑO DE NIVELES (TIERS) --- */
+/* ==========================================================================
+   DISEÑO DE NIVELES (TIERS) - COLORES CORREGIDOS (Adiós Rosa)
+   ========================================================================== */
 .membership-tiers-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; margin: 20px 0;
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+    gap: 25px; 
+    margin: 20px 0;
+    align-items: start; /* Asegura que no se estiren verticalmente si tienen distinto contenido */
 }
 
 .tier-card {
-    background: var(--color-background); border: 2px solid var(--color-border); border-radius: 20px;
-    padding: 30px 20px; text-align: center; position: relative; transition: 0.3s; display: flex; flex-direction: column;
+    background: var(--color-background); 
+    border: 2px solid var(--color-border); 
+    border-radius: 20px;
+    padding: 30px 20px; 
+    text-align: center; 
+    position: relative; 
+    transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    display: flex; 
+    flex-direction: column;
 }
 
-.tier-card.featured { border-color: #ec4899; transform: scale(1.05); z-index: 2; box-shadow: 0 10px 30px rgba(236, 72, 153, 0.1); }
-.tier-tag { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #ec4899; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
+/* --- ESTILOS PARA EL NIVEL DESTACADO (Dorado Premium) --- */
+.tier-card.featured { 
+    border-color: #f59e0b; /* Dorado/Ámbar Premium */
+    transform: scale(1.03); 
+    z-index: 2; 
+    /* Sombra dorada suave */
+    box-shadow: 0 15px 35px rgba(245, 158, 11, 0.15); 
+}
 
-.tier-badge { font-size: 0.75rem; font-weight: bold; color: var(--color-accent); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
-.tier-card h4 { font-size: 1.4rem; margin: 0 0 15px 0; color: var(--color-primary); }
-.tier-price { font-size: 1.8rem; font-weight: 800; color: var(--color-primary); margin-bottom: 20px; }
-.tier-price span { font-size: 0.85rem; color: var(--color-secondary); font-weight: 400; }
+.tier-tag { 
+    position: absolute; 
+    top: -12px; 
+    left: 50%; 
+    transform: translateX(-50%); 
+    background: #f59e0b; /* Dorado/Ámbar */
+    color: white; 
+    padding: 5px 15px; 
+    border-radius: 20px; 
+    font-size: 0.7rem; 
+    font-weight: bold; 
+    text-transform: uppercase; 
+    letter-spacing: 1px;
+    box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
+}
 
-.tier-benefits { list-style: none; padding: 0; margin: 0 0 25px 0; text-align: left; flex-grow: 1; }
-.tier-benefits li { font-size: 0.9rem; color: var(--color-secondary); margin-bottom: 10px; display: flex; gap: 10px; }
-.tier-benefits li i { color: #10b981; margin-top: 3px; }
+.featured .btn-tier { 
+    background: #f59e0b; /* Botón dorado para el nivel destacado */
+}
+.featured .btn-tier:hover {
+    background: #d97706; /* Un tono más oscuro al hacer hover */
+}
 
-.btn-tier { width: 100%; padding: 12px; border-radius: 50px; border: none; background: var(--color-accent); color: white; font-weight: 700; cursor: pointer; transition: 0.2s; }
-.btn-tier:hover { transform: translateY(-3px); filter: brightness(1.1); }
-.featured .btn-tier { background: #ec4899; }
+/* --- RESTO DE ESTILOS (Se mantienen igual) --- */
+.tier-badge { 
+    font-size: 0.75rem; 
+    font-weight: bold; 
+    color: var(--color-accent); 
+    text-transform: uppercase; 
+    letter-spacing: 1px; 
+    margin-bottom: 10px; 
+}
+.tier-card h4 { 
+    font-size: 1.4rem; 
+    margin: 0 0 15px 0; 
+    color: var(--color-primary); 
+    font-family: var(--font-serif); /* Usando la fuente serif para títulos */
+}
+.tier-price { 
+    font-size: 2rem; 
+    font-weight: 800; 
+    color: var(--color-primary); 
+    margin-bottom: 20px; 
+}
+.tier-price span { 
+    font-size: 0.85rem; 
+    color: var(--color-secondary); 
+    font-weight: 400; 
+}
+
+.tier-benefits { 
+    list-style: none; 
+    padding: 0; 
+    margin: 0 0 25px 0; 
+    text-align: left; 
+    flex-grow: 1; 
+}
+.tier-benefits li { 
+    font-size: 0.9rem; 
+    color: var(--color-secondary); 
+    margin-bottom: 12px; 
+    display: flex; 
+    gap: 10px; 
+    line-height: 1.3;
+}
+.tier-benefits li i { 
+    color: #10b981; /* Verde para los checks de beneficio */
+    margin-top: 3px; 
+}
+
+.btn-tier { 
+    width: 100%; 
+    padding: 14px; 
+    border-radius: 50px; 
+    border: none; 
+    background: var(--color-accent); /* Color de acento estándar para los otros botones */
+    color: white; 
+    font-weight: 700; 
+    cursor: pointer; 
+    transition: 0.2s; 
+    font-size: 0.95rem;
+}
+.btn-tier:hover { 
+    transform: translateY(-3px); 
+    filter: brightness(1.1); 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
 
 /* --- MODAL DE PAGO --- */
 .payment-methods-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
