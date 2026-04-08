@@ -28,25 +28,66 @@
             <a href="/" class="logo">
                 <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Epistecnologia Logo">
             </a>
+            
             <nav class="main-menu bento-box-nav">
-                <a href="/" class="nav-icon" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
-                <a href="https://eptnews.substack.com/" class="nav-icon" aria-label="Newsletter"><i class="fa-solid fa-newspaper"></i></a>
-                <a href="https://nas.io/es-mx/ept" class="nav-icon" aria-label="Comunidad"><i class="fa-solid fa-users"></i></a>
+                <a href="/#inicio" class="nav-icon"><i class="fa-solid fa-house"></i> <span class="nav-text">Inicio</span></a>
+                <a href="/comunidad.html" class="nav-icon"><i class="fa-solid fa-users"></i> <span class="nav-text">Comunidad</span></a>
+                <a href="/live.html" class="nav-icon"><i class="fa-solid fa-tower-broadcast"></i> <span class="nav-text">Live</span></a>
+                
+                <div class="nav-dropdown">
+                    <button class="nav-icon">
+                        <i class="fa-solid fa-layer-group"></i> <span class="nav-text">Ejes</span> <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem;"></i>
+                    </button>
+                    <div class="dropdown-content">
+                        <a href="#"><i class="fa-solid fa-microscope"></i> Histórico-Cultural</a>
+                        <a href="#"><i class="fa-solid fa-book-open"></i> Científico-Tecnológico</a>
+                    </div>
+                </div>
+
+                <a href="/servicios.html" class="nav-icon" font-weight: bold;">
+                    <i class="fa-solid fa-handshake-angle"></i> <span class="nav-text">Servicios</span>
+                </a>
+
+                <a href="https://publicaciones.epistecnologia.com/" class="nav-icon" target="_blank"><i class="fa-solid fa-newspaper"></i> <span class="nav-text">Revista</span></a>
             </nav>
-            <div class="live-channels bento-box-nav">
-                <a href="/live.html" class="nav-icon" id="nav-live-desktop" aria-label="En Vivo"><i class="fa-solid fa-satellite-dish"></i></a>
-                <a href="/live.html#seccion-eventos" class="nav-icon" aria-label="Eventos"><i class="fa-solid fa-calendar-days"></i></a>
-                <a href="#" class="nav-icon" id="notifications-bell-icon" aria-label="Notificaciones"><i class="fa-solid fa-bell"></i></a>
-            </div>
-            <div class="user-actions bento-box-nav">
+
+            <div class="actions-area bento-box-nav">
+                
+                <div class="nav-dropdown" id="create-dropdown-container">
+                    <button id="btn-global-create" class="nav-icon create-locked">
+                        <i class="fa-solid fa-lock" id="create-icon"></i> <span class="nav-text">Crear</span>
+                    </button>
+                    <div class="dropdown-content dropdown-right" id="create-options">
+                        <a href="/inv/dashboard.html"><i class="fa-solid fa-pen-to-square"></i> Publicar Artículo</a>
+                        <a href="/inv/dashboard.html"><i class="fa-solid fa-calendar-plus"></i> Agendar Evento</a>
+                        <a href="/comunidad.html"><i class="fa-solid fa-bolt"></i> Directo Rápido</a>
+                    </div>
+                </div>
+
+                <a href="#" class="nav-icon" id="notifications-bell-icon"><i class="fa-solid fa-bell"></i></a>
+                
                 <div id="guest-view">
-                    <button id="login-modal-trigger" class="nav-icon" aria-label="Iniciar sesión"><i class="fa-solid fa-user"></i></button>
+                    <button class="btn-nav-access trigger-login-modal">Acceder</button>
                 </div>
+                
                 <div id="user-view" style="display: none;">
-                    <a href="/inv/dashboard.html" id="user-avatar-link" class="nav-icon" title="Ir al Dashboard"></a>
-                    <button id="logout-btn-header" class="nav-icon" title="Cerrar Sesión"><i class="fa-solid fa-right-from-bracket"></i></button>
+                    <div class="nav-dropdown">
+                        <button id="user-avatar-link" class="nav-icon-avatar"></button>
+                        <div class="dropdown-content dropdown-right">
+                            <a href="/inv/profile.html"><i class="fa-solid fa-user"></i> Mi Perfil</a>
+                            <a href="#" id="logout-btn-header" style="color: #ef4444;"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</a>
+                        </div>
+                    </div>
                 </div>
-                <button class="theme-switcher nav-icon" id="theme-switcher-desktop" aria-label="Cambiar tema"><i class="fa-solid fa-moon"></i></button>
+
+                <button class="theme-switcher nav-icon" id="theme-switcher-desktop"><i class="fa-solid fa-moon"></i></button>
+            </div>
+        </div>
+        <div id="support-banner" class="support-banner">
+            <div class="container">
+                <p><i class="fa-brands fa-gratipay"></i> <strong>Epistecnología</strong> es una plataforma sin fines de lucro. Tu apoyo nos ayuda a seguir democratizando el conocimiento. 
+                <a href="https://www.paypal.com/ncp/payment/AVNL8CGY5A2FL" target="_blank">Aportar ahora</a> o explora nuestras <a href="#" onclick="navigateToTabExternal('tab-membresias'); dismissBanner(); return false;">Membresías</a>.</p>
+                <button class="close-banner" onclick="dismissBanner()">&times;</button>
             </div>
         </div>
     </header>
