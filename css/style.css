@@ -166,52 +166,97 @@ body.dark-theme .dropdown-content { box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
     .nav-icon { padding: 0; width: 44px; justify-content: center; }
 }
 
-.mobile-nav { display: none; position: fixed; bottom: 0; left: 0; width: 100%; z-index: 1000; background-color: var(--color-surface); border-top: 1px solid var(--color-border); box-shadow: 0 -2px 5px rgba(0,0,0,0.05); padding: 0.25rem 0; justify-content: space-around; } 
-.mobile-nav__link { flex-grow: 1; color: var(--color-text-secondary); display: flex; align-items: center; justify-content: center; height: 54px; font-size: 1.5rem; } 
-.mobile-nav__link.active { color: var(--color-accent); } 
-.mobile-nav__text { display: none; } 
-.mobile-more-menu { 
+/* ==========================================================================
+   NAVEGACIÓN MÓVIL PWA - CORREGIDA Y OPTIMIZADA
+   ========================================================================== */
+
+/* 1. Ocultar menú móvil en escritorio */
+@media (min-width: 769px) {
+    .bottom-nav, .mobile-more-menu { display: none !important; }
+}
+
+/* 2. Estilos de la barra inferior */
+.bottom-nav {
+    display: none; /* Se activa en móviles a través del media query */
     position: fixed; 
     bottom: 0; 
     left: 0; 
-    width: 100%; 
-    z-index: 1002; 
-    background-color: var(--color-surface); 
-    border-top-left-radius: var(--border-radius); 
-    border-top-right-radius: var(--border-radius); 
-    box-shadow: 0 -5px 15px rgba(0,0,0,0.1); 
-    transform: translateY(100%); 
-    transition: transform 0.3s ease-out;
-    max-height: 85vh; 
-    overflow-y: auto; 
-} 
+    width: 100%;
+    background-color: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    z-index: 1000; /* La barra queda debajo del modal oscuro */
+    /* Protege contra la barra de los iPhone nuevos */
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.nav-item {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 0.75rem 0.5rem; color: var(--color-secondary); text-decoration: none; 
+    font-size: 0.75rem; font-weight: 500; background: none; border: none; 
+    width: 100%; cursor: pointer; transition: color 0.2s;
+}
+.nav-item.active, .nav-item:hover { color: var(--color-accent); }
+.nav-item i { font-size: 1.25rem; margin-bottom: 0.25rem; }
+
+/* 3. Menú Desplegable "Más" (Animación arreglada) */
+.mobile-more-menu {
+    /* TRUCO: Usamos visibility en vez de display:none para que la animación fluya */
+    display: flex;
+    position: fixed; 
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.6); 
+    z-index: 2000; /* Cubre toda la pantalla, incluyendo la bottom-nav */
+    align-items: flex-end; 
+    visibility: hidden;
+    opacity: 0; 
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
 .mobile-more-menu.is-visible { 
+    visibility: visible;
+    opacity: 1; 
+}
+
+/* La caja blanca que sube */
+.mobile-more-menu__content {
+    background: var(--color-surface); 
+    width: 100%;
+    border-radius: 20px 20px 0 0; 
+    /* Padding bottom dinámico para cubrir "el hueco" en iOS/Android */
+    padding: 1.5rem 1.5rem calc(1.5rem + env(safe-area-inset-bottom));
+    transform: translateY(100%); 
+    transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1);
+    max-height: 85vh; 
+    overflow-y: auto;
+}
+
+.mobile-more-menu.is-visible .mobile-more-menu__content { 
     transform: translateY(0); 
 }
-.mobile-more-menu__content { 
-    padding: 1.5rem; 
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-} 
-.mobile-more-menu__item { 
-    display: flex; 
-    align-items: center; 
-    gap: 1rem; 
-    padding: 1rem; 
-    font-size: 1rem; 
-    font-weight: 500; 
-    color: var(--color-text-primary); 
-    border-radius: 8px; 
-} 
+
+/* Estilo de los botones internos */
+.mobile-more-menu__item {
+    display: flex; align-items: center; width: 100%; padding: 1rem;
+    color: var(--color-text-primary); text-decoration: none;
+    background: none; border: none; border-radius: 12px;
+    font-size: 1rem; font-weight: 500; cursor: pointer;
+    transition: background-color 0.2s; text-align: left;
+}
+
 .mobile-more-menu__item:hover, .mobile-more-menu__item:active { 
     background-color: var(--color-background); 
-} 
-.mobile-more-menu__item i { 
-    width: 24px; 
-    text-align: center; 
-    font-size: 1.2rem; 
-    color: var(--color-text-secondary); 
+}
+
+.mobile-more-menu__item i:first-child { 
+    margin-right: 1rem; font-size: 1.25rem; color: var(--color-secondary); 
+    width: 24px; text-align: center; 
+}
+
+/* --- Finalmente, activamos en móviles (Actualiza tu @media 768px de la línea 470) --- */
+@media (max-width: 768px) {
+    .desktop-nav { display: none; }
+    .bottom-nav { display: flex; justify-content: space-around; }
+    body { padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
 }
 
 /* 4.2 BENTO GRID */
@@ -2399,4 +2444,132 @@ main.container { background-color: transparent !important; }
     visibility: hidden; 
     top: -20px !important; /* Se esconde deslizándose hacia arriba */
     transform: translateX(-50%) scale(0.9) !important; /* Se encoje un poquito al desaparecer */
+}
+/* ==========================================================================
+   MENÚ MÓVIL PWA (Bottom Nav & More Menu)
+   ========================================================================== */
+
+/* 1. Ocultar menú móvil en pantallas grandes (Escritorio) */
+@media (min-width: 769px) {
+    .bottom-nav { display: none !important; }
+    .mobile-more-menu { display: none !important; }
+}
+
+/* 2. Mostrar menú móvil solo en Celulares y Tablets */
+@media (max-width: 768px) {
+    /* Le damos espacio extra al body para que el contenido no quede tapado por la barra */
+    body { padding-bottom: 80px; }
+
+    /* La Barra Inferior */
+    .bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background-color: var(--color-surface);
+        border-top: 1px solid var(--color-border);
+        display: flex;
+        justify-content: space-around;
+        padding: 12px 0 8px;
+        z-index: 9999; /* Asegura que nada lo tape */
+        box-shadow: 0 -4px 15px rgba(0,0,0,0.05);
+    }
+
+    .bottom-nav .nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        color: var(--color-secondary);
+        text-decoration: none;
+        font-size: 0.7rem;
+        gap: 6px;
+        background: none;
+        border: none;
+        width: 100%;
+        cursor: pointer;
+        font-weight: 600;
+        transition: color 0.2s;
+    }
+
+    .bottom-nav .nav-item i {
+        font-size: 1.4rem;
+    }
+
+    .bottom-nav .nav-item.active, 
+    .bottom-nav .nav-item:hover {
+        color: var(--color-accent);
+    }
+
+    /* El modal oscuro de "Más opciones" */
+    .mobile-more-menu {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(5px);
+        z-index: 10000; /* Por encima de la barra inferior */
+        opacity: 0;
+        visibility: hidden;
+        transition: 0.3s ease;
+        display: flex;
+        align-items: flex-end; /* Alinea el menú abajo */
+    }
+
+    .mobile-more-menu.is-visible {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* La caja blanca del menú desplegable */
+    .mobile-more-menu__content {
+        background: var(--color-surface);
+        width: 100%;
+        border-radius: 24px 24px 0 0;
+        padding: 25px 20px 30px;
+        transform: translateY(100%);
+        transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        max-height: 85vh;
+        overflow-y: auto;
+    }
+
+    .mobile-more-menu.is-visible .mobile-more-menu__content {
+        transform: translateY(0);
+    }
+
+    /* Los botones dentro del menú */
+    .mobile-more-menu__item {
+        display: flex;
+        align-items: center;
+        padding: 16px;
+        color: var(--color-primary);
+        text-decoration: none;
+        font-weight: 600;
+        border-radius: 12px;
+        border: none;
+        background: transparent;
+        width: 100%;
+        text-align: left;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .mobile-more-menu__item i:first-child {
+        width: 35px;
+        font-size: 1.2rem;
+        color: var(--color-secondary);
+    }
+
+    .mobile-more-menu__item:hover, 
+    .mobile-more-menu__item:active {
+        background: rgba(0,0,0,0.05);
+    }
+    
+    .mobile-more-menu__content hr {
+        border: none;
+        border-top: 1px solid var(--color-border);
+        margin: 10px 0;
+    }
 }

@@ -485,29 +485,55 @@
 
     <footer class="site-footer">
         <div class="container footer-content">
-            <div class="footer-column">
-                <p class="footer-logo-text">Epistecnología</p>
-                <p>&copy; 2025 Todos los derechos reservados.</p>
-            </div>
-            <div class="footer-column">
-                <h4 class="footer-heading">Propiedad Intelectual</h4>
-                <div class="footer-badges">
-                    <a href="https://doi.org/10.5281/zenodo.16403615" target="_blank" rel="noopener noreferrer" title="DOI de la Plataforma">
-                        <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.16403615.svg" alt="DOI">
-                    </a>
-                    <a href="https://orcid.org/0009-0008-3022-5207" class="footer-link" target="_blank" rel="noopener noreferrer" title="Perfil ORCID">
-                        <i class="fa-brands fa-orcid"></i> 0009-0008-3022-5207
-                    </a>
+            <div class="footer-column" style="max-width: 300px;">
+                <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Epistecnología Logo" style="height: 45px; margin-bottom: 1rem;">
+                <p class="footer-logo-text" style="font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--color-text-primary);">Epistecnología</p>
+                <p style="margin-bottom: 1.5rem;">Un ecosistema digital donde la tecnología se pone al servicio de la divulgación académica y cultural.</p>
+                <div class="social-footer">
+                    <a href="#" aria-label="X"><i class="fa-brands fa-x-twitter"></i></a>
+                    <a href="#" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                    <a href="#" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
                 </div>
             </div>
+
             <div class="footer-column">
-                <h4 class="footer-heading">Contacto</h4>
+                <h4 class="footer-heading">Navegación</h4>
+                <div class="footer-badges">
+                    <a href="/" class="footer-link">Inicio</a>
+                    <a href="https://publicaciones.epistecnologia.com/" target="_blank" class="footer-link">Revista Oficial</a>
+                    <a href="/comunidad.html" class="footer-link">Comunidad Global</a>
+                    <a href="/live.html" class="footer-link">Ágoras y Eventos</a>
+                </div>
+            </div>
+
+            <div class="footer-column">
+                <h4 class="footer-heading">Identidad Intelectual</h4>
+                <div class="footer-badges">
+                    <a href="https://doi.org/10.5281/zenodo.16403615" target="_blank" rel="noopener noreferrer" title="DOI de la Plataforma">
+                        <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.16403615.svg" alt="DOI" style="margin-bottom: 5px;">
+                    </a>
+                    <a href="https://orcid.org/0009-0008-3022-5207" class="footer-link" target="_blank" rel="noopener noreferrer" title="Perfil ORCID">
+                        <i class="fa-brands fa-orcid" style="color:#A6CE39;"></i> ORCID Director
+                    </a>
+                    <p style="font-size: 0.8rem; margin-top: 10px; color: var(--color-text-secondary);"><strong>Director:</strong> Henry Márquez</p>
+                </div>
+            </div>
+
+            <div class="footer-column">
+                <h4 class="footer-heading">Contacto Editorial</h4>
                 <a href="mailto:hmarquez@epistecnologia.com" class="footer-link">
-                    <i class="fa-solid fa-envelope"></i> hmarquez@epistecnologia.com
+                    <i class="fa-solid fa-envelope" style="color: var(--color-accent);"></i> hmarquez@epistecnologia.com
                 </a>
             </div>
         </div>
+        
+        <div class="footer-bottom-bar">
+            <div class="container" style="text-align: center; border-top: 1px solid var(--color-border); padding-top: 2rem; margin-top: 2rem;">
+                <p>&copy; <script>document.write(new Date().getFullYear())</script> Epistecnología. Todos los derechos reservados.</p>
+            </div>
+        </div>
     </footer>
+    
     <div id="image-lightbox-overlay" class="modal-overlay" style="display: none; z-index: 4000; align-items: center; justify-content: center; background: rgba(0,0,0,0.9);">
         <button id="lightbox-close-btn" style="position: absolute; top: 20px; right: 20px; background: transparent; color: white; border: none; font-size: 2.5rem; cursor: pointer; line-height: 1;">&times;</button>
         <img id="lightbox-full-image" src="" style="max-width: 95vw; max-height: 95vh; object-fit: contain; border-radius: 8px;">

@@ -408,3 +408,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 100);
 });
+// ==========================================
+// CONTROL DEL MENÚ MÓVIL PWA
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    const mobileToggleBtn = document.getElementById('mobile-menu-toggle-btn');
+    const mobileMoreMenu = document.getElementById('mobile-more-menu');
+    const mobileCloseBtn = document.getElementById('mobile-more-menu-close');
+
+    // Abrir el menú al tocar "Más"
+    if (mobileToggleBtn && mobileMoreMenu) {
+        mobileToggleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            mobileMoreMenu.classList.add('is-visible');
+        });
+    }
+
+    // Cerrar el menú al tocar "Cerrar"
+    if (mobileCloseBtn && mobileMoreMenu) {
+        mobileCloseBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            mobileMoreMenu.classList.remove('is-visible');
+        });
+    }
+
+    // Cerrar el menú si tocan la parte oscura de atrás
+    if (mobileMoreMenu) {
+        mobileMoreMenu.addEventListener('click', (e) => {
+            if (e.target === mobileMoreMenu) {
+                mobileMoreMenu.classList.remove('is-visible');
+            }
+        });
+    }
+});
