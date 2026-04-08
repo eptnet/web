@@ -441,3 +441,38 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+// ==========================================
+// INSTALACIÓN MANUAL DE PWA
+// ==========================================
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Evita que Chrome muestre el mini-banner automático
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    // Si no existe el banner, lo creamos
+    if (!document.getElementById('pwa-install-banner')) {
+        const banner = document.createElement('div');
+        banner.id = 'pwa-install-banner';
+        banner.innerHTML = `
+            <div style="position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--color-surface); border: 1px solid var(--color-accent); padding: 12px 20px; border-radius: 50px; box-shadow: 0 10px 25px rgba(183,42,30,0.2); z-index: 9999; display: flex; align-items: center; gap: 15px; width: 90%; max-width: 400px; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" style="width: 30px; border-radius: 5px;">
+                    <div style="text-align: left;">
+                        <p style="margin: 0; font-weight: bold; font-size: 0.9rem; color: var(--color-text-primary);">Instalar Epistecnología</p>
+                        <p style="margin: 0; font-size: 0.75rem; color: var(--color-text-secondary);">Experiencia más rápida</p>
+                    </div>
+                </div>
+                <button id="btn-install-pwa" style="background: var(--color-accent); color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; cursor: pointer;">Instalar</button>
+            </div>
+        `;
+        document.body.appendChild(banner);
+
+        document.getElementById('btn-install-pwa').addEventListener('click', async () => {
+            banner.style.display = 'none';
+            deferredPrompt.prompt(); // Muestra el aviso nativo
+            const { outcome } = await deferredPrompt.userChoice;
+            deferredPrompt = null;
+        });
+    }
+});
