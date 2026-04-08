@@ -1,68 +1,243 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MBEXC7T1EF"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-MBEXC7T1EF');
+    </script>
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Epistecnología App</title>
+    <title>Epistecnología Hub - Democratizando la Ciencia</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#b72a1e">
     <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <link rel="stylesheet" href="/css/style.css">
 </head>
-<body>
-    <div class="pwa-app-hub">
-        <div class="pwa-header">
-            <h2>Bienvenido 👋</h2>
-            <p>¿Qué descubriremos hoy?</p>
+<body class="pwa-theme">
+    
+    <header class="desktop-nav">
+        <div class="container">
+            <a href="/#inicio" class="logo">
+                <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Epistecnología Logo">
+            </a>
+            
+            <nav class="main-menu bento-box-nav">
+                <a href="/#inicio" class="nav-icon"><i class="fa-solid fa-house"></i> <span class="nav-text">Inicio</span></a>
+                <a href="/comunidad.html" class="nav-icon"><i class="fa-solid fa-users"></i> <span class="nav-text">Comunidad</span></a>
+                <a href="/live.html" class="nav-icon"><i class="fa-solid fa-tower-broadcast"></i> <span class="nav-text">Live</span></a>
+                
+                <a href="/servicios.html" class="nav-icon" style="color: var(--color-accent); font-weight: bold;">
+                    <i class="fa-solid fa-handshake-angle"></i> <span class="nav-text">Servicios</span>
+                </a>
+                
+                <div class="nav-dropdown">
+                    <button class="nav-icon">
+                        <i class="fa-solid fa-layer-group"></i> <span class="nav-text">Ejes</span> <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem;"></i>
+                    </button>
+                    <div class="dropdown-content">
+                        <a href="#"><i class="fa-solid fa-microscope"></i> Histórico-Cultural</a>
+                        <a href="#"><i class="fa-solid fa-book-open"></i> Científico-Tecnológico</a>
+                    </div>
+                </div>
+
+                <a href="https://publicaciones.epistecnologia.com/" class="nav-icon" target="_blank"><i class="fa-solid fa-newspaper"></i> <span class="nav-text">Revista</span></a>
+            </nav>
+
+            <div class="actions-area bento-box-nav">
+                <div class="nav-dropdown" id="create-dropdown-container">
+                    <button id="btn-global-create" class="nav-icon create-locked">
+                        <i class="fa-solid fa-lock" id="create-icon"></i> <span class="nav-text">Crear</span>
+                    </button>
+                    <div class="dropdown-content dropdown-right" id="create-options">
+                        <a href="/inv/dashboard.html"><i class="fa-solid fa-pen-to-square"></i> Publicar Artículo</a>
+                        <a href="/inv/dashboard.html"><i class="fa-solid fa-calendar-plus"></i> Agendar Evento</a>
+                        <a href="/comunidad.html"><i class="fa-solid fa-bolt"></i> Directo Rápido</a>
+                    </div>
+                </div>
+
+                <a href="#" class="nav-icon" id="notifications-bell-icon"><i class="fa-solid fa-bell"></i></a>
+                
+                <div id="guest-view">
+                    <button class="btn-nav-access trigger-login-modal">Acceder</button>
+                </div>
+                
+                <div id="user-view" style="display: none;">
+                    <div class="nav-dropdown">
+                        <button id="user-avatar-link" class="nav-icon-avatar"></button>
+                        <div class="dropdown-content dropdown-right">
+                            <a href="/inv/profile.html"><i class="fa-solid fa-user"></i> Mi Perfil</a>
+                            <a href="#" id="logout-btn-header" style="color: #ef4444;"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</a>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="theme-switcher nav-icon" id="theme-switcher-desktop"><i class="fa-solid fa-moon"></i></button>
+            </div>
         </div>
+    </header>
+
+    <div id="global-toast" class="toast-hidden"></div>
+
+    <main class="pwa-main-content">
         
-        <div class="pwa-grid">
-            <a href="/comunidad.html" class="pwa-card">
-                <div class="icon-wrapper"><i class="fa-solid fa-users"></i></div>
-                <span>Comunidad</span>
-            </a>
+        <section class="pwa-hero" style="background: var(--color-surface); border-bottom: 1px solid var(--color-border); padding: 40px 20px; text-align: center; position: relative; overflow: hidden;">
+            <div id="pwa-hero-plexus" style="position: absolute; inset: 0; opacity: 0.1; z-index: 1;">
+                <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="20%" cy="30%" r="2" fill="var(--color-accent)">
+                        <animate attributeName="opacity" values="0.2; 0.8; 0.2" dur="3s" repeatCount="indefinite" />
+                    </circle>
+                    <circle cx="50%" cy="50%" r="2" fill="var(--color-accent)">
+                        <animate attributeName="opacity" values="0.8; 0.2; 0.8" dur="4s" repeatCount="indefinite" />
+                    </circle>
+                    <circle cx="80%" cy="70%" r="2" fill="var(--color-accent)">
+                        <animate attributeName="opacity" values="0.2; 0.8; 0.2" dur="2s" repeatCount="indefinite" />
+                    </circle>
+                    <path d="M20% 30% L50% 50%" stroke="var(--color-accent)" stroke-width="0.5" opacity="0.3"/>
+                    <path d="M50% 50% L80% 70%" stroke="var(--color-accent)" stroke-width="0.5" opacity="0.3"/>
+                </svg>
+            </div>
             
-            <a href="/live.html" class="pwa-card highlight">
-                <div class="icon-wrapper"><i class="fa-solid fa-satellite-dish"></i></div>
-                <span>EPT Live</span>
-            </a>
+            <div class="pwa-hero-content" style="position: relative; z-index: 2;">
+                <h1 id="pwa-user-greeting" style="font-family: 'Playfair Display', serif; font-size: clamp(2rem, 5vw, 3rem); margin-bottom: 10px; color: var(--color-text-primary);">Hola, [Investigador] 👋</h1>
+                <p style="color: var(--color-text-secondary); margin-bottom: 20px; font-size: 1.1rem; max-width: 600px; margin-inline: auto;">¿Qué vamos a democratizar hoy? Explora y participa en la mayor red científica y cultural de Latinoamérica.</p>
+                <a href="/inv/profile.html" class="pwa-user-status-card" style="display: inline-flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.05); padding: 8px 15px; border-radius: 50px; font-size: 0.8rem; font-weight: 600; text-decoration: none; color: var(--color-text-secondary); border: 1px solid var(--color-border);">
+                    <i class="fa-solid fa-check-circle" style="color: #10b981;"></i> Perfil Verificado
+                </a>
+            </div>
+        </section>
+
+        <section class="container" style="padding: 30px 20px 80px 20px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
             
-            <a href="https://publicaciones.epistecnologia.com/" target="_blank" class="pwa-card">
-                <div class="icon-wrapper"><i class="fa-solid fa-newspaper"></i></div>
-                <span>Revista</span>
+            <a href="/comunidad.html" class="bento-tile" style="text-decoration: none; color: inherit; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 20px; padding: 25px 20px; display: flex; flex-direction: column; align-items: center; text-align: center; transition: 0.3s; transform: translateY(0);">
+                <i class="fa-solid fa-users" style="font-size: 2.5rem; color: #10b981; margin-bottom: 15px;"></i>
+                <h3 style="font-size: 1.2rem; margin-bottom: 5px;">Comunidad</h3>
+                <p style="font-size: 0.85rem; color: var(--color-text-secondary); flex-grow: 1;">Únete a grupos de discusión científica.</p>
             </a>
-            
-            <button class="pwa-card" id="pwa-profile-btn" onclick="document.getElementById('mobile-more-btn').click();">
-                <div class="icon-wrapper"><i class="fa-solid fa-user"></i></div>
-                <span>Mi Perfil</span>
-            </button>
+
+            <a href="/live.html" class="bento-tile" style="text-decoration: none; color: inherit; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 20px; padding: 25px 20px; display: flex; flex-direction: column; align-items: center; text-align: center; transition: 0.3s; transform: translateY(0);">
+                <i class="fa-solid fa-tower-broadcast" style="font-size: 2.5rem; color: #3b82f6; margin-bottom: 15px;"></i>
+                <h3 style="font-size: 1.2rem; margin-bottom: 5px;">Ágoras Live</h3>
+                <p style="font-size: 0.85rem; color: var(--color-text-secondary); flex-grow: 1;">Participa en eventos y directos.</p>
+            </a>
+
+            <a href="https://publicaciones.epistecnologia.com/" target="_blank" class="bento-tile" style="text-decoration: none; color: inherit; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 20px; padding: 25px 20px; display: flex; flex-direction: column; align-items: center; text-align: center; transition: 0.3s; transform: translateY(0);">
+                <i class="fa-solid fa-newspaper" style="font-size: 2.5rem; color: #f59e0b; margin-bottom: 15px;"></i>
+                <h3 style="font-size: 1.2rem; margin-bottom: 5px;">Revista</h3>
+                <p style="font-size: 0.85rem; color: var(--color-text-secondary); flex-grow: 1;">Lee los últimos artículos.</p>
+            </a>
+
+            <a href="/servicios.html" class="bento-tile bento-tile-accent" style="text-decoration: none; color: inherit; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 20px; padding: 25px 20px; display: flex; flex-direction: column; align-items: center; text-align: center; transition: 0.3s; transform: translateY(0); grid-column: 1 / -1; background: var(--color-accent); border-color: var(--color-accent); color: white;">
+                <i class="fa-solid fa-handshake-angle" style="font-size: 2.5rem; margin-bottom: 15px;"></i>
+                <h3 style="font-size: 1.2rem; margin-bottom: 5px; color: white;">Servicios PRO</h3>
+                <p style="font-size: 0.85rem; flex-grow: 1;">Producción y tecnología académica.</p>
+            </a>
+
+            <a href="/directorio.html" class="bento-tile" style="text-decoration: none; color: inherit; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 20px; padding: 25px 20px; display: flex; flex-direction: column; align-items: center; text-align: center; transition: 0.3s; transform: translateY(0); grid-column: 1 / -1;">
+                <i class="fa-solid fa-address-book" style="font-size: 2rem; color: #a855f7; margin-bottom: 15px;"></i>
+                <h3 style="font-size: 1.1rem; margin-bottom: 5px;">Red de Investigadores</h3>
+                <p style="font-size: 0.8rem; color: var(--color-text-secondary);">Descubre talento en Latinoamérica.</p>
+            </a>
+
+            <div class="bento-tile bento-tile-discovery" style="text-decoration: none; color: inherit; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 20px; padding: 25px 20px; display: flex; flex-direction: column; align-items: center; text-align: center; transition: 0.3s; transform: translateY(0); grid-column: 1 / -1;">
+                <h4 style="font-family: 'Playfair Display', serif; font-size: 1.2rem; margin-bottom: 10px; color: var(--color-text-primary);">Novedades en Epistecnología</h4>
+                <a href="/comunidad.html" class="pwa-post-preview" style="display: flex; gap: 10px; text-decoration: none; color: inherit; background: var(--color-background); border: 1px solid var(--color-border); padding: 10px; border-radius: 12px; text-align: left; width: 100%;">
+                    <img src="https://i.ibb.co/wzn25c8/default-avatar.png" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%;">
+                    <div>
+                        <span style="font-weight: bold; font-size: 0.9rem;">Dr. Pérez</span>
+                        <p style="font-size: 0.8rem; color: var(--color-text-secondary); margin: 0; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">Nuevo artículo sobre IA aplicada a la investigación cultural...</p>
+                    </div>
+                </a>
+            </div>
+
+        </section>
+        
+    </main>
+
+    <div id="login-modal-overlay" class="modal-overlay">
+        <div class="modal login-modal">
+            <header class="modal-header">
+                <h2>Accede a Epistecnología</h2>
+                <button id="login-modal-close-btn" class="modal-close-btn">&times;</button>
+            </header>
+            <main class="modal-content">
+                <p>Usa tu cuenta preferida para continuar. Al iniciar sesión, podrás acceder a tu panel de investigador y participar en la comunidad.</p>
+                <div class="login-options">
+                    <a href="#" class="login-provider-btn" data-provider="google">
+                        <i class="fa-brands fa-google"></i> Continuar con Google
+                    </a>
+                    <a href="#" class="login-provider-btn" data-provider="github">
+                        <i class="fa-brands fa-github"></i> Continuar con GitHub
+                    </a>
+                </div>
+            </main>
         </div>
     </div>
 
-    <nav class="mobile-nav">
-        <a href="/#bento-grid-anchor" class="mobile-nav__link active" aria-label="Inicio"><i class="fa-solid fa-house"></i></a>
-        <a href="/comunidad.html" class="mobile-nav__link" aria-label="Comunidad"><i class="fa-solid fa-users"></i></a>
-        <a href="/live.html" class="mobile-nav__link" aria-label="EPT Live"><i class="fa-solid fa-satellite-dish"></i></a>
-        <a href="https://publicaciones.epistecnologia.com/" target="_blank" class="mobile-nav__link" aria-label="Revista"><i class="fa-solid fa-newspaper"></i></a>
-        <button class="mobile-nav__link" id="mobile-more-btn" aria-label="Perfil"><i class="fa-solid fa-user"></i></button>
+    <nav class="bottom-nav">
+        <a href="/app.html" class="nav-item active"><i class="fa-solid fa-house"></i><span>Inicio</span></a>
+        <a href="/comunidad.html" class="nav-item"><i class="fa-solid fa-users"></i><span>Comunidad</span></a>
+        <a href="/live.html" class="nav-item"><i class="fa-solid fa-tower-broadcast"></i><span>Live</span></a>
+        <button class="nav-item" id="mobile-menu-toggle-btn"><i class="fa-solid fa-bars"></i><span>Más</span></button>
     </nav>
 
     <div class="mobile-more-menu" id="mobile-more-menu">
         <div class="mobile-more-menu__content">
-            <a href="#" data-provider="google" id="login-google-btn-mobile" class="mobile-more-menu__item login-provider-btn"><i class="fa-brands fa-google"></i><span>Iniciar con Google</span></a>
-            <a href="#" data-provider="github" id="login-github-btn-mobile" class="mobile-more-menu__item login-provider-btn"><i class="fa-brands fa-github"></i><span>Iniciar con GitHub</span></a>
-            <hr style="border: none; border-top: 1px solid var(--color-border); margin: 0.5rem 0;">
-            <a href="/comunidad.html" id="community-btn-mobile" data-url="/comunidad.html" class="mobile-more-menu__item"><i class="fa-solid fa-users"></i><span>Comunidad</span></a>
-            <a href="/live.html#seccion-eventos" class="mobile-more-menu__item"><i class="fa-solid fa-calendar-days"></i><span>Eventos</span></a>
-            <hr style="border: none; border-top: 1px solid var(--color-border); margin: 0.5rem 0;">
+            <div id="mobile-auth-section">
+                <a href="#" data-provider="google" id="login-google-btn-mobile" class="mobile-more-menu__item login-provider-btn"><i class="fa-brands fa-google"></i><span>Iniciar con Google</span></a>
+                <a href="#" data-provider="github" id="login-github-btn-mobile" class="mobile-more-menu__item login-provider-btn"><i class="fa-brands fa-github"></i><span>Iniciar con GitHub</span></a>
+                <hr>
+            </div>
+            
+            <a href="/servicios.html" class="mobile-more-menu__item">
+                <i class="fa-solid fa-handshake-angle"></i><span>Servicios PRO</span>
+            </a>
+            <a href="/directorio.html" class="mobile-more-menu__item">
+                <i class="fa-solid fa-address-book"></i><span>Red Investigadores</span>
+            </a>
+            
+            <div style="padding: 15px 20px 5px; font-size: 0.75rem; color: var(--color-secondary); text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Ejes Temáticos</div>
+            <a href="#" class="mobile-more-menu__item"><i class="fa-solid fa-microscope"></i><span>Histórico-Cultural</span></a>
+            <a href="#" class="mobile-more-menu__item"><i class="fa-solid fa-book-open"></i><span>Científico-Tecnológico</span></a>
+            <hr>
+            
+            <a href="https://publicaciones.epistecnologia.com/" target="_blank" class="mobile-more-menu__item">
+                <i class="fa-solid fa-newspaper"></i><span>Revista Oficial</span> 
+                <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.7rem; margin-left: auto; opacity: 0.5;"></i>
+            </a>
+
+            <hr>
             <button class="mobile-more-menu__item" id="theme-switcher-mobile"><i class="fa-solid fa-moon"></i><span>Cambiar Tema</span></button>
-            <button class="mobile-more-menu__item" id="mobile-more-menu-close"><i class="fa-solid fa-xmark"></i><span>Cerrar</span></button>
+            <button class="mobile-more-menu__item" id="mobile-more-menu-close"><i class="fa-solid fa-xmark"></i><span>Cerrar Menú</span></button>
         </div>
     </div>
-    <div class="overlay" id="overlay"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/js/main.js"></script>
+    <script src="/inv/js/supabaseClient.js"></script> <script>
+        // Pequeño script para personalizar el saludo si el usuario está logueado
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (window.supabaseClient) {
+                const { data: { user } } = await window.supabaseClient.auth.getUser();
+                if (user) {
+                    const { data: profile } = await window.supabaseClient
+                        .from('profiles')
+                        .select('display_name')
+                        .eq('id', user.id)
+                        .single();
+                    
+                    if (profile && profile.display_name) {
+                        const greeting = document.getElementById('pwa-user-greeting');
+                        greeting.textContent = `Hola, ${profile.display_name.split(' ')[0]} 👋`;
+                    }
+                }
+            }
+        });
+    </script>
 </body>
 </html>

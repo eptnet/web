@@ -1,383 +1,210 @@
 /* ==========================================================================
-   ESTILOS PARA LA PÁGINA DE DIRECTORIO
+   ESTILOS PARA DIRECTORIO (Modernizado - Versión Definitiva)
    ========================================================================== */
 
-/* 1. Cabecera de la Página */
-.directory-header {
-    text-align: center;
-    padding: 2rem 0;
-    border-bottom: 1px solid var(--color-border);
-    margin-bottom: 2rem;
+/* --- 1. HERO Y BUSCADOR SPOTLIGHT --- */
+.explore-section {
+    animation: fadeInDown 0.6s ease-out;
 }
 
-.directory-header h1 {
-    font-size: 2.5rem;
-    margin-bottom: 0.5rem;
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-15px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-.directory-header p {
-    font-size: 1.1rem;
-    color: var(--color-text-secondary);
-    max-width: 600px;
-    margin: 0 auto 1.5rem auto;
+.search-bar-tv input:focus {
+    border-color: var(--color-accent) !important;
+    box-shadow: 0 0 0 4px rgba(183, 42, 30, 0.15) !important;
 }
 
-.search-bar-container {
-    position: relative;
-    max-width: 500px;
-    margin: 0 auto;
+/* --- 2. FILTROS RÁPIDOS (PILLS) --- */
+.categories-rail::-webkit-scrollbar { 
+    display: none; 
 }
 
-.search-bar-container i {
-    position: absolute;
-    left: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--color-text-secondary);
+.category-pill { 
+    scroll-snap-align: start; 
+    flex: 0 0 auto; 
+    background: var(--color-surface); 
+    border: 1px solid var(--color-border); 
+    color: var(--color-text-secondary); 
+    padding: 10px 24px; 
+    border-radius: 50px; 
+    font-weight: 600; 
+    font-size: 0.95rem; 
+    cursor: pointer; 
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-#search-input {
-    width: 100%;
-    padding: 0.8rem 1rem 0.8rem 3rem; /* Padding izquierdo para el icono */
-    border-radius: 25px;
-    border: 1px solid var(--color-border);
-    background-color: var(--color-surface);
-    color: var(--color-text-primary);
-    font-size: 1rem;
+.category-pill:hover { 
+    border-color: var(--color-accent); 
+    color: var(--color-accent); 
+    transform: translateY(-2px);
 }
 
-#search-input:focus {
-    outline: none;
-    border-color: var(--color-accent);
+.category-pill.active { 
+    background: var(--color-accent); 
+    color: white; 
+    border-color: var(--color-accent); 
+    box-shadow: 0 6px 15px rgba(183, 42, 30, 0.25); 
 }
 
-/* 2. Rejilla de Investigadores */
-.researcher-grid {
+/* --- 3. GRID DE RESULTADOS --- */
+.directory-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.5rem;
-    padding-bottom: 3rem;
+    gap: 25px;
+    padding: 20px 0 60px 0;
 }
 
-.loading-message {
-    grid-column: 1 / -1; /* Ocupa todas las columnas */
-    text-align: center;
-    color: var(--color-text-secondary);
-}
-
-/* 3. Tarjeta Individual de Investigador */
+/* --- 4. TARJETAS BENTO (PERFILES) --- */
 .researcher-card {
-    background-color: var(--color-surface);
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-light);
-    padding: 2rem 1.5rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    padding: 30px 20px;
     text-align: center;
-    text-decoration: none;
-    color: var(--color-text-primary);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    /* Sombra base sutil para el modo claro */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.02);
 }
 
 .researcher-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+    transform: translateY(-8px);
+    border-color: var(--color-accent);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    z-index: 2;
 }
 
-body.dark-theme .researcher-card:hover {
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+/* --- 5. AVATARES E INSIGNIAS --- */
+.card-avatar-wrapper { 
+    position: relative; 
+    margin-bottom: 20px; 
 }
 
-.card-avatar {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    object-fit: cover;
-    margin-bottom: 1rem;
-    border: 3px solid var(--color-border);
+.card-avatar { 
+    width: 100px; 
+    height: 100px; 
+    border-radius: 50%; 
+    object-fit: cover; 
+    border: 3px solid var(--color-surface); 
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12); 
+    transition: transform 0.3s;
 }
 
-.card-name {
-    font-size: 1.2rem;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
+.researcher-card:hover .card-avatar {
+    transform: scale(1.05);
 }
 
-.card-bio {
-    font-size: 0.9rem;
-    color: var(--color-text-secondary);
-    /* Limita el texto a 3 líneas */
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-}
-
-.nav-icon { 
-    position: relative;
+.verified-badge { 
+    position: absolute; 
+    bottom: 5px; 
+    right: 5px; 
+    background: #10b981; /* Verde de verificación */
+    color: white; 
+    width: 28px; 
+    height: 28px; 
+    border-radius: 50%; 
     display: flex; 
     align-items: center; 
     justify-content: center; 
-    width: 44px; 
-    height: 44px; 
-    border-radius: 8px; 
-    transition: background-color 0.2s ease, color 0.2s ease; 
-    color: var(--color-secondary); 
-    font-size: 1.1rem;
-    line-height: 1; /* <-- AÑADE ESTA LÍNEA */
-}
-/* ==========================================================================
-   4. ESTILOS PARA EL MODAL DE PERFIL DE INVESTIGADOR
-   ========================================================================== */
-
-/* --- El fondo oscuro --- */
-.profile-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
-    padding: 1rem;
-    
-    /* Animación de entrada */
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+    font-size: 0.75rem; 
+    border: 3px solid var(--color-surface); 
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
-.profile-modal-overlay.is-visible {
-    opacity: 1;
-    visibility: visible;
+/* --- 6. TIPOGRAFÍA Y TEXTOS DE LA TARJETA --- */
+.researcher-card h3 { 
+    font-size: 1.3rem; 
+    margin: 0 0 8px 0; 
+    font-family: 'Playfair Display', serif; 
+    color: var(--color-text-primary); 
+    line-height: 1.2;
 }
 
-/* --- El contenedor del contenido --- */
-.profile-modal-content {
-    background: var(--color-surface);
-    color: var(--color-primary);
-    border-radius: var(--border-radius);
-    width: 100%;
-    max-width: 550px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    position: relative;
-    
-    /* Animación de entrada */
-    transform: scale(0.95);
-    transition: transform 0.3s ease;
+.researcher-institution { 
+    color: var(--color-text-secondary); 
+    font-size: 0.85rem; 
+    margin: 0 0 20px 0; 
+    /* Truncamiento a 2 líneas para biografías largas */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 2.5em; /* Mantiene la altura incluso si no hay bio */
 }
 
-.profile-modal-overlay.is-visible .profile-modal-content {
-    transform: scale(1);
+/* --- 7. ETIQUETAS DE ROL --- */
+.researcher-badges { 
+    display: flex; 
+    flex-wrap: wrap; 
+    justify-content: center; 
+    gap: 8px; 
+    margin-bottom: 25px; 
+    flex-grow: 1; /* Empuja el botón siempre hacia abajo */
+    align-items: flex-start;
 }
 
-/* --- Botón de cerrar --- */
-.modal-close-btn {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    width: 40px;
-    height: 40px;
-    background: none;
-    border: none;
-    border-radius: 50%;
-    font-size: 1.5rem;
-    color: var(--color-secondary);
-    cursor: pointer;
+.r-badge { 
+    background: var(--color-background); 
+    border: 1px solid var(--color-border); 
+    padding: 5px 14px; 
+    border-radius: 50px; 
+    font-size: 0.75rem; 
+    color: var(--color-text-secondary); 
+    font-weight: 600; 
     display: flex;
     align-items: center;
-    justify-content: center;
-    transition: background-color 0.2s;
-}
-.modal-close-btn:hover {
-    background-color: var(--color-background);
-}
-
-/* --- Cabecera del Modal --- */
-.modal-header {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    padding: 2rem 2rem 1.5rem 2rem;
-    border-bottom: 1px solid var(--color-border);
-}
-
-.modal-avatar {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid var(--color-border);
-    flex-shrink: 0; /* Evita que la imagen se encoja */
-}
-
-.modal-header-info h2 {
-    margin: 0 0 0.25rem 0;
-    font-size: 1.8rem;
-}
-
-.modal-orcid {
-    font-size: 0.9rem;
-    color: var(--color-secondary);
-    text-decoration: none;
-}
-.modal-orcid:hover {
-    color: var(--color-accent);
-}
-.modal-orcid i {
-    color: #a6ce39;
-}
-
-/* --- Cuerpo y Redes Sociales del Modal --- */
-.modal-body {
-    padding: 1.5rem 2rem;
-    line-height: 1.6;
-}
-
-.modal-socials {
-    display: flex;
-    gap: 1.5rem;
-    font-size: 1.5rem;
-    margin-top: 1.5rem;
-}
-
-.modal-socials a {
-    color: var(--color-secondary);
-    transition: color 0.2s;
-}
-.modal-socials a:hover {
-    color: var(--color-primary);
-}
-
-/* --- Pie de página del Modal --- */
-.modal-footer {
-    padding: 1.5rem 2rem;
-    background-color: var(--color-background);
-    border-top: 1px solid var(--color-border);
-    border-bottom-left-radius: var(--border-radius);
-    border-bottom-right-radius: var(--border-radius);
-}
-
-.modal-footer .btn {
-    width: auto; /* El botón no ocupa todo el ancho */
-    display: inline-flex;
-    padding: 0.75rem 1.5rem;
-    text-decoration: none;
-}
-
-.modal-footer .btn-secondary {
-    background-color: var(--color-surface);
-}
-/* BORRAR CUANDO SE HABILITE EL BOTON */
-.btn.is-disabled {
-    cursor: not-allowed;
-    background-color: var(--color-background);
-    opacity: 0.6;
-}
-/* ==========================================================================
-   FIX: MENÚ GLOBAL V3 EN LIVE.HTML
-   ========================================================================== */
-
-/* 1. Prevenir que los botones se amontonen (Fix de ancho) */
-.desktop-nav .main-menu {
-    gap: 12px !important; 
-    justify-content: center;
-}
-
-.desktop-nav .main-menu .nav-icon,
-#create-dropdown-container .nav-icon {
-    width: auto !important;
-    min-width: max-content !important;
-    padding: 0 15px !important;
-    white-space: nowrap !important;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-/* 2. Botón Acceder (Estilo sólido) */
-.btn-nav-access {
-    background-color: var(--color-accent);
-    color: white !important;
-    padding: 8px 20px;
-    border-radius: 50px;
-    font-weight: 700;
-    font-size: 0.9rem;
-    border: 1px solid var(--color-accent);
-    cursor: pointer;
-    transition: 0.3s;
-}
-.btn-nav-access:hover {
-    background-color: transparent;
-    color: var(--color-accent) !important;
-}
-
-/* 3. Toast en la parte superior */
-#global-toast {
-    position: fixed; 
-    top: 25px; 
-    left: 50%; 
-    transform: translateX(-50%);
-    background: #1e293b; 
-    color: white; 
-    padding: 16px 32px;
-    border-radius: 50px;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.4); 
-    z-index: 10000; 
-    font-size: 1rem;
-    font-weight: 500;
-    border-bottom: 4px solid var(--color-accent);
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    text-align: center;
-}
-.toast-hidden { opacity: 0; visibility: hidden; top: -20px !important; }
-
-/* 4. Optimización de la X del Modal */
-.modal-close-btn {
-    position: absolute; 
-    top: 15px; 
-    right: 15px; 
-    width: 44px; 
-    height: 44px; 
-    background: rgba(0,0,0,0.05); 
-    color: var(--color-primary); 
-    border-radius: 50%; 
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
+    gap: 6px;
     transition: 0.2s;
-    z-index: 100;
-}
-.modal-close-btn:hover {
-    background: #eee;
-    color: var(--color-accent);
-    transform: rotate(90deg);
 }
 
-/* Asegurar que el avatar se vea bien */
-.nav-icon-avatar img {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: 2px solid var(--color-border);
-    object-fit: cover;
+.researcher-card:hover .r-badge {
+    border-color: rgba(183, 42, 30, 0.3); /* Un guiño de color al hacer hover en la tarjeta */
 }
-/* --- BANNER DE APOYO --- */
-.support-banner {
-    background: linear-gradient(90deg, var(--color-accent), #8b1d14);
-    color: white;
-    padding: 12px 0;
-    text-align: center;
-    font-size: 0.95rem;
-    position: relative;
-    z-index: 900;
-    display: none; /* Se activa por JS */
+
+/* --- 8. BOTÓN DE VER PERFIL --- */
+.btn-view-profile { 
+    width: 100%; 
+    padding: 12px; 
+    border-radius: 12px; 
+    background: transparent; 
+    border: 1px solid var(--color-border); 
+    color: var(--color-text-primary); 
+    font-weight: 600; 
+    cursor: pointer; 
+    transition: all 0.2s ease; 
+    text-decoration: none; 
+    display: block;
 }
-.support-banner a { color: white; text-decoration: underline; font-weight: bold; margin: 0 5px; }
-.close-banner {
-    position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
-    background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;
+
+.btn-view-profile:hover { 
+    background: var(--color-accent); 
+    color: white; 
+    border-color: var(--color-accent); 
+    box-shadow: 0 5px 15px rgba(183, 42, 30, 0.2);
+}
+
+/* --- 9. AJUSTES RESPONSIVOS (MÓVIL) --- */
+@media (max-width: 768px) {
+    .categories-rail { 
+        justify-content: flex-start; 
+        padding: 0 20px 15px 20px; 
+        margin: 0 -20px; 
+    }
+    
+    .explore-section h1 {
+        font-size: 2rem !important; /* Evita que el título se rompa en pantallas pequeñas */
+    }
+    
+    .directory-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100%, 1fr)); /* Una columna en celulares */
+        gap: 20px;
+    }
 }

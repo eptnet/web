@@ -1,198 +1,131 @@
 const DirectoryApp = {
     supabase: null,
-    allProfiles: [], // Almacenaremos todos los perfiles aquí para no volver a pedirlos
-    elements: {},
+    allProfiles: [],
+    currentRoleFilter: "",
 
     init() {
-        // 1. Inicializamos Supabase (igual que en tus otros archivos)
-        const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
-        this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // Usamos EXCLUSIVAMENTE el cliente global creado en main.js 
+        // Esto elimina por completo el warning de "Multiple GoTrueClient instances"
+        if (window.supabaseClient) {
+            this.supabase = window.supabaseClient;
+        } else {
+            console.error("No se encontró el cliente de Supabase de main.js");
+            return;
+        }
 
-        // 2. Guardamos las referencias a los elementos del DOM
-        this.elements.grid = document.getElementById('directory-grid');
-        this.elements.searchInput = document.getElementById('search-input');
-        // --- LÍNEA CLAVE AÑADIDA ---
-        this.elements.modalOverlay = document.getElementById('researcher-modal-overlay');
+        this.grid = document.getElementById('directory-grid');
+        this.searchInput = document.getElementById('search-input');
+        this.rolePills = document.querySelectorAll('.category-pill');
 
-        // --- CÓDIGO DUPLICADO ELIMINADO ---
-        // El listener de la búsqueda ya se añade en addEventListeners(),
-        // así que lo quitamos de aquí para no tenerlo dos veces.
-
-        // 3. Añadimos los listeners y cargamos los datos
         this.addEventListeners();
-        this.fetchAndRenderProfiles();
+        
+        // Esperamos a que main.js confirme que todo está listo (opcional pero seguro)
+        this.loadProfiles();
     },
 
     addEventListeners() {
-        // Listener para la barra de búsqueda (sin cambios)
-        this.elements.searchInput?.addEventListener('input', (e) => {
-            this.filterProfiles(e.target.value);
-        });
+        // Búsqueda por texto
+        this.searchInput.addEventListener('input', () => this.filterProfiles());
 
-        // --- NUEVO LISTENER PARA LAS TARJETAS ---
-        // Escuchamos los clics en toda la rejilla
-        this.elements.grid?.addEventListener('click', (e) => {
-            // Buscamos si el clic fue en una tarjeta de investigador
-            const card = e.target.closest('.researcher-card');
-            if (card && card.dataset.profileId) {
-                this.openProfileModal(card.dataset.profileId);
-            }
-        });
-        
-        // --- NUEVO LISTENER PARA CERRAR EL MODAL ---
-        // Si se hace clic en el fondo oscuro, se cierra
-        this.elements.modalOverlay?.addEventListener('click', (e) => {
-            if (e.target === this.elements.modalOverlay) {
-                this.closeProfileModal();
-            }
+        // Filtros por Píldoras (Pills)
+        this.rolePills.forEach(pill => {
+            pill.addEventListener('click', (e) => {
+                this.rolePills.forEach(p => p.classList.remove('active'));
+                e.target.classList.add('active');
+                this.currentRoleFilter = e.target.getAttribute('data-role');
+                this.filterProfiles();
+            });
         });
     },
 
-    async fetchAndRenderProfiles() {
-        if (!this.elements.grid) return;
-
+    async loadProfiles() {
         try {
-            // --- CAMBIO CLAVE: Llamamos a nuestra nueva función RPC ---
-            // .rpc() ejecuta la función que creamos en la base de datos.
+            this.grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 50px;"><i class="fa-solid fa-spinner fa-spin fa-2x" style="color: var(--color-accent);"></i><p>Cargando red de investigadores...</p></div>';
+
+            // CORRECCIÓN MAGISTRAL: Consultamos SOLO las columnas que existen en tu tabla
             const { data, error } = await this.supabase
-                .rpc('get_all_public_profiles');
+                .from('profiles')
+                .select('id, display_name, username, avatar_url, bio_short, role')
+                .order('created_at', { ascending: false }); // Los más recientes primero
 
             if (error) throw error;
-
-            this.allProfiles = data; // Guardamos los datos en nuestra variable local
-            this.renderGrid(this.allProfiles); // Mostramos los resultados
+            this.allProfiles = data || [];
+            this.renderProfiles(this.allProfiles);
         } catch (error) {
-            console.error("Error al cargar los perfiles:", error);
-            this.elements.grid.innerHTML = '<p class="loading-message">No se pudieron cargar los investigadores.</p>';
+            console.error("Error cargando perfiles:", error);
+            this.grid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: var(--color-accent);">Error al cargar el directorio. Por favor, recarga la página.</p>';
         }
     },
 
-    renderGrid(profiles) {
-        if (!this.elements.grid) return;
+    filterProfiles() {
+        const searchTerm = this.searchInput.value.toLowerCase();
 
-        if (profiles.length === 0) {
-            this.elements.grid.innerHTML = '<p class="loading-message">No se encontraron investigadores.</p>';
-            return;
-        }
-
-        // --- CAMBIO CLAVE: Ya no usamos una etiqueta <a> ---
-        // Ahora usamos un <button> para que sea semánticamente correcto (una acción, no un enlace)
-        // y le añadimos un data-attribute para guardar el ID del perfil.
-        this.elements.grid.innerHTML = profiles.map(profile => {
-            const avatarUrl = profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
-            const bio = profile.bio || 'Investigador/a en Epistecnología.';
+        const filtered = this.allProfiles.filter(profile => {
+            // Busca coincidencias en el display_name o en el username
+            const matchText = (profile.display_name?.toLowerCase() || '').includes(searchTerm) || 
+                              (profile.username?.toLowerCase() || '').includes(searchTerm);
             
-            return `
-                <button class="researcher-card" data-profile-id="${profile.id}">
-                    <img src="${avatarUrl}" alt="Avatar de ${profile.display_name}" class="card-avatar">
-                    <h4 class="card-name">${profile.display_name}</h4>
-                    <p class="card-bio">${bio}</p>
-                </button>
-            `;
-        }).join('');
-    },
+            // Filtro por roles usando los botones (Pills)
+            let matchRole = true;
+            if (this.currentRoleFilter !== "") {
+                // Ajuste: si el filtro es "Investigador", buscamos el valor por defecto 'researcher' de tu tabla
+                let dbRoleTarget = this.currentRoleFilter;
+                if (this.currentRoleFilter === "Investigador") dbRoleTarget = 'researcher';
+                
+                // Si el usuario tiene un rol asignado, lo comparamos
+                matchRole = profile.role && profile.role.toLowerCase() === dbRoleTarget.toLowerCase();
+            }
 
-    filterProfiles(searchTerm) {
-        const lowerCaseSearchTerm = searchTerm.toLowerCase().trim();
-
-        if (!lowerCaseSearchTerm) {
-            this.renderGrid(this.allProfiles); // Si la búsqueda está vacía, muestra todos
-            return;
-        }
-
-        const filteredProfiles = this.allProfiles.filter(profile => {
-            // --- INICIO DE LA CORRECCIÓN ---
-            // Nos aseguramos de que los campos existan antes de buscar en ellos
-            const name = profile.display_name || '';
-            const bio = profile.bio || '';
-
-            // Comprobamos si el término de búsqueda está en el nombre O en la biografía
-            return name.toLowerCase().includes(lowerCaseSearchTerm) ||
-                bio.toLowerCase().includes(lowerCaseSearchTerm);
-            // --- FIN DE LA CORRECCIÓN ---
+            return matchText && matchRole;
         });
 
-        this.renderGrid(filteredProfiles);
+        this.renderProfiles(filtered);
     },
 
-    // --- NUEVA FUNCIÓN PARA ABRIR Y CONSTRUIR EL MODAL ---
-    async openProfileModal(profileId) {
-        if (!this.elements.modalOverlay) return;
+    renderProfiles(profiles) {
+        if (profiles.length === 0) {
+            this.grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 50px; color: var(--color-text-secondary);"><i class="fa-solid fa-users-slash fa-2x" style="margin-bottom:15px;"></i><p>No se encontraron investigadores con esos criterios.</p></div>';
+            return;
+        }
 
-        this.elements.modalOverlay.classList.add('is-visible');
-        this.elements.modalOverlay.innerHTML = `<div class="profile-modal-content"><p class="loading-message">Cargando perfil...</p></div>`;
-
-        try {
-            // Buscamos TODOS los datos de este perfil específico
-            const { data: profile, error } = await this.supabase
-                .from('profiles')
-                .select('*') // El asterisco trae todas las columnas
-                .eq('id', profileId)
-                .single();
-
-            if (error) throw error;
-
-            // Construimos el HTML del contenido del modal <a href="/inv/profile.html?id=${profile.id}" class="btn btn-secondary">Ver Perfil Completo</a>
-
-            const avatarUrl = profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
-            const orcidId = profile.orcid ? profile.orcid.replace('https://orcid.org/', '') : null;
+        this.grid.innerHTML = profiles.map(profile => {
+            // Manejo de datos nulos para evitar que se rompa la vista
+            const avatar = profile.avatar_url || 'https://i.ibb.co/wzn25c8/default-avatar.png';
+            const nombre = profile.display_name || profile.username || 'Investigador Anónimo';
             
-            const modalHTML = `
-                <div class="profile-modal-content">
-                    <button class="modal-close-btn" aria-label="Cerrar">&times;</button>
-                    <div class="modal-header">
-                        <img src="${avatarUrl}" alt="Avatar de ${profile.display_name}" class="modal-avatar">
-                        <div class="modal-header-info">
-                            <h2>${profile.display_name}</h2>
-                            ${orcidId ? `<a href="${profile.orcid}" target="_blank" class="modal-orcid"><i class="fa-brands fa-orcid"></i> ${orcidId}</a>` : ''}
-                        </div>
+            // Traducción visual del rol de base de datos a español
+            let rolVisual = "Miembro";
+            if (profile.role === 'researcher') rolVisual = "Investigador";
+            else if (profile.role) rolVisual = profile.role.charAt(0).toUpperCase() + profile.role.slice(1); // Capitaliza la primera letra
+            
+            const bioCorta = profile.bio_short ? `"${profile.bio_short}"` : '';
+
+            return `
+                <div class="researcher-card">
+                    <div class="card-avatar-wrapper">
+                        <img src="${avatar}" alt="${nombre}" class="card-avatar">
+                        <div class="verified-badge" title="Cuenta Registrada"><i class="fa-solid fa-check"></i></div>
                     </div>
-                    <div class="modal-body">
-                        <p>${profile.bio || 'Sin biografía disponible.'}</p>
-                        <div class="modal-socials">
-                            ${profile.substack_url ? `<a href="${profile.substack_url}" target="_blank" title="Substack"><i class="fa-brands fa-substack"></i><svg xmlns="http://www.w3.org/2000/svg" fill="#000000" class="bi bi-substack" viewBox="0 0 16 16" id="Substack--Streamline-Bootstrap" height="16" width="16">
-                                <desc>
-                                    Substack Streamline Icon: https://streamlinehq.com
-                                </desc>
-                                <path d="M15 3.604H1v1.891h14v-1.89ZM1 7.208V16l7 -3.926L15 16V7.208zM15 0H1v1.89h14z" stroke-width="1"></path>
-                                </svg></a>` : ''}
-                            ${profile.website_url ? `<a href="${profile.website_url}" target="_blank" title="Sitio Web"><i class="fas fa-globe"></i></a>` : ''}
-                            ${profile.x_url ? `<a href="${profile.x_url}" target="_blank" title="X"><i class="fa-brands fa-x-twitter"></i></a>` : ''}
-                            ${profile.linkedin_url ? `<a href="${profile.linkedin_url}" target="_blank" title="LinkedIn"><i class="fab fa-linkedin"></i></a>` : ''}
-                            ${profile.youtube_url ? `<a href="${profile.youtube_url}" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>` : ''}
-                        </div>
+                    <h3>${nombre}</h3>
+                    <p class="researcher-institution" style="color: var(--color-secondary); font-size: 0.8rem; font-weight: normal; margin-bottom: 10px; font-style: italic;">
+                        ${bioCorta}
+                    </p>
+                    
+                    <div class="researcher-badges">
+                        <span class="r-badge"><i class="fa-solid fa-user-tag"></i> ${rolVisual}</span>
                     </div>
-                    <div class="modal-footer">
-                        <a href="#" class="btn btn-secondary is-disabled" title="Próximamente">Ver Publicaciones del Autor</a>
-                    </div>
+                    
+                    <a href="/bio.html?u=${profile.username}" class="btn-view-profile">Ver Perfil</a>
                 </div>
             `;
-
-            this.elements.modalOverlay.innerHTML = modalHTML;
-            
-            // Añadimos el listener al nuevo botón de cerrar
-            this.elements.modalOverlay.querySelector('.modal-close-btn').addEventListener('click', () => this.closeProfileModal());
-
-        } catch (error) {
-            console.error("Error al cargar el perfil detallado:", error);
-            this.elements.modalOverlay.innerHTML = `<div class="profile-modal-content"><p>No se pudo cargar el perfil.</p><button class="modal-close-btn">&times;</button></div>`;
-            this.elements.modalOverlay.querySelector('.modal-close-btn').addEventListener('click', () => this.closeProfileModal());
-        }
-    },
-
-    // --- NUEVA FUNCIÓN PARA CERRAR EL MODAL ---
-    closeProfileModal() {
-        if (!this.elements.modalOverlay) return;
-        this.elements.modalOverlay.classList.remove('is-visible');
-        // Limpiamos el contenido después de un momento para que la animación de salida funcione
-        setTimeout(() => {
-            this.elements.modalOverlay.innerHTML = '';
-        }, 300);
+        }).join('');
     }
 };
 
-// Inicializamos la aplicación del directorio
-document.addEventListener('DOMContentLoaded', () => {
-    DirectoryApp.init();
+// Inicializamos cuando el DOM cargue
+document.addEventListener('DOMContentLoaded', () => { 
+    // Pequeño timeout para asegurar que main.js ya creó window.supabaseClient
+    setTimeout(() => {
+        DirectoryApp.init(); 
+    }, 100);
 });

@@ -1,38 +1,41 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-MBEXC7T1EF"></script>
     <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-
-    gtag('config', 'G-MBEXC7T1EF');
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-MBEXC7T1EF');
     </script>
     
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Directorio de Investigadores - Epistecnología</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#b72a1e">
     <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
     
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/inv/css/directorio.css">
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 </head>
 <body>
     
     <header class="desktop-nav">
         <div class="container">
             <a href="/" class="logo">
-                <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Epistecnologia Logo">
+                <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Epistecnología Logo">
             </a>
             
             <nav class="main-menu bento-box-nav">
                 <a href="/#inicio" class="nav-icon"><i class="fa-solid fa-house"></i> <span class="nav-text">Inicio</span></a>
                 <a href="/comunidad.html" class="nav-icon"><i class="fa-solid fa-users"></i> <span class="nav-text">Comunidad</span></a>
                 <a href="/live.html" class="nav-icon"><i class="fa-solid fa-tower-broadcast"></i> <span class="nav-text">Live</span></a>
+                
+                <a href="/servicios.html" class="nav-icon" style="color: var(--color-accent); font-weight: bold;">
+                    <i class="fa-solid fa-handshake-angle"></i> <span class="nav-text">Servicios</span>
+                </a>
                 
                 <div class="nav-dropdown">
                     <button class="nav-icon">
@@ -44,15 +47,10 @@
                     </div>
                 </div>
 
-                <a href="/servicios.html" class="nav-icon" font-weight: bold;">
-                    <i class="fa-solid fa-handshake-angle"></i> <span class="nav-text">Servicios</span>
-                </a>
-
                 <a href="https://publicaciones.epistecnologia.com/" class="nav-icon" target="_blank"><i class="fa-solid fa-newspaper"></i> <span class="nav-text">Revista</span></a>
             </nav>
 
             <div class="actions-area bento-box-nav">
-                
                 <div class="nav-dropdown" id="create-dropdown-container">
                     <button id="btn-global-create" class="nav-icon create-locked">
                         <i class="fa-solid fa-lock" id="create-icon"></i> <span class="nav-text">Crear</span>
@@ -83,72 +81,55 @@
                 <button class="theme-switcher nav-icon" id="theme-switcher-desktop"><i class="fa-solid fa-moon"></i></button>
             </div>
         </div>
-        <div id="support-banner" class="support-banner">
-            <div class="container">
-                <p><i class="fa-brands fa-gratipay"></i> <strong>Epistecnología</strong> es una plataforma sin fines de lucro. Tu apoyo nos ayuda a seguir democratizando el conocimiento. 
-                <a href="https://www.paypal.com/ncp/payment/AVNL8CGY5A2FL" target="_blank">Aportar ahora</a> o explora nuestras <a href="#" onclick="navigateToTabExternal('tab-membresias'); dismissBanner(); return false;">Membresías</a>.</p>
-                <button class="close-banner" onclick="dismissBanner()">&times;</button>
-            </div>
-        </div>
     </header>
 
-    <main class="container">
-        <div class="directory-header">
-            <h1>Directorio de Investigadores</h1>
-            <p>Explora los perfiles de los miembros que forman parte de la comunidad Epistecnología.</p>
-            <div class="search-bar-container">
-                <i class="fa-solid fa-search"></i>
-                <input type="search" id="search-input" placeholder="Buscar por nombre o especialidad...">
-            </div>
-        </div>
+    <div id="global-toast" class="toast-hidden"></div>
 
-        <div id="directory-grid" class="researcher-grid">
-            <p class="loading-message">Cargando investigadores...</p>
-        </div>
+    <main class="directory-main-content">
+        
+        <section class="explore-section" style="max-width: 800px; margin: 40px auto; text-align: center; padding: 0 20px;">
+            <h1 style="font-family: 'Playfair Display', serif; font-size: clamp(2rem, 5vw, 3rem); margin-bottom: 10px;">Red de Investigadores</h1>
+            <p style="color: var(--color-text-secondary); margin-bottom: 30px; font-size: 1.1rem;">Descubre y conecta con el talento que está transformando la divulgación científica.</p>
+            
+            <div class="search-bar-tv" style="max-width: 100%; margin-bottom: 25px; position: relative;">
+                <i class="fa-solid fa-search" style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--color-secondary); font-size: 1.2rem;"></i>
+                <input type="text" id="search-input" placeholder="Buscar por nombre, institución o especialidad..." style="width: 100%; background: var(--color-surface); border: 2px solid var(--color-border); border-radius: 50px; padding: 18px 20px 18px 50px; font-size: 1.05rem; color: var(--color-text-primary); outline: none; transition: 0.3s; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
+            </div>
+            
+            <div class="categories-rail" id="filter-roles" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; justify-content: center; scroll-snap-type: x mandatory;">
+                <button class="category-pill active" data-role="">Todos</button>
+                <button class="category-pill" data-role="Investigador">Investigadores</button>
+                <button class="category-pill" data-role="Divulgador">Divulgadores</button>
+                <button class="category-pill" data-role="Institución">Instituciones</button>
+            </div>
+        </section>
+
+        <section class="container">
+            <div id="directory-grid" class="directory-grid">
+                </div>
+        </section>
+        
     </main>
-    
-    <nav class="bottom-nav">
-        <a href="/#inicio" class="nav-item"><i class="fa-solid fa-house"></i><span>Inicio</span></a>
-        <a href="/comunidad.html" class="nav-item"><i class="fa-solid fa-users"></i><span>Comunidad</span></a>
-        <a href="/live.html" class="nav-item"><i class="fa-solid fa-tower-broadcast"></i><span>Live</span></a>
-        <button class="nav-item" id="mobile-menu-toggle-btn"><i class="fa-solid fa-bars"></i><span>Más</span></button>
-    </nav>
 
-    <div class="mobile-more-menu" id="mobile-more-menu">
-        <div class="mobile-more-menu__content">
-            
-            <div id="mobile-auth-section">
-                <a href="#" data-provider="google" id="login-google-btn-mobile" class="mobile-more-menu__item login-provider-btn"><i class="fa-brands fa-google"></i><span>Iniciar con Google</span></a>
-                <a href="#" data-provider="github" id="login-github-btn-mobile" class="mobile-more-menu__item login-provider-btn"><i class="fa-brands fa-github"></i><span>Iniciar con GitHub</span></a>
-                <a href="#" class="mobile-more-menu__item is-disabled"><i class="fa-brands fa-orcid"></i><span>ORCID (Próximamente)</span></a>
-                <hr>
-            </div>
-
-            <a href="/servicios.html" class="mobile-more-menu__item" style="color: var(--color-accent); font-weight: bold;">
-                <i class="fa-solid fa-handshake-angle"></i><span>Servicios y Producción</span>
-            </a>
-            
-            <div style="padding: 15px 20px 5px; font-size: 0.75rem; color: var(--color-secondary); text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Ejes Temáticos</div>
-            <a href="#" class="mobile-more-menu__item"><i class="fa-solid fa-microscope"></i><span>Histórico-Cultural</span></a>
-            <a href="#" class="mobile-more-menu__item"><i class="fa-solid fa-book-open"></i><span>Científico-Tecnológico</span></a>
-            
-            <hr>
-            
-            <a href="https://publicaciones.epistecnologia.com/" target="_blank" class="mobile-more-menu__item">
-                <i class="fa-solid fa-newspaper"></i><span>Revista</span> 
-                <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.7rem; margin-left: auto; opacity: 0.5;"></i>
-            </a>
-
-            <hr>
-            <button class="mobile-more-menu__item" id="theme-switcher-mobile"><i class="fa-solid fa-moon"></i><span>Cambiar Tema</span></button>
-            <button class="mobile-more-menu__item" id="mobile-more-menu-close"><i class="fa-solid fa-xmark"></i><span>Cerrar Menú</span></button>
+    <div id="login-modal-overlay" class="modal-overlay">
+        <div class="modal login-modal">
+            <header class="modal-header">
+                <h2>Accede a Epistecnología</h2>
+                <button id="login-modal-close-btn" class="modal-close-btn">&times;</button>
+            </header>
+            <main class="modal-content">
+                <p>Usa tu cuenta preferida para continuar. Al iniciar sesión, podrás acceder a tu panel de investigador y participar en la comunidad.</p>
+                <div class="login-options">
+                    <a href="#" class="login-provider-btn" data-provider="google">
+                        <i class="fa-brands fa-google"></i> Continuar con Google
+                    </a>
+                    <a href="#" class="login-provider-btn" data-provider="github">
+                        <i class="fa-brands fa-github"></i> Continuar con GitHub
+                    </a>
+                </div>
+            </main>
         </div>
     </div>
-    
-    <div class="overlay" id="overlay"></div>
-
-    <div id="researcher-modal-overlay" class="profile-modal-overlay">
-        </div>
 
     <footer class="site-footer">
         <div class="container footer-content">
@@ -201,9 +182,45 @@
         </div>
     </footer>
 
+    <nav class="bottom-nav">
+        <a href="/#inicio" class="nav-item"><i class="fa-solid fa-house"></i><span>Inicio</span></a>
+        <a href="/comunidad.html" class="nav-item"><i class="fa-solid fa-users"></i><span>Comunidad</span></a>
+        <a href="/live.html" class="nav-item"><i class="fa-solid fa-tower-broadcast"></i><span>Live</span></a>
+        <button class="nav-item" id="mobile-menu-toggle-btn"><i class="fa-solid fa-bars"></i><span>Más</span></button>
+    </nav>
+
+    <div class="mobile-more-menu" id="mobile-more-menu">
+        <div class="mobile-more-menu__content">
+            <div id="mobile-auth-section">
+                <a href="#" data-provider="google" id="login-google-btn-mobile" class="mobile-more-menu__item login-provider-btn"><i class="fa-brands fa-google"></i><span>Iniciar con Google</span></a>
+                <a href="#" data-provider="github" id="login-github-btn-mobile" class="mobile-more-menu__item login-provider-btn"><i class="fa-brands fa-github"></i><span>Iniciar con GitHub</span></a>
+                <hr>
+            </div>
+            
+            <a href="/directorio.html" class="mobile-more-menu__item" style="color: var(--color-accent); font-weight: bold;">
+                <i class="fa-solid fa-address-book"></i><span>Directorio</span>
+            </a>
+            <a href="/servicios.html" class="mobile-more-menu__item">
+                <i class="fa-solid fa-handshake-angle"></i><span>Servicios y Producción</span>
+            </a>
+            
+            <div style="padding: 15px 20px 5px; font-size: 0.75rem; color: var(--color-secondary); text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Ejes Temáticos</div>
+            <a href="#" class="mobile-more-menu__item"><i class="fa-solid fa-microscope"></i><span>Histórico-Cultural</span></a>
+            <a href="#" class="mobile-more-menu__item"><i class="fa-solid fa-book-open"></i><span>Científico-Tecnológico</span></a>
+            <hr>
+            
+            <a href="https://publicaciones.epistecnologia.com/" target="_blank" class="mobile-more-menu__item">
+                <i class="fa-solid fa-newspaper"></i><span>Revista</span> 
+                <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.7rem; margin-left: auto; opacity: 0.5;"></i>
+            </a>
+
+            <hr>
+            <button class="mobile-more-menu__item" id="theme-switcher-mobile"><i class="fa-solid fa-moon"></i><span>Cambiar Tema</span></button>
+            <button class="mobile-more-menu__item" id="mobile-more-menu-close"><i class="fa-solid fa-xmark"></i><span>Cerrar</span></button>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/js/main.js"></script>
-    <script type="module" src="/inv/js/directorio.js"></script>
-
-</body>
+    <script src="/inv/js/directorio.js"></script> </body>
 </html>
