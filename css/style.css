@@ -1568,52 +1568,6 @@ body.dark-theme .ticker-row img:hover {
 }
 /* --- FIN: ESTILOS PARA BENTO SUBSTACK DESTACADO --- */
 
-/* ==========================================================================
-   NUEVO SISTEMA: STACKING CARDS (TARJETAS APILADAS + GLASSMORPHISM)
-   ========================================================================== */
-
-/* 1. Contenedor que permite el scroll infinito */
-.cinematic-wrapper {
-    width: 100%;
-    position: relative;
-    padding-bottom: 20vh; /* Espacio para hacer scroll tras la última tarjeta */
-}
-
-/* 2. Las Tarjetas (La magia del position: sticky) */
-.cinematic-section {
-    position: sticky;
-    top: 90px; /* Se queda pegada justo debajo del menú superior */
-    height: calc(100vh - 110px);
-    width: calc(100% - 2rem);
-    max-width: 1400px;
-    margin: 0 auto 80vh auto; /* El 80vh es la distancia que el usuario debe scrollear para que llegue la siguiente tarjeta */
-    
-    border-radius: 32px;
-    box-shadow: 0 -15px 40px rgba(0,0,0,0.1), 0 20px 50px rgba(0,0,0,0.3);
-    
-    /* Efecto Glassmorphism (Cristal) */
-    background: rgba(255, 255, 255, 0.5); /* Cristal claro por defecto */
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    border-top: 2px solid rgba(255, 255, 255, 0.8); /* Brillo superior del cristal */
-    
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-    z-index: 10;
-    transition: filter 0.3s;
-}
-
-/* Cristal en Modo Oscuro */
-body.dark-theme .cinematic-section {
-    background: rgba(25, 28, 33, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 -15px 40px rgba(0,0,0,0.4), 0 20px 50px rgba(0,0,0,0.6);
-}
 
 /* 3. Limpieza de fondos antiguos para que el Plexus brille */
 .cinematic-overlay { display: none; } /* Ya no necesitamos el oscurecedor */
@@ -1639,39 +1593,6 @@ body.dark-theme .cinematic-section {
 #section-hero .cinematic-content { padding-top: 0; } /* Centrado perfecto */
 #section-search { min-height: auto; }
 
-/* 5. El Navegador Lateral (Puntos) */
-.stack-nav {
-    position: fixed;
-    right: 30px;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    gap: 25px !important;
-    /* Añadimos la transición suave para que no desaparezcan de golpe */
-    transition: opacity 0.4s ease, visibility 0.4s ease;
-}
-
-/* Nueva clase que el JS usará para ocultar la barra */
-.stack-nav.is-hidden {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-}
-.stack-nav li {
-    width: 12px; height: 12px; border-radius: 50%;
-    background: var(--color-border);
-    cursor: pointer; transition: all 0.3s;
-    list-style: none;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-}
-.stack-nav li:hover { background: var(--color-text-secondary); transform: scale(1.2); }
-.stack-nav li.active {
-    background: var(--color-accent);
-    transform: scale(1.5);
-    border: 2px solid var(--color-surface);
-}
 
 /* 6. Móviles */
 @media (max-width: 768px) {
@@ -2572,4 +2493,94 @@ main.container { background-color: transparent !important; }
         border-top: 1px solid var(--color-border);
         margin: 10px 0;
     }
+}
+/* ==========================================================================
+   LANDING PAGE MODERNA (Flujo de Conversión)
+   ========================================================================== */
+
+.section-padding { padding: 100px 20px; }
+.text-gradient { background: linear-gradient(135deg, var(--color-accent), #ff6b6b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+/* --- 1. HERO UNIFICADO --- */
+.hero-modern {
+    position: relative;
+    min-height: 85vh; /* Ocupa casi toda la pantalla pero deja ver que hay contenido abajo */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-surface);
+    overflow: hidden;
+    padding: 120px 20px 60px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.hero-modern-overlay {
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at top, rgba(183, 42, 30, 0.05) 0%, transparent 60%);
+    z-index: 2;
+}
+
+.hero-modern-content {
+    position: relative; z-index: 10;
+    text-align: center;
+    max-width: 900px;
+    animation: fadeInDown 0.8s ease-out;
+}
+
+.hero-main-title { font-family: 'Playfair Display', serif; font-size: clamp(2.5rem, 6vw, 4.5rem); line-height: 1.1; margin-bottom: 1.5rem; color: var(--color-primary); }
+.hero-main-subtitle { font-size: 1.2rem; color: var(--color-secondary); line-height: 1.6; max-width: 750px; margin: 0 auto 3rem auto; }
+
+/* Buscador en el Hero */
+.hero-search-box { background: rgba(0,0,0,0.02); padding: 20px; border-radius: 24px; border: 1px solid var(--color-border); margin-bottom: 2rem; backdrop-filter: blur(10px); }
+body.dark-theme .hero-search-box { background: rgba(255,255,255,0.02); }
+
+.modern-search { width: 100%; max-width: 800px; margin: 0 auto; position: relative; }
+.modern-search .search-input-cine { width: 100%; border-radius: 50px; padding: 20px 25px; font-size: 1.1rem; border: 2px solid var(--color-border); background: var(--color-background); color: var(--color-primary); transition: 0.3s; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+.modern-search .search-input-cine:focus { border-color: var(--color-accent); outline: none; box-shadow: 0 0 0 4px rgba(183, 42, 30, 0.1); }
+.modern-search .search-btn-cine { position: absolute; right: 8px; top: 8px; bottom: 8px; background: var(--color-accent); color: white; border: none; border-radius: 50px; width: 60px; font-size: 1.2rem; cursor: pointer; transition: 0.2s; }
+.modern-search .search-btn-cine:hover { background: #d83526; transform: scale(1.05); }
+
+/* Tags */
+.hero-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 15px; }
+.tag-pill { font-size: 0.85rem; font-weight: 600; color: var(--color-secondary); background: var(--color-surface); border: 1px solid var(--color-border); padding: 6px 15px; border-radius: 50px; cursor: pointer; transition: 0.2s; }
+.tag-pill:hover { color: var(--color-accent); border-color: var(--color-accent); transform: translateY(-2px); }
+
+/* Botones Principales */
+.btn-glow-primary { background: var(--color-accent); color: white; border: none; padding: 15px 35px; border-radius: 50px; font-weight: 700; font-size: 1.1rem; cursor: pointer; transition: 0.3s; box-shadow: 0 10px 20px rgba(183, 42, 30, 0.3); }
+.btn-glow-primary:hover { transform: translateY(-3px); box-shadow: 0 15px 25px rgba(183, 42, 30, 0.4); color: white;}
+.btn-glow-secondary { background: transparent; color: var(--color-primary); border: 2px solid var(--color-border); padding: 15px 35px; border-radius: 50px; font-weight: 700; font-size: 1.1rem; cursor: pointer; transition: 0.3s; }
+.btn-glow-secondary:hover { border-color: var(--color-primary); background: rgba(0,0,0,0.05); }
+
+/* --- 2. INFRAESTRUCTURA (Bento Tech) --- */
+.bento-grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
+.bento-card-tech { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 24px; padding: 40px 30px; text-align: center; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
+.bento-card-tech:hover { transform: translateY(-10px); border-color: var(--color-accent); box-shadow: 0 20px 40px rgba(0,0,0,0.08); }
+.tech-logo { height: 40px; margin-bottom: 25px; object-fit: contain; filter: grayscale(100%) opacity(0.7); transition: 0.3s; }
+.bento-card-tech:hover .tech-logo { filter: grayscale(0%) opacity(1); }
+.bento-card-tech h4 { font-size: 1.3rem; margin-bottom: 15px; color: var(--color-primary); }
+.bento-card-tech p { color: var(--color-secondary); font-size: 0.95rem; line-height: 1.6; margin: 0; }
+
+/* --- 3. REVISTA MODERNA --- */
+.magazine-modern-layout { display: flex; align-items: center; gap: 60px; }
+.magazine-modern-info { flex: 1; }
+.badge-accent { background: rgba(183, 42, 30, 0.1); color: var(--color-accent); padding: 6px 15px; border-radius: 50px; font-weight: 800; font-size: 0.8rem; letter-spacing: 2px; }
+.magazine-features-list { list-style: none; padding: 0; margin: 0; }
+.magazine-features-list li { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; color: var(--color-primary); font-size: 1.05rem; }
+.magazine-features-list li i { color: var(--color-accent); font-size: 1.2rem; }
+
+/* Collage de Portadas */
+.magazine-modern-covers { flex: 1; display: flex; justify-content: center; align-items: center; min-height: 400px; }
+.cover-stack { position: relative; width: 300px; height: 400px; }
+.m-cover { position: absolute; width: 220px; border-radius: 8px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.cover-back-left { top: 20px; left: -40px; transform: rotate(-10deg) scale(0.9); opacity: 0.7; z-index: 1; }
+.cover-back-right { top: 40px; right: -40px; transform: rotate(15deg) scale(0.85); opacity: 0.5; z-index: 2; }
+.cover-front { top: 0; left: 40px; transform: rotate(0deg) scale(1); z-index: 3; border: 1px solid rgba(255,255,255,0.2); }
+.cover-stack:hover .cover-front { transform: scale(1.05) translateY(-10px); }
+.cover-stack:hover .cover-back-left { transform: rotate(-15deg) scale(0.9) translateX(-20px); }
+.cover-stack:hover .cover-back-right { transform: rotate(20deg) scale(0.85) translateX(20px); }
+
+@media (max-width: 900px) {
+    .magazine-modern-layout { flex-direction: column; text-align: center; gap: 40px; }
+    .magazine-features-list li { justify-content: center; }
+    .hero-btn-group { display: flex; flex-direction: column; gap: 15px; padding: 0 20px; }
 }

@@ -1128,7 +1128,7 @@ document.addEventListener('mainReady', () => {
                 return `
                 <a href="${item.url}" target="_blank" class="result-card">
                     <div class="result-img-wrapper">
-                        <img src="${item.image_url || 'https://placehold.co/600x400'}" onerror="this.style.display='none'" loading="lazy">
+                        <img src="${item.image_url || 'https://i.ibb.co/F42PGTLf/Leonardo-Phoenix-10-A-vibrant-ornate-podcast-artwork-with-a-pr-1.jpg'}" onerror="this.style.display='none'" loading="lazy">
                         <span class="source-badge">${icon} ${label}</span>
                     </div>
                     <div class="result-info">

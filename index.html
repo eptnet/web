@@ -43,171 +43,100 @@
         <canvas id="plexus-canvas"></canvas>
     </div>
 
-    <section id="section-search">
-            <h2 class="search-prompt">¿Qué chispa de curiosidad<br>quieres encender hoy?</h2>
+    <section class="hero-modern" id="section-hero">
+            <div class="hero-modern-overlay"></div>
+            <canvas id="plexus-canvas" style="position: absolute; inset: 0; z-index: 1; opacity: 0.3;"></canvas>
 
-            <div class="search-bar-wrapper">
-                <input type="text" class="search-input-cine" placeholder="Busca por autor, tema o escribe una duda..." id="main-search-input">
-                <button class="search-btn-cine" aria-label="Buscar">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                </button>
-            </div>
-
-        
-            <div class="floating-tag tag-1" onclick="window.fillSearch('Inteligencia Artificial')">#InteligenciaArtificial</div>
-            <div class="floating-tag tag-2" onclick="window.fillSearch('Filosofía')">#Filosofía</div>
-            <div class="floating-tag tag-3" onclick="window.fillSearch('Podcast')">#Podcast</div>
-            <div class="floating-tag tag-4" onclick="window.fillSearch('Historia')">#Historia</div>
-            <div class="floating-tag tag-5" onclick="window.fillSearch('Sociología')">#Sociología</div>
-            <div class="floating-tag tag-6" onclick="window.fillSearch('Tomás')">#Tomás de Aquino</div>
-        
-            <div id="search-results-area" style="width: 100%; max-width: 1400px; margin-top: 2rem; display: none; z-index: 20;"></div>
-
-        <div class="scroll-down-indicator" onclick="document.getElementById('section-hero').scrollIntoView({behavior: 'smooth'})">
-            <p>Descubre Epistecnología</p>
-            <i class="fa-solid fa-chevron-down"></i>
-        </div>
-        </section>
-
-    <div class="cinematic-wrapper">
-
-        <section class="cinematic-section" id="section-hero">
-            
-            <img src="https://img.icons8.com/?size=100&id=ozSAxwo0stkR&format=png&color=000000" class="floating-obj mouse-reactive" data-speed="2" style="top: 40%; right: 15%; width: 100px; opacity: 0.1;" alt="conocimiento">
-            <div class="cinematic-content">
-                <h1 style="font-family: 'Playfair Display', serif; font-size: clamp(2.5rem, 5vw, 4.5rem); line-height: 1.1; margin-bottom: 1.5rem; text-align: center;">
-                    Tu conocimiento es tu legado.<br>Haz que perdure para siempre.
-                </h1>
+            <div class="container hero-modern-content">
+                <h1 class="hero-main-title">Tu conocimiento es tu legado.<br><span class="text-gradient">Haz que perdure para siempre.</span></h1>
+                <p class="hero-main-subtitle">Unimos la Sabiduría Cultural con el rigor de la Ciencia. Encuentra, publica y respalda tu trabajo con tecnología de vanguardia y preservación eterna.</p>
                 
-                <p style="font-size: 1.2rem; opacity: 0.9; max-width: 800px; margin: 0 auto 2.5rem auto; line-height: 1.6; text-align: center;">
-                    Unimos la Sabiduría Cultural con el rigor de la Ciencia y creamos Epistecnología, un espacio donde tu conocimiento obtiene el respaldo que merecen, sin perder tu esencia.
-                </p>
-                
-                <div class="hero-btn-group">
-                    <button class="btn-cine-primary trigger-login-modal" onclick="document.getElementById('login-modal-trigger').click()">ACCEDER</button>
-                    <a href="#inicio" class="btn-cine-secondary" onclick="document.getElementById('bento-grid').scrollIntoView({behavior: 'smooth'})">Inicio</a>
-                    <a href="#section-library" class="btn-cine-secondary">Saber más</a>
-                    <a href="#section-search" class="btn-cine-secondary">Buscar</a>
-                </div>
-
-                <div style="margin-top: 5rem;">
-                    <h4 style="font-family: 'Playfair Display', serif; font-size: 1.5rem; margin-bottom: 0.5rem; text-align: center;">The Scientific Bridge</h4>
-                    <p style="font-size: 0.9rem; opacity: 0.7; margin-bottom: 1.5rem; text-align: center;">Donde la vanguardia tecnológica respalda tu creatividad.</p>
-                    
-                    <div class="bridge-logos-row">
-                        <img src="https://i.ibb.co/Lq8sLDW/CERN-logo-PNG1.png" alt="CERN" title="CERN">
-                        <img src="https://about.zenodo.org/static/img/logos/zenodo-gradient-200.png" alt="Zenodo" title="Zenodo">
-                        <img src="https://explore.openaire.eu/assets/common-assets/common/Logo_Horizontal.png" alt="OpenAIRE" title="OpenAIRE">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Flag_of_Europe.svg/330px-Flag_of_Europe.svg.png" alt="Unión Europea" title="Funded by the EU">
+                <div class="hero-search-box">
+                    <div class="search-bar-wrapper modern-search">
+                        <input type="text" class="search-input-cine" placeholder="Busca por autor, tema o escribe una duda..." id="main-search-input">
+                        <button class="search-btn-cine" aria-label="Buscar">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </button>
                     </div>
+                    
+                    <div class="hero-tags">
+                        <span class="tag-pill" onclick="window.fillSearch('Inteligencia Artificial')">#InteligenciaArtificial</span>
+                        <span class="tag-pill" onclick="window.fillSearch('Filosofía')">#Filosofía</span>
+                        <span class="tag-pill" onclick="window.fillSearch('Tomás de Aquino')">#Tomás de Aquino</span>
+                    </div>
+
+                    <div id="search-results-area" style="display: none; width: 100%; margin-top: 1.5rem; text-align: left; z-index: 20; position: relative;"></div>
+                </div>
+
+                <div class="hero-btn-group mt-4">
+                    <button class="btn-glow-primary trigger-login-modal" onclick="document.getElementById('login-modal-trigger').click()">
+                        <i class="fa-solid fa-user-astronaut"></i> Crear mi Cuenta / Acceder
+                    </button>
+                    <button class="btn-glow-secondary" onclick="document.getElementById('section-infrastructure').scrollIntoView({behavior: 'smooth'})">
+                        Descubrir más <i class="fa-solid fa-arrow-down"></i>
+                    </button>
                 </div>
             </div>
-            
-            <img src="https://img.icons8.com/?size=100&id=pQlOmR51TRBk&format=png&color=000000" class="floating-obj" style="bottom: 15%; left: 20%; width: 120px; opacity: 0.1; animation: float 6s infinite;" alt="Decoration">
         </section>
 
-        <section class="cinematic-section" id="section-library">
-            <div class="cinematic-overlay"></div>
-            
-            <img src="https://i.ibb.co/Q75gk46j/icons8-repository-100.png" class="floating-obj mouse-reactive" data-speed="4" style="filter: invert(1); bottom: 10%; right: 8%; width: 100px; opacity: 0.8;" alt="Libro">
-            
-            <div class="cinematic-content">
-                <h2 class="font-display">Preserva tu conocimiento.</h2>
-                <p style="font-size: 1.2rem; line-height: 1.8;">
-                    Imagina una biblioteca infinita donde nada se quema, nada se pierde y nada se olvida.
-                </p>
-
-                <div class="warning-box">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    <p>
-                        <strong>La fragilidad digital:</strong> Guardar tu trabajo intelectual en redes sociales es construir sobre arena. Los algoritmos cambian, las cuentas se cierran y el contenido desaparece.
+        <section class="section-padding" id="section-infrastructure" style="background: var(--color-background); position: relative; z-index: 10;">
+            <div class="container">
+                <div class="text-center" style="margin-bottom: 3rem; text-align: center;">
+                    <h2 class="font-display" style="font-size: 2.5rem; margin-bottom: 1rem;">Preserva tu conocimiento</h2>
+                    <p style="color: var(--color-secondary); font-size: 1.1rem; max-width: 700px; margin: 0 auto;">
+                        <i class="fa-solid fa-triangle-exclamation" style="color: #f59e0b;"></i> <strong>Hay una fragilidad digital latente:</strong> Guardar tu trabajo e identidad, en redes sociales es construir sobre arena y para otros. Los algoritmos cambian y el contenido desaparece. <strong style="color: var(--color-primary);">Tu legado merece el búnker digital más seguro del mundo.</strong>
                     </p>
                 </div>
-                
-                <p style="font-size: 1.2rem; line-height: 1.8;">
-                    <strong>Epistecnología es tu archivo permanente.</strong> Construido para durar siglos, no segundos.
-                </p>
-            </div>
-        </section>
 
-        <section class="cinematic-section" id="section-cern">
-            <div class="cinematic-overlay"></div>
-            <div class="cinematic-content">
-                <h2 style="font-family: 'Playfair Display', serif; font-size: 3rem; margin-bottom: 1.5rem;">Tecnología del CERN.</h2>
-                <p style="font-size: 1.2rem; margin-bottom: 2rem;">
-                    Tu legado merece el búnker digital más seguro del mundo.
-                </p>
-                
-                <div style="display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap; text-align: left;">
-                    <div style="background: rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 12px; backdrop-filter: blur(5px); width: 250px;">
-                        <i class="fa-solid fa-server" style="color: var(--color-accent); font-size: 2rem; margin-bottom: 1rem;"></i>
+                <div class="bento-grid-3">
+                    <div class="bento-card-tech">
+                        <img src="https://i.ibb.co/Lq8sLDW/CERN-logo-PNG1.png" alt="CERN" class="tech-logo">
                         <h4>Infraestructura CERN</h4>
-                        <p style="font-size: 0.9rem; opacity: 0.8;">Tus archivos se guardan en los mismos servidores que los datos del Gran Colisionador de Hadrones.</p>
+                        <p>Tus archivos se guardan en los mismos servidores seguros del Gran Colisionador de Hadrones. Diseñados para durar siglos.</p>
                     </div>
-                    <div style="background: rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 12px; backdrop-filter: blur(5px); width: 250px;">
-                        <i class="fa-solid fa-fingerprint" style="color: var(--color-accent); font-size: 2rem; margin-bottom: 1rem;"></i>
-                        <h4>DOI Oficial</h4>
-                        <p style="font-size: 0.9rem; opacity: 0.8;">Obtén un Identificador de Objeto Digital único que hace tu trabajo citable académicamente.</p>
+                    <div class="bento-card-tech">
+                        <img src="https://about.zenodo.org/static/img/logos/zenodo-gradient-200.png" alt="Zenodo" class="tech-logo" style="height: 30px;">
+                        <h4>DOI Oficial Citable</h4>
+                        <p>Obtén un Identificador de Objeto Digital (DOI) único que hace tu trabajo citable internacionalmente y lo protege contra el plagio.</p>
                     </div>
-                    <div style="background: rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 12px; backdrop-filter: blur(5px); width: 250px;">
-                        <i class="fa-solid fa-globe" style="color: var(--color-accent); font-size: 2rem; margin-bottom: 1rem;"></i>
-                        <h4>OpenAIRE</h4>
-                        <p style="font-size: 0.9rem; opacity: 0.8;">Indexación automática en la red de ciencia abierta de la Unión Europea.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section class="cinematic-section" id="section-magazine">
-            <div style="position: absolute; width: 100%; height: 100%; background: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%); z-index: 0;"></div>
-            
-            <div class="magazine-layout">
-                <div class="magazine-info">
-                    <span style="background: var(--color-accent); color: white; padding: 5px 12px; font-weight: bold; font-size: 0.8rem; letter-spacing: 1px; border-radius: 4px;">LA REVISTA</span>
-                    <h2 class="font-display" style="margin-top: 1rem; color: white;">Epistecnología</h2>
-                    <h3 style="font-weight: 400; font-size: 1.3rem; color: rgba(255,255,255,0.8); margin-bottom: 2rem; font-family: var(--font-serif);">Revista de divulgación científica y cultural</h3>
-                    
-                    <ul style="list-style: none; padding: 0; color: rgba(255,255,255,0.7); margin-bottom: 2.5rem; font-size: 1rem; line-height: 1.8;">
-                        <li><i class="fa-solid fa-building-columns" style="color: var(--color-accent); margin-right: 8px;"></i> Indexada en la <strong>Biblioteca Nacional del Perú</strong></li>
-                        <li><i class="fa-solid fa-check" style="color: var(--color-accent); margin-right: 8px;"></i> <strong>ISSN:</strong> 3119-7108 (En línea)</li>
-                        <li><i class="fa-solid fa-check" style="color: var(--color-accent); margin-right: 8px;"></i> <strong>Depósito Legal:</strong> 2025-10424</li>
-                    </ul>
-                    
-                    <a href="https://publicaciones.epistecnologia.com" target="_blank" class="btn-cine-primary" style="display: inline-flex; align-items: center; gap: 0.8rem;">
-                        <i class="fa-solid fa-book-open"></i> Ir a la Hemeroteca
-                    </a>
-                </div>
-
-                <div class="magazine-slider-container">
-                    <div class="magazine-track track-up">
-                        <a href="https://publicaciones.epistecnologia.com" target="_blank"><img src="https://i.ibb.co/Xkz3V9PM/Portada-De-Revista-Epistecnologia-N1.jpg" class="magazine-cover" alt="Revista Edición 1"></a>
-                        <a href="https://publicaciones.epistecnologia.com" target="_blank"><img src="https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg" class="magazine-cover" alt="Revista Edición 2"></a>
-                        <a href="https://publicaciones.epistecnologia.com" target="_blank"><img src="https://i.ibb.co/sJzHXdqg/Rev-EPT-Edi-N02-A4.png" class="magazine-cover" alt="Revista Edición 3"></a>
-                        <a href="https://publicaciones.epistecnologia.com" target="_blank"><img src="https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg" class="magazine-cover" alt="Revista Edición 1"></a>
-                        <a href="https://publicaciones.epistecnologia.com" target="_blank"><img src="https://i.ibb.co/Xkz3V9PM/Portada-De-Revista-Epistecnologia-N1.jpg" class="magazine-cover" alt="Revista Edición 2"></a>
-                    </div>
-
-                    <div class="magazine-track track-down">
-                        <a href="https://publicaciones.epistecnologia.com" target="_blank"><img src="https://i.ibb.co/sJzHXdqg/Rev-EPT-Edi-N02-A4.png" class="magazine-cover" alt="Revista Edición 4"></a>
-                        <a href="https://publicaciones.epistecnologia.com" target="_blank"><img src="https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg" class="magazine-cover" alt="Revista Edición 5"></a>
-                        <a href="https://publicaciones.epistecnologia.com" target="_blank"><img src="https://i.ibb.co/Xkz3V9PM/Portada-De-Revista-Epistecnologia-N1.jpg" class="magazine-cover" alt="Revista Edición 6"></a>
-                        <a href="https://publicaciones.epistecnologia.com" target="_blank"><img src="https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg" class="magazine-cover" alt="Revista Edición 4"></a>
-                        <a href="https://publicaciones.epistecnologia.com" target="_blank"><img src="https://i.ibb.co/sJzHXdqg/Rev-EPT-Edi-N02-A4.png" class="magazine-cover" alt="Revista Edición 5"></a>
+                    <div class="bento-card-tech">
+                        <img src="https://explore.openaire.eu/assets/common-assets/common/Logo_Horizontal.png" alt="OpenAIRE" class="tech-logo" style="height: 30px;">
+                        <h4>Red OpenAIRE (UE)</h4>
+                        <p>Indexación automática y conexión directa con la red de ciencia abierta de la Unión Europea.</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <nav class="stack-nav">
-            <ul>
-                <li data-target="section-hero" class="active" title="Inicio"></li>
-                <li data-target="section-library" title="Librería"></li>
-                <li data-target="section-cern" title="Tecnología"></li>
-                <li data-target="section-magazine" title="Revista"></li>
-                <li data-target="section-search" title="Buscador"></li>
-            </ul>
-        </nav>
-    </div> 
+        <section class="section-padding" id="section-magazine" style="background: var(--color-surface); border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border);">
+            <div class="container">
+                <div class="magazine-modern-layout">
+                    <div class="magazine-modern-info">
+                        <span class="badge-accent">LA REVISTA OFICIAL</span>
+                        <h2 class="font-display" style="font-size: 2.8rem; margin: 1rem 0;">Epistecnología</h2>
+                        <h3 style="font-weight: 400; font-size: 1.2rem; color: var(--color-secondary); margin-bottom: 2rem;">Revista Internacional de Divulgación Científica y Cultural.</h3>
+                        
+                        <ul class="magazine-features-list">
+                            <li><i class="fa-solid fa-building-columns"></i> Indexada en la <strong>Biblioteca Nacional del Perú</strong></li>
+                            <li><i class="fa-solid fa-fingerprint"></i> <strong>ISSN:</strong> 3119-7108 (En línea)</li>
+                            <li><i class="fa-solid fa-certificate"></i> <strong>Depósito Legal:</strong> 2025-10424</li>
+                        </ul>
+                        
+                        <a href="https://publicaciones.epistecnologia.com" target="_blank" class="btn-glow-primary mt-3" style="display: inline-block;">
+                            <i class="fa-solid fa-book-open"></i> Explorar Hemeroteca
+                        </a>
+                    </div>
+
+                    <div class="magazine-modern-covers">
+                        <div class="cover-stack">
+                            <img src="https://i.ibb.co/sJzHXdqg/Rev-EPT-Edi-N02-A4.png" class="m-cover cover-back-left" alt="Edición 3">
+                            <img src="https://i.ibb.co/Xkz3V9PM/Portada-De-Revista-Epistecnologia-N1.jpg" class="m-cover cover-back-right" alt="Edición 1">
+                            <img src="https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg" class="m-cover cover-front" alt="Edición Actual">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
     <div id="inicio"></div>
 
