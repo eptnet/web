@@ -484,8 +484,6 @@ const ProfileApp = {
         
         // --- LÓGICA DE CONEXIÓN A BLUESKY AÑADIDA AQUÍ ---
         if (isMyOwnProfile) {
-            // Añadimos un separador visual
-            buttonsHTML += `<hr>`;
 
             // Comprobamos si el usuario ya conectó su cuenta (usando la variable this.bskyCreds que ya cargamos)
             if (this.bskyCreds) {
