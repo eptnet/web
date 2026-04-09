@@ -1,5 +1,7 @@
 // =================================================================
-// ARCHIVO COMPLETO: /inv/js/editor-studio.js (Hub Omnicanal V3)
+// ARCHIVO COMPLETO: /inv/js/editor-studio.js (Hub Omnicanal V4)
+// - Incluye API is.gd ultrarrápida para enlaces
+// - Enlace obligatorio (Fallback al perfil del usuario)
 // =================================================================
 
 const SYSTEM_PROMPT = `Eres un Asistente Experto en Comunicación Científica de Epistecnología. 
@@ -46,7 +48,7 @@ const StudioApp = {
     userId: null,
     currentUserProfile: null,
     saveTimeout: null, 
-    isProgrammaticChange: false, // <-- NUEVO: Escudo Anti-Fantasmas
+    isProgrammaticChange: false,
 
     async init() {
         const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
@@ -80,13 +82,12 @@ const StudioApp = {
         const newsletterCheckbox = document.getElementById('toggle-newsletter');
         
         if (emailToggle && newsletterCheckbox) {
-            // Si el agente existe y NO es 'text' (Artículo), ocultamos el interruptor
             if (agent && agent !== 'text') {
                 emailToggle.style.display = 'none';
-                newsletterCheckbox.checked = false; // Lo apagamos forzosamente
+                newsletterCheckbox.checked = false; 
             } else {
                 emailToggle.style.display = 'flex';
-                newsletterCheckbox.checked = true; // Lo encendemos para artículos
+                newsletterCheckbox.checked = true; 
             }
         }
 
@@ -170,15 +171,25 @@ const StudioApp = {
             if(linkInput) linkInput.addEventListener('input', updateCounter);
         }
 
-        // --- API TINYURL: Acortador de Enlaces ---
+        // --- API IS.GD: ACORTADOR SEGURO DE ENLACES ---
         document.getElementById('btn-shorten-link')?.addEventListener('click', async (e) => {
             const linkInput = document.getElementById('social-post-link');
-            const urlToShorten = linkInput.value.trim();
+            let urlToShorten = linkInput.value.trim();
             
-            // Validaciones rápidas
-            if (!urlToShorten) { alert("Pega un enlace primero para poder acortarlo."); return; }
-            if (urlToShorten.includes('tinyurl.com')) { alert("Este enlace ya está acortado."); return; }
-            if (!urlToShorten.startsWith('http')) { alert("El enlace debe empezar con http:// o https://"); return; }
+            // Si intenta acortar sin haber escrito nada, le ponemos su perfil
+            if (!urlToShorten) { 
+                urlToShorten = `https://epistecnologia.com/@${window.StudioApp.currentUserProfile?.username || ''}`;
+                linkInput.value = urlToShorten;
+            }
+
+            if (urlToShorten.includes('is.gd') || urlToShorten.includes('tinyurl.com') || urlToShorten.includes('n9.cl')) { 
+                alert("Este enlace ya parece estar acortado."); 
+                return; 
+            }
+            if (!urlToShorten.startsWith('http')) { 
+                alert("El enlace debe empezar con http:// o https://"); 
+                return; 
+            }
 
             const btn = e.currentTarget;
             const originalHtml = btn.innerHTML;
@@ -186,18 +197,18 @@ const StudioApp = {
             btn.disabled = true;
 
             try {
-                // Llamada a la API gratuita de TinyURL
-                const res = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(urlToShorten)}`);
+                // Usamos is.gd porque no tiene bloqueos de CORS en navegadores
+                const res = await fetch(`https://is.gd/create.php?format=simple&url=${encodeURIComponent(urlToShorten)}`);
                 if (res.ok) {
                     const shortUrl = await res.text();
                     linkInput.value = shortUrl;
-                    linkInput.dispatchEvent(new Event('input')); // Dispara la actualización del contador de caracteres
+                    linkInput.dispatchEvent(new Event('input')); // Actualiza contador
                 } else {
-                    alert("La API de acortamiento no respondió. Intenta más tarde.");
+                    alert("El acortador no respondió. Es posible que el enlace no sea válido.");
                 }
             } catch (err) {
                 console.error("Error acortando URL:", err);
-                alert("No se pudo conectar con el acortador.");
+                alert("No se pudo conectar con el acortador (Verifica tu conexión).");
             } finally {
                 btn.innerHTML = originalHtml;
                 btn.disabled = false;
@@ -266,12 +277,10 @@ const StudioApp = {
         const { data } = await this.supabase.from('projects').select('description').eq('id', projectId).single();
         if(data && data.description) {
             await this.editorInstance.isReady;
-            // NUEVO: Activamos el escudo anti-fantasmas antes de que el código escriba
             this.isProgrammaticChange = true;
             this.editorInstance.blocks.insert('paragraph', { 
                 text: `<b>Contexto del Proyecto:</b> ${data.description}` 
             });
-            // Bajamos el escudo medio segundo después
             setTimeout(() => { this.isProgrammaticChange = false; }, 500);
         }
     },
@@ -326,7 +335,6 @@ const StudioApp = {
             let blocksData = data.content;
             if (typeof blocksData === 'string') blocksData = JSON.parse(blocksData);
             
-            // NUEVO: Levantamos el escudo al renderizar un borrador cargado
             this.isProgrammaticChange = true;
             if (blocksData && blocksData.blocks) {
                 await this.editorInstance.render(blocksData);
@@ -344,9 +352,7 @@ const StudioApp = {
     },
 
     triggerAutoSave() {
-        // NUEVO: Si la IA o el JS escribieron esto, NO guardes. Solo guarda si es el humano tecleando.
         if (this.isProgrammaticChange) return; 
-        
         if(!this.currentPost.projectId) return; 
         
         clearTimeout(this.saveTimeout);
@@ -376,18 +382,14 @@ const StudioApp = {
         try {
             const editorData = await this.editorInstance.save();
 
-            // --- MAGIA: TÍTULO AUTOMÁTICO ---
             let titleValue = document.getElementById('post-title').value.trim();
             if (!titleValue) {
                 const today = new Date();
-                // Formato: 08-04-2026
                 const dateStr = today.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
                 titleValue = `Nuevo borrador | ${dateStr}`;
-                // Actualizamos visualmente el input para que el usuario lo vea
                 document.getElementById('post-title').value = titleValue; 
             }
 
-            // Validación de seguridad anti-fantasmas
             if (editorData.blocks.length === 0 && titleValue.startsWith('Nuevo borrador')) {
                 if(!isSilent) alert("Escribe algo en el editor antes de guardar un borrador.");
                 statusEl.innerHTML = '<i class="fa-solid fa-cloud"></i> Sincronizado';
@@ -410,7 +412,6 @@ const StudioApp = {
             
             this.currentPost.id = data.id;
             
-            // Actualizamos la URL sin recargar para no generar duplicados en la base de datos
             const newUrl = `/inv/editor.html?postId=${data.id}`;
             window.history.replaceState({ path: newUrl }, '', newUrl);
 
@@ -650,8 +651,16 @@ const StudioApp = {
         }
 
         const socialText = document.getElementById('social-post-text').value.trim();
-        const postLink = document.getElementById('social-post-link')?.value.trim() || "";
+        let postLink = document.getElementById('social-post-link')?.value.trim();
         const postToCommunity = document.getElementById('dest-epistecnologia').checked; 
+
+        // --- ENLACE OBLIGATORIO: Fallback de seguridad ---
+        if (!postLink) {
+            postLink = `https://epistecnologia.com/@${this.currentUserProfile?.username || ''}`;
+            if (document.getElementById('social-post-link')) {
+                document.getElementById('social-post-link').value = postLink;
+            }
+        }
 
         if (postToCommunity && socialText.length === 0) {
             alert("Escribe un mensaje en la caja de Redes Sociales para acompañar tu publicación.");
@@ -694,7 +703,6 @@ const StudioApp = {
                 }
             }
 
-            // LÓGICA DE CORREO SEGURA
             const newsletterCheckbox = document.getElementById('toggle-newsletter');
             const sendNewsletter = newsletterCheckbox && newsletterCheckbox.parentElement.parentElement.style.display !== 'none' 
                                    ? newsletterCheckbox.checked 
@@ -713,7 +721,6 @@ const StudioApp = {
                 try {
                     const { data: creds } = await this.supabase.from('bsky_credentials').select('*').eq('user_id', this.userId).single();
                     
-                    const attachCheckbox = document.getElementById('checkbox-attach-image');
                     const includeImage = !!this.socialImageBase64;
 
                     const payloadBluesky = {
