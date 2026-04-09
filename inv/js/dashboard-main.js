@@ -103,9 +103,11 @@ const UI = {
     }
 };
 
-// Objeto para manejar la integración con Bluesky
+/// Objeto para manejar la integración con Bluesky (Versión EPT Bot Logic)
 const BlueskyIntegration = {
     async init() {
+        // 1. IMPORTANTE: Hacemos el objeto global AL PRINCIPIO para que el botón funcione siempre
+        window.BlueskyIntegration = this;
         this.checkConnection();
     },
 
@@ -116,32 +118,106 @@ const BlueskyIntegration = {
         banner.classList.add('is-loading');
         
         try {
-            const { data, error } = await App.supabase
-                .from('api_keys')
-                .select('id')
+            // Usamos .maybeSingle() para evitar el error 406 si no existe el registro
+            const { data: creds, error } = await App.supabase
+                .from('bsky_credentials')
+                .select('handle')
                 .eq('user_id', App.userId)
-                .eq('service', 'bluesky')
-                .single();
+                .maybeSingle();
 
             banner.classList.remove('is-loading');
 
-            if (data) {
+            if (creds) {
+                // ESTADO: CONECTADO (Usa su propia cuenta)
                 banner.classList.add('is-connected');
-                banner.innerHTML = `<p><i class="fa-solid fa-circle-check"></i> Conectado a Bluesky. El chat en vivo se creará automáticamente.</p>`;
+                banner.classList.remove('is-disconnected');
+                banner.innerHTML = `<p><i class="fa-solid fa-circle-check"></i> Conectado a Bluesky como <strong>@${creds.handle}</strong>. Publicarás con tu propia identidad académica.</p>`;
             } else {
+                // ESTADO: DESCONECTADO (Usa el EPT Bot)
                 banner.classList.add('is-disconnected');
+                banner.classList.remove('is-connected');
                 banner.innerHTML = `
-                    <p><i class="fa-solid fa-triangle-exclamation"></i> No estás conectado a Bluesky. El chat no se creará para nuevos eventos.</p>
-                    <a href="/inv/profile.html#comunidad" class="btn-connect">Conectar Cuenta</a>
+                    <div style="display:flex; justify-content:space-between; align-items:center; width:100%; gap:15px;">
+                        <p style="margin:0; line-height:1.4;"><i class="fa-solid fa-robot"></i> No estás conectado a tu Bluesky. El chat será creado por <strong>🤖 EPT Bot</strong>. Crea/Conecta tu propia cuenta para una mejor experiencia.</p>
+                        <button class="btn-connect" onclick="BlueskyIntegration.openConnectModal()" style="border:none; cursor:pointer; white-space:nowrap; background:var(--color-accent); color:white; padding:8px 16px; border-radius:6px; font-weight:600;">Conectar mi Cuenta</button>
+                    </div>
                 `;
             }
         } catch (err) {
             banner.classList.remove('is-loading');
             banner.classList.add('is-disconnected');
-            banner.innerHTML = `<p><i class="fa-solid fa-triangle-exclamation"></i> No se pudo verificar la conexión con Bluesky.</p>`;
+            banner.innerHTML = `<p><i class="fa-solid fa-triangle-exclamation"></i> Error al verificar conexión. Se usará el 🤖EPT Bot por defecto.</p>`;
             console.error("Error al verificar el estado de Bluesky:", err);
         }
     },
+
+    openConnectModal() {
+        const container = document.getElementById('modal-overlay-container');
+        const template = document.getElementById('bsky-connect-template');
+        if (!container || !template) return;
+
+        // Inyectamos el diseño del modal
+        container.innerHTML = `
+            <div class="modal" style="background:var(--color-surface); border-radius:12px; width:90%; max-width:450px; display:flex; flex-direction:column; box-shadow: 0 20px 50px rgba(0,0,0,0.2); padding: 0; animation: fadeIn 0.2s ease;">
+                ${template.innerHTML}
+            </div>
+        `;
+        
+        // Hacemos visible el fondo oscuro
+        container.style.display = 'flex';
+        container.classList.add('active');
+
+        // Evento de cerrar
+        const closeBtn = container.querySelector('.btn-close-modal');
+        if (closeBtn) closeBtn.addEventListener('click', () => this.closeConnectModal());
+
+        // Evento de formulario
+        const form = container.querySelector('#bsky-connect-form');
+        if (form) form.addEventListener('submit', (e) => this.handleConnectSubmit(e));
+    },
+
+    closeConnectModal() {
+        const container = document.getElementById('modal-overlay-container');
+        if (container) {
+            container.innerHTML = '';
+            container.classList.remove('active');
+            container.style.display = 'none';
+        }
+    },
+
+    async handleConnectSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalHtml = submitBtn.innerHTML;
+        
+        const handle = form.querySelector('#bsky-handle').value.trim();
+        const appPassword = form.querySelector('#bsky-app-password').value.trim();
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verificando...';
+
+        try {
+            const { data, error } = await App.supabase.functions.invoke('bsky-auth', { 
+                body: { handle, appPassword } 
+            });
+
+            if (error) throw new Error(error.message || 'Error desconocido al conectar.');
+
+            if (window.UI) window.UI.showAlert("✅ ¡Cuenta de Bluesky conectada!");
+            else alert("¡Cuenta de Bluesky conectada!");
+            
+            this.closeConnectModal();
+            this.checkConnection(); 
+
+        } catch (error) {
+            const detail = error.message.includes('password') ? 'Verifica tu handle y contraseña de aplicación.' : error.message;
+            alert(`❌ Error: ${detail}`);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalHtml;
+        }
+    }
 };
 
 // Objeto para manejar el encabezado

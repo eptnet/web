@@ -318,6 +318,30 @@
         </div>
     </template>
 
+    <template id="bsky-connect-template">
+        <div style="padding: 1.5rem; border-bottom: 1px solid var(--color-border); display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="margin:0; font-size: 1.3rem;"><i class="fa-solid fa-link" style="color: var(--color-accent);"></i> Conectar Bluesky</h3>
+            <button type="button" class="btn-close-modal" style="background:none; border:none; cursor:pointer; font-size:1.5rem; color:var(--color-text-secondary);">&times;</button>
+        </div>
+        <div style="padding: 1.5rem;">
+            <p class="form-hint" style="margin-top:0; margin-bottom:1.5rem;">Genera una <strong>Contraseña de Aplicación</strong> en Bluesky (no uses tu clave principal) para autorizarnos a publicar en tu nombre.</p>
+            <form id="bsky-connect-form">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="bsky-handle" style="font-weight:bold; font-size: 0.85rem; margin-bottom: 5px; display:block;">Tu Handle de Bluesky</label>
+                    <input type="text" id="bsky-handle" placeholder="ejemplo.bsky.social" required style="width:100%; padding:10px; border-radius:6px; border:1px solid var(--color-border); background:var(--color-background); color:var(--color-text-primary);">
+                </div>
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label for="bsky-app-password" style="font-weight:bold; font-size: 0.85rem; margin-bottom: 5px; display:block;">Contraseña de Aplicación</label>
+                    <input type="password" id="bsky-app-password" placeholder="xxxx-xxxx-xxxx-xxxx" required style="width:100%; padding:10px; border-radius:6px; border:1px solid var(--color-border); background:var(--color-background); color:var(--color-text-primary);">
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%; justify-content:center;"><i class="fa-solid fa-plug"></i> Conectar Cuenta</button>
+            </form>
+            <div style="margin-top: 15px; font-size: 0.8rem; color: var(--color-text-secondary); background: var(--color-background); padding: 10px; border-radius: 6px; border: 1px dashed var(--color-border);">
+                <strong>¿Error de credenciales?</strong> Ve a tu cuenta de Bluesky, elimina la contraseña de aplicación, crea una nueva y vuelve a intentarlo.
+            </div>
+        </div>
+    </template>
+
     <div id="modal-overlay-container"></div>
     
     <nav class="bottom-nav">
