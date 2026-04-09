@@ -171,7 +171,7 @@ const StudioApp = {
             if(linkInput) linkInput.addEventListener('input', updateCounter);
         }
 
-        // --- API IS.GD: ACORTADOR SEGURO DE ENLACES ---
+        // --- API IS.GD: ACORTADOR CON PROXY ANTI-CORS ---
         document.getElementById('btn-shorten-link')?.addEventListener('click', async (e) => {
             const linkInput = document.getElementById('social-post-link');
             let urlToShorten = linkInput.value.trim();
@@ -197,12 +197,18 @@ const StudioApp = {
             btn.disabled = true;
 
             try {
-                // Usamos is.gd porque no tiene bloqueos de CORS en navegadores
-                const res = await fetch(`https://is.gd/create.php?format=simple&url=${encodeURIComponent(urlToShorten)}`);
+                // 1. Construimos la petición a is.gd
+                const isGdUrl = `https://is.gd/create.php?format=simple&url=${encodeURIComponent(urlToShorten)}`;
+                
+                // 2. Usamos el Proxy público AllOrigins para evadir el bloqueo de seguridad del navegador
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(isGdUrl)}`;
+                
+                const res = await fetch(proxyUrl);
+                
                 if (res.ok) {
                     const shortUrl = await res.text();
-                    linkInput.value = shortUrl;
-                    linkInput.dispatchEvent(new Event('input')); // Actualiza contador
+                    linkInput.value = shortUrl.trim(); // .trim() para limpiar espacios ocultos
+                    linkInput.dispatchEvent(new Event('input')); // Dispara la actualización del contador
                 } else {
                     alert("El acortador no respondió. Es posible que el enlace no sea válido.");
                 }
