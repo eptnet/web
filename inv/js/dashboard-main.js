@@ -1,7 +1,4 @@
 import { Navigation } from './manager-navegacion.js';
-import { Projects } from './manager-proyectos.js'; // <-- LÍNEA AÑADIDA
-import { CommunityManager } from './manager-comunidad.js'; // <--- AGREGA ESTA LÍNEA
-
 
 // Objeto global para compartir datos como supabase y userProfile
 const App = {
@@ -10,9 +7,17 @@ const App = {
     userProfile: null,
 
     async init() {
-        const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
-        this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // ==========================================
+        // Usamos el cliente global de main.js
+        // ==========================================
+        if (window.supabaseClient) {
+            this.supabase = window.supabaseClient;
+        } else {
+            // Fallback por si acaso el dashboard carga aislado
+            const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
+            const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
+            this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        }
 
         const { data: { session } } = await this.supabase.auth.getSession();
         if (!session) {
@@ -22,85 +27,107 @@ const App = {
         this.userId = session.user.id;
         
         // 1. Hacemos una consulta simple y segura solo para el perfil
-        const { data: profileData, error } = await this.supabase.from('profiles').select('*').eq('id', this.userId).single();
-        
+        const { data: profile, error } = await this.supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', this.userId)
+            .single();
+
         if (error) {
-            alert("Hubo un error al cargar tu perfil.");
-            console.error("Error fetching profile:", error);
+            console.error("Error cargando perfil:", error);
+            UI.showAlert("Error cargando tu perfil. Por favor, recarga la página.", "error");
             return;
         }
-        
-        this.userProfile = { ...session.user.user_metadata, ...profileData };
+
+        this.userProfile = profile;
+        console.log("Perfil cargado correctamente en Dashboard:", profile);
+
+        // Exponer globalmente ANTES de inicializar los submódulos
         window.App = this;
-        
+        window.UI = UI;
+
+        // Inicializar UI General
         Header.init(this.userProfile);
         Navigation.init();
+        BlueskyIntegration.init();
+    }
+};
 
-        // --- AGREGA ESTA LÍNEA AQUÍ ---
-        // Inicializamos el gestor de comunidad pasando el cliente y el perfil
-        CommunityManager.init(this.supabase, this.userProfile); 
-        // -----------------------------
-        
-        this.checkBskyConnectionStatus();
-
-        // Aplica el tema guardado al cargar la página
-        applyTheme(localStorage.getItem('theme') || 'light');
-
-        // Añade el listener para el botón de cambio de tema
-        const themeSwitcher = document.getElementById('theme-switcher-dashboard');
-        themeSwitcher?.addEventListener('click', toggleTheme);
-        
-        // 2. Ahora que el perfil cargó, revisamos el rol de admin
-        const contentNavLink = document.querySelector('.nav-link[data-section="content-section"]');
-        if (contentNavLink && this.userProfile.role === 'admin') {
-            contentNavLink.style.display = 'flex';
-        }
-
-        // 3. Hacemos una SEGUNDA consulta solo para los proyectos
-        const { data: projects, error: projectsError } = await this.supabase.from('projects').select('*').eq('user_id', this.userId);
-        
-        if (projectsError) {
-            console.error("Error al cargar proyectos:", projectsError);
+// Objeto global para utilidades de Interfaz (Modales, Alertas, Loaders)
+const UI = {
+    showModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) modal.classList.add('active');
+    },
+    
+    closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) modal.classList.remove('active');
+    },
+    
+    closeAllModals() {
+        document.querySelectorAll('.modal-overlay-container.active').forEach(m => m.classList.remove('active'));
+    },
+    
+    showAlert(message, type = 'info') {
+        // Usa la alerta global del main.js si existe, si no, usa un alert nativo
+        if (window.showToast) {
+            window.showToast(message);
         } else {
-            this.userProfile.projects = projects || []; // Añadimos los proyectos al perfil
+            alert(message);
         }
-
-        // 4. Verificamos si hay proyectos para mostrar la vista correcta
-        if (!this.userProfile.projects || this.userProfile.projects.length === 0) {
-            const homeSection = document.getElementById('home-section');
-            if (homeSection) {
-                 homeSection.innerHTML = `
-                    <div class="workflow-step">
-                        <h2><span class="step-number">1</span> 
-                            ¡Bienvenido! Añade tu primer proyecto</h2>
-                            <p>Para crear contenido, necesitas un proyecto con DOI. Sincroniza con ORCID o crea uno en tu perfil.</p>
-                            <a href="/inv/profile.html" class="btn btn-primary" style="margin-top: 1rem; width: auto; text-decoration: none;">Ir a mi Perfil</a>
-                    </div>`;
-            }
+    },
+    
+    setLoading(btnElement, isLoading) {
+        if (!btnElement) return;
+        if (isLoading) {
+            btnElement.dataset.originalText = btnElement.innerHTML;
+            btnElement.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+            btnElement.disabled = true;
         } else {
-            const homeTemplate = document.getElementById('template-home-section');
-            const homeSection = document.getElementById('home-section');
-            if (homeTemplate && homeSection) {
-                homeSection.innerHTML = homeTemplate.innerHTML;
-            }
-            Projects.init();
+            btnElement.innerHTML = btnElement.dataset.originalText;
+            btnElement.disabled = false;
         }
     },
 
-    async checkBskyConnectionStatus() {
+    populateForm(formId, data) {
+        const form = document.getElementById(formId);
+        if (!form || !data) return;
+        Object.keys(data).forEach(key => {
+            const input = form.elements[key];
+            if (input) {
+                if (input.type === 'checkbox') input.checked = data[key];
+                else input.value = data[key];
+            }
+        });
+    }
+};
+
+// Objeto para manejar la integración con Bluesky
+const BlueskyIntegration = {
+    async init() {
+        this.checkConnection();
+    },
+
+    async checkConnection() {
         const banner = document.getElementById('bsky-status-banner');
         if (!banner) return;
 
+        banner.classList.add('is-loading');
+        
         try {
-            const { data, error } = await this.supabase.functions.invoke('bsky-check-status');
-            
-            if (error) throw error;
+            const { data, error } = await App.supabase
+                .from('api_keys')
+                .select('id')
+                .eq('user_id', App.userId)
+                .eq('service', 'bluesky')
+                .single();
 
             banner.classList.remove('is-loading');
 
-            if (data.connected) {
+            if (data) {
                 banner.classList.add('is-connected');
-                banner.innerHTML = `<p><i class="fa-solid fa-check-circle"></i> Conectado a Bluesky como: <strong>${data.handle}</strong></p>`;
+                banner.innerHTML = `<p><i class="fa-solid fa-circle-check"></i> Conectado a Bluesky. El chat en vivo se creará automáticamente.</p>`;
             } else {
                 banner.classList.add('is-disconnected');
                 banner.innerHTML = `
@@ -121,10 +148,15 @@ const App = {
 const Header = {
     init(user) {
         const el = document.getElementById('user-name-header');
-        if (el) el.textContent = `Dashboard de ${user.full_name || user.email}`;
+        // Usa display_name si existe, si no, usa nombre completo o email.
+        const nombre = user.display_name || user.full_name || 'Investigador';
+        if (el) el.textContent = `Panel de ${nombre}`;
     }
 };
 
+// ==========================================
+// TEMA Y EVENTOS GLOBALES
+// ==========================================
 const applyTheme = (theme) => {
     document.body.classList.toggle("dark-theme", theme === "dark");
     const themeIcon = document.querySelector('#theme-switcher-dashboard i');
@@ -139,5 +171,26 @@ const toggleTheme = () => {
     applyTheme(newTheme);
 };
 
-window.App = App;
-document.addEventListener('DOMContentLoaded', () => App.init());
+// Cerrar modales al hacer clic fuera
+document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal-overlay-container')) {
+        UI.closeAllModals();
+    }
+    // Switcher de tema
+    if (e.target.closest('#theme-switcher-dashboard')) {
+        toggleTheme();
+    }
+});
+
+// Inicialización del Dashboard (Esperamos un poco para que main.js termine de cargar Supabase)
+document.addEventListener('DOMContentLoaded', () => {
+    // TEMA AUTOMÁTICO: Revisa si el usuario ya eligió un tema. 
+    // Si no, detecta si su Windows/Mac está en Modo Oscuro.
+    let savedTheme = localStorage.getItem("theme");
+    if (!savedTheme) {
+        savedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    
+    applyTheme(savedTheme);
+    setTimeout(() => { App.init(); }, 150);
+});

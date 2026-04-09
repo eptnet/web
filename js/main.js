@@ -1,10 +1,9 @@
 /**
  * =========================================================================
- * Script Principal de la Aplicación (main.js) - VERSIÓN 3.1 UNIFICADA
+ * Script Principal de la Aplicación (main.js) - VERSIÓN 3.2 UNIFICADA
  * - Mantiene la inicialización segura de Supabase para evitar errores.
- * - Mantiene la redirección a /inv/profile.html para el nuevo flujo.
- * - REINTEGRADA: La funcionalidad del botón "Live" y el cambio de tema.
- * - CORREGIDO: No da error si los elementos no existen en la página.
+ * - Integra el Menú Móvil Inteligente (Dashboard/Perfil para usuarios logueados).
+ * - Mantiene Banner PWA y Notificaciones en tiempo real.
  * =========================================================================
  */
 document.addEventListener('DOMContentLoaded', () => {
@@ -27,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const logoutBtn = document.getElementById('logout-btn-header');
         const loginMenuTrigger = document.getElementById('login-menu-trigger');
         const loginPopover = document.getElementById('login-popover');
-        const liveIconDesktop = document.getElementById('nav-live-desktop'); // <-- LÍNEA REINTEGRADA
+        const liveIconDesktop = document.getElementById('nav-live-desktop');
 
         // --- INICIO: LÓGICA DE NOTIFICACIONES EN TIEMPO REAL ---
         const notificationsIcon = document.getElementById('notifications-bell-icon');
@@ -35,14 +34,12 @@ document.addEventListener('DOMContentLoaded', () => {
         notificationsModal.className = 'notifications-modal';
         document.body.appendChild(notificationsModal);
 
-        // Función para mostrar el punto rojo
         const showNotificationAlert = () => {
             if (notificationsIcon) {
                 notificationsIcon.classList.add('has-notifications');
             }
         };
 
-        // Función para mostrar el modal con las últimas notificaciones
         const openNotificationsModal = async () => {
             if (!window.supabaseClient) return;
 
@@ -61,10 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // --- INICIO DE LA LÍNEA AÑADIDA ---
-            // Guardamos la fecha de la notificación más reciente (la primera de la lista)
             localStorage.setItem('lastSeenNotificationTimestamp', data[0].created_at);
-            // --- FIN DE LA LÍNEA AÑADIDA ---
 
             const notificationsHTML = data.map(notif => {
                 const timeAgo = new Date(notif.created_at).toLocaleString('es-ES');
@@ -84,11 +78,9 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         };  
 
-        // AÑADE ESTA NUEVA FUNCIÓN
         const checkForUnreadNotifications = async () => {
             if (!window.supabaseClient) return;
 
-            // 1. Buscamos la notificación más reciente en la base de datos
             const { data: latestNotification, error } = await window.supabaseClient
                 .from('notifications')
                 .select('created_at')
@@ -96,34 +88,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 .limit(1)
                 .single();
 
-            if (error || !latestNotification) {
-                return; // No hay notificaciones o hubo un error
-            }
+            if (error || !latestNotification) return;
 
-            // 2. Obtenemos la fecha de la última notificación que el usuario vio
             const lastSeenTimestamp = localStorage.getItem('lastSeenNotificationTimestamp');
 
-            // 3. Comparamos: si no hay fecha guardada, o si la notificación más reciente es posterior a la última vista...
             if (!lastSeenTimestamp || new Date(latestNotification.created_at) > new Date(lastSeenTimestamp)) {
-                // ...mostramos el punto rojo.
                 showNotificationAlert();
             }
         };
 
-        // Listener para el clic en el icono de la campana
         notificationsIcon?.addEventListener('click', (e) => {
             e.preventDefault();
             openNotificationsModal();
         });
 
-        // Cerramos el modal si se hace clic fuera de él
         document.addEventListener('click', (e) => {
-            if (!notificationsModal.contains(e.target) && !notificationsIcon.contains(e.target)) {
-                notificationsModal.classList.remove('is-visible');
+            if (notificationsModal && !notificationsModal.contains(e.target)) {
+                // Comprobamos de forma segura si el icono existe en esta página
+                const isIconClick = notificationsIcon ? notificationsIcon.contains(e.target) : false;
+                if (!isIconClick) {
+                    notificationsModal.classList.remove('is-visible');
+                }
             }
         });
 
-        // Escuchamos por NUEVAS notificaciones en la base de datos
         window.supabaseClient
             .channel('public:notifications')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, payload => {
@@ -131,26 +119,83 @@ document.addEventListener('DOMContentLoaded', () => {
                 showNotificationAlert();
             })
             .subscribe();
-
         // --- FIN: LÓGICA DE NOTIFICACIONES ---
-        // --- Funciones de UI ---
+
+        // =========================================================================
+        // LÓGICA DEL MENÚ MÓVIL INTELIGENTE (PWA)
+        // =========================================================================
+        const updateMobileMenuForUser = (user, profileData) => {
+            const authSection = document.getElementById('mobile-auth-section');
+            if (!authSection) return;
+
+            if (user) {
+                // El usuario ESTÁ logueado
+                const avatar = profileData?.avatar_url || user.user_metadata?.avatar_url || 'https://i.ibb.co/wzn25c8/default-avatar.png';
+                const name = profileData?.display_name || user.user_metadata?.full_name || 'Investigador';
+                
+                authSection.innerHTML = `
+                    <div style="padding: 10px 16px; display: flex; align-items: center; gap: 15px; margin-bottom: 10px; background: rgba(183, 42, 30, 0.05); border-radius: 12px; border: 1px solid rgba(183, 42, 30, 0.1);">
+                        <img src="${avatar}" style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid var(--color-surface);">
+                        <div>
+                            <p style="margin: 0; font-weight: bold; font-size: 1rem; color: var(--color-text-primary); line-height: 1.2;">${name}</p>
+                            <span style="font-size: 0.75rem; color: var(--color-accent); font-weight: 600;"><i class="fa-solid fa-circle-check"></i> Cuenta Activa</span>
+                        </div>
+                    </div>
+                    
+                    <a href="/inv/dashboard.html" class="mobile-more-menu__item" style="color: var(--color-primary);">
+                        <i class="fa-solid fa-chart-line"></i><span>Mi Panel (Dashboard)</span>
+                    </a>
+                    <a href="/inv/profile.html" class="mobile-more-menu__item" style="color: var(--color-primary);">
+                        <i class="fa-solid fa-user-pen"></i><span>Editar Mi Perfil</span>
+                    </a>
+                    <button id="mobile-logout-btn" class="mobile-more-menu__item" style="color: #ef4444; width: 100%; text-align: left; background: none; border: none; font-family: inherit; font-size: 1rem; cursor: pointer;">
+                        <i class="fa-solid fa-right-from-bracket"></i><span>Cerrar Sesión</span>
+                    </button>
+                    <hr>
+                `;
+
+                // Lógica de logout móvil
+                document.getElementById('mobile-logout-btn')?.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    await window.supabaseClient.auth.signOut();
+                    window.location.href = '/'; 
+                });
+
+            } else {
+                // El usuario NO ESTÁ logueado (Restauramos vista de invitado)
+                authSection.innerHTML = `
+                    <a href="#" data-provider="google" class="mobile-more-menu__item login-provider-btn"><i class="fa-brands fa-google"></i><span>Iniciar con Google</span></a>
+                    <a href="#" data-provider="github" class="mobile-more-menu__item login-provider-btn"><i class="fa-brands fa-github"></i><span>Iniciar con GitHub</span></a>
+                    <a href="#" class="mobile-more-menu__item is-disabled"><i class="fa-brands fa-orcid"></i><span>ORCID (Próximamente)</span></a>
+                    <hr>
+                `;
+            }
+        };
+
+        // --- Funciones de UI Principales ---
         const showUserUI = async (user) => {
             const guestView = document.getElementById('guest-view');
             const userView = document.getElementById('user-view');
             if (guestView) guestView.style.display = 'none';
             if (userView) userView.style.display = 'flex';
             
-            // 1. Renderizar Avatar en la cabecera
+            // 1. Renderizar Avatar en la cabecera de PC
             const avatarBtn = document.getElementById('user-avatar-link');
             if (avatarBtn && user) {
-                const avatarUrl = user.user_metadata?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
+                const avatarUrl = user.user_metadata?.avatar_url || 'https://i.ibb.co/wzn25c8/default-avatar.png';
                 avatarBtn.innerHTML = `<img src="${avatarUrl}" alt="Perfil">`;
             }
 
-            // 2. LÓGICA DE GAMIFICACIÓN (Validación de ORCID)
+            // 2. Traer info del Perfil para Gamificación y Menú Móvil
             try {
                 const { data: profile } = await window.supabaseClient
-                    .from('profiles').select('orcid').eq('id', user.id).single();
+                    .from('profiles')
+                    .select('orcid, display_name, avatar_url')
+                    .eq('id', user.id)
+                    .single();
+
+                // Actualiza el menú móvil inteligentemente
+                updateMobileMenuForUser(user, profile);
 
                 const btnCreate = document.getElementById('btn-global-create');
                 const createIcon = document.getElementById('create-icon');
@@ -163,10 +208,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         btnCreate.classList.add('create-unlocked');
                         createIcon.className = 'fa-solid fa-circle-plus';
                         btnCreate.onclick = null; 
-                        dropdownContainer.style.pointerEvents = 'auto'; // Habilita el submenú
+                        dropdownContainer.style.pointerEvents = 'auto';
                     } else {
                         // ROL: USUARIO/PARTICIPANTE (Bloqueado)
-                        dropdownContainer.style.pointerEvents = 'none'; // Deshabilita el submenú
+                        dropdownContainer.style.pointerEvents = 'none'; 
                         btnCreate.style.pointerEvents = 'auto'; 
                         btnCreate.onclick = () => showToast("💡 Solo autores con ORCID validado pueden crear contenido. Ve a tu perfil para activarlo.");
                     }
@@ -180,11 +225,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (userView) userView.style.display = 'none';
             if (guestView) guestView.style.display = 'flex';
             
+            // Limpia el menú móvil
+            updateMobileMenuForUser(null, null);
+
             const btnCreate = document.getElementById('btn-global-create');
             const dropdownContainer = document.getElementById('create-dropdown-container');
             
             if (btnCreate && dropdownContainer) {
-                dropdownContainer.style.pointerEvents = 'none'; // Deshabilita el submenú
+                dropdownContainer.style.pointerEvents = 'none'; 
                 btnCreate.style.pointerEvents = 'auto';
                 btnCreate.onclick = () => {
                     showToast("🔑 Inicia sesión para comenzar a crear contenido.");
@@ -199,9 +247,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault(); 
                 const modalOverlay = document.getElementById('login-modal-overlay');
                 if (modalOverlay) {
-                    modalOverlay.classList.add('is-visible'); // Abre directo el modal oscuro
+                    modalOverlay.classList.add('is-visible'); 
                 } else {
-                    // Fallback si no encuentra el overlay
                     document.getElementById('login-modal-trigger')?.click();
                 }
             }
@@ -222,46 +269,31 @@ document.addEventListener('DOMContentLoaded', () => {
             if (themeSwitcherDesktop) themeSwitcherDesktop.querySelector('i').className = `fa-solid ${iconClass}`;
             if (themeSwitcherMobile) themeSwitcherMobile.querySelector('i').className = `fa-solid ${iconClass}`;
         };
+        
         const toggleTheme = () => {
             const newTheme = document.body.classList.contains("dark-theme") ? "light" : "dark";
             localStorage.setItem("theme", newTheme);
             applyTheme(newTheme);
         };
+        
         const handleOAuthLogin = async (provider) => {
-            // Redirige a la nueva página de perfil después del login
             const redirectTo = `${window.location.origin}/inv/profile.html`;
             await window.supabaseClient.auth.signInWithOAuth({ provider, options: { redirectTo } });
         };
 
-        // --- Asignación de eventos de forma segura ---
+        // --- Asignación de eventos ---
         if (themeSwitcherDesktop) themeSwitcherDesktop.addEventListener("click", toggleTheme);
         if (themeSwitcherMobile) themeSwitcherMobile.addEventListener("click", toggleTheme);
         if (logoutBtn) logoutBtn.addEventListener('click', async () => { await window.supabaseClient.auth.signOut(); });
         
-        // Lógica para abrir y cerrar el nuevo modal de login
         const loginModalTrigger = document.getElementById('login-modal-trigger');
         const loginModalOverlay = document.getElementById('login-modal-overlay');
         const loginModalCloseBtn = document.getElementById('login-modal-close-btn');
 
-        loginModalTrigger?.addEventListener('click', () => {
-            loginModalOverlay?.classList.add('is-visible');
-        });
-
-        loginModalCloseBtn?.addEventListener('click', () => {
-            loginModalOverlay?.classList.remove('is-visible');
-        });
-
-        // Cierra el modal si se hace clic en el fondo oscuro
+        loginModalTrigger?.addEventListener('click', () => { loginModalOverlay?.classList.add('is-visible'); });
+        loginModalCloseBtn?.addEventListener('click', () => { loginModalOverlay?.classList.remove('is-visible'); });
         loginModalOverlay?.addEventListener('click', (e) => {
-            if (e.target === loginModalOverlay) {
-                loginModalOverlay.classList.remove('is-visible');
-            }
-        });
-
-        loginModalOverlay?.addEventListener('click', (e) => {
-            if (e.target === loginModalOverlay) {
-                loginModalOverlay.classList.remove('is-visible');
-            }
+            if (e.target === loginModalOverlay) loginModalOverlay.classList.remove('is-visible');
         });
 
         // --- Lógica para el menú móvil de "Más Opciones" ---
@@ -270,68 +302,58 @@ document.addEventListener('DOMContentLoaded', () => {
         const mobileMoreMenuClose = document.getElementById('mobile-more-menu-close');
         const overlay = document.getElementById('overlay');
 
-        // Función para abrir el menú
         const openMobileMenu = (e) => {
-            if (e) e.preventDefault(); // Evita que la pantalla salte hacia arriba al hacer clic
-            // Hacemos visibles el menú y el fondo oscuro de forma segura
+            if (e) e.preventDefault(); 
             mobileMoreMenu?.classList.add('is-visible');
             overlay?.classList.add('is-visible');
-            // Evita que el contenido de la página se desplace mientras el menú está abierto
             document.body.style.overflow = 'hidden'; 
         };
 
-        // Función para cerrar el menú
         const closeMobileMenu = () => {
-            // Ocultamos el menú y el fondo oscuro de forma segura
             mobileMoreMenu?.classList.remove('is-visible');
             overlay?.classList.remove('is-visible');
-            // Restaura el scroll de la página
             document.body.style.overflow = '';
         };
 
-        // Asignación de eventos de forma segura
-        mobileMoreBtn?.addEventListener('click', openMobileMenu); // Abre el menú al hacer clic en el botón de la barra
-        mobileMoreMenuClose?.addEventListener('click', closeMobileMenu); // Cierra el menú desde su botón "Cerrar"
-        overlay?.addEventListener('click', closeMobileMenu); // Cierra el menú al hacer clic en el fondo oscuro
+        mobileMoreBtn?.addEventListener('click', openMobileMenu);
+        mobileMoreMenuClose?.addEventListener('click', closeMobileMenu);
+        overlay?.addEventListener('click', closeMobileMenu);
         
-        // MAGIA EXTRA SEGURA: Cierre automático al tocar enlaces dentro del menú
-        mobileMoreMenu?.querySelectorAll('a, .login-provider-btn').forEach(link => {
-            link.addEventListener('click', closeMobileMenu);
+        // Cierre automático al tocar enlaces dentro del menú
+        mobileMoreMenu?.querySelectorAll('a, button').forEach(el => {
+            el.addEventListener('click', (e) => {
+                // No cerramos si tocan los inputs de login, el evento delegado lo maneja
+                if (!e.target.closest('.login-provider-btn')) {
+                    closeMobileMenu();
+                }
+            });
         });
 
+        // Evento delegado Global para Login Social (Incluso en el menú móvil dinámico)
         document.body.addEventListener('click', (e) => {
-            // Buscamos si el clic ocurrió en cualquier botón con la clase .login-provider-btn
             const providerBtn = e.target.closest('.login-provider-btn');
-
-            // Si encontramos un botón y tiene el atributo data-provider...
             if (providerBtn && providerBtn.dataset.provider) {
                 e.preventDefault();
-                // Usamos el valor de data-provider para iniciar sesión (ej. 'google' o 'github')
                 handleOAuthLogin(providerBtn.dataset.provider);
             }
         });
 
-        // --- Lógica de Inicialización ---
+        // --- Inicialización ---
         applyTheme(localStorage.getItem('theme') || 'light');
-        if (liveIconDesktop) liveIconDesktop.classList.add("is-live"); // <-- LÍNEA REINTEGRADA
+        if (liveIconDesktop) liveIconDesktop.classList.add("is-live"); 
 
         window.supabaseClient.auth.onAuthStateChange(async (_event, session) => {
              if (session?.user) {
                 showUserUI(session.user);
 
-                // Verificamos si hay un token de invitación pendiente
                 const pendingToken = sessionStorage.getItem('invitation_token');
                 if (pendingToken) {
                     try {
-                        console.log("Aceptando invitación con token...");
                         await window.supabaseClient.functions.invoke('accept-invitation', {
                             body: { token: pendingToken },
                         });
-                        // Una vez procesado (con éxito o error), lo eliminamos para no volver a intentarlo.
                         sessionStorage.removeItem('invitation_token');
-                        console.log("Proceso de invitación finalizado.");
                     } catch (error) {
-                        console.error("Error al aceptar la invitación:", error.message);
                         sessionStorage.removeItem('invitation_token');
                     }
                 }
@@ -346,61 +368,44 @@ document.addEventListener('DOMContentLoaded', () => {
         (async () => {
             const { data: { session } } = await window.supabaseClient.auth.getSession();
             session?.user ? showUserUI(session.user) : showGuestUI();
-
             checkForUnreadNotifications();
-
         })();
 
-        // --- INICIO: Lógica para el botón de Comunidad ---
+        // --- Lógica de Comunidad ---
         const handleCommunityClick = async (event) => {
-            event.preventDefault(); // Prevenimos la navegación del enlace
-            
-            // Obtenemos la URL de destino desde el atributo data-url
+            event.preventDefault();
             const communityUrl = event.currentTarget.dataset.url;
-            
-            // Verificamos la sesión actual del usuario con Supabase
             const { data: { session } } = await window.supabaseClient.auth.getSession();
 
             if (session) {
-                // Si el usuario TIENE sesión, lo llevamos a la comunidad en una nueva pestaña
                 window.open(communityUrl, '_blank');
             } else {
-                // Si el usuario NO TIENE sesión, abrimos el modal de login
                 document.getElementById('login-modal-trigger')?.click();
             }
         };
 
-        // Asignamos la nueva lógica a ambos botones
         document.getElementById('community-btn-desktop')?.addEventListener('click', handleCommunityClick);
         document.getElementById('community-btn-mobile')?.addEventListener('click', handleCommunityClick);
-        // --- FIN: Lógica para el botón de Comunidad ---
 
-        // --- INICIO: Lógica para parámetros de URL (Invitación y Login Directo) ---
+        // --- Parámetros URL (Invitación y Login Directo) ---
         const urlParams = new URLSearchParams(window.location.search);
         const invitationToken = urlParams.get('invitation_token');
         const authAction = urlParams.get('auth');
 
         if (invitationToken) {
-            // Lógica de invitación (ya existente)
             sessionStorage.setItem('invitation_token', invitationToken);
             window.history.replaceState({}, document.title, window.location.pathname);
-            console.log("Token de invitación detectado. Abriendo modal de login...");
             document.getElementById('login-modal-trigger')?.click();
-
         } else if (authAction === 'open') {
-            // NUEVA lógica de login directo
-            console.log("Acción de login/registro detectada. Abriendo modal...");
             document.getElementById('login-modal-trigger')?.click();
-            // Limpiamos la URL para que se vea más limpia después de abrir el modal
             window.history.replaceState({}, document.title, window.location.pathname);
         }
-        // --- FIN ---
 
         document.dispatchEvent(new CustomEvent('mainReady'));
         console.log("main.js: Evento 'mainReady' disparado. Base unificada y lista.");
     };
 
-    // Verificador para asegurar que la librería Supabase esté cargada
+    // Verificador de carga de Supabase
     const checkSupabase = setInterval(() => {
         if (window.supabase) {
             clearInterval(checkSupabase);
@@ -408,6 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 100);
 });
+
 // ==========================================
 // CONTROL DEL MENÚ MÓVIL PWA
 // ==========================================
@@ -416,7 +422,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const mobileMoreMenu = document.getElementById('mobile-more-menu');
     const mobileCloseBtn = document.getElementById('mobile-more-menu-close');
 
-    // Abrir el menú al tocar "Más"
     if (mobileToggleBtn && mobileMoreMenu) {
         mobileToggleBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -424,7 +429,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Cerrar el menú al tocar "Cerrar"
     if (mobileCloseBtn && mobileMoreMenu) {
         mobileCloseBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -432,7 +436,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Cerrar el menú si tocan la parte oscura de atrás
     if (mobileMoreMenu) {
         mobileMoreMenu.addEventListener('click', (e) => {
             if (e.target === mobileMoreMenu) {
@@ -441,38 +444,56 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
 // ==========================================
-// INSTALACIÓN MANUAL DE PWA
+// INSTALACIÓN MANUAL DE PWA (Con opción de cerrar)
 // ==========================================
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
-    // Evita que Chrome muestre el mini-banner automático
     e.preventDefault();
     deferredPrompt = e;
     
-    // Si no existe el banner, lo creamos
+    // Si el usuario ya lo cerró en esta sesión, no lo mostramos de nuevo
+    if (sessionStorage.getItem('pwa-banner-dismissed') === 'true') {
+        return;
+    }
+    
     if (!document.getElementById('pwa-install-banner')) {
         const banner = document.createElement('div');
         banner.id = 'pwa-install-banner';
         banner.innerHTML = `
-            <div style="position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--color-surface); border: 1px solid var(--color-accent); padding: 12px 20px; border-radius: 50px; box-shadow: 0 10px 25px rgba(183,42,30,0.2); z-index: 9999; display: flex; align-items: center; gap: 15px; width: 90%; max-width: 400px; justify-content: space-between;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" style="width: 30px; border-radius: 5px;">
-                    <div style="text-align: left;">
-                        <p style="margin: 0; font-weight: bold; font-size: 0.9rem; color: var(--color-text-primary);">Instalar Epistecnología</p>
-                        <p style="margin: 0; font-size: 0.75rem; color: var(--color-text-secondary);">Experiencia más rápida</p>
+            <div style="position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--color-surface); border: 1px solid var(--color-border); padding: 10px 15px; border-radius: 50px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 9999; display: flex; align-items: center; justify-content: space-between; width: 95%; max-width: 400px; gap: 10px;">
+                
+                <div style="display: flex; align-items: center; gap: 10px; flex-grow: 1; overflow: hidden;">
+                    <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" style="width: 32px; height: 32px; border-radius: 8px; object-fit: cover;">
+                    <div style="text-align: left; line-height: 1.2; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                        <p style="margin: 0; font-weight: bold; font-size: 0.9rem; color: var(--color-text-primary);">Instalar App</p>
+                        <p style="margin: 0; font-size: 0.75rem; color: var(--color-text-secondary);">Experiencia nativa</p>
                     </div>
                 </div>
-                <button id="btn-install-pwa" style="background: var(--color-accent); color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: bold; cursor: pointer;">Instalar</button>
+                
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button id="btn-install-pwa" style="background: var(--color-accent); color: white; border: none; padding: 6px 14px; border-radius: 20px; font-weight: bold; font-size: 0.85rem; cursor: pointer; transition: 0.2s;">Instalar</button>
+                    <button id="btn-close-pwa-banner" style="background: transparent; border: none; color: var(--color-text-secondary); font-size: 1.2rem; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center;" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                
             </div>
         `;
         document.body.appendChild(banner);
 
+        // Evento para el botón de instalar
         document.getElementById('btn-install-pwa').addEventListener('click', async () => {
             banner.style.display = 'none';
-            deferredPrompt.prompt(); // Muestra el aviso nativo
+            deferredPrompt.prompt(); 
             const { outcome } = await deferredPrompt.userChoice;
             deferredPrompt = null;
+        });
+
+        // Evento para el botón de cerrar (X)
+        document.getElementById('btn-close-pwa-banner').addEventListener('click', () => {
+            banner.style.display = 'none';
+            // Guardamos en memoria que el usuario lo cerró para no molestarlo más
+            sessionStorage.setItem('pwa-banner-dismissed', 'true');
         });
     }
 });
