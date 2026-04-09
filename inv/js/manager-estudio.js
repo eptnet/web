@@ -245,15 +245,12 @@ export const Studio = {
         if (!container) return;
         container.innerHTML = `<p>Cargando agenda global...</p>`;
 
-        // --- INICIO DE LA CORRECCIÓN ---
         const { data: sessions, error: sessionsError } = await App.supabase
             .from('sessions')
             .select('*')
-            // Ahora también incluimos las sesiones FINALIZADO
             .in('status', ['PROGRAMADO', 'EN VIVO', 'FINALIZADO']) 
-            .eq('is_archived', false) // Y quitamos este filtro
+            .eq('is_archived', false) 
             .order('scheduled_at', { ascending: false });
-        // --- FIN DE LA CORRECCIÓN ---
             
         if (sessionsError) {
             container.innerHTML = `<p>Error al cargar la agenda.</p>`;
@@ -263,10 +260,17 @@ export const Studio = {
             this.renderAllSessions([]);
             return;
         }
+        
         const userIds = [...new Set(sessions.map(s => s.user_id).filter(id => id))];
         let profilesMap = new Map();
+        
         if (userIds.length > 0) {
-            const { data: profiles } = await App.supabase.from('profiles').select('id, display_name').in('id', userIds);
+            // MEJORA: Ahora también traemos el avatar_url del organizador
+            const { data: profiles } = await App.supabase
+                .from('profiles')
+                .select('id, display_name, avatar_url')
+                .in('id', userIds);
+                
             if (profiles) {
                 profiles.forEach(p => profilesMap.set(p.id, p));
             }
@@ -276,11 +280,15 @@ export const Studio = {
     },
 
     renderAllSessions(sessions) {
-        // Dibuja las tarjetas de la "Agenda Global"
         const container = document.getElementById('global-schedule-container');
         if (!container) return;
         if (!sessions || sessions.length === 0) {
-            container.innerHTML = `<p>No hay eventos programados en la plataforma.</p>`;
+            container.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; background: var(--color-surface); border-radius: 12px; border: 1px dashed var(--color-border);">
+                    <i class="fa-regular fa-calendar-xmark" style="font-size: 3rem; color: var(--color-text-secondary); opacity: 0.5; margin-bottom: 1rem;"></i>
+                    <h4 style="margin: 0; color: var(--color-text-primary);">No hay eventos programados</h4>
+                    <p style="color: var(--color-text-secondary); font-size: 0.9rem;">Sé el primero en agendar una sesión pública.</p>
+                </div>`;
             return;
         }
 
@@ -290,22 +298,40 @@ export const Studio = {
             const day = startTime.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
             const formattedStartTime = startTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
             const formattedEndTime = endTime ? endTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '';
+            
             const organizer = session.profiles?.display_name || 'Investigador';
-            const platformIcon = session.platform === 'youtube' ? 'fab fa-youtube' : (session.platform === 'substack' ? 'fas fa-bookmark' : 'fas fa-satellite-dish');
-            const platformNames = {
-                'vdo_ninja': 'EPT Live',
-                'youtube': 'YouTube',
-                'twitch': 'Twitch',
-                'substack': 'Substack'
-            };
+            const avatar = session.profiles?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
+            
+            let platformIcon = 'fas fa-satellite-dish';
+            let platformColor = 'var(--color-text-secondary)';
+            if (session.platform === 'youtube') { platformIcon = 'fab fa-youtube'; platformColor = '#ef4444'; }
+            if (session.platform === 'twitch') { platformIcon = 'fab fa-twitch'; platformColor = '#a855f7'; }
+            if (session.platform === 'substack') { platformIcon = 'fas fa-bookmark'; platformColor = '#f97316'; }
+
+            const platformNames = { 'vdo_ninja': 'EPT Live', 'youtube': 'YouTube', 'twitch': 'Twitch', 'substack': 'Substack' };
             const displayName = platformNames[session.platform] || session.platform;
+            
             return `
             <div class="global-event-card ${session.status === 'EN VIVO' ? 'is-live' : ''}">
-                <h5>${session.session_title}</h5>
-                <p><i class="fa-solid fa-calendar-day"></i> ${day}</p>
-                <p><i class="fa-solid fa-clock"></i> ${formattedStartTime} ${endTime ? '- ' + formattedEndTime : ''}</p>
-                <p><i class="fa-solid fa-user"></i> Organiza: <strong>${organizer}</strong></p>
-                <p><i class="${platformIcon}"></i> Plataforma: ${session.platform}</p>
+                <div class="global-platform-badge">
+                    <i class="${platformIcon}" style="color: ${platformColor}"></i> ${displayName}
+                </div>
+                
+                <div style="padding-right: 90px;">
+                    <h5>${session.session_title}</h5>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 5px;">
+                    <p><i class="fa-solid fa-calendar-day"></i> <span style="text-transform: capitalize;">${day}</span></p>
+                    <p><i class="fa-solid fa-clock"></i> ${formattedStartTime} ${endTime ? '- ' + formattedEndTime : ''}</p>
+                </div>
+                
+                <div style="margin-top: auto; padding-top: 15px;">
+                    <div class="global-organizer">
+                        <img src="${avatar}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; border: 1px solid var(--color-border);">
+                        ${organizer}
+                    </div>
+                </div>
             </div>`;
         }).join('');
     },
