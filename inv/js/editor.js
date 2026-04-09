@@ -2,7 +2,6 @@
 // ARCHIVO COMPLETO: /inv/js/editor-studio.js (Hub Omnicanal V3)
 // =================================================================
 
-// --- 1. CONFIGURACIÓN DEL SISTEMA (Formato Quirúrgico y Directo) ---
 const SYSTEM_PROMPT = `Eres un Asistente Experto en Comunicación Científica de Epistecnología. 
 REGLA ABSOLUTA: NO saludes, NO te despidas. Devuelve ÚNICAMENTE el contenido solicitado.
 
@@ -20,8 +19,6 @@ ESTRUCTURA OBLIGATORIA: Siempre divide tu respuesta exactamente en estas TRES pa
 <li><strong>Prompt 1:</strong> [Escribe el prompt en inglés aquí]</li>
 <li><strong>Prompt 2:</strong> [Escribe el prompt en inglés aquí]</li>
 </ul>`;
-
-// Mantén tu objeto agentPrompts tal cual lo tienes.
 
 const agentPrompts = {
     'text': {
@@ -48,10 +45,10 @@ const StudioApp = {
     currentPost: { id: null, projectId: null },
     userId: null,
     currentUserProfile: null,
-    saveTimeout: null, // Para el autoguardado silencioso
+    saveTimeout: null, 
+    isProgrammaticChange: false, // <-- NUEVO: Escudo Anti-Fantasmas
 
     async init() {
-        // Respetar tema guardado o del sistema, sin forzar
         const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
         if (savedTheme === 'dark') {
             document.body.classList.add('dark-theme');
@@ -76,18 +73,32 @@ const StudioApp = {
         await this.loadUserDrafts();
 
         const urlParams = new URLSearchParams(window.location.search);
+        
+        // --- LÓGICA DEL INTERRUPTOR DE CORREO ---
+        const agent = urlParams.get('agent');
+        const emailToggle = document.getElementById('email-toggle-container');
+        const newsletterCheckbox = document.getElementById('toggle-newsletter');
+        
+        if (emailToggle && newsletterCheckbox) {
+            // Si el agente existe y NO es 'text' (Artículo), ocultamos el interruptor
+            if (agent && agent !== 'text') {
+                emailToggle.style.display = 'none';
+                newsletterCheckbox.checked = false; // Lo apagamos forzosamente
+            } else {
+                emailToggle.style.display = 'flex';
+                newsletterCheckbox.checked = true; // Lo encendemos para artículos
+            }
+        }
+
         if (urlParams.get('postId')) await this.loadPost(urlParams.get('postId'));
         else if (urlParams.get('projectId')) this.setProjectFocus(urlParams.get('projectId'));
     },
 
-    // --- 2. CONFIGURACIÓN DE LA INTERFAZ Y PESTAÑAS ---
     addEventListeners() {
-        // Selector de Tareas IA (Texto)
         const taskDropdown = document.getElementById('ai-task-dropdown');
         const customPromptArea = document.getElementById('ai-custom-prompt');
         
         if (taskDropdown && customPromptArea) {
-            // Llenar dinámicamente el menú desde nuestro objeto agentPrompts
             taskDropdown.innerHTML = '';
             Object.keys(agentPrompts).forEach(key => {
                 const option = document.createElement('option');
@@ -98,15 +109,11 @@ const StudioApp = {
 
             taskDropdown.addEventListener('change', (e) => {
                 const selectedKey = e.target.value;
-                // Mostramos el prompt al usuario para que vea las reglas, pero puede editarlo
                 customPromptArea.value = agentPrompts[selectedKey].prompt;
             });
-            // Disparar el primer evento para llenar el cuadro
             taskDropdown.dispatchEvent(new Event('change'));
         }
 
-        // Pestañas (Tabs) de la IA
-// Pestañas Principales (Sidebar Derecho)
         document.querySelectorAll('.sidebar-tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.sidebar-tab-btn').forEach(b => b.classList.remove('active'));
@@ -119,24 +126,18 @@ const StudioApp = {
         document.querySelectorAll('.ai-tab-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 if(btn.classList.contains('disabled')) return;
-                
-                // Remover active de todos
                 document.querySelectorAll('.ai-tab-btn').forEach(b => b.classList.remove('active'));
                 document.querySelectorAll('.ai-tab-content').forEach(c => c.classList.remove('active'));
-                
-                // Activar el clickeado
                 btn.classList.add('active');
                 document.getElementById(btn.dataset.target).classList.add('active');
             });
         });
 
-        // Botones de Acción
         document.getElementById('ai-generate-text-btn')?.addEventListener('click', () => this.callTextAI());
         document.getElementById('ai-generate-image-btn')?.addEventListener('click', () => this.callImageAI());
         document.getElementById('save-draft-btn')?.addEventListener('click', () => this.saveDraft(false));
         document.getElementById('publish-btn')?.addEventListener('click', () => this.handlePublish());
 
-        // Selector de Proyecto (Cambio manual)
         document.getElementById('active-project-select')?.addEventListener('change', (e) => {
             if(e.target.value) this.setProjectFocus(e.target.value);
         });
@@ -149,37 +150,61 @@ const StudioApp = {
             themeBtn.innerHTML = isDark ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
         });
 
-        // Autoguardado al escribir (Debounce)
         const titleInput = document.getElementById('post-title');
         titleInput?.addEventListener('input', () => this.triggerAutoSave());
         
-        // Redes Sociales - Contador de caracteres inteligente
         const socialText = document.getElementById('social-post-text');
         const charCount = document.getElementById('social-char-count');
         const linkInput = document.getElementById('social-post-link');
         
         if(socialText && charCount) {
             const updateCounter = () => {
-                // Calculamos el tamaño del enlace + el texto adicional ("\n\n📖 Enlace: " son aprox 14 caracteres)
                 const linkLen = (linkInput && linkInput.value.trim().length > 0) ? linkInput.value.trim().length + 14 : 0;
                 const totalLength = socialText.value.length + linkLen;
                 
                 charCount.textContent = totalLength;
-                
-                if(totalLength > 300) {
-                    charCount.classList.add('limit-reached');
-                } else {
-                    charCount.classList.remove('limit-reached');
-                }
+                if(totalLength > 300) charCount.classList.add('limit-reached');
+                else charCount.classList.remove('limit-reached');
             };
-
-            // Escuchamos ambos inputs para que el contador sea preciso en todo momento
             socialText.addEventListener('input', updateCounter);
             if(linkInput) linkInput.addEventListener('input', updateCounter);
         }
+
+        // --- API TINYURL: Acortador de Enlaces ---
+        document.getElementById('btn-shorten-link')?.addEventListener('click', async (e) => {
+            const linkInput = document.getElementById('social-post-link');
+            const urlToShorten = linkInput.value.trim();
+            
+            // Validaciones rápidas
+            if (!urlToShorten) { alert("Pega un enlace primero para poder acortarlo."); return; }
+            if (urlToShorten.includes('tinyurl.com')) { alert("Este enlace ya está acortado."); return; }
+            if (!urlToShorten.startsWith('http')) { alert("El enlace debe empezar con http:// o https://"); return; }
+
+            const btn = e.currentTarget;
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+
+            try {
+                // Llamada a la API gratuita de TinyURL
+                const res = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(urlToShorten)}`);
+                if (res.ok) {
+                    const shortUrl = await res.text();
+                    linkInput.value = shortUrl;
+                    linkInput.dispatchEvent(new Event('input')); // Dispara la actualización del contador de caracteres
+                } else {
+                    alert("La API de acortamiento no respondió. Intenta más tarde.");
+                }
+            } catch (err) {
+                console.error("Error acortando URL:", err);
+                alert("No se pudo conectar con el acortador.");
+            } finally {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
+        });
     },
 
-    // --- 3. TRAZABILIDAD Y PROYECTOS (Punto de Enfoque) ---
     async loadUserProjects() {
         const { data: projects, error } = await this.supabase.from('projects').select('id, title, doi').eq('user_id', this.userId);
         if (error) return console.error("Error cargando proyectos:", error);
@@ -189,7 +214,6 @@ const StudioApp = {
         projects.forEach(p => {
             const option = document.createElement('option');
             option.value = p.id;
-            // Guardamos el DOI como un atributo del option para accederlo fácil
             option.dataset.doi = p.doi || ''; 
             option.textContent = p.title.length > 40 ? p.title.substring(0, 40) + '...' : p.title;
             select.appendChild(option);
@@ -225,7 +249,6 @@ const StudioApp = {
         const select = document.getElementById('active-project-select');
         select.value = projectId;
 
-        // Mostrar Badge de DOI
         const selectedOption = select.options[select.selectedIndex];
         const doiBadge = document.getElementById('doi-badge');
         let projectDoi = null;
@@ -237,37 +260,30 @@ const StudioApp = {
             doiBadge.classList.add('badge-hidden');
         }
 
-        // AUTO-COMPLETAR REDES
         const linkInput = document.getElementById('social-post-link');
         if (linkInput) linkInput.value = projectDoi ? `https://doi.org/${projectDoi}` : `https://epistecnologia.com/@${this.currentUserProfile?.username || ''}`;
 
-        // Cargar el contexto en el editor de forma limpia
         const { data } = await this.supabase.from('projects').select('description').eq('id', projectId).single();
         if(data && data.description) {
             await this.editorInstance.isReady;
+            // NUEVO: Activamos el escudo anti-fantasmas antes de que el código escriba
+            this.isProgrammaticChange = true;
             this.editorInstance.blocks.insert('paragraph', { 
                 text: `<b>Contexto del Proyecto:</b> ${data.description}` 
             });
+            // Bajamos el escudo medio segundo después
+            setTimeout(() => { this.isProgrammaticChange = false; }, 500);
         }
     },
 
-    // --- 4. EDITOR MULTIMODAL ---
     initializeEditor() {
         return new Promise(resolve => {
             this.editorInstance = new EditorJS({
                 holder: 'editorjs', 
                 placeholder: 'Escribe tu artículo aquí... Presiona "Tab" para abrir el menú o "+" para añadir bloques.',
-                
                 tools: {
-                    header: {
-                        class: Header,
-                        inlineToolbar: true,
-                        config: { placeholder: 'Escribe un Subtítulo', levels: [2, 3, 4], defaultLevel: 2 }
-                    },
-                    list: {
-                        class: EditorjsList, // <-- AQUÍ ESTÁ LA CORRECCIÓN MÁGICA
-                        inlineToolbar: true
-                    },
+                    header: { class: Header, inlineToolbar: true, config: { placeholder: 'Escribe un Subtítulo', levels: [2, 3, 4], defaultLevel: 2 } },
+                    list: { class: EditorjsList, inlineToolbar: true },
                     image: {
                         class: ImageTool,
                         config: {
@@ -275,11 +291,9 @@ const StudioApp = {
                                 uploadByFile: async (file) => {
                                     const formData = new FormData();
                                     formData.append("image", file);
-                                    
                                     try {
                                         const response = await fetch('https://api.imgbb.com/1/upload?key=89d606fc7588367140913f93a4c89785', {
-                                            method: 'POST',
-                                            body: formData
+                                            method: 'POST', body: formData
                                         });
                                         const result = await response.json();
                                         return { success: 1, file: { url: result.data.url } };
@@ -291,18 +305,10 @@ const StudioApp = {
                             }
                         }
                     },
-                    raw: {
-                        class: RawTool,
-                    }
+                    raw: { class: RawTool }
                 },
-                
-                onReady: () => {
-                    resolve();
-                },
-                
-                onChange: () => {
-                    this.triggerAutoSave();
-                }
+                onReady: () => { resolve(); },
+                onChange: () => { this.triggerAutoSave(); }
             });
         });
     },
@@ -317,16 +323,18 @@ const StudioApp = {
         await this.editorInstance.isReady;
         
         try {
-            // Evaluamos si el JSON vino como objeto o como texto plano
             let blocksData = data.content;
             if (typeof blocksData === 'string') blocksData = JSON.parse(blocksData);
             
+            // NUEVO: Levantamos el escudo al renderizar un borrador cargado
+            this.isProgrammaticChange = true;
             if (blocksData && blocksData.blocks) {
                 await this.editorInstance.render(blocksData);
             } else {
-                console.warn("Borrador vacío o en formato HTML.");
                 this.editorInstance.render({ blocks: [] });
             }
+            setTimeout(() => { this.isProgrammaticChange = false; }, 500);
+
         } catch(e) {
             console.error("Error cargando JSON:", e);
             this.editorInstance.render({ blocks: [] });
@@ -335,9 +343,11 @@ const StudioApp = {
         if (this.currentPost.projectId) this.setProjectFocus(this.currentPost.projectId);
     },
 
-    // --- 5. LOGICA DE AUTOGUARDADO (Silencioso) ---
     triggerAutoSave() {
-        if(!this.currentPost.projectId) return; // No guardar si no hay proyecto
+        // NUEVO: Si la IA o el JS escribieron esto, NO guardes. Solo guarda si es el humano tecleando.
+        if (this.isProgrammaticChange) return; 
+        
+        if(!this.currentPost.projectId) return; 
         
         clearTimeout(this.saveTimeout);
         const statusEl = document.getElementById('save-status');
@@ -345,7 +355,7 @@ const StudioApp = {
         
         this.saveTimeout = setTimeout(() => {
             this.saveDraft(true);
-        }, 3000); // Guarda 3 segundos después de dejar de escribir
+        }, 3000); 
     },
 
     async saveDraft(isSilent = false) {
@@ -364,15 +374,31 @@ const StudioApp = {
         }
 
         try {
-            // 1. Extraemos los bloques JSON limpios de Editor.js
             const editorData = await this.editorInstance.save();
 
-            // 2. Armamos el paquete para Supabase
+            // --- MAGIA: TÍTULO AUTOMÁTICO ---
+            let titleValue = document.getElementById('post-title').value.trim();
+            if (!titleValue) {
+                const today = new Date();
+                // Formato: 08-04-2026
+                const dateStr = today.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                titleValue = `Nuevo borrador | ${dateStr}`;
+                // Actualizamos visualmente el input para que el usuario lo vea
+                document.getElementById('post-title').value = titleValue; 
+            }
+
+            // Validación de seguridad anti-fantasmas
+            if (editorData.blocks.length === 0 && titleValue.startsWith('Nuevo borrador')) {
+                if(!isSilent) alert("Escribe algo en el editor antes de guardar un borrador.");
+                statusEl.innerHTML = '<i class="fa-solid fa-cloud"></i> Sincronizado';
+                return;
+            }
+
             const postData = {
                 project_id: this.currentPost.projectId,
                 user_id: this.userId,
-                title: document.getElementById('post-title').value || 'Borrador sin título',
-                content: editorData, // <-- Ahora guarda JSON nativo
+                title: titleValue,
+                content: editorData, 
                 status: 'draft',
                 updated_at: new Date().toISOString()
             };
@@ -384,14 +410,14 @@ const StudioApp = {
             
             this.currentPost.id = data.id;
             
-            // Actualizar URL sin recargar para mantener trazabilidad
+            // Actualizamos la URL sin recargar para no generar duplicados en la base de datos
             const newUrl = `/inv/editor.html?postId=${data.id}`;
             window.history.replaceState({ path: newUrl }, '', newUrl);
 
             statusEl.innerHTML = '<i class="fa-solid fa-cloud-check" style="color:#2ecc71"></i> Guardado';
             setTimeout(() => { statusEl.innerHTML = '<i class="fa-solid fa-cloud"></i> Sincronizado'; }, 3000);
 
-            if(!isSilent) alert('Borrador guardado manualmente con éxito.');
+            if(!isSilent) alert('Borrador guardado con éxito.');
 
         } catch (error) {
             console.error('Error guardando:', error);
@@ -405,7 +431,6 @@ const StudioApp = {
         }
     },
 
-    // --- 6. CONEXIÓN CON INTELIGENCIA ARTIFICIAL ---
     async callTextAI() {
         const editorData = await this.editorInstance.save();
         const textContent = editorData.blocks.map(b => b.data.text || '').join('\n');
@@ -428,11 +453,9 @@ const StudioApp = {
             });
             if (error) throw error;
             
-            // 1. Creamos un contenedor invisible para leer el HTML
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = data.result;
 
-            // 2. TRADUCTOR MÁGICO: Convertimos a bloques nativos
             const blocksToInsert = [];
             Array.from(tempDiv.children).forEach(el => {
                 const tag = el.tagName;
@@ -454,13 +477,16 @@ const StudioApp = {
                 }
             });
 
-            // 3. Insertamos secuencialmente
             if (blocksToInsert.length > 0) {
+                this.isProgrammaticChange = true;
                 blocksToInsert.forEach(block => {
                     this.editorInstance.blocks.insert(block.type, block.data);
                 });
+                setTimeout(() => { this.isProgrammaticChange = false; }, 500);
             } else {
+                this.isProgrammaticChange = true;
                 this.editorInstance.blocks.insert('paragraph', { text: data.result });
+                setTimeout(() => { this.isProgrammaticChange = false; }, 500);
             }
             
             this.triggerAutoSave();
@@ -475,10 +501,11 @@ const StudioApp = {
         }
     },
 
-    // Función auxiliar global para el botón HTML inyectado arriba
     insertIntoEditor() {
         const content = document.getElementById('hidden-ai-result').innerHTML;
+        this.isProgrammaticChange = true;
         this.editorInstance.insertContent(`<p><br></p>${content}<p><br></p>`);
+        setTimeout(() => { this.isProgrammaticChange = false; }, 500);
         this.triggerAutoSave();
     },
 
@@ -501,7 +528,6 @@ const StudioApp = {
             });
             if (error) throw error;
             
-            // 1. MAGIA DE CANVAS PARA MARCA DE AGUA
             const watermarkedBase64 = await new Promise((resolve, reject) => {
                 const img = new Image();
                 img.crossOrigin = "anonymous";
@@ -524,7 +550,6 @@ const StudioApp = {
                 img.src = data.image; 
             });
 
-            // 2. ENVIAR A LA BANDEJA DE ADJUNTOS (Galería)
             const gallery = document.getElementById('media-gallery');
             const emptyText = gallery.querySelector('.empty-tray-text');
             if(emptyText) emptyText.remove();
@@ -534,7 +559,6 @@ const StudioApp = {
             imgCard.innerHTML = `<img src="${watermarkedBase64}" style="width:100%; height:80px; object-fit:cover; display:block;" onclick="document.getElementById('lightbox-img').src=this.src; document.getElementById('lightbox-modal').style.display='flex';">`;
             gallery.prepend(imgCard);
             
-            // 3. AUTO-ADJUNTAR A REDES SOCIALES
             this.setSocialImage(watermarkedBase64);
 
             resultsContainer.innerHTML = '<p style="color: #2ecc71; font-size:0.85rem;"><i class="fa-solid fa-check"></i> Imagen generada y adjuntada a tu Post de Redes.</p>';
@@ -570,7 +594,6 @@ const StudioApp = {
         reader.readAsDataURL(file);
     },
 
-    // --- NUEVAS FUNCIONES DE LA GALERÍA ---
     downloadLocalImage() {
         const imgSrc = document.getElementById('lightbox-img').src;
         const a = document.createElement('a');
@@ -583,7 +606,7 @@ const StudioApp = {
 
     async uploadToImgBB() {
         const btn = document.getElementById('upload-imgbb-btn');
-        const imgSrc = document.getElementById('lightbox-img').src; // Es la imagen Base64
+        const imgSrc = document.getElementById('lightbox-img').src; 
         
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Subiendo...';
@@ -593,7 +616,7 @@ const StudioApp = {
             const formData = new FormData();
             formData.append("image", base64Data);
             
-            const IMGBB_API_KEY = "89d606fc7588367140913f93a4c89785"; // Reemplaza esto
+            const IMGBB_API_KEY = "89d606fc7588367140913f93a4c89785"; 
             const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
                 method: "POST",
                 body: formData
@@ -603,11 +626,12 @@ const StudioApp = {
             const data = await response.json();
             const cleanUrl = data.data.url;
 
-            // Insertamos el bloque de imagen oficial de Editor.js
+            this.isProgrammaticChange = true;
             this.editorInstance.blocks.insert('image', {
                 file: { url: cleanUrl },
                 caption: "Imagen generada por IA EPT"
             });
+            setTimeout(() => { this.isProgrammaticChange = false; }, 500);
             
             alert("¡Imagen subida e insertada en tu artículo con éxito!");
             document.getElementById('lightbox-modal').style.display='none';
@@ -615,11 +639,10 @@ const StudioApp = {
             alert(`Error al subir la imagen: ${error.message}`);
         } finally {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Usar en el Artículo (Subir a la nube)';
+            btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Insertar al Artículo';
         }
     },
 
-    // --- 7. PUBLICACIÓN OMNICANAL ---
     async handlePublish() {
         if (!this.currentPost.projectId) {
             alert('Por favor, selecciona un Proyecto Activo antes de publicar.');
@@ -635,21 +658,17 @@ const StudioApp = {
             return;
         }
 
-        // --- SOLUCIÓN AL BUG DE LOS 300 CARACTERES ---
-        // Construimos el texto final antes para medirlo completo
         let textForCommunity = socialText;
         if (postLink) {
             textForCommunity += `\n\n📖 Enlace: ${postLink}`;
         }
 
-        // Verificamos el límite real de Bluesky (300 caracteres)
         if (postToCommunity && textForCommunity.length > 300) {
             const overflow = textForCommunity.length - 300;
             alert(`⚠️ El texto para redes (incluyendo el enlace automático) supera el límite de 300 caracteres de Bluesky.\n\nTe pasaste por ${overflow} caracteres. Por favor, acorta tu mensaje en la columna derecha.`);
-            return; // Detenemos la ejecución aquí, sin lanzar errores al servidor
+            return; 
         }
 
-        // Guardamos primero
         await this.saveDraft(true);
 
         const publishButton = document.getElementById('publish-btn');
@@ -657,13 +676,6 @@ const StudioApp = {
         publishButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Publicando...';
 
         try {
-            // Construimos el texto final antes para medirlo completo
-            let textForCommunity = socialText;
-            if (postLink) {
-                textForCommunity += `\n\n📖 Enlace: ${postLink}`;
-            }
-
-            // NUEVO: Consultamos Microlink silenciosamente para obtener la miniatura
             let linkTitle = null;
             let linkDescription = null;
             let linkThumb = null;
@@ -682,24 +694,25 @@ const StudioApp = {
                 }
             }
 
-            // PASO 1: PRIMERO ACTUALIZAMOS LA BASE DE DATOS
-            const sendNewsletter = document.getElementById('toggle-newsletter').checked;
+            // LÓGICA DE CORREO SEGURA
+            const newsletterCheckbox = document.getElementById('toggle-newsletter');
+            const sendNewsletter = newsletterCheckbox && newsletterCheckbox.parentElement.parentElement.style.display !== 'none' 
+                                   ? newsletterCheckbox.checked 
+                                   : false;
 
             const { error: dbError } = await this.supabase.from('posts').update({ 
                 status: 'published', 
-                send_email: sendNewsletter, // <-- GUARDAMOS TU DECISIÓN AQUÍ
+                send_email: sendNewsletter, 
                 updated_at: new Date().toISOString() 
             }).eq('id', this.currentPost.id);
 
             if (dbError) throw dbError;
 
-            // PASO 2: PUBLICAR EN BLUESKY CON TODOS LOS DATOS
             let bskyErrorMsg = null;
             if (postToCommunity) {
                 try {
                     const { data: creds } = await this.supabase.from('bsky_credentials').select('*').eq('user_id', this.userId).single();
                     
-                    // Verificamos si el usuario quiere adjuntar la imagen generada
                     const attachCheckbox = document.getElementById('checkbox-attach-image');
                     const includeImage = !!this.socialImageBase64;
 
@@ -711,7 +724,6 @@ const StudioApp = {
                         linkThumb: linkThumb
                     };
 
-                    // Si hay imagen cargada o generada, la enviamos limpia sin el prefijo data:image
                     if (includeImage) {
                         payloadBluesky.base64Image = this.socialImageBase64.split(',')[1];
                         payloadBluesky.imageMimeType = 'image/jpeg';
@@ -736,11 +748,10 @@ const StudioApp = {
                 }
             }
 
-            // PASO 3: INFORMAR AL USUARIO
             if (bskyErrorMsg) {
                 alert(`⚠️ El artículo fue publicado, PERO falló la publicación en redes. Motivo: ${bskyErrorMsg}`);
             } else {
-                alert("¡Contenido publicado con éxito en la comunidad y enviado al Editor!");
+                alert("¡Contenido publicado con éxito!");
             }
             
         } catch (error) {
@@ -753,20 +764,18 @@ const StudioApp = {
     }
 };
 
-// Exponer la función auxiliar al scope global para que el botón HTML la encuentre
 window.StudioApp = StudioApp;
 
 document.addEventListener('DOMContentLoaded', () => {
     StudioApp.init();
 
-    // --- NUEVO: Lógica del botón de opciones en móvil ---
     const mobileBtn = document.getElementById('mobile-selectors-btn');
     const topbar = document.querySelector('.studio-topbar');
     
     if (mobileBtn && topbar) {
         mobileBtn.addEventListener('click', () => {
             topbar.classList.toggle('show-selectors');
-            mobileBtn.classList.toggle('active'); // Pinta el botón de rojo cuando está abierto
+            mobileBtn.classList.toggle('active'); 
         });
     }
 });
