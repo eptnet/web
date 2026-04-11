@@ -983,21 +983,41 @@ const ProfileApp = {
     },
 
     handleRoleSelection(role) {
-        // Guardamos que ya interactuó
+        // Guardamos que ya interactuó y cerramos el onboarding
         sessionStorage.setItem('onboarding_shown', 'true');
         document.getElementById('onboarding-overlay').classList.remove('is-visible');
 
+        // Seleccionamos el botón de la pestaña de perfil para hacer el cambio
+        const tabPerfilBtn = document.querySelector(`[data-tab='tab-perfil']`);
+        if (tabPerfilBtn) tabPerfilBtn.click();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
         if (role === 'author') {
-            // Lo llevamos directo a la sección de ORCID o abrimos el validador
-            showToast("🚀 ¡Excelente elección! Iniciando validación ORCID...");
+            if (window.showToast) window.showToast("🚀 ¡Excelente! Iniciando validación ORCID...");
+            
+            // Esperamos medio segundo a que cambie la pestaña y hacemos scroll al botón ORCID
             setTimeout(() => {
-                // Si tienes un botón específico de ORCID, le hacemos clic
-                document.getElementById('connect-orcid-btn')?.scrollIntoView({behavior: 'smooth'});
+                const orcidBtn = document.getElementById('connect-orcid-btn');
+                if (orcidBtn) {
+                    orcidBtn.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    // Efecto visual: Resaltamos el botón unos segundos
+                    orcidBtn.style.transition = "all 0.3s ease";
+                    orcidBtn.style.boxShadow = "0 0 0 5px var(--color-accent-light)";
+                    orcidBtn.style.transform = "scale(1.05)";
+                    setTimeout(() => {
+                        orcidBtn.style.boxShadow = "none";
+                        orcidBtn.style.transform = "scale(1)";
+                    }, 2000);
+                }
             }, 500);
+
         } else {
-            showToast("📖 ¡Bienvenido Explorador! Conecta tu identidad digital.");
-            // Scroll hacia la sección de Bluesky
-            document.getElementById('connect-bsky-btn')?.scrollIntoView({behavior: 'smooth'});
+            if (window.showToast) window.showToast("📖 ¡Bienvenido! Conectemos tu cuenta de Bluesky.");
+            
+            // Esperamos a que cambie la pestaña y abrimos el modal de Bluesky directo
+            setTimeout(() => {
+                this.openCommunityModal();
+            }, 500);
         }
     },
 

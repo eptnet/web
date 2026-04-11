@@ -295,3 +295,14 @@ entrypoint = "./functions/stop-youtube-live/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/stop-youtube-live/*.html" ]
+
+[functions.start-broadcast]
+enabled = true
+verify_jwt = true
+import_map = "./functions/start-broadcast/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/start-broadcast/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/start-broadcast/*.html" ]

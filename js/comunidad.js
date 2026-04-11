@@ -16,6 +16,7 @@ const ComunidadApp = {
         this.supabase = window.supabaseClient;
 
         await this.handleUserSession();
+        this.subscribeToLiveBroadcasts();
         this.addEventListeners();
     },
 
@@ -53,6 +54,340 @@ const ComunidadApp = {
         this.renderLatestPublications();
         this.renderSidebarEvents();
         this.fetchLatestPodcast();
+    },
+
+    // ==========================================
+    // MOTOR DE STREAMING DIRECTO (BETA)
+    // ==========================================
+    localMediaStream: null,
+
+    subscribeToLiveBroadcasts() {
+        console.log("📡 Suscribiendo a directos activos en Supabase...");
+        this.supabase.channel('public:active_broadcasts')
+            .on('postgres_changes', { 
+                event: '*', 
+                schema: 'public', 
+                table: 'active_broadcasts' 
+            }, payload => {
+                console.log('⚡ Cambio en directos detectado:', payload);
+                this.handleLiveStatusChange(payload);
+            })
+            .subscribe();
+    },
+
+    async handleLiveStatusChange(payload) {
+        // Por ahora, recargamos la lista de destacados para que inyecte el aro rojo
+        // a quienes estén en la tabla active_broadcasts (lo modificaremos en renderFeaturedMembers)
+        await this.renderFeaturedMembers();
+    },
+
+    openGoLiveModal() {
+        const modalContainer = document.getElementById('modal-container');
+        if (modalContainer && modalContainer.innerHTML.trim() !== '') return;
+
+        // Construimos el Modal Inmersivo con Selectores de Dispositivos
+        const modalHtml = `
+            <div class="modal-overlay is-visible" id="golive-modal-overlay" style="z-index: 9999; background: rgba(0,0,0,0.95);">
+                <div class="modal-content" style="max-width: 800px; width: 95%; background: var(--color-surface); border-radius: 16px; padding: 0; overflow: hidden; position: relative;">
+                    <div class="modal-header" style="position: absolute; top: 0; width: 100%; z-index: 10; padding: 15px; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="color: white; margin: 0; border: none; padding: 0;"><span class="pulse-dot" style="display:inline-block; margin-right:8px;"></span> Estudio de Transmisión</h3>
+                        <button class="modal-close-btn" id="close-golive-btn" style="position: static; color: white; background: rgba(255,255,255,0.2);">&times;</button>
+                    </div>
+                    
+                    <div style="width: 100%; aspect-ratio: 16/9; background: #000; position: relative;">
+                        <video id="golive-preview-video" autoplay muted playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+                        <div id="golive-loader" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center;">
+                            <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+                            <p style="margin-top: 10px; font-size: 0.9rem;">Accediendo a dispositivos...</p>
+                        </div>
+                    </div>
+
+                    <div style="padding: 15px 20px; background: var(--color-background); border-bottom: 1px solid var(--color-border); display: flex; gap: 10px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <label style="font-size: 0.8rem; color: var(--color-secondary-text); font-weight: bold; margin-bottom: 4px; display: block;"><i class="fa-solid fa-camera"></i> Cámara / Capturadora</label>
+                            <select id="golive-video-select" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-primary-text);"></select>
+                        </div>
+                        <div style="flex: 1; min-width: 200px;">
+                            <label style="font-size: 0.8rem; color: var(--color-secondary-text); font-weight: bold; margin-bottom: 4px; display: block;"><i class="fa-solid fa-microphone"></i> Micrófono / Interfaz</label>
+                            <select id="golive-audio-select" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-primary-text);"></select>
+                        </div>
+                    </div>
+
+                    <div style="padding: 20px; text-align: center;">
+                        <p style="color: var(--color-secondary-text); font-size: 0.9rem; margin-top: 0;">Transmitirás como <strong>@${this.bskyCreds.handle}</strong>.</p>
+                        <button id="btn-start-broadcast" class="btn-primary" style="width: 100%; max-width: 300px; margin: 0 auto; font-size: 1.1rem; padding: 12px; background-color: #ef4444; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);" disabled>
+                            <i class="fa-solid fa-video"></i> Transmitir en Vivo
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        modalContainer.innerHTML = modalHtml;
+
+        // Listeners del modal
+        document.getElementById('close-golive-btn').addEventListener('click', () => this.closeGoLiveModal());
+        document.getElementById('btn-start-broadcast').addEventListener('click', () => this.startBroadcastToStreamplace());
+
+        // Listeners para cuando el usuario cambia de cámara o micrófono
+        document.getElementById('golive-video-select').addEventListener('change', () => this.startCameraPreview(true));
+        document.getElementById('golive-audio-select').addEventListener('change', () => this.startCameraPreview(true));
+
+        // Arrancamos la cámara por defecto
+        this.startCameraPreview(false);
+    },
+
+    async startCameraPreview(isDeviceChange = false) {
+        try {
+            const loader = document.getElementById('golive-loader');
+            if (loader) loader.style.display = 'block';
+
+            // Si ya hay una cámara encendida (porque estamos cambiando de dispositivo), debemos apagarla primero para liberar el hardware.
+            if (this.localMediaStream) {
+                this.localMediaStream.getTracks().forEach(track => track.stop());
+            }
+
+            const videoSelect = document.getElementById('golive-video-select');
+            const audioSelect = document.getElementById('golive-audio-select');
+
+            const videoId = videoSelect?.value;
+            const audioId = audioSelect?.value;
+
+            // Configuramos qué cámara y micro queremos usar
+            const constraints = {
+                video: videoId ? { deviceId: { exact: videoId }, width: 1280, height: 720 } : { width: 1280, height: 720, facingMode: "user" },
+                audio: audioId ? { deviceId: { exact: audioId }, echoCancellation: true, noiseSuppression: true } : { echoCancellation: true, noiseSuppression: true }
+            };
+
+            // Pedimos el stream al navegador
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            this.localMediaStream = stream;
+            
+            const previewVideo = document.getElementById('golive-preview-video');
+            if (previewVideo) {
+                previewVideo.srcObject = stream;
+                // Evitamos el efecto espejo si se está usando una cámara trasera o capturadora
+                const isFrontCamera = !videoId && !isDeviceChange; 
+                previewVideo.style.transform = isFrontCamera ? "scaleX(-1)" : "scaleX(1)";
+            }
+
+            // IMPORTANTE: Solo leemos la lista de dispositivos si es la primera vez que abrimos la cámara
+            // (necesitamos pedir permisos con getUserMedia PRIMERO para que el navegador nos dé los nombres reales de las cámaras)
+            if (!isDeviceChange) {
+                await this.populateDeviceSelectors();
+            }
+
+            if (loader) loader.style.display = 'none';
+            document.getElementById('btn-start-broadcast').disabled = false;
+
+        } catch (error) {
+            console.error("Error accediendo a la cámara:", error);
+            const loader = document.getElementById('golive-loader');
+            if (loader) loader.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color: #ef4444; font-size: 2rem;"></i><p>No pudimos acceder a tu cámara o micrófono.</p>';
+        }
+    },
+
+    async populateDeviceSelectors() {
+        try {
+            // Leemos todos los dispositivos conectados al PC o Celular
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            
+            const videoSelect = document.getElementById('golive-video-select');
+            const audioSelect = document.getElementById('golive-audio-select');
+
+            if (!videoSelect || !audioSelect) return;
+
+            videoSelect.innerHTML = '';
+            audioSelect.innerHTML = '';
+
+            let videoCount = 1;
+            let audioCount = 1;
+
+            devices.forEach(device => {
+                if (device.kind === 'videoinput') {
+                    const option = document.createElement('option');
+                    option.value = device.deviceId;
+                    // Muestra el nombre real ("USB Capture HDMI", "Logitech C920", etc.)
+                    option.text = device.label || `Cámara ${videoCount++}`; 
+                    
+                    // Selecciona automáticamente la que estamos usando ahora mismo
+                    if (this.localMediaStream && this.localMediaStream.getVideoTracks()[0].getSettings().deviceId === device.deviceId) {
+                        option.selected = true;
+                    }
+                    videoSelect.appendChild(option);
+
+                } else if (device.kind === 'audioinput') {
+                    const option = document.createElement('option');
+                    option.value = device.deviceId;
+                    option.text = device.label || `Micrófono ${audioCount++}`;
+
+                    if (this.localMediaStream && this.localMediaStream.getAudioTracks()[0].getSettings().deviceId === device.deviceId) {
+                        option.selected = true;
+                    }
+                    audioSelect.appendChild(option);
+                }
+            });
+
+        } catch (err) {
+            console.error("Error enumerando dispositivos:", err);
+        }
+    },
+
+    closeGoLiveModal() {
+        // Apagamos la cámara antes de cerrar
+        if (this.localMediaStream) {
+            this.localMediaStream.getTracks().forEach(track => track.stop());
+            this.localMediaStream = null;
+        }
+        
+        const modalOverlay = document.getElementById('golive-modal-overlay');
+        if (modalOverlay) {
+            modalOverlay.classList.remove('is-visible');
+            setTimeout(() => {
+                const modalContainer = document.getElementById('modal-container');
+                if (modalContainer) modalContainer.innerHTML = '';
+            }, 300);
+        }
+    },
+
+    async startBroadcastToStreamplace() {
+        const btnStart = document.getElementById('btn-start-broadcast');
+        btnStart.disabled = true;
+        btnStart.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Negociando conexión...';
+        
+        try {
+            // 1. Pedir permiso al backend (Edge Function)
+            const { data, error } = await this.supabase.functions.invoke('start-broadcast');
+            if (error) throw error;
+            if (!data.success) throw new Error("No se pudo aprovisionar el stream.");
+
+            const whipUrl = data.ingestUrl;
+            console.log("🔗 Endpoint WHIP recibido:", whipUrl);
+
+            // 2. Configurar motor WebRTC (RTCPeerConnection)
+            btnStart.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Conectando video...';
+            
+            this.peerConnection = new RTCPeerConnection({
+                iceServers: [{ urls: "stun:stun.l.google.com:19302" }] // STUN público estándar
+            });
+
+            // Conectar nuestra cámara (localMediaStream) a la conexión
+            this.localMediaStream.getTracks().forEach(track => {
+                this.peerConnection.addTrack(track, this.localMediaStream);
+            });
+
+            // 3. Crear Oferta WebRTC (SDP)
+            const offer = await this.peerConnection.createOffer();
+            await this.peerConnection.setLocalDescription(offer);
+
+            // 4. Enviar la oferta al servidor WHIP de Streamplace
+            const response = await fetch(whipUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/sdp'
+                },
+                body: offer.sdp
+            });
+
+            if (!response.ok) throw new Error(`Fallo en el servidor de video: ${response.statusText}`);
+
+            // 5. Recibir la respuesta del servidor y establecerla
+            const answerSdp = await response.text();
+            await this.peerConnection.setRemoteDescription(
+                new RTCSessionDescription({ type: 'answer', sdp: answerSdp })
+            );
+
+            // ¡ESTAMOS EN VIVO!
+            btnStart.classList.replace('btn-primary', 'btn-success');
+            btnStart.style.backgroundColor = '#10b981'; // Verde de éxito
+            btnStart.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> ¡Estás EN VIVO!';
+            
+            // Añadir botón para terminar directo
+            if (!document.getElementById('btn-stop-broadcast')) {
+                const btnStop = document.createElement('button');
+                btnStop.id = 'btn-stop-broadcast';
+                btnStop.className = 'btn-secondary';
+                btnStop.style.cssText = 'width: 100%; max-width: 300px; margin: 10px auto 0; padding: 12px;';
+                btnStop.innerHTML = '<i class="fa-solid fa-stop"></i> Finalizar Transmisión';
+                btnStop.onclick = () => this.stopBroadcast();
+                btnStart.parentNode.appendChild(btnStop);
+            }
+
+            console.log("🔴 TRANSMSIÓN INICIADA EXITOSAMENTE");
+
+        } catch (err) {
+            console.error("Error al transmitir:", err);
+            const btnStart = document.getElementById('btn-start-broadcast');
+            if (btnStart) {
+                btnStart.disabled = false;
+                btnStart.innerHTML = '<i class="fa-solid fa-video"></i> Reintentar Transmisión';
+            }
+            alert("Error al conectar con el servidor de video. Revisa la consola.");
+
+            // LIMPIEZA DE EMERGENCIA: Si falló la conexión de video, apagamos el "En Vivo" en Supabase
+            if (this.supabase && this.user) {
+                await this.supabase.from('active_broadcasts')
+                    .update({ status: 'ended', ended_at: new Date().toISOString() })
+                    .eq('user_id', this.user.id)
+                    .eq('status', 'live');
+            }
+        }
+    },
+
+    async stopBroadcast() {
+        if (!confirm("¿Estás seguro de finalizar la transmisión?")) return;
+        
+        // 1. Cerrar conexión WebRTC
+        if (this.peerConnection) {
+            this.peerConnection.close();
+            this.peerConnection = null;
+        }
+        
+        // 2. Avisar a Supabase que terminó (Edge Function pendiente o update directo si tienes permisos)
+        await this.supabase.from('active_broadcasts')
+            .update({ status: 'ended', ended_at: new Date().toISOString() })
+            .eq('user_id', this.user.id)
+            .eq('status', 'live');
+
+        this.closeGoLiveModal();
+        window.showToast("Transmisión finalizada correctamente.");
+    },
+
+    // ==========================================
+    // REPRODUCTOR DEL ESPECTADOR (CONSUMO OFICIAL)
+    // ==========================================
+    openLiveViewer(playbackUrl, handle) {
+        const modalContainer = document.getElementById('modal-container');
+        if (!modalContainer) return;
+
+        // Usamos el embed oficial de tu canal maestro que descubriste
+        const embedUrl = "https://stream.place/embed/epistecnologia.com";
+
+        const modalHtml = `
+            <div class="modal-overlay is-visible" id="live-viewer-overlay" style="z-index: 9999; background: #000;">
+                <div style="position: absolute; top: 15px; left: 15px; z-index: 10; display: flex; align-items: center; gap: 10px; pointer-events: none;">
+                    <span style="background: #ef4444; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; animation: pulse-red 1.5s infinite;">EN VIVO</span>
+                    <span style="color: white; font-weight: bold; text-shadow: 1px 1px 3px rgba(0,0,0,0.8);">@${handle}</span>
+                </div>
+                <button class="modal-close-btn" id="close-viewer-btn" style="position: absolute; right: 15px; top: 15px; color: white; background: rgba(0,0,0,0.5); border: none; font-size: 1.5rem; width: 40px; height: 40px; border-radius: 50%; z-index: 20; cursor: pointer;">&times;</button>
+                
+                <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #000;">
+                    <iframe src="${embedUrl}" style="width: 100%; max-width: 1280px; aspect-ratio: 16/9; border: none;" allow="autoplay; fullscreen" allowfullscreen></iframe>
+                </div>
+            </div>
+        `;
+        
+        modalContainer.innerHTML = modalHtml;
+        document.getElementById('close-viewer-btn').addEventListener('click', () => this.closeLiveViewer());
+    },
+
+    closeLiveViewer() {
+        const overlay = document.getElementById('live-viewer-overlay');
+        if (overlay) overlay.classList.remove('is-visible');
+        setTimeout(() => {
+            const modalContainer = document.getElementById('modal-container');
+            if (modalContainer) modalContainer.innerHTML = '';
+        }, 300);
     },
 
     // --- RENDERIZADO DE COMPONENTES DE LA UI ---
@@ -193,6 +528,19 @@ const ComunidadApp = {
                 e.stopPropagation();
                 const username = investigatorItem.dataset.username;
                 if (username) this.openProfileModal(username);
+            }
+
+            // --- INICIAR DIRECTO RÁPIDO (GoLive) ---
+            const directoBtn = target.closest('a');
+            if (directoBtn && directoBtn.innerHTML.includes('fa-bolt')) {
+                e.preventDefault();
+                // Verificamos que sea un investigador con cuenta conectada
+                if (this.bskyCreds && (this.userProfile?.role === 'researcher' || this.userProfile?.role === 'admin')) {
+                    this.openGoLiveModal();
+                } else {
+                    alert("Solo los investigadores verificados pueden iniciar transmisiones en vivo.");
+                }
+                return;
             }
 
             // --- TABS MÓVILES (NAVEGACIÓN APP) ---
@@ -1096,34 +1444,67 @@ const ComunidadApp = {
     async renderFeaturedMembers() {
         const container = document.getElementById('featured-members-list');
         if (!container) return;
+
         try {
-            const { data: projects, error: projErr } = await this.supabase.from('projects').select('user_id').order('created_at', { ascending: false }).limit(40);
-            if (projErr) throw projErr;
+            // 1. Consultar quién está EN VIVO
+            const { data: liveBroadcasts, error: liveError } = await this.supabase
+                .from('active_broadcasts')
+                .select('*, profiles(display_name, avatar_url, username)')
+                .eq('status', 'live');
 
-            // Traemos hasta 8 investigadores para que se active el scroll horizontal
-            const uniqueUserIds = [...new Set(projects.map(p => p.user_id))].slice(0, 8);
+            if (liveError) throw liveError;
 
-            if (uniqueUserIds.length === 0) {
-                container.innerHTML = '<p class="trend-topic" style="padding-left:10px;">Aún no hay investigadores destacados.</p>';
-                return;
+            // 2. Consultar destacados (SOLO perfiles que tengan al menos 1 proyecto publicado)
+            const { data: members, error: membersError } = await this.supabase
+                .from('profiles')
+                .select('id, display_name, avatar_url, username, projects!inner(id)')
+                .limit(10); 
+
+            if (membersError) throw membersError;
+
+            let html = '';
+            const paintedLiveUsers = new Set(); // Para evitar duplicados
+            
+            // 3. Pintar PRIMERO a los que están EN VIVO
+            if (liveBroadcasts && liveBroadcasts.length > 0) {
+                liveBroadcasts.forEach(broadcast => {
+                    // Solo pintamos si no hemos pintado ya a este usuario
+                    if (!paintedLiveUsers.has(broadcast.user_id)) {
+                        paintedLiveUsers.add(broadcast.user_id);
+                        const profile = broadcast.profiles;
+                        html += `
+                            <div class="story-item is-live" onclick="ComunidadApp.openLiveViewer('${broadcast.playback_url}', '${profile.username || profile.display_name}')">
+                                <div class="story-avatar-container" style="background: linear-gradient(45deg, #ef4444, #b72a1e); animation: pulse-border 2s infinite;">
+                                    <img src="${profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="Avatar" class="story-avatar">
+                                </div>
+                                <span class="story-username" style="color: #ef4444; font-weight: bold;">🔴 EN VIVO</span>
+                            </div>
+                        `;
+                    }
+                });
             }
 
-            const { data: profiles, error: profErr } = await this.supabase.from('profiles').select('id, display_name, username, avatar_url').in('id', uniqueUserIds);
-            if (profErr) throw profErr;
+            // 4. Pintar a los investigadores normales
+            const paintedNormalUsers = new Set();
+            members.forEach(member => {
+                // Filtramos a los que ya están arriba en vivo y a los duplicados por tener múltiples proyectos
+                if (!paintedLiveUsers.has(member.id) && !paintedNormalUsers.has(member.id)) {
+                    paintedNormalUsers.add(member.id);
+                    html += `
+                        <div class="story-item" onclick="window.location.href='/inv/profile.html?id=${member.id}'">
+                            <div class="story-avatar-container">
+                                <img src="${member.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="Avatar" class="story-avatar">
+                            </div>
+                            <span class="story-username">${member.display_name || member.username}</span>
+                        </div>
+                    `;
+                }
+            });
 
-            // Renderizamos en formato "Story"
-            container.innerHTML = profiles.map(p => `
-                <div class="story-item" data-username="${p.username}">
-                    <div class="story-avatar-container">
-                        <img src="${p.avatar_url || `https://api.dicebear.com/9.x/shapes/svg?seed=${p.username}`}" class="story-avatar">
-                    </div>
-                    <span class="story-username">${p.display_name.split(' ')[0]}</span>
-                </div>
-            `).join('');
+            container.innerHTML = html;
 
         } catch (error) {
-            console.error("Error Featured:", error);
-            container.innerHTML = '<p class="trend-topic" style="padding-left:10px;">Error al cargar.</p>';
+            console.error("Error cargando el carrusel de destacados:", error);
         }
     },
 
