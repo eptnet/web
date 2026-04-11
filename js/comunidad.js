@@ -607,8 +607,36 @@ const ComunidadApp = {
             if (button && (button.id === 'connect-bsky-btn' || button.id === 'connect-bsky-in-creator-btn')) {
                 this.openBskyConnectModal();
             }
-            if (button && button.id === 'fab-create-post') {
+
+            // --- LÓGICA DEL NUEVO SPEED DIAL FAB ---
+            const fabToggle = target.closest('#fab-main-toggle');
+            const fabContainer = document.getElementById('fab-container');
+
+            // 1. Abrir/Cerrar al tocar el botón (+)
+            if (fabToggle) {
+                fabContainer.classList.toggle('is-open');
+                return;
+            }
+            
+            // 2. Cerrar el menú si tocamos en cualquier otra parte de la pantalla
+            if (fabContainer && fabContainer.classList.contains('is-open') && !target.closest('.fab-container')) {
+                fabContainer.classList.remove('is-open');
+            }
+
+            // 3. Acción: Escribir Post
+            if (button && button.id === 'fab-post') {
+                fabContainer.classList.remove('is-open'); // Lo cerramos
                 this.openPostModal();
+            }
+
+            // 4. Acción: GoLive Móvil
+            if (button && button.id === 'fab-golive') {
+                fabContainer.classList.remove('is-open'); // Lo cerramos
+                if (this.bskyCreds && (this.userProfile?.role === 'researcher' || this.userProfile?.role === 'admin')) {
+                    this.openGoLiveModal();
+                } else {
+                    alert("Solo los investigadores verificados pueden iniciar transmisiones en vivo.");
+                }
             }
 
             // --- ZAPPING (REPRODUCTOR 24/7 MULTICANAL) ---
@@ -1454,11 +1482,12 @@ const ComunidadApp = {
 
             if (liveError) throw liveError;
 
-            // 2. Consultar destacados (SOLO perfiles que tengan al menos 1 proyecto publicado)
+            // 2. Consultar destacados (Ordenados por última actividad)
             const { data: members, error: membersError } = await this.supabase
                 .from('profiles')
-                .select('id, display_name, avatar_url, username, projects!inner(id)')
-                .limit(10); 
+                .select('id, display_name, avatar_url, username, projects!inner(id), updated_at')
+                .order('updated_at', { ascending: false }) /* <-- ESTO ORDENA POR ACTIVIDAD RECIENTE */
+                .limit(10);
 
             if (membersError) throw membersError;
 

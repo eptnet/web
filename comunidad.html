@@ -241,9 +241,18 @@
         </div>
     </div>
 
-    <button id="fab-create-post" class="fab" title="Crear nuevo post">
-        <i class="fa-solid fa-feather-pointed"></i>
-    </button>
+    <div class="fab-container" id="fab-container">
+        <button class="fab-action fab-golive" id="fab-golive" title="Transmitir en Vivo">
+            <i class="fa-solid fa-bolt"></i>
+        </button>
+        <button class="fab-action fab-post" id="fab-post" title="Crear nuevo post">
+            <i class="fa-solid fa-feather-pointed"></i>
+        </button>
+        
+        <button class="fab-main" id="fab-main-toggle" title="Crear">
+            <i class="fa-solid fa-plus"></i>
+        </button>
+    </div>
 
     <div id="modal-container"></div>
 
@@ -427,10 +436,10 @@
     </div>
 
     <nav class="bottom-nav">
-        <a href="/#inicio" class="nav-item"><i class="fa-solid fa-house"></i><span>Inicio</span></a>
-        <a href="/comunidad.html" class="nav-item active"><i class="fa-solid fa-users"></i><span>Comunidad</span></a>
-        <a href="/live.html" class="nav-item"><i class="fa-solid fa-tower-broadcast"></i><span>Live</span></a>
-        <button class="nav-item" id="mobile-menu-toggle-btn"><i class="fa-solid fa-bars"></i><span>Más</span></button>
+        <a href="/app.html" class="nav-item"><i class="fa-solid fa-house"></i><span></span></a>
+        <a href="/comunidad.html" class="nav-item active"><i class="fa-solid fa-users"></i><span></span></a>
+        <a href="/live.html" class="nav-item"><i class="fa-solid fa-tower-broadcast"></i><span></span></a>
+        <button class="nav-item" id="mobile-menu-toggle-btn"><i class="fa-solid fa-bars"></i><span></span></button>
     </nav>
 
     <div class="mobile-more-menu" id="mobile-more-menu">
@@ -483,8 +492,6 @@
             </main>
         </div>
     </div>
-
-    
 
     <footer class="site-footer">
         <div class="container footer-content">

@@ -516,17 +516,29 @@ body.dark-theme {
     max-width: 76px;
 }
 
-/* El anillo de degradado */
+/* El anillo por defecto (Gris/Neutro) */
 .story-avatar-container {
     width: 68px;
     height: 68px;
     border-radius: 50%;
-    background: linear-gradient(45deg, #fa151597, var(--color-accent));
-    padding: 3px; /* Grosor del borde de color */
+    background: var(--color-border); /* Anillo neutro cuando no están en vivo */
+    padding: 3px; 
     display: flex;
     justify-content: center;
     align-items: center;
     transition: transform 0.2s ease;
+}
+
+/* El anillo brillante SOLO cuando están EN VIVO */
+.story-item.is-live .story-avatar-container {
+    background: linear-gradient(45deg, #ef4444, #b72a1e);
+    animation: pulse-border 2s infinite;
+}
+
+@keyframes pulse-border {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+    70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
 
 .story-item:hover .story-avatar-container {
@@ -557,7 +569,7 @@ body.dark-theme {
    ========================================================================== */
 @media (max-width: 768px) {
     .fab {
-        bottom: 85px !important; /* Lo subimos para que respete los 65px del menú móvil */
+        bottom: 100px !important; /* Lo subimos para que respete los 65px del menú móvil */
         right: 1.2rem !important;
         width: 50px !important; /* Un poquito más pequeño para no estorbar la lectura */
         height: 50px !important;
@@ -921,4 +933,145 @@ body.dark-theme {
     -webkit-line-clamp: 3; /* Cortamos a 3 líneas para que no se haga infinito */
     -webkit-box-orient: vertical;
     overflow: hidden;
+}
+
+/* ==========================================
+   BOTÓN FLOTANTE CENTRAL (GoLive Mobile)
+   ========================================== */
+.mobile-golive-fab {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 1.4; 
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+    /* CLAVE 1: Fijamos una altura para que no estire el menú */
+    height: 60px; 
+}
+
+.mobile-golive-fab .fab-inner {
+    /* CLAVE 2: Lo hacemos absoluto para que 'flote' fuera de la barra sin empujarla */
+    position: absolute; 
+    bottom: 15px; /* Qué tanto sobresale hacia arriba (Ajústalo a tu gusto) */
+    width: 55px;
+    height: 55px;
+    background: linear-gradient(135deg, #ef4444, #b72a1e);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 1.5rem;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+    border: 4px solid var(--color-surface); 
+    transition: transform 0.2s ease, box-shadow 0.2s ease, bottom 0.2s ease;
+}
+
+.mobile-golive-fab:active .fab-inner {
+    bottom: 12px; /* Efecto al presionar */
+    transform: scale(0.95);
+    box-shadow: 0 2px 10px rgba(239, 68, 68, 0.3);
+}
+
+@keyframes fab-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.mobile-golive-fab .fab-inner {
+    animation: fab-pulse 3s infinite;
+}
+
+/* ==========================================
+   SPEED DIAL FAB (Menú Flotante Desplegable)
+   ========================================== */
+.fab-container {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+}
+
+.fab-main {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background-color: var(--color-accent);
+    color: white;
+    border: none;
+    font-size: 1.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(183, 42, 30, 0.4);
+    cursor: pointer;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s;
+    z-index: 2;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Al abrir, el (+) rota para convertirse en una (X) */
+.fab-container.is-open .fab-main {
+    transform: rotate(135deg);
+    background-color: var(--color-surface);
+    color: var(--color-accent);
+    border: 2px solid var(--color-accent);
+}
+
+.fab-action {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    opacity: 0;
+    transform: translateY(20px) scale(0.5);
+    pointer-events: none; /* Inactivo cuando está oculto */
+    position: absolute;
+}
+
+.fab-action.fab-post {
+    background-color: var(--color-surface);
+    color: var(--color-primary-text);
+    bottom: 0;
+}
+
+.fab-action.fab-golive {
+    background: linear-gradient(135deg, #ef4444, #b72a1e);
+    color: white;
+    bottom: 0;
+}
+
+/* Animación de apertura */
+.fab-container.is-open .fab-action {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+}
+
+/* Posiciones finales de los botones flotantes */
+.fab-container.is-open .fab-action.fab-post { bottom: 70px; }
+.fab-container.is-open .fab-action.fab-golive { bottom: 130px; }
+
+/* Ajustes exactos para Móvil (PWA) */
+@media (max-width: 768px) {
+    .fab-container {
+        bottom: 85px !important; /* Elevado sobre la barra de navegación */
+        right: 1.2rem !important;
+    }
+    .fab-main { width: 50px; height: 50px; font-size: 1.2rem; }
+    .fab-action { width: 42px; height: 42px; font-size: 1.1rem; }
+    .fab-container.is-open .fab-action.fab-post { bottom: 65px; }
+    .fab-container.is-open .fab-action.fab-golive { bottom: 120px; }
 }
