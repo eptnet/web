@@ -435,6 +435,57 @@
         </div>
     </div>
 
+    <div id="golive-fullscreen-studio" class="hidden">
+        
+        <div class="media-layer">
+            <video id="golive-local-video" autoplay playsinline muted></video>
+            
+            <div id="golive-audio-mode" class="hidden" style="width: 100%; height: 100%; background: radial-gradient(circle, #1e293b 0%, #000000 100%);">
+                <canvas id="golive-visualizer" style="width: 100%; height: 100%;"></canvas>
+            </div>
+        </div>
+        
+        <div id="golive-setup-panel" class="studio-panel">
+            <div class="setup-header">
+                <h3>Configuración de Estudio</h3>
+                <button id="btn-close-setup" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="setup-body">
+                <label><i class="fa-solid fa-camera"></i> Cámara / Capturadora</label>
+                <select id="golive-video-select" class="device-select"></select>
+                
+                <label><i class="fa-solid fa-microphone"></i> Micrófono / Interfaz</label>
+                <select id="golive-audio-select" class="device-select"></select>
+            </div>
+            <div class="setup-footer">
+                <button id="btn-ready-to-live" class="btn-primary" style="width: 100%;">
+                    <i class="fa-solid fa-bolt"></i> Iniciar Transmisión
+                </button>
+            </div>
+        </div>
+
+        <div id="golive-live-ui" class="hidden">
+            <div class="studio-gradient top"></div>
+            <div class="studio-gradient bottom"></div>
+
+            <div class="studio-header-ui">
+                <div class="live-indicator is-live"><span class="dot"></span> EN VIVO</div>
+            </div>
+
+            <div class="studio-controls-ui">
+                <div class="controls-wrapper">
+                    <button id="btn-toggle-camera" class="icon-btn glass action-btn" title="Apagar Cámara"><i class="fa-solid fa-video"></i></button>
+                    
+                    <button id="btn-stop-broadcast" class="btn-transmitir is-live" title="Finalizar Transmisión">
+                        <div class="inner-circle stop-square"></div>
+                    </button>
+                    
+                    <button id="btn-toggle-mic" class="icon-btn glass action-btn" title="Silenciar"><i class="fa-solid fa-microphone"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <nav class="bottom-nav">
         <a href="/app.html" class="nav-item"><i class="fa-solid fa-house"></i><span></span></a>
         <a href="/comunidad.html" class="nav-item active"><i class="fa-solid fa-users"></i><span></span></a>

@@ -56,11 +56,6 @@ const ComunidadApp = {
         this.fetchLatestPodcast();
     },
 
-    // ==========================================
-    // MOTOR DE STREAMING DIRECTO (BETA)
-    // ==========================================
-    localMediaStream: null,
-
     subscribeToLiveBroadcasts() {
         console.log("📡 Suscribiendo a directos activos en Supabase...");
         this.supabase.channel('public:active_broadcasts')
@@ -76,73 +71,67 @@ const ComunidadApp = {
     },
 
     async handleLiveStatusChange(payload) {
-        // Por ahora, recargamos la lista de destacados para que inyecte el aro rojo
-        // a quienes estén en la tabla active_broadcasts (lo modificaremos en renderFeaturedMembers)
         await this.renderFeaturedMembers();
     },
 
+    // ==========================================
+    // MOTOR DE STREAMING DIRECTO V2 (SETUP + LIVE)
+    // ==========================================
+    localMediaStream: null,
+    peerConnection: null,
+    isMicMuted: false,
+    isCameraOff: false,
+    audioContext: null,
+    visualizerAnimationId: null,
+
     openGoLiveModal() {
-        const modalContainer = document.getElementById('modal-container');
-        if (modalContainer && modalContainer.innerHTML.trim() !== '') return;
+        const studio = document.getElementById('golive-fullscreen-studio');
+        if (!studio) return;
+        
+        studio.classList.remove('hidden');
+        
+        // Fase 1: Mostrar Setup, ocultar Live UI
+        document.getElementById('golive-setup-panel').classList.remove('hidden');
+        document.getElementById('golive-live-ui').classList.add('hidden');
+        
+        // Cargar foto de perfil en el avatar por si acaso
+        const avatarImg = document.getElementById('golive-audio-avatar');
+        if (avatarImg && this.userProfile) avatarImg.src = this.userProfile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
 
-        // Construimos el Modal Inmersivo con Selectores de Dispositivos
-        const modalHtml = `
-            <div class="modal-overlay is-visible" id="golive-modal-overlay" style="z-index: 9999; background: rgba(0,0,0,0.95);">
-                <div class="modal-content" style="max-width: 800px; width: 95%; background: var(--color-surface); border-radius: 16px; padding: 0; overflow: hidden; position: relative;">
-                    <div class="modal-header" style="position: absolute; top: 0; width: 100%; z-index: 10; padding: 15px; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); display: flex; justify-content: space-between; align-items: center;">
-                        <h3 style="color: white; margin: 0; border: none; padding: 0;"><span class="pulse-dot" style="display:inline-block; margin-right:8px;"></span> Estudio de Transmisión</h3>
-                        <button class="modal-close-btn" id="close-golive-btn" style="position: static; color: white; background: rgba(255,255,255,0.2);">&times;</button>
-                    </div>
-                    
-                    <div style="width: 100%; aspect-ratio: 16/9; background: #000; position: relative;">
-                        <video id="golive-preview-video" autoplay muted playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
-                        <div id="golive-loader" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center;">
-                            <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
-                            <p style="margin-top: 10px; font-size: 0.9rem;">Accediendo a dispositivos...</p>
-                        </div>
-                    </div>
+        // Listeners Fase 1
+        document.getElementById('btn-close-setup').onclick = () => this.closeGoLiveModal();
+        document.getElementById('btn-ready-to-live').onclick = () => this.startBroadcastToStreamplace();
+        document.getElementById('golive-video-select').onchange = () => this.startCameraPreview(true);
+        document.getElementById('golive-audio-select').onchange = () => this.startCameraPreview(true);
 
-                    <div style="padding: 15px 20px; background: var(--color-background); border-bottom: 1px solid var(--color-border); display: flex; gap: 10px; flex-wrap: wrap;">
-                        <div style="flex: 1; min-width: 200px;">
-                            <label style="font-size: 0.8rem; color: var(--color-secondary-text); font-weight: bold; margin-bottom: 4px; display: block;"><i class="fa-solid fa-camera"></i> Cámara / Capturadora</label>
-                            <select id="golive-video-select" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-primary-text);"></select>
-                        </div>
-                        <div style="flex: 1; min-width: 200px;">
-                            <label style="font-size: 0.8rem; color: var(--color-secondary-text); font-weight: bold; margin-bottom: 4px; display: block;"><i class="fa-solid fa-microphone"></i> Micrófono / Interfaz</label>
-                            <select id="golive-audio-select" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-primary-text);"></select>
-                        </div>
-                    </div>
-
-                    <div style="padding: 20px; text-align: center;">
-                        <p style="color: var(--color-secondary-text); font-size: 0.9rem; margin-top: 0;">Transmitirás como <strong>@${this.bskyCreds.handle}</strong>.</p>
-                        <button id="btn-start-broadcast" class="btn-primary" style="width: 100%; max-width: 300px; margin: 0 auto; font-size: 1.1rem; padding: 12px; background-color: #ef4444; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);" disabled>
-                            <i class="fa-solid fa-video"></i> Transmitir en Vivo
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        modalContainer.innerHTML = modalHtml;
-
-        // Listeners del modal
-        document.getElementById('close-golive-btn').addEventListener('click', () => this.closeGoLiveModal());
-        document.getElementById('btn-start-broadcast').addEventListener('click', () => this.startBroadcastToStreamplace());
-
-        // Listeners para cuando el usuario cambia de cámara o micrófono
-        document.getElementById('golive-video-select').addEventListener('change', () => this.startCameraPreview(true));
-        document.getElementById('golive-audio-select').addEventListener('change', () => this.startCameraPreview(true));
-
-        // Arrancamos la cámara por defecto
+        // Arrancar cámara por defecto y leer dispositivos
         this.startCameraPreview(false);
+    },
+
+    closeGoLiveModal() {
+        if (this.peerConnection) {
+            alert("Detén la transmisión en el botón cuadrado antes de salir.");
+            return;
+        }
+
+        this.stopLocalMedia();
+        document.getElementById('golive-fullscreen-studio').classList.add('hidden');
+    },
+
+    stopLocalMedia() {
+        if (this.localMediaStream) {
+            this.localMediaStream.getTracks().forEach(track => track.stop());
+            this.localMediaStream = null;
+        }
+        if (this.audioContext) {
+            this.audioContext.close();
+            this.audioContext = null;
+            cancelAnimationFrame(this.visualizerAnimationId);
+        }
     },
 
     async startCameraPreview(isDeviceChange = false) {
         try {
-            const loader = document.getElementById('golive-loader');
-            if (loader) loader.style.display = 'block';
-
-            // Si ya hay una cámara encendida (porque estamos cambiando de dispositivo), debemos apagarla primero para liberar el hardware.
             if (this.localMediaStream) {
                 this.localMediaStream.getTracks().forEach(track => track.stop());
             }
@@ -150,208 +139,283 @@ const ComunidadApp = {
             const videoSelect = document.getElementById('golive-video-select');
             const audioSelect = document.getElementById('golive-audio-select');
 
-            const videoId = videoSelect?.value;
-            const audioId = audioSelect?.value;
-
-            // Configuramos qué cámara y micro queremos usar
             const constraints = {
-                video: videoId ? { deviceId: { exact: videoId }, width: 1280, height: 720 } : { width: 1280, height: 720, facingMode: "user" },
-                audio: audioId ? { deviceId: { exact: audioId }, echoCancellation: true, noiseSuppression: true } : { echoCancellation: true, noiseSuppression: true }
+                video: videoSelect?.value ? { deviceId: { exact: videoSelect.value }, width: {ideal:1280}, height: {ideal:720} } : { width: {ideal:1280}, height: {ideal:720}, facingMode: "user" },
+                audio: audioSelect?.value ? { deviceId: { exact: audioSelect.value }, echoCancellation: true, noiseSuppression: true } : { echoCancellation: true, noiseSuppression: true }
             };
 
-            // Pedimos el stream al navegador
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
             this.localMediaStream = stream;
             
-            const previewVideo = document.getElementById('golive-preview-video');
+            const previewVideo = document.getElementById('golive-local-video');
             if (previewVideo) {
                 previewVideo.srcObject = stream;
-                // Evitamos el efecto espejo si se está usando una cámara trasera o capturadora
-                const isFrontCamera = !videoId && !isDeviceChange; 
-                previewVideo.style.transform = isFrontCamera ? "scaleX(-1)" : "scaleX(1)";
+                // Espejo solo si no se seleccionó cámara específica (asumiendo frontal de móvil)
+                previewVideo.style.transform = !videoSelect?.value ? "scaleX(-1)" : "scaleX(1)";
             }
 
-            // IMPORTANTE: Solo leemos la lista de dispositivos si es la primera vez que abrimos la cámara
-            // (necesitamos pedir permisos con getUserMedia PRIMERO para que el navegador nos dé los nombres reales de las cámaras)
-            if (!isDeviceChange) {
-                await this.populateDeviceSelectors();
-            }
-
-            if (loader) loader.style.display = 'none';
-            document.getElementById('btn-start-broadcast').disabled = false;
+            // Llenar listas la primera vez
+            if (!isDeviceChange) await this.populateDeviceSelectors();
 
         } catch (error) {
-            console.error("Error accediendo a la cámara:", error);
-            const loader = document.getElementById('golive-loader');
-            if (loader) loader.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color: #ef4444; font-size: 2rem;"></i><p>No pudimos acceder a tu cámara o micrófono.</p>';
+            console.error("Error cámara:", error);
         }
     },
 
     async populateDeviceSelectors() {
         try {
-            // Leemos todos los dispositivos conectados al PC o Celular
             const devices = await navigator.mediaDevices.enumerateDevices();
-            
             const videoSelect = document.getElementById('golive-video-select');
             const audioSelect = document.getElementById('golive-audio-select');
-
             if (!videoSelect || !audioSelect) return;
 
-            videoSelect.innerHTML = '';
-            audioSelect.innerHTML = '';
-
-            let videoCount = 1;
-            let audioCount = 1;
+            videoSelect.innerHTML = ''; audioSelect.innerHTML = '';
+            let vCount = 1, aCount = 1;
 
             devices.forEach(device => {
                 if (device.kind === 'videoinput') {
-                    const option = document.createElement('option');
-                    option.value = device.deviceId;
-                    // Muestra el nombre real ("USB Capture HDMI", "Logitech C920", etc.)
-                    option.text = device.label || `Cámara ${videoCount++}`; 
-                    
-                    // Selecciona automáticamente la que estamos usando ahora mismo
-                    if (this.localMediaStream && this.localMediaStream.getVideoTracks()[0].getSettings().deviceId === device.deviceId) {
-                        option.selected = true;
-                    }
-                    videoSelect.appendChild(option);
-
+                    const opt = document.createElement('option');
+                    opt.value = device.deviceId; opt.text = device.label || `Cámara ${vCount++}`;
+                    if (this.localMediaStream && this.localMediaStream.getVideoTracks()[0]?.getSettings().deviceId === device.deviceId) opt.selected = true;
+                    videoSelect.appendChild(opt);
                 } else if (device.kind === 'audioinput') {
-                    const option = document.createElement('option');
-                    option.value = device.deviceId;
-                    option.text = device.label || `Micrófono ${audioCount++}`;
-
-                    if (this.localMediaStream && this.localMediaStream.getAudioTracks()[0].getSettings().deviceId === device.deviceId) {
-                        option.selected = true;
-                    }
-                    audioSelect.appendChild(option);
+                    const opt = document.createElement('option');
+                    opt.value = device.deviceId; opt.text = device.label || `Micrófono ${aCount++}`;
+                    if (this.localMediaStream && this.localMediaStream.getAudioTracks()[0]?.getSettings().deviceId === device.deviceId) opt.selected = true;
+                    audioSelect.appendChild(opt);
                 }
             });
-
-        } catch (err) {
-            console.error("Error enumerando dispositivos:", err);
-        }
+        } catch (err) { console.error("Error dispositivos:", err); }
     },
 
-    closeGoLiveModal() {
-        // Apagamos la cámara antes de cerrar
-        if (this.localMediaStream) {
-            this.localMediaStream.getTracks().forEach(track => track.stop());
-            this.localMediaStream = null;
-        }
+    // --- ACCIONES EN VIVO ---
+
+    async toggleCamera() {
+        if (!this.localMediaStream) return;
+        const videoTrack = this.localMediaStream.getVideoTracks()[0];
+        if (!videoTrack) return;
+
+        this.isCameraOff = !this.isCameraOff;
         
-        const modalOverlay = document.getElementById('golive-modal-overlay');
-        if (modalOverlay) {
-            modalOverlay.classList.remove('is-visible');
-            setTimeout(() => {
-                const modalContainer = document.getElementById('modal-container');
-                if (modalContainer) modalContainer.innerHTML = '';
-            }, 300);
+        const videoEl = document.getElementById('golive-local-video');
+        const audioModeEl = document.getElementById('golive-audio-mode');
+        const btnCam = document.getElementById('btn-toggle-camera');
+        
+        // Buscamos si ya estamos transmitiendo a Streamplace
+        const sender = this.peerConnection ? this.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video') : null;
+
+        if (this.isCameraOff) {
+            // 1. Ocultar video local, mostrar Canvas
+            videoEl.classList.add('hidden');
+            audioModeEl.classList.remove('hidden');
+            btnCam.innerHTML = '<i class="fa-solid fa-video-slash" style="color: #ef4444;"></i>';
+            
+            // 2. Apagar la cámara web para que se apague la luz de tu PC
+            videoTrack.enabled = false; 
+
+            // 3. Iniciar el dibujado del Canvas
+            this.startAudioVisualizer();
+            
+            // 4. EL TRUCO: Capturar el canvas a 30 FPS y enviarlo a Streamplace
+            if (sender) {
+                const canvas = document.getElementById('golive-visualizer');
+                const canvasStream = canvas.captureStream(30); 
+                await sender.replaceTrack(canvasStream.getVideoTracks()[0]);
+            }
+        } else {
+            // 1. Mostrar video local, ocultar Canvas
+            videoEl.classList.remove('hidden');
+            audioModeEl.classList.add('hidden');
+            btnCam.innerHTML = '<i class="fa-solid fa-video"></i>';
+            
+            // 2. Detener la animación del Canvas para ahorrar batería
+            if (this.visualizerAnimationId) cancelAnimationFrame(this.visualizerAnimationId);
+            
+            // 3. Encender la cámara web de nuevo
+            videoTrack.enabled = true;
+            
+            // 4. Devolver la señal de la cámara a Streamplace
+            if (sender) {
+                await sender.replaceTrack(videoTrack);
+            }
         }
     },
 
+    toggleMic() {
+        if (!this.localMediaStream) return;
+        const audioTrack = this.localMediaStream.getAudioTracks()[0];
+        if (!audioTrack) return;
+
+        this.isMicMuted = !this.isMicMuted;
+        audioTrack.enabled = !this.isMicMuted; // Mutea el envío
+        
+        const btnMic = document.getElementById('btn-toggle-mic');
+        btnMic.innerHTML = this.isMicMuted ? '<i class="fa-solid fa-microphone-slash" style="color: #ef4444;"></i>' : '<i class="fa-solid fa-microphone"></i>';
+    },
+
+    startAudioVisualizer() {
+        const canvas = document.getElementById('golive-visualizer');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        
+        // CRÍTICO: El canvas DEBE tener resolución de video (HD 720p) para que Streamplace lo acepte bien
+        canvas.width = 1280;
+        canvas.height = 720;
+
+        // Cargar el Avatar del usuario para dibujarlo dentro del video
+        const avatarImg = new Image();
+        avatarImg.crossOrigin = "anonymous"; // Evita errores de seguridad al exportar el canvas
+        avatarImg.src = this.userProfile?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
+
+        if (!this.audioContext) {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const source = this.audioContext.createMediaStreamSource(this.localMediaStream);
+            const analyser = this.audioContext.createAnalyser();
+            analyser.fftSize = 256;
+            source.connect(analyser);
+            this.analyser = analyser;
+        }
+
+        const bufferLength = this.analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        
+        const draw = () => {
+            this.visualizerAnimationId = requestAnimationFrame(draw);
+            this.analyser.getByteFrequencyData(dataArray);
+            
+            // 1. Pintar fondo negro
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = 100; // Tamaño del avatar
+
+            // 2. Pintar las ondas de audio circulares alrededor del avatar
+            ctx.lineWidth = 4;
+            for(let i = 0; i < bufferLength; i++) {
+                const barHeight = dataArray[i]; // Volumen en esta frecuencia
+                const rads = (Math.PI * 2) / bufferLength;
+                const angle = rads * i;
+                
+                // Calculamos desde el borde del avatar hacia afuera
+                const xStart = centerX + Math.cos(angle) * radius;
+                const yStart = centerY + Math.sin(angle) * radius;
+                const xEnd = centerX + Math.cos(angle) * (radius + barHeight);
+                const yEnd = centerY + Math.sin(angle) * (radius + barHeight);
+
+                ctx.strokeStyle = `rgba(239, 68, 68, ${barHeight/255 + 0.2})`; // Rojo Epistecnología
+                ctx.beginPath();
+                ctx.moveTo(xStart, yStart);
+                ctx.lineTo(xEnd, yEnd);
+                ctx.stroke();
+            }
+
+            // 3. Pintar el Avatar circular en el centro
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius - 5, 0, Math.PI * 2, true);
+            ctx.closePath();
+            ctx.clip();
+            
+            if (avatarImg.complete && avatarImg.naturalHeight !== 0) {
+                ctx.drawImage(avatarImg, centerX - radius, centerY - radius, radius * 2, radius * 2);
+            } else {
+                ctx.fillStyle = '#1e293b';
+                ctx.fill();
+            }
+            ctx.restore();
+            
+            // Borde del avatar
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius - 5, 0, Math.PI * 2, true);
+            ctx.lineWidth = 6;
+            ctx.strokeStyle = '#b72a1e';
+            ctx.stroke();
+        };
+        
+        if (avatarImg.complete) { draw(); } 
+        else { avatarImg.onload = draw; }
+    },
+
+    // --- CONEXIÓN AL SERVIDOR ---
     async startBroadcastToStreamplace() {
-        const btnStart = document.getElementById('btn-start-broadcast');
-        btnStart.disabled = true;
-        btnStart.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Negociando conexión...';
+        const btnReady = document.getElementById('btn-ready-to-live');
+        btnReady.disabled = true;
+        btnReady.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Conectando...';
         
         try {
-            // 1. Pedir permiso al backend (Edge Function)
             const { data, error } = await this.supabase.functions.invoke('start-broadcast');
             if (error) throw error;
-            if (!data.success) throw new Error("No se pudo aprovisionar el stream.");
 
             const whipUrl = data.ingestUrl;
-            console.log("🔗 Endpoint WHIP recibido:", whipUrl);
-
-            // 2. Configurar motor WebRTC (RTCPeerConnection)
-            btnStart.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Conectando video...';
             
-            this.peerConnection = new RTCPeerConnection({
-                iceServers: [{ urls: "stun:stun.l.google.com:19302" }] // STUN público estándar
-            });
+            this.peerConnection = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
+            
+            // Si la cámara está apagada, enviamos el Canvas como video principal
+            if (this.isCameraOff) {
+                const canvas = document.getElementById('golive-visualizer');
+                const canvasStream = canvas.captureStream(30);
+                this.peerConnection.addTrack(canvasStream.getVideoTracks()[0], this.localMediaStream); // Pista de Video (Canvas)
+                this.peerConnection.addTrack(this.localMediaStream.getAudioTracks()[0], this.localMediaStream); // Pista de Audio (Micrófono real)
+            } else {
+                // Si la cámara está encendida, enviamos cámara y micrófono normales
+                this.localMediaStream.getTracks().forEach(track => this.peerConnection.addTrack(track, this.localMediaStream));
+            }
 
-            // Conectar nuestra cámara (localMediaStream) a la conexión
-            this.localMediaStream.getTracks().forEach(track => {
-                this.peerConnection.addTrack(track, this.localMediaStream);
-            });
-
-            // 3. Crear Oferta WebRTC (SDP)
             const offer = await this.peerConnection.createOffer();
             await this.peerConnection.setLocalDescription(offer);
 
-            // 4. Enviar la oferta al servidor WHIP de Streamplace
             const response = await fetch(whipUrl, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/sdp'
-                },
+                headers: { 'Content-Type': 'application/sdp' },
                 body: offer.sdp
             });
 
-            if (!response.ok) throw new Error(`Fallo en el servidor de video: ${response.statusText}`);
+            if (!response.ok) throw new Error("Fallo en servidor");
 
-            // 5. Recibir la respuesta del servidor y establecerla
             const answerSdp = await response.text();
-            await this.peerConnection.setRemoteDescription(
-                new RTCSessionDescription({ type: 'answer', sdp: answerSdp })
-            );
+            await this.peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: answerSdp }));
 
-            // ¡ESTAMOS EN VIVO!
-            btnStart.classList.replace('btn-primary', 'btn-success');
-            btnStart.style.backgroundColor = '#10b981'; // Verde de éxito
-            btnStart.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> ¡Estás EN VIVO!';
+            // TRANSICIÓN DE FASE: Ocultar Setup, Mostrar Live UI
+            document.getElementById('golive-setup-panel').classList.add('hidden');
+            document.getElementById('golive-live-ui').classList.remove('hidden');
             
-            // Añadir botón para terminar directo
-            if (!document.getElementById('btn-stop-broadcast')) {
-                const btnStop = document.createElement('button');
-                btnStop.id = 'btn-stop-broadcast';
-                btnStop.className = 'btn-secondary';
-                btnStop.style.cssText = 'width: 100%; max-width: 300px; margin: 10px auto 0; padding: 12px;';
-                btnStop.innerHTML = '<i class="fa-solid fa-stop"></i> Finalizar Transmisión';
-                btnStop.onclick = () => this.stopBroadcast();
-                btnStart.parentNode.appendChild(btnStop);
-            }
-
-            console.log("🔴 TRANSMSIÓN INICIADA EXITOSAMENTE");
+            // Listeners de los controles Live
+            document.getElementById('btn-toggle-camera').onclick = () => this.toggleCamera();
+            document.getElementById('btn-toggle-mic').onclick = () => this.toggleMic();
+            document.getElementById('btn-stop-broadcast').onclick = () => this.stopBroadcast();
 
         } catch (err) {
             console.error("Error al transmitir:", err);
-            const btnStart = document.getElementById('btn-start-broadcast');
-            if (btnStart) {
-                btnStart.disabled = false;
-                btnStart.innerHTML = '<i class="fa-solid fa-video"></i> Reintentar Transmisión';
-            }
-            alert("Error al conectar con el servidor de video. Revisa la consola.");
-
-            // LIMPIEZA DE EMERGENCIA: Si falló la conexión de video, apagamos el "En Vivo" en Supabase
+            btnReady.disabled = false;
+            btnReady.innerHTML = '<i class="fa-solid fa-bolt"></i> Reintentar Transmisión';
+            
             if (this.supabase && this.user) {
                 await this.supabase.from('active_broadcasts')
                     .update({ status: 'ended', ended_at: new Date().toISOString() })
-                    .eq('user_id', this.user.id)
-                    .eq('status', 'live');
+                    .eq('user_id', this.user.id).eq('status', 'live');
             }
         }
     },
 
     async stopBroadcast() {
-        if (!confirm("¿Estás seguro de finalizar la transmisión?")) return;
+        if (!confirm("¿Seguro que deseas terminar la transmisión?")) return;
         
-        // 1. Cerrar conexión WebRTC
         if (this.peerConnection) {
             this.peerConnection.close();
             this.peerConnection = null;
         }
         
-        // 2. Avisar a Supabase que terminó (Edge Function pendiente o update directo si tienes permisos)
         await this.supabase.from('active_broadcasts')
             .update({ status: 'ended', ended_at: new Date().toISOString() })
-            .eq('user_id', this.user.id)
-            .eq('status', 'live');
+            .eq('user_id', this.user.id).eq('status', 'live');
 
         this.closeGoLiveModal();
-        window.showToast("Transmisión finalizada correctamente.");
+        window.showToast("Transmisión finalizada.");
     },
+
+    // --- FIN MOTOR ---
 
     // ==========================================
     // REPRODUCTOR DEL ESPECTADOR (CONSUMO OFICIAL)
@@ -698,7 +762,7 @@ const ComunidadApp = {
         const container = document.querySelector('.create-post-box');
         if (!container) return;
 
-        if (this.bskyCreds && (this.userProfile.role === 'researcher' || this.userProfile.role === 'admin')) if (this.bskyCreds && (this.userProfile.role === 'researcher' || this.userProfile.role === 'admin')) {
+        if (this.bskyCreds && (this.userProfile.role === 'researcher' || this.userProfile.role === 'admin')) {
             // Generamos la URL del avatar correctamente
             const avatarUrl = this.userProfile.avatar_url || `https://api.dicebear.com/9.x/shapes/svg?seed=${this.userProfile.username || 'user'}`;
 
@@ -882,7 +946,7 @@ const ComunidadApp = {
         if (!container) return;
 
         const author = {
-            avatar: this.userProfile.avatar_url || 'https://api.dicebear.com/9.x/shapes/svg?seed=invitado_${randomSeed}',
+            avatar: this.userProfile.avatar_url || `https://api.dicebear.com/9.x/shapes/svg?seed=invitado_${Math.floor(Math.random() * 10000)}`,
             displayName: this.userProfile.display_name,
             handle: this.bskyCreds.handle
         };
@@ -1049,7 +1113,7 @@ const ComunidadApp = {
         modalNode.querySelector('#parent-post-avatar').src = postData.author.avatar;
         modalNode.querySelector('#parent-post-author').textContent = postData.author.displayName;
         modalNode.querySelector('#parent-post-text').innerHTML = postData.text;
-        modalNode.querySelector('#reply-user-avatar').src = this.userProfile.avatar_url || 'https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(userName)}';
+        modalNode.querySelector('#reply-user-avatar').src = this.userProfile.avatar_url || `https://api.dicebear.com/9.x/shapes/svg?seed=${this.userProfile.username || 'user'}`;
         
         // Añadimos los listeners
         modalNode.querySelector('.modal-close-btn').addEventListener('click', () => this.closePostModal());
