@@ -81,6 +81,7 @@ const ComunidadApp = {
     peerConnection: null,
     isMicMuted: false,
     isCameraOff: false,
+    currentFacingMode: "user",
     audioContext: null,
     visualizerAnimationId: null,
 
@@ -101,6 +102,8 @@ const ComunidadApp = {
         // Listeners Fase 1
         document.getElementById('btn-close-setup').onclick = () => this.closeGoLiveModal();
         document.getElementById('btn-ready-to-live').onclick = () => this.startBroadcastToStreamplace();
+        document.getElementById('btn-switch-lens').onclick = () => this.switchLens(); // <-- NUEVO
+        document.getElementById('btn-toggle-camera').onclick = () => this.toggleCamera();
         document.getElementById('golive-video-select').onchange = () => this.startCameraPreview(true);
         document.getElementById('golive-audio-select').onchange = () => this.startCameraPreview(true);
 
@@ -159,6 +162,67 @@ const ComunidadApp = {
 
         } catch (error) {
             console.error("Error cámara:", error);
+        }
+    },
+
+    async switchLens() {
+        // Si estamos en modo "Radio/Audio", no giramos la cámara
+        if (this.isCameraOff) return;
+
+        try {
+            // 1. Obtener TODAS las cámaras conectadas al dispositivo (Celular o PC)
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoDevices = devices.filter(d => d.kind === 'videoinput');
+
+            if (videoDevices.length < 2) {
+                window.showToast ? window.showToast("No se encontraron cámaras adicionales.") : alert("No se encontraron cámaras adicionales.");
+                return;
+            }
+
+            // 2. Identificar cuál estamos usando exactamente ahora mismo
+            const currentTrack = this.localMediaStream.getVideoTracks()[0];
+            const currentDeviceId = currentTrack.getSettings().deviceId;
+
+            // 3. Buscar su posición en la lista y calcular cuál es la siguiente
+            let currentIndex = videoDevices.findIndex(d => d.deviceId === currentDeviceId);
+            let nextIndex = (currentIndex + 1) % videoDevices.length; // Si llega al final, vuelve a la primera
+            let nextDevice = videoDevices[nextIndex];
+
+            // 4. Pedir el nuevo stream al navegador usando el Hardware ID exacto
+            const newStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { deviceId: { exact: nextDevice.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } } 
+            });
+            
+            const newVideoTrack = newStream.getVideoTracks()[0];
+            const videoEl = document.getElementById('golive-local-video');
+            
+            // 5. Lógica inteligente para el Efecto Espejo (Mirror):
+            // Solo invertimos la imagen si el nombre dice "front/frontal" o si es la cámara por defecto (índice 0).
+            // Si conectas una capturadora HDMI, no se invertirá.
+            const label = nextDevice.label.toLowerCase();
+            const isFront = label.includes('front') || label.includes('user') || label.includes('frontal') || (nextIndex === 0 && !label.includes('back') && !label.includes('environment'));
+            videoEl.style.transform = isFront ? "scaleX(-1)" : "scaleX(1)";
+            
+            // 6. Actualizamos nuestra cámara local
+            currentTrack.stop(); // Apagamos la cámara vieja
+            this.localMediaStream.removeTrack(currentTrack);
+            this.localMediaStream.addTrack(newVideoTrack);
+            
+            // 7. EL TRUCO DE MAGIA: Reemplazar el track en WebRTC sin cortar la llamada
+            if (this.peerConnection) {
+                const sender = this.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+                if (sender) {
+                    await sender.replaceTrack(newVideoTrack);
+                }
+            }
+
+            // 8. Sincronizamos el selector del menú de Setup (por si el usuario vuelve atrás)
+            const videoSelect = document.getElementById('golive-video-select');
+            if (videoSelect) videoSelect.value = nextDevice.deviceId;
+            
+        } catch (err) {
+            console.error("Error al cambiar de cámara:", err);
+            alert("No se pudo acceder a la otra cámara. Revisa los permisos.");
         }
     },
 
@@ -255,16 +319,17 @@ const ComunidadApp = {
 
     startAudioVisualizer() {
         const canvas = document.getElementById('golive-visualizer');
-        if (!canvas) return;
+        const container = document.getElementById('golive-audio-mode');
+        if (!canvas || !container) return;
         const ctx = canvas.getContext('2d');
         
-        // CRÍTICO: El canvas DEBE tener resolución de video (HD 720p) para que Streamplace lo acepte bien
-        canvas.width = 1280;
-        canvas.height = 720;
+        // CRÍTICO: Tomar la resolución real del contenedor para evitar el estiramiento
+        const rect = container.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
 
-        // Cargar el Avatar del usuario para dibujarlo dentro del video
         const avatarImg = new Image();
-        avatarImg.crossOrigin = "anonymous"; // Evita errores de seguridad al exportar el canvas
+        avatarImg.crossOrigin = "anonymous"; 
         avatarImg.src = this.userProfile?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
 
         if (!this.audioContext) {
@@ -283,35 +348,34 @@ const ComunidadApp = {
             this.visualizerAnimationId = requestAnimationFrame(draw);
             this.analyser.getByteFrequencyData(dataArray);
             
-            // 1. Pintar fondo negro
             ctx.fillStyle = '#000000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             const centerX = canvas.width / 2;
             const centerY = canvas.height / 2;
-            const radius = 100; // Tamaño del avatar
+            
+            // Radio dinámico: 15% del lado más pequeño de la pantalla (siempre será redondo)
+            const radius = Math.min(canvas.width, canvas.height) * 0.15; 
 
-            // 2. Pintar las ondas de audio circulares alrededor del avatar
             ctx.lineWidth = 4;
             for(let i = 0; i < bufferLength; i++) {
-                const barHeight = dataArray[i]; // Volumen en esta frecuencia
+                // Ajustamos la altura de la onda basándonos en el tamaño de la pantalla
+                const barHeight = (dataArray[i] / 255) * (radius * 0.8); 
                 const rads = (Math.PI * 2) / bufferLength;
                 const angle = rads * i;
                 
-                // Calculamos desde el borde del avatar hacia afuera
                 const xStart = centerX + Math.cos(angle) * radius;
                 const yStart = centerY + Math.sin(angle) * radius;
                 const xEnd = centerX + Math.cos(angle) * (radius + barHeight);
                 const yEnd = centerY + Math.sin(angle) * (radius + barHeight);
 
-                ctx.strokeStyle = `rgba(239, 68, 68, ${barHeight/255 + 0.2})`; // Rojo Epistecnología
+                ctx.strokeStyle = `rgba(239, 68, 68, ${dataArray[i]/255 + 0.2})`; 
                 ctx.beginPath();
                 ctx.moveTo(xStart, yStart);
                 ctx.lineTo(xEnd, yEnd);
                 ctx.stroke();
             }
 
-            // 3. Pintar el Avatar circular en el centro
             ctx.save();
             ctx.beginPath();
             ctx.arc(centerX, centerY, radius - 5, 0, Math.PI * 2, true);
@@ -326,7 +390,6 @@ const ComunidadApp = {
             }
             ctx.restore();
             
-            // Borde del avatar
             ctx.beginPath();
             ctx.arc(centerX, centerY, radius - 5, 0, Math.PI * 2, true);
             ctx.lineWidth = 6;
