@@ -170,7 +170,7 @@ const ComunidadApp = {
         if (this.isCameraOff) return;
 
         try {
-            // 1. Obtener TODAS las cámaras conectadas al dispositivo (Celular o PC)
+            // 1. Obtener TODAS las cámaras conectadas
             const devices = await navigator.mediaDevices.enumerateDevices();
             const videoDevices = devices.filter(d => d.kind === 'videoinput');
 
@@ -179,16 +179,21 @@ const ComunidadApp = {
                 return;
             }
 
-            // 2. Identificar cuál estamos usando exactamente ahora mismo
+            // 2. Identificar la cámara actual y cuál es la siguiente
             const currentTrack = this.localMediaStream.getVideoTracks()[0];
             const currentDeviceId = currentTrack.getSettings().deviceId;
 
-            // 3. Buscar su posición en la lista y calcular cuál es la siguiente
             let currentIndex = videoDevices.findIndex(d => d.deviceId === currentDeviceId);
-            let nextIndex = (currentIndex + 1) % videoDevices.length; // Si llega al final, vuelve a la primera
+            let nextIndex = (currentIndex + 1) % videoDevices.length; 
             let nextDevice = videoDevices[nextIndex];
 
-            // 4. Pedir el nuevo stream al navegador usando el Hardware ID exacto
+            // 🛑 EL FIX PARA MÓVILES: Liberar el hardware ANTES de pedir la nueva cámara
+            if (currentTrack) {
+                currentTrack.stop(); // Apagamos el sensor físicamente
+                this.localMediaStream.removeTrack(currentTrack);
+            }
+
+            // 3. Ahora sí, con el hardware libre, pedimos la nueva cámara
             const newStream = await navigator.mediaDevices.getUserMedia({ 
                 video: { deviceId: { exact: nextDevice.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } } 
             });
@@ -196,19 +201,15 @@ const ComunidadApp = {
             const newVideoTrack = newStream.getVideoTracks()[0];
             const videoEl = document.getElementById('golive-local-video');
             
-            // 5. Lógica inteligente para el Efecto Espejo (Mirror):
-            // Solo invertimos la imagen si el nombre dice "front/frontal" o si es la cámara por defecto (índice 0).
-            // Si conectas una capturadora HDMI, no se invertirá.
+            // 4. Lógica de Efecto Espejo
             const label = nextDevice.label.toLowerCase();
             const isFront = label.includes('front') || label.includes('user') || label.includes('frontal') || (nextIndex === 0 && !label.includes('back') && !label.includes('environment'));
             videoEl.style.transform = isFront ? "scaleX(-1)" : "scaleX(1)";
             
-            // 6. Actualizamos nuestra cámara local
-            currentTrack.stop(); // Apagamos la cámara vieja
-            this.localMediaStream.removeTrack(currentTrack);
+            // 5. Inyectamos el nuevo track a nuestro stream local
             this.localMediaStream.addTrack(newVideoTrack);
             
-            // 7. EL TRUCO DE MAGIA: Reemplazar el track en WebRTC sin cortar la llamada
+            // 6. Magia WebRTC: Reemplazamos la señal que va a Streamplace (Sin cortar el directo)
             if (this.peerConnection) {
                 const sender = this.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
                 if (sender) {
@@ -216,13 +217,15 @@ const ComunidadApp = {
                 }
             }
 
-            // 8. Sincronizamos el selector del menú de Setup (por si el usuario vuelve atrás)
+            // 7. Sincronizamos la UI
             const videoSelect = document.getElementById('golive-video-select');
             if (videoSelect) videoSelect.value = nextDevice.deviceId;
             
         } catch (err) {
             console.error("Error al cambiar de cámara:", err);
-            alert("No se pudo acceder a la otra cámara. Revisa los permisos.");
+            alert("No se pudo acceder a la cámara. El dispositivo puede estar bloqueado.");
+            // Recuperación de emergencia: reiniciamos el sensor para no quedarnos en negro
+            this.startCameraPreview();
         }
     },
 
@@ -1609,14 +1612,29 @@ const ComunidadApp = {
 
             if (liveError) throw liveError;
 
-            // 2. Consultar destacados (Ordenados por última actividad)
+            // 2. Consultar destacados (Traemos a los que tienen proyectos)
+            // Quitamos el .limit() aquí para poder contar los proyectos de todos y ordenarlos bien
             const { data: members, error: membersError } = await this.supabase
                 .from('profiles')
-                .select('id, display_name, avatar_url, username, projects!inner(id), updated_at')
-                .order('updated_at', { ascending: false }) /* <-- ESTO ORDENA POR ACTIVIDAD RECIENTE */
-                .limit(10);
+                .select('id, display_name, avatar_url, username, projects!inner(id), updated_at');
 
             if (membersError) throw membersError;
+
+            // --- NUEVA LÓGICA DE ORDENAMIENTO (Más proyectos primero) ---
+            members.sort((a, b) => {
+                const countA = a.projects ? a.projects.length : 0;
+                const countB = b.projects ? b.projects.length : 0;
+                
+                // 1º Prioridad: Quién tiene más proyectos
+                if (countB !== countA) {
+                    return countB - countA; 
+                }
+                // 2º Prioridad: Si tienen los mismos proyectos, gana el que tuvo actividad más reciente
+                return new Date(b.updated_at) - new Date(a.updated_at);
+            });
+
+            // Ahora sí, tomamos solo los 10 mejores para no saturar la pantalla
+            const topMembers = members.slice(0, 10);
 
             let html = '';
             const paintedLiveUsers = new Set(); // Para evitar duplicados
@@ -1624,7 +1642,6 @@ const ComunidadApp = {
             // 3. Pintar PRIMERO a los que están EN VIVO
             if (liveBroadcasts && liveBroadcasts.length > 0) {
                 liveBroadcasts.forEach(broadcast => {
-                    // Solo pintamos si no hemos pintado ya a este usuario
                     if (!paintedLiveUsers.has(broadcast.user_id)) {
                         paintedLiveUsers.add(broadcast.user_id);
                         const profile = broadcast.profiles;
@@ -1642,12 +1659,16 @@ const ComunidadApp = {
 
             // 4. Pintar a los investigadores normales
             const paintedNormalUsers = new Set();
-            members.forEach(member => {
-                // Filtramos a los que ya están arriba en vivo y a los duplicados por tener múltiples proyectos
+            topMembers.forEach(member => {
                 if (!paintedLiveUsers.has(member.id) && !paintedNormalUsers.has(member.id)) {
                     paintedNormalUsers.add(member.id);
+                    
+                    // --- CORRECCIÓN DEL ENLACE AL MODAL ---
+                    // Usamos username. Si por algún error no tiene username, usamos su ID como respaldo.
+                    const userParam = member.username ? `'${member.username}'` : `'${member.id}'`;
+                    
                     html += `
-                        <div class="story-item" onclick="window.location.href='/inv/profile.html?id=${member.id}'">
+                        <div class="story-item" onclick="ComunidadApp.openProfileModal(${userParam})">
                             <div class="story-avatar-container">
                                 <img src="${member.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="Avatar" class="story-avatar">
                             </div>
