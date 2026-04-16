@@ -2141,9 +2141,12 @@ const ComunidadApp = {
         const embedUrl = "https://stream.place/embed/epistecnologia.com";
         
         const chatInputHtml = this.user 
-            ? `<div class="chat-input-wrapper">
-                 <input type="text" id="golive-chat-input" placeholder="Escribe un mensaje..." autocomplete="off">
-                 <button id="btn-send-golive-chat"><i class="fa-solid fa-paper-plane"></i></button>
+            ? `<div style="display: flex; gap: 8px; align-items: center;">
+                 <button id="btn-react-viewer" class="btn-reaction" title="Reaccionar">❤️</button>
+                 <div class="chat-input-wrapper" style="flex-grow: 1;">
+                     <input type="text" id="golive-chat-input" placeholder="Escribe..." autocomplete="off">
+                     <button id="btn-send-golive-chat"><i class="fa-solid fa-paper-plane"></i></button>
+                 </div>
                </div>`
             : `<div class="chat-login-prompt">
                  <p>Inicia sesión para participar en el chat</p>
@@ -2213,9 +2216,55 @@ const ComunidadApp = {
         if (this.liveChatChannel) this.supabase.removeChannel(this.liveChatChannel);
 
         this.liveChatChannel = this.supabase.channel(`chat_${broadcastId}`)
+            // Escuchamos mensajes normales (Base de datos)
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'golive_chat', filter: `broadcast_id=eq.${broadcastId}` }, 
-            payload => { this.renderUnifiedChatMessage(payload.new, containerId); }
-            ).subscribe();
+            payload => { this.renderUnifiedChatMessage(payload.new, containerId); })
+            // NUEVO: Escuchamos reacciones en tiempo real (Broadcast)
+            .on('broadcast', { event: 'reaction' }, payload => {
+                this.animateReaction(payload.payload.emoji, containerId);
+            })
+            .subscribe();
+            
+        // NUEVO: Listeners para los botones de reacción
+        const btnReactViewer = document.getElementById('btn-react-viewer');
+        const btnReactStudio = document.getElementById('btn-react-studio');
+        if (btnReactViewer) btnReactViewer.onclick = () => this.sendReaction('❤️');
+        if (btnReactStudio) btnReactStudio.onclick = () => this.sendReaction('❤️');
+    },
+
+    async sendReaction(emoji) {
+        if (!this.liveChatChannel) return;
+        // Enviamos el emoji por el canal de WebSocket sin tocar la base de datos
+        this.liveChatChannel.send({
+            type: 'broadcast',
+            event: 'reaction',
+            payload: { emoji: emoji }
+        });
+        // Animamos localmente para nosotros mismos inmediatamente
+        const containerId = document.getElementById('golive-fullscreen-studio') && !document.getElementById('golive-fullscreen-studio').classList.contains('hidden') ? 'studio-chat-messages' : 'golive-chat-messages';
+        this.animateReaction(emoji, containerId);
+    },
+
+    animateReaction(emoji, containerId) {
+        // Buscamos el contenedor padre dependiendo si somos emisor o receptor
+        const targetLayer = containerId === 'studio-chat-messages' 
+            ? document.getElementById('studio-chat-overlay') 
+            : document.querySelector('.chat-overlay-layer');
+            
+        if (!targetLayer) return;
+
+        const reactionEl = document.createElement('div');
+        reactionEl.classList.add('floating-reaction');
+        reactionEl.innerText = emoji;
+
+        // Pequeña aleatoriedad horizontal para que no suban en línea recta perfecta
+        const randomOffset = Math.floor(Math.random() * 40) - 20; 
+        reactionEl.style.transform = `translateX(${randomOffset}px)`;
+
+        targetLayer.appendChild(reactionEl);
+
+        // Limpieza de memoria: Eliminamos el elemento cuando termina la animación (2 segundos)
+        setTimeout(() => { reactionEl.remove(); }, 2000);
     },
 
     renderUnifiedChatMessage(msg, containerId) {
