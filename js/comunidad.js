@@ -422,8 +422,8 @@ const ComunidadApp = {
             if (this.isCameraOff) {
                 const canvas = document.getElementById('golive-visualizer');
                 const canvasStream = canvas.captureStream(30);
-                this.peerConnection.addTrack(canvasStream.getVideoTracks()[0], this.localMediaStream); // Pista de Video (Canvas)
-                this.peerConnection.addTrack(this.localMediaStream.getAudioTracks()[0], this.localMediaStream); // Pista de Audio (Micrófono real)
+                this.peerConnection.addTrack(canvasStream.getVideoTracks()[0], this.localMediaStream); 
+                this.peerConnection.addTrack(this.localMediaStream.getAudioTracks()[0], this.localMediaStream); 
             } else {
                 // Si la cámara está encendida, enviamos cámara y micrófono normales
                 this.localMediaStream.getTracks().forEach(track => this.peerConnection.addTrack(track, this.localMediaStream));
@@ -448,10 +448,43 @@ const ComunidadApp = {
             document.getElementById('golive-live-ui').classList.remove('hidden');
             
             // Listeners de los controles Live
+            document.getElementById('btn-switch-lens').onclick = () => this.switchLens();
             document.getElementById('btn-toggle-camera').onclick = () => this.toggleCamera();
             document.getElementById('btn-toggle-mic').onclick = () => this.toggleMic();
             document.getElementById('btn-stop-broadcast').onclick = () => this.stopBroadcast();
+            
+            document.getElementById('btn-toggle-studio-chat').onclick = () => {
+                const chatOverlay = document.getElementById('studio-chat-overlay');
+                chatOverlay.classList.toggle('hidden');
+                this.wakeUpChatOverlay(); // Lo despertamos si lo abren
+            };
 
+            // FIX CRÍTICO: Buscar ID con reintentos para asegurar que el chat del emisor se conecte
+            let bData = null;
+            for(let i=0; i<4; i++) {
+                const { data } = await this.supabase.from('active_broadcasts')
+                    .select('id').eq('user_id', this.user.id).eq('status', 'live')
+                    .order('created_at', { ascending: false }).limit(1).single();
+                
+                if (data) { bData = data; break; }
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Esperar 1s si aún no está listo
+            }
+            
+            if (bData) {
+                this.currentBroadcastId = bData.id;
+                document.getElementById('studio-chat-overlay').classList.remove('hidden');
+                
+                // 1. Configuramos el Input del Emisor
+                this.setupRobustChatInput('studio-chat-input', 'btn-send-studio-chat');
+                
+                // 2. Iniciamos el Chat Unificado apuntando al contenedor del estudio
+                this.initUnifiedChat(bData.id, 'studio-chat-messages');
+
+                // 3. Activamos el desvanecimiento por inactividad
+                this.setupBroadcasterFadeOut();
+            } else {
+                console.error("No se pudo obtener el ID del directo para el chat.");
+            }
         } catch (err) {
             console.error("Error al transmitir:", err);
             btnReady.disabled = false;
@@ -468,11 +501,19 @@ const ComunidadApp = {
     async stopBroadcast() {
         if (!confirm("¿Seguro que deseas terminar la transmisión?")) return;
         
+        // 1. CERRAR CONEXIÓN FÍSICA (Importante para que se apague la luz de la cámara)
         if (this.peerConnection) {
             this.peerConnection.close();
             this.peerConnection = null;
         }
+
+        // 2. Limpiar el chat del estudio
+        if (this.studioChatChannel) {
+            this.supabase.removeChannel(this.studioChatChannel);
+            this.studioChatChannel = null;
+        }
         
+        // 3. Notificar a la DB
         await this.supabase.from('active_broadcasts')
             .update({ status: 'ended', ended_at: new Date().toISOString() })
             .eq('user_id', this.user.id).eq('status', 'live');
@@ -481,44 +522,33 @@ const ComunidadApp = {
         window.showToast("Transmisión finalizada.");
     },
 
-    // --- FIN MOTOR ---
+    // --- CHAT DEL BROADCASTER (ESTUDIO EXPRESS) ---
+    studioChatChannel: null,
 
-    // ==========================================
-    // REPRODUCTOR DEL ESPECTADOR (CONSUMO OFICIAL)
-    // ==========================================
-    openLiveViewer(playbackUrl, handle) {
-        const modalContainer = document.getElementById('modal-container');
-        if (!modalContainer) return;
-
-        // Usamos el embed oficial de tu canal maestro que descubriste
-        const embedUrl = "https://stream.place/embed/epistecnologia.com";
-
-        const modalHtml = `
-            <div class="modal-overlay is-visible" id="live-viewer-overlay" style="z-index: 9999; background: #000;">
-                <div style="position: absolute; top: 15px; left: 15px; z-index: 10; display: flex; align-items: center; gap: 10px; pointer-events: none;">
-                    <span style="background: #ef4444; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; animation: pulse-red 1.5s infinite;">EN VIVO</span>
-                    <span style="color: white; font-weight: bold; text-shadow: 1px 1px 3px rgba(0,0,0,0.8);">@${handle}</span>
-                </div>
-                <button class="modal-close-btn" id="close-viewer-btn" style="position: absolute; right: 15px; top: 15px; color: white; background: rgba(0,0,0,0.5); border: none; font-size: 1.5rem; width: 40px; height: 40px; border-radius: 50%; z-index: 20; cursor: pointer;">&times;</button>
-                
-                <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #000;">
-                    <iframe src="${embedUrl}" style="width: 100%; max-width: 1280px; aspect-ratio: 16/9; border: none;" allow="autoplay; fullscreen" allowfullscreen></iframe>
-                </div>
-            </div>
-        `;
+    // Función auxiliar para asegurar que el teclado móvil envíe el mensaje
+    setupChatListeners(inputId, buttonId) {
+        const input = document.getElementById(inputId);
+        const btn = document.getElementById(buttonId);
         
-        modalContainer.innerHTML = modalHtml;
-        document.getElementById('close-viewer-btn').addEventListener('click', () => this.closeLiveViewer());
+        const triggerSend = () => {
+            const val = input.value.trim();
+            if (val) {
+                this.sendLiveChatMessage(val);
+                input.value = '';
+                input.focus();
+            }
+        };
+
+        btn.onclick = (e) => { e.preventDefault(); triggerSend(); };
+        input.onkeydown = (e) => {
+            if (e.key === 'Enter' || e.keyCode === 13) {
+                e.preventDefault();
+                triggerSend();
+            }
+        };
     },
 
-    closeLiveViewer() {
-        const overlay = document.getElementById('live-viewer-overlay');
-        if (overlay) overlay.classList.remove('is-visible');
-        setTimeout(() => {
-            const modalContainer = document.getElementById('modal-container');
-            if (modalContainer) modalContainer.innerHTML = '';
-        }, 300);
-    },
+   
 
     // --- RENDERIZADO DE COMPONENTES DE LA UI ---
 
@@ -1646,9 +1676,9 @@ const ComunidadApp = {
                         paintedLiveUsers.add(broadcast.user_id);
                         const profile = broadcast.profiles;
                         html += `
-                            <div class="story-item is-live" onclick="ComunidadApp.openLiveViewer('${broadcast.playback_url}', '${profile.username || profile.display_name}')">
+                            <div class="story-item is-live" onclick="ComunidadApp.openLiveViewer('${broadcast.playback_url}', '${profile.username || profile.display_name}', '${broadcast.id}')">
                                 <div class="story-avatar-container" style="background: linear-gradient(45deg, #ef4444, #b72a1e); animation: pulse-border 2s infinite;">
-                                    <img src="${profile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png'}" alt="Avatar" class="story-avatar">
+                                    <img src="${profile.avatar_url || `https://api.dicebear.com/9.x/shapes/svg?seed=${broadcast.user_id}`}" alt="Avatar" class="story-avatar">
                                 </div>
                                 <span class="story-username" style="color: #ef4444; font-weight: bold;">🔴 EN VIVO</span>
                             </div>
@@ -2083,6 +2113,219 @@ const ComunidadApp = {
                 }
             };
         }
+    },
+
+    // ==========================================
+    // SISTEMA UNIFICADO DE CHAT (ESPECTADOR Y BROADCASTER)
+    // ==========================================
+    liveChatChannel: null,
+    currentBroadcastId: null,
+    chatFadeTimer: null,
+
+    openLiveViewer(playbackUrl, handle, broadcastId) {
+        this.currentBroadcastId = broadcastId;
+        const modalContainer = document.getElementById('modal-container');
+        if (!modalContainer) return;
+
+        const embedUrl = "https://stream.place/embed/epistecnologia.com";
+        
+        const chatInputHtml = this.user 
+            ? `<div class="chat-input-wrapper">
+                 <input type="text" id="golive-chat-input" placeholder="Escribe un mensaje..." autocomplete="off">
+                 <button id="btn-send-golive-chat"><i class="fa-solid fa-paper-plane"></i></button>
+               </div>`
+            : `<div class="chat-login-prompt">
+                 <p>Inicia sesión para participar en el chat</p>
+                 <a href="/?auth=open" class="btn-primary-sm" style="font-size: 0.8rem; padding: 6px 12px; display: inline-block; text-decoration: none;">Entrar</a>
+               </div>`;
+
+        const modalHtml = `
+            <div class="live-agora-fullscreen" id="live-viewer-overlay">
+                <button class="modal-close-btn" id="close-viewer-btn" style="position: absolute; right: 15px; top: 15px; color: white; background: rgba(0,0,0,0.5); border: none; font-size: 1.5rem; width: 40px; height: 40px; border-radius: 50%; z-index: 20; cursor: pointer;">&times;</button>
+                
+                <div class="video-background-layer">
+                    <iframe src="${embedUrl}" allow="autoplay; fullscreen" allowfullscreen></iframe>
+                    <div class="video-overlay-info">
+                        <span class="badge-live"><span class="dot"></span> EN VIVO</span>
+                        <span class="user-handle">@${handle}</span>
+                    </div>
+                </div>
+
+                <div class="chat-overlay-layer">
+                    <div id="golive-chat-messages" class="chat-scroll-area"></div>
+                    <div class="chat-controls-area">
+                        ${chatInputHtml}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        modalContainer.innerHTML = modalHtml;
+        document.getElementById('close-viewer-btn').onclick = () => this.closeLiveViewer();
+        
+        if (this.user) {
+            this.setupRobustChatInput('golive-chat-input', 'btn-send-golive-chat');
+        }
+
+        // Llamamos al motor unificado indicándole qué contenedor usar
+        this.initUnifiedChat(broadcastId, 'golive-chat-messages');
+    },
+
+    closeLiveViewer() {
+        if (this.liveChatChannel) {
+            this.supabase.removeChannel(this.liveChatChannel);
+            this.liveChatChannel = null;
+        }
+        const modalContainer = document.getElementById('modal-container');
+        if (modalContainer) modalContainer.innerHTML = '';
+    },
+
+    // ---------------------------------------------------------
+    // MOTOR DE CHAT UNIFICADO (Emisor y Receptor usan lo mismo)
+    // ---------------------------------------------------------
+    async initUnifiedChat(broadcastId, containerId) {
+        const msgContainer = document.getElementById(containerId);
+        if (!msgContainer) return;
+        msgContainer.innerHTML = '';
+
+        try {
+            const { data, error } = await this.supabase
+                .from('golive_chat')
+                .select('*').eq('broadcast_id', broadcastId).order('created_at', { ascending: true }).limit(50);
+
+            if (!error && data.length > 0) {
+                data.forEach(msg => this.renderUnifiedChatMessage(msg, containerId));
+            }
+            msgContainer.scrollTop = msgContainer.scrollHeight;
+        } catch (e) { console.error("Error cargando chat:", e); }
+
+        if (this.liveChatChannel) this.supabase.removeChannel(this.liveChatChannel);
+
+        this.liveChatChannel = this.supabase.channel(`chat_${broadcastId}`)
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'golive_chat', filter: `broadcast_id=eq.${broadcastId}` }, 
+            payload => { this.renderUnifiedChatMessage(payload.new, containerId); }
+            ).subscribe();
+    },
+
+    renderUnifiedChatMessage(msg, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const isMe = this.user && msg.user_id === this.user.id;
+        const avatar = msg.user_avatar || `https://api.dicebear.com/9.x/shapes/svg?seed=${msg.user_id}`;
+        
+        let displayName = msg.user_name;
+        let nameColor = '#ffffff';
+        if (isMe) {
+            displayName = 'Tú';
+            nameColor = '#38bdf8'; // Azul para destacar
+        }
+
+        // Diseño estructural idéntico para Emisor y Receptor
+        const msgHtml = `
+            <div class="golive-chat-msg-row">
+                <img src="${avatar}">
+                <div>
+                    <span class="golive-chat-msg-name" style="color: ${nameColor};">${displayName}</span>
+                    <p class="golive-chat-msg-text">${msg.message}</p>
+                </div>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', msgHtml);
+        container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+
+        // Si somos el Emisor y llega un mensaje nuevo, despertamos la pantalla
+        if (containerId === 'studio-chat-messages') {
+            this.wakeUpChatOverlay();
+        }
+    },
+
+    async sendLiveChatMessage(messageText) {
+        if (!this.user || !this.currentBroadcastId) {
+            console.error("No se puede enviar: Faltan datos (User o BroadcastID)");
+            return;
+        }
+
+        const userName = this.userProfile?.display_name || this.userProfile?.username || 'Investigador';
+        const userAvatar = this.userProfile?.avatar_url || `https://api.dicebear.com/9.x/shapes/svg?seed=${this.user.id}`;
+
+        try {
+            const { error } = await this.supabase.from('golive_chat').insert([{
+                broadcast_id: this.currentBroadcastId,
+                user_id: this.user.id,
+                user_name: userName,
+                user_avatar: userAvatar,
+                message: messageText
+            }]);
+            if (error) throw error;
+        } catch (e) { console.error("Error al enviar mensaje:", e); }
+    },
+
+    setupRobustChatInput(inputId, btnId) {
+        let input = document.getElementById(inputId);
+        let btn = document.getElementById(btnId);
+        if (!input || !btn) return;
+
+        const newInput = input.cloneNode(true);
+        const newBtn = btn.cloneNode(true);
+        input.parentNode.replaceChild(newInput, input);
+        btn.parentNode.replaceChild(newBtn, btn);
+
+        const triggerSend = () => {
+            const val = newInput.value.trim();
+            if (val !== '') {
+                newInput.value = ''; 
+                this.sendLiveChatMessage(val);
+                newInput.focus(); 
+            }
+        };
+
+        newBtn.addEventListener('click', (e) => { e.preventDefault(); triggerSend(); });
+        newInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.keyCode === 13) {
+                e.preventDefault();
+                triggerSend();
+            }
+        });
+    },
+
+    // ---------------------------------------------------------
+    // AUTO-FADE DE INACTIVIDAD (Para el Emisor)
+    // ---------------------------------------------------------
+    setupBroadcasterFadeOut() {
+        const studioArea = document.getElementById('golive-fullscreen-studio');
+        if (!studioArea) return;
+        
+        // Atrapa cualquier interacción en toda la pantalla
+        const wakeUpEvents = ['touchstart', 'mousemove', 'click', 'keydown'];
+        wakeUpEvents.forEach(evt => {
+            studioArea.addEventListener(evt, () => this.wakeUpChatOverlay());
+        });
+
+        this.wakeUpChatOverlay();
+    },
+
+    wakeUpChatOverlay() {
+        const overlay = document.getElementById('studio-chat-overlay');
+        const controls = document.querySelector('.studio-controls-ui');
+        
+        if (!overlay) return;
+
+        // Despertar: 100% de opacidad
+        overlay.style.opacity = '1';
+        if(controls) controls.style.opacity = '1';
+
+        if (this.chatFadeTimer) clearTimeout(this.chatFadeTimer);
+
+        // Dormir después de 5 segundos
+        this.chatFadeTimer = setTimeout(() => {
+            // Solo desvanece si el usuario NO está escribiendo (focus en el input)
+            const input = document.getElementById('studio-chat-input');
+            if (document.activeElement !== input) {
+                overlay.style.opacity = '0.2'; // 20% de opacidad solicitado
+                if(controls) controls.style.opacity = '0.4'; // Atenuamos sutilmente los botones también
+            }
+        }, 5000);
     },
 
 };

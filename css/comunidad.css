@@ -1137,3 +1137,111 @@ body.dark-theme {
 .btn-transmitir .inner-circle { width: 54px; height: 54px; background: #ef4444; border-radius: 12px; transition: 0.3s; transform: scale(0.6); }
 
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+/* ==========================================
+   SISTEMA DE CHAT GOLIVE (ESPECTADOR Y BROADCASTER)
+   Arquitectura Inmersiva y Transparente
+   ========================================== */
+
+/* 1. VISOR DEL ESPECTADOR (PANTALLA COMPLETA) */
+.live-agora-fullscreen {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh;
+    background: #000; z-index: 99999; display: flex; flex-direction: column;
+}
+
+.video-background-layer {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
+}
+
+.video-background-layer iframe {
+    width: 100%; height: 100%; border: none; pointer-events: auto;
+}
+
+.video-overlay-info {
+    position: absolute; top: 15px; left: 15px; z-index: 10; display: flex; align-items: center; gap: 10px; pointer-events: none;
+}
+
+.badge-live {
+    background: #ef4444; color: white; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 10px rgba(239, 68, 68, 0.4);
+}
+.badge-live .dot { width: 6px; height: 6px; background: white; border-radius: 50%; animation: blink 1s infinite; }
+.user-handle { color: white; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.9); }
+
+/* Capa del Chat Inferior Transparente */
+.chat-overlay-layer {
+    position: relative; z-index: 10; margin-top: auto; 
+    height: 45dvh; /* Toma el 45% inferior de la pantalla */
+    display: flex; flex-direction: column; justify-content: flex-end;
+    background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.5) 60%, transparent 100%);
+    pointer-events: none; /* Permite clics en el video */
+}
+
+.chat-scroll-area {
+    overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px;
+    pointer-events: auto; /* Reactiva interacción para scrollear */
+    mask-image: linear-gradient(to top, black 80%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to top, black 80%, transparent 100%);
+}
+.chat-scroll-area::-webkit-scrollbar { display: none; }
+
+.chat-controls-area {
+    padding: 15px; padding-bottom: max(15px, env(safe-area-inset-bottom));
+    pointer-events: auto; 
+}
+
+/* Input y Botones */
+.chat-input-wrapper {
+    display: flex; gap: 10px; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px);
+    padding: 6px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.2);
+}
+.chat-input-wrapper input {
+    flex-grow: 1; background: transparent; border: none; color: white; padding: 10px 15px; outline: none; font-size: 0.95rem;
+}
+.chat-input-wrapper input::placeholder { color: rgba(255,255,255,0.7); }
+.chat-input-wrapper button {
+    background: var(--color-accent); color: white; border: none; width: 42px; height: 42px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+
+.chat-login-prompt {
+    text-align: center; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px);
+    padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); pointer-events: auto;
+}
+.chat-login-prompt p { margin: 0 0 8px 0; color: white; font-size: 0.85rem; }
+
+/* Estilo de los Mensajes */
+.golive-chat-msg-row { display: flex; gap: 10px; animation: fadeIn 0.3s ease; }
+.golive-chat-msg-row img { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.1); }
+.golive-chat-msg-name { font-weight: 700; font-size: 0.85rem; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
+.golive-chat-msg-text { margin: 2px 0 0 0; font-size: 0.95rem; color: rgba(255,255,255,0.95); line-height: 1.3; word-break: break-word; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
+
+
+/* 2. CHAT DEL BROADCASTER (EL QUE EMITE) */
+#studio-chat-overlay {
+    position: absolute; bottom: 120px; left: 10px; right: 10px; height: 35dvh; 
+    display: flex; flex-direction: column; z-index: 15; pointer-events: auto;
+}
+#studio-chat-overlay.hidden { display: none !important; }
+#studio-chat-messages {
+    flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-bottom: 10px;
+    mask-image: linear-gradient(to top, black 70%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to top, black 70%, transparent 100%);
+}
+#studio-chat-messages::-webkit-scrollbar { display: none; }
+
+.studio-chat-msg { 
+    background: rgba(0,0,0,0.6); padding: 8px 14px; border-radius: 16px; width: fit-content; max-width: 85%; color: white; font-size: 0.9rem; backdrop-filter: blur(8px); animation: fadeIn 0.3s ease; border: 1px solid rgba(255,255,255,0.1);
+}
+.studio-chat-msg strong { color: #38bdf8; font-weight: 700; margin-right: 5px; } 
+
+.studio-chat-input-area { display: flex; gap: 8px; margin-top: 5px; }
+#studio-chat-input { 
+    flex-grow: 1; border-radius: 25px; padding: 12px 18px; border: 1px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.7); color: white; font-size: 0.95rem;
+}
+#btn-send-studio-chat { 
+    background: var(--color-accent); color: white; border: none; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+
+/* Animación de inactividad para el Estudio del Emisor */
+#studio-chat-overlay, .studio-controls-ui {
+    transition: opacity 0.5s ease;
+}
