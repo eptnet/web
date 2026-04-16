@@ -459,31 +459,42 @@ const ComunidadApp = {
                 this.wakeUpChatOverlay(); // Lo despertamos si lo abren
             };
 
-            // FIX CRÍTICO: Buscar ID con reintentos para asegurar que el chat del emisor se conecte
-            let bData = null;
-            for(let i=0; i<4; i++) {
-                const { data } = await this.supabase.from('active_broadcasts')
-                    .select('id').eq('user_id', this.user.id).eq('status', 'live')
-                    .order('created_at', { ascending: false }).limit(1).single();
-                
-                if (data) { bData = data; break; }
-                await new Promise(resolve => setTimeout(resolve, 1000)); // Esperar 1s si aún no está listo
+            // FIX CRÍTICO BLINDADO V2: Sin ordenar por created_at para evitar error 42703
+            let broadcastId = null;
+
+            // Plan A: A veces la Edge Function ya devuelve el ID directamente
+            if (data && (data.id || data.broadcast_id || data.broadcastId)) {
+                broadcastId = data.id || data.broadcast_id || data.broadcastId;
+            } 
+            // Plan B: Buscar en la base de datos sin ordenar por columnas inexistentes
+            else {
+                for(let i=0; i<4; i++) {
+                    const { data: dbData, error: dbError } = await this.supabase.from('active_broadcasts')
+                        .select('id')
+                        .eq('user_id', this.user.id)
+                        .eq('status', 'live')
+                        .limit(1); 
+                    
+                    if (dbData && dbData.length > 0) { 
+                        broadcastId = dbData[0].id; 
+                        break; 
+                    }
+                    if (dbError) console.error("Error buscando ID:", dbError);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
             }
             
-            if (bData) {
-                this.currentBroadcastId = bData.id;
+            // Si conseguimos el ID, encendemos el chat
+            if (broadcastId) {
+                this.currentBroadcastId = broadcastId;
                 document.getElementById('studio-chat-overlay').classList.remove('hidden');
                 
-                // 1. Configuramos el Input del Emisor
                 this.setupRobustChatInput('studio-chat-input', 'btn-send-studio-chat');
-                
-                // 2. Iniciamos el Chat Unificado apuntando al contenedor del estudio
-                this.initUnifiedChat(bData.id, 'studio-chat-messages');
-
-                // 3. Activamos el desvanecimiento por inactividad
+                this.initUnifiedChat(broadcastId, 'studio-chat-messages');
                 this.setupBroadcasterFadeOut();
             } else {
                 console.error("No se pudo obtener el ID del directo para el chat.");
+                window.showToast ? window.showToast("Directo en curso, pero el chat no conectó.") : alert("Fallo de conexión en el chat.");
             }
         } catch (err) {
             console.error("Error al transmitir:", err);
@@ -2290,19 +2301,27 @@ const ComunidadApp = {
     },
 
     // ---------------------------------------------------------
-    // AUTO-FADE DE INACTIVIDAD (Para el Emisor)
+    // AUTO-FADE DE INACTIVIDAD MEJORADO (Para el Emisor)
     // ---------------------------------------------------------
     setupBroadcasterFadeOut() {
         const studioArea = document.getElementById('golive-fullscreen-studio');
         if (!studioArea) return;
         
-        // Atrapa cualquier interacción en toda la pantalla
-        const wakeUpEvents = ['touchstart', 'mousemove', 'click', 'keydown'];
+        // Usamos 'pointer' events que agrupan touch, mouse y stylus de forma perfecta
+        const wakeUpEvents = ['pointerdown', 'pointermove', 'keydown'];
+        
+        // Limpiamos listeners previos de sesiones anteriores para evitar clones
+        if (this._wakeUpHandler) {
+            wakeUpEvents.forEach(evt => studioArea.removeEventListener(evt, this._wakeUpHandler));
+        }
+        
+        this._wakeUpHandler = () => this.wakeUpChatOverlay();
+        
         wakeUpEvents.forEach(evt => {
-            studioArea.addEventListener(evt, () => this.wakeUpChatOverlay());
+            studioArea.addEventListener(evt, this._wakeUpHandler, { passive: true });
         });
 
-        this.wakeUpChatOverlay();
+        this.wakeUpChatOverlay(); // Encendemos al arrancar
     },
 
     wakeUpChatOverlay() {
@@ -2311,20 +2330,23 @@ const ComunidadApp = {
         
         if (!overlay) return;
 
-        // Despertar: 100% de opacidad
+        // 1. Despertar instantáneamente
         overlay.style.opacity = '1';
-        if(controls) controls.style.opacity = '1';
+        if (controls) controls.style.opacity = '1';
 
+        // 2. Destruir cualquier temporizador previo
         if (this.chatFadeTimer) clearTimeout(this.chatFadeTimer);
 
-        // Dormir después de 5 segundos
+        // 3. Crear el nuevo temporizador de 5 segundos
         this.chatFadeTimer = setTimeout(() => {
-            // Solo desvanece si el usuario NO está escribiendo (focus en el input)
             const input = document.getElementById('studio-chat-input');
-            if (document.activeElement !== input) {
-                overlay.style.opacity = '0.2'; // 20% de opacidad solicitado
-                if(controls) controls.style.opacity = '0.4'; // Atenuamos sutilmente los botones también
-            }
+            
+            // Si el input tiene el foco (el teclado virtual está abierto), ABORTAR el desvanecimiento.
+            if (document.activeElement === input) return;
+            
+            // Si nadie está escribiendo, desvanecer
+            overlay.style.opacity = '0.2'; 
+            if (controls) controls.style.opacity = '0.4'; 
         }, 5000);
     },
 
