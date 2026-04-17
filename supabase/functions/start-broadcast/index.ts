@@ -44,9 +44,12 @@ serve(async (req) => {
 
     const channelDid = bskyCreds.did;
 
-    // 5. Armar las URLs (¡Estándar WHIP!)
-    // ¡ARMAMOS LA URL PERFECTA (Codificada para soportar DIDs)!
-    const ingestUrl = `https://stream.place/api/ingest/webrtc/${encodeURIComponent(streamKey)}`;
+    // 5. Armar las URLs (¡Estándar WHIP limpiando la llave!)
+    // Extraemos la llave criptográfica pura quitando el protocolo 'did:key:'
+    const cleanKey = streamKey.replace('did:key:', '');
+    
+    // Armamos la URL perfecta (Ya no necesitamos encodeURIComponent porque quitamos los dos puntos)
+    const ingestUrl = `https://stream.place/api/ingest/webrtc/${cleanKey}`;
     const playbackUrl = `https://stream.place/hls/${channelDid}/index.m3u8`;
 
     // 6. Limpiar directos "fantasma" previos

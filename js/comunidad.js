@@ -451,17 +451,23 @@ const ComunidadApp = {
             const offer = await this.peerConnection.createOffer();
             await this.peerConnection.setLocalDescription(offer);
 
-            // POST de WHIP (Aquí viaja la llave, esto ya lo tienes perfecto)
+            // 3. LA INYECCIÓN WHIP (Limpiando la llave para que sea base58btc puro)
+            const cleanKey = streamKey.replace('did:key:', '');
+
             const response = await fetch(whipUrl, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/sdp',
-                    'Authorization': `Bearer ${streamKey}`
+                    'Authorization': `Bearer ${cleanKey}` 
                 },
                 body: offer.sdp
             });
 
-            if (!response.ok) throw new Error("Fallo en servidor WHIP: " + response.statusText);
+            if (!response.ok) {
+                // Capturamos el texto real del error para no quedarnos a ciegas
+                const errorText = await response.text();
+                throw new Error(`Fallo en servidor WHIP: ${response.status} - ${errorText}`);
+            }
 
             const answerSdp = await response.text();
             await this.peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: answerSdp }));
