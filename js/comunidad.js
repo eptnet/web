@@ -422,7 +422,7 @@ const ComunidadApp = {
         
         try {
             // 2. EL NEGOCIADOR: Llamamos a la nueva Edge Function (Cambiamos 'start-broadcast' por 'streamplace-init')
-            const { data, error } = await this.supabase.functions.invoke('streamplace-init');
+            const { data, error } = await this.supabase.functions.invoke('start-broadcast');
             if (error) throw error;
 
             const whipUrl = data.ingestUrl;
