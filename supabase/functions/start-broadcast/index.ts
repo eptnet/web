@@ -36,8 +36,12 @@ serve(async (req) => {
     const channelDid = bskyCreds.did;
     const userJwt = bskyCreds.access_jwt;
 
-    // ¡ARMAMOS LA URL PERFECTA!
-    const ingestUrl = `https://stream.place/api/ingest/webrtc/${streamKey}`;
+// ¡ARMAMOS LA URL PERFECTA (Estándar WHIP)!
+    // La llave NO va en la ruta. El servidor la leerá del Header 'Bearer' que envía tu frontend.
+    const ingestUrl = `https://stream.place/api/whip`; 
+    
+    // NOTA: Si Streamplace rechaza esta, su servidor base es Livepeer, así que la ruta de contingencia pura sería:
+    // const ingestUrl = `https://livepeer.studio/webrtc`;
     const playbackUrl = `https://stream.place/hls/${channelDid}/index.m3u8`;
 
     await supabase.from('active_broadcasts').update({ status: 'ended' }).eq('user_id', user.id).eq('status', 'live');

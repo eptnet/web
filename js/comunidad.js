@@ -408,74 +408,68 @@ const ComunidadApp = {
 
     // --- CONEXIÓN AL SERVIDOR (FASE 2: AT PROTOCOL) ---
     async startBroadcastToStreamplace() {
-        // 1. EL GUARDIÁN: Validar Identidad Descentralizada
-        if (!this.bskyCreds || !this.bskyCreds.did) {
-            alert("⚠️ Debes conectar tu identidad digital (Bluesky) para poder transmitir en tu propio canal.");
-            this.closeGoLiveModal(); // Cerramos la cámara para no gastar batería
-            this.openBskyConnectModal(); // Levantamos tu modal real
-            return;
-        }
-
-        // 1.5 EL GUARDIÁN 2: Validar Stream Key
-        if (!this.bskyCreds.stream_key) {
-            this.closeGoLiveModal();
-            this.openStreamKeyModal();
-            return;
-        }
-
         const btnReady = document.getElementById('btn-ready-to-live');
-        btnReady.disabled = true;
-        btnReady.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Conectando...';
+        if (btnReady) {
+            btnReady.disabled = true;
+            btnReady.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Conectando...';
+        }
         
         try {
-            // 2. EL NEGOCIADOR: Llamamos a la nueva Edge Function
-            const { data, error } = await this.supabase.functions.invoke('start-broadcast', {
-                body: { streamKey: this.bskyCreds.stream_key }
-            });
-            if (error) throw error;
+            // Protección por si bskyCreds es null (Usuario recién registrado)
+            if (!this.bskyCreds) this.bskyCreds = {};
+            
+            const streamKey = this.bskyCreds.stream_key;
+            if (!streamKey) {
+                if (btnReady) {
+                    btnReady.disabled = false;
+                    btnReady.innerHTML = '<i class="fa-solid fa-bolt"></i> Iniciar Transmisión';
+                }
+                this.openStreamKeyModal();
+                return;
+            }
 
-            // EL DETECTIVE: Imprimimos todo lo que Streamplace nos respondió
-            console.log("🔥 DATOS SECRETOS DE STREAMPLACE:", data.lexiconPayload);
+            const { data, error } = await this.supabase.functions.invoke('start-broadcast', {
+                body: { streamKey: streamKey }
+            });
+
+            if (error) throw error;
+            if (!data || !data.ingestUrl) throw new Error("La Edge Function no devolvió una URL válida.");
 
             const whipUrl = data.ingestUrl;
             
             this.peerConnection = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
             
-            // Si la cámara está apagada, enviamos el Canvas como video principal
             if (this.isCameraOff) {
                 const canvas = document.getElementById('golive-visualizer');
                 const canvasStream = canvas.captureStream(30);
                 this.peerConnection.addTrack(canvasStream.getVideoTracks()[0], this.localMediaStream); 
                 this.peerConnection.addTrack(this.localMediaStream.getAudioTracks()[0], this.localMediaStream); 
             } else {
-                // Si la cámara está encendida, enviamos cámara y micrófono normales
                 this.localMediaStream.getTracks().forEach(track => this.peerConnection.addTrack(track, this.localMediaStream));
             }
 
             const offer = await this.peerConnection.createOffer();
             await this.peerConnection.setLocalDescription(offer);
 
-            // 3. LA INYECCIÓN WHIP
-            // 3. LA INYECCIÓN WHIP (Ahora usando el Stream Key como pasaporte)
+            // POST de WHIP (Aquí viaja la llave, esto ya lo tienes perfecto)
             const response = await fetch(whipUrl, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/sdp',
-                    'Authorization': `Bearer ${this.bskyCreds.stream_key}` // <--- EL FIX ESTÁ AQUÍ
+                    'Authorization': `Bearer ${streamKey}`
                 },
                 body: offer.sdp
             });
 
-            if (!response.ok) throw new Error("Fallo en servidor WHIP");
+            if (!response.ok) throw new Error("Fallo en servidor WHIP: " + response.statusText);
 
             const answerSdp = await response.text();
             await this.peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: answerSdp }));
 
-            // TRANSICIÓN DE FASE: Ocultar Setup, Mostrar Live UI
+            // TRANSICIÓN DE FASE
             document.getElementById('golive-setup-panel').classList.add('hidden');
             document.getElementById('golive-live-ui').classList.remove('hidden');
             
-            // Listeners de los controles Live
             document.getElementById('btn-switch-lens').onclick = () => this.switchLens();
             document.getElementById('btn-toggle-camera').onclick = () => this.toggleCamera();
             document.getElementById('btn-toggle-mic').onclick = () => this.toggleMic();
@@ -484,22 +478,17 @@ const ComunidadApp = {
             document.getElementById('btn-toggle-studio-chat').onclick = () => {
                 const chatOverlay = document.getElementById('studio-chat-overlay');
                 chatOverlay.classList.toggle('hidden');
-                this.wakeUpChatOverlay(); // Lo despertamos si lo abren
+                this.wakeUpChatOverlay();
             };
 
-            // FIX CRÍTICO BLINDADO V2: Buscamos el ID del Broadcast
+            // FIX CRÍTICO BLINDADO V2
             let broadcastId = null;
-
             if (data && (data.id || data.broadcast_id || data.broadcastId)) {
                 broadcastId = data.id || data.broadcast_id || data.broadcastId;
-            } 
-            else {
+            } else {
                 for(let i=0; i<4; i++) {
                     const { data: dbData, error: dbError } = await this.supabase.from('active_broadcasts')
-                        .select('id')
-                        .eq('user_id', this.user.id)
-                        .eq('status', 'live')
-                        .limit(1); 
+                        .select('id').eq('user_id', this.user.id).eq('status', 'live').limit(1); 
                     
                     if (dbData && dbData.length > 0) { 
                         broadcastId = dbData[0].id; 
@@ -510,33 +499,32 @@ const ComunidadApp = {
                 }
             }
             
-            // Si conseguimos el ID, encendemos el chat
             if (broadcastId) {
                 this.currentBroadcastId = broadcastId;
                 document.getElementById('studio-chat-overlay').classList.remove('hidden');
-                
                 this.setupRobustChatInput('studio-chat-input', 'btn-send-studio-chat');
                 this.initUnifiedChat(broadcastId, 'studio-chat-messages');
                 this.setupBroadcasterFadeOut();
             } else {
-                console.error("No se pudo obtener el ID del directo para el chat.");
-                window.showToast ? window.showToast("Directo en curso, pero el chat no conectó.") : alert("Fallo de conexión en el chat.");
+                console.error("No se pudo obtener el ID del directo.");
             }
         } catch (err) {
             console.error("Error al transmitir:", err);
-            btnReady.disabled = false;
-            btnReady.innerHTML = '<i class="fa-solid fa-bolt"></i> Reintentar Transmisión';
-            
-            // EL FIX: Destruir la conexión fallida para que el estudio te deje salir
-            if (this.peerConnection) {
-                this.peerConnection.close();
-                this.peerConnection = null;
+            const btnReady = document.getElementById('btn-ready-to-live');
+            if (btnReady) {
+                btnReady.disabled = false;
+                btnReady.innerHTML = '<i class="fa-solid fa-bolt"></i> Reintentar Transmisión';
             }
             
             if (this.supabase && this.user) {
-                await this.supabase.from('active_broadcasts')
-                    .update({ status: 'ended', ended_at: new Date().toISOString() })
-                    .eq('user_id', this.user.id).eq('status', 'live');
+                try {
+                    // ELIMINADO EL 'ended_at' PARA EVITAR QUE SE CONGELE LA APP
+                    await this.supabase.from('active_broadcasts')
+                        .update({ status: 'ended' }) 
+                        .eq('user_id', this.user.id).eq('status', 'live');
+                } catch(e) {
+                    console.error("Error al limpiar estado live:", e);
+                }
             }
         }
     },
@@ -544,25 +532,24 @@ const ComunidadApp = {
     async stopBroadcast() {
         if (!confirm("¿Seguro que deseas terminar la transmisión?")) return;
         
-        // 1. CERRAR CONEXIÓN FÍSICA (Importante para que se apague la luz de la cámara)
         if (this.peerConnection) {
             this.peerConnection.close();
             this.peerConnection = null;
         }
 
-        // 2. Limpiar el chat del estudio
         if (this.studioChatChannel) {
             this.supabase.removeChannel(this.studioChatChannel);
             this.studioChatChannel = null;
         }
         
-        // 3. Notificar a la DB
-        await this.supabase.from('active_broadcasts')
-            .update({ status: 'ended', ended_at: new Date().toISOString() })
-            .eq('user_id', this.user.id).eq('status', 'live');
+        try {
+            await this.supabase.from('active_broadcasts')
+                .update({ status: 'ended' }) // ¡SIN ended_at!
+                .eq('user_id', this.user.id).eq('status', 'live');
+        } catch(e) { console.error(e); }
 
         this.closeGoLiveModal();
-        window.showToast("Transmisión finalizada.");
+        if (window.showToast) window.showToast("Transmisión finalizada.");
     },
 
     // --- CHAT DEL BROADCASTER (ESTUDIO EXPRESS) ---
@@ -2518,9 +2505,10 @@ const ComunidadApp = {
                 return;
             }
 
+            if (!this.bskyCreds) this.bskyCreds = {}; // <-- Asegura que el objeto exista
             this.bskyCreds.stream_key = keyInput;
             modalContainer.innerHTML = ''; // Cierra el modal
-            this.startBroadcastToStreamplace(); // Reanuda la transmisión automáticamente
+            this.startBroadcastToStreamplace(); // Reanuda
         });
     },
 
