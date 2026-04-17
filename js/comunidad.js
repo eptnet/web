@@ -416,6 +416,13 @@ const ComunidadApp = {
             return;
         }
 
+        // 1.5 EL GUARDIÁN 2: Validar Stream Key
+        if (!this.bskyCreds.stream_key) {
+            this.closeGoLiveModal();
+            this.openStreamKeyModal();
+            return;
+        }
+
         const btnReady = document.getElementById('btn-ready-to-live');
         btnReady.disabled = true;
         btnReady.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Conectando...';
@@ -2473,6 +2480,45 @@ const ComunidadApp = {
                 alert("❌ Hubo un problema al guardar tu cuenta de Bluesky. Intenta de nuevo.");
             }
         }
+    },
+
+    openStreamKeyModal() {
+        const template = document.getElementById('streamkey-connect-template');
+        if (!template) return;
+        const modalContainer = document.getElementById('modal-container') || document.createElement('div');
+        if (!document.getElementById('modal-container')) {
+            modalContainer.id = 'modal-container';
+            document.body.appendChild(modalContainer);
+        }
+        modalContainer.innerHTML = `<div class="modal-overlay is-visible"><div class="modal-content"><button class="modal-close-btn">&times;</button></div></div>`;
+        const modalContent = modalContainer.querySelector('.modal-content');
+        modalContent.appendChild(template.content.cloneNode(true));
+        modalContainer.querySelector('.modal-close-btn').addEventListener('click', () => {
+            modalContainer.innerHTML = '';
+        });
+        
+        const saveBtn = modalContainer.querySelector('#save-streamkey-btn');
+        saveBtn.addEventListener('click', async () => {
+            const keyInput = modalContainer.querySelector('#streamkey-input').value.trim();
+            if(!keyInput.startsWith('did:key:')) return alert("La llave debe empezar con did:key:");
+            
+            saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+            saveBtn.disabled = true;
+
+            const { error } = await this.supabase.from('bsky_credentials')
+                .update({ stream_key: keyInput }).eq('user_id', this.user.id);
+            
+            if (error) {
+                alert("Error al guardar la llave.");
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = 'Guardar y Transmitir';
+                return;
+            }
+
+            this.bskyCreds.stream_key = keyInput;
+            modalContainer.innerHTML = ''; // Cierra el modal
+            this.startBroadcastToStreamplace(); // Reanuda la transmisión automáticamente
+        });
     },
 
 };
