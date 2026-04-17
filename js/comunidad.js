@@ -514,6 +514,12 @@ const ComunidadApp = {
             btnReady.disabled = false;
             btnReady.innerHTML = '<i class="fa-solid fa-bolt"></i> Reintentar Transmisión';
             
+            // EL FIX: Destruir la conexión fallida para que el estudio te deje salir
+            if (this.peerConnection) {
+                this.peerConnection.close();
+                this.peerConnection = null;
+            }
+            
             if (this.supabase && this.user) {
                 await this.supabase.from('active_broadcasts')
                     .update({ status: 'ended', ended_at: new Date().toISOString() })
@@ -1512,7 +1518,12 @@ const ComunidadApp = {
         modalContent.appendChild(template.content.cloneNode(true));
 
         modalContainer.querySelector('.modal-close-btn').addEventListener('click', () => this.closeBskyConnectModal());
-        modalContainer.querySelector('#bsky-connect-form').addEventListener('submit', (e) => this.handleBlueskyConnect(e));
+        
+        // EL FIX: Escuchar al nuevo botón OAuth en lugar del formulario viejo
+        const oauthBtn = modalContainer.querySelector('#bsky-oauth-start-btn');
+        if (oauthBtn) {
+            oauthBtn.addEventListener('click', () => this.handleBlueskyOAuthStart());
+        }
     },
 
     closeBskyConnectModal() {
