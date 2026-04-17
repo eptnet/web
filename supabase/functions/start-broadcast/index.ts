@@ -37,7 +37,7 @@ serve(async (req) => {
     const userJwt = bskyCreds.access_jwt;
 
     // ¡ARMAMOS LA URL PERFECTA!
-    const ingestUrl = `https://stream.place/whip/${streamKey}`;
+    const ingestUrl = "https://stream.place/whip";
     const playbackUrl = `https://stream.place/hls/${channelDid}/index.m3u8`;
 
     await supabase.from('active_broadcasts').update({ status: 'ended' }).eq('user_id', user.id).eq('status', 'live');

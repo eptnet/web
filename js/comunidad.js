@@ -456,11 +456,12 @@ const ComunidadApp = {
             await this.peerConnection.setLocalDescription(offer);
 
             // 3. LA INYECCIÓN WHIP
+            // 3. LA INYECCIÓN WHIP (Ahora usando el Stream Key como pasaporte)
             const response = await fetch(whipUrl, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/sdp',
-                    'Authorization': `Bearer ${data.streamToken}` // <--- NUEVO: Pasaporte Web3
+                    'Authorization': `Bearer ${this.bskyCreds.stream_key}` // <--- EL FIX ESTÁ AQUÍ
                 },
                 body: offer.sdp
             });
