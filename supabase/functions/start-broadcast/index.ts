@@ -86,7 +86,8 @@ serve(async (req) => {
       ingestUrl: ingestUrl,
       playbackUrl: playbackUrl,
       broadcast_id: broadcastData.id,
-      streamToken: userJwt
+      streamToken: userJwt,
+      lexiconPayload: lexData // <--- NUEVO: Sacamos a la luz los datos secretos
     }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       status: 200,

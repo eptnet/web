@@ -421,9 +421,12 @@ const ComunidadApp = {
         btnReady.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Conectando...';
         
         try {
-            // 2. EL NEGOCIADOR: Llamamos a la nueva Edge Function (Cambiamos 'start-broadcast' por 'streamplace-init')
+            // 2. EL NEGOCIADOR: Llamamos a la nueva Edge Function
             const { data, error } = await this.supabase.functions.invoke('start-broadcast');
             if (error) throw error;
+
+            // EL DETECTIVE: Imprimimos todo lo que Streamplace nos respondió
+            console.log("🔥 DATOS SECRETOS DE STREAMPLACE:", data.lexiconPayload);
 
             const whipUrl = data.ingestUrl;
             
