@@ -51,16 +51,20 @@ serve(async (req) => {
 
     const lexData = await lexResponse.json();
     
-    // Tratamos de extraer la URL WHIP de la respuesta Lexicon
-    if (lexData.urls && lexData.urls.length > 0) {
-        ingestUrl = lexData.urls[0];
-    } else if (lexData.whip) {
-        ingestUrl = lexData.whip;
-    } else if (lexData.ingestUrl) {
-        ingestUrl = lexData.ingestUrl;
+    // Tratamos de extraer la URL WHIP del array oficial de Streamplace
+    if (lexData.ingests && Array.isArray(lexData.ingests)) {
+        const whipEndpoint = lexData.ingests.find((i: any) => i.type === 'whip');
+        if (whipEndpoint && whipEndpoint.url) {
+            ingestUrl = whipEndpoint.url;
+            
+            // Fix Inteligente: Si Streamplace devuelve solo el dominio root, apuntamos al enrutador WHIP estándar
+            if (ingestUrl === "https://stream.place" || ingestUrl === "https://stream.place/") {
+                ingestUrl = "https://stream.place/whip";
+            }
+        }
     } else {
-        // Fallback seguro a la ruta WHIP que usa Streamplace internamente
-        ingestUrl = `https://stream.place/api/ingest/webrtc/${channelDid}`;
+        // Fallback de emergencia si la API cambia su estructura en el futuro
+        ingestUrl = `https://stream.place/whip`;
     }
 
     // 2. Limpieza de base de datos
