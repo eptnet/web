@@ -429,7 +429,9 @@ const ComunidadApp = {
         
         try {
             // 2. EL NEGOCIADOR: Llamamos a la nueva Edge Function
-            const { data, error } = await this.supabase.functions.invoke('start-broadcast');
+            const { data, error } = await this.supabase.functions.invoke('start-broadcast', {
+                body: { streamKey: this.bskyCreds.stream_key }
+            });
             if (error) throw error;
 
             // EL DETECTIVE: Imprimimos todo lo que Streamplace nos respondió
