@@ -45,7 +45,8 @@ serve(async (req) => {
     const channelDid = bskyCreds.did;
 
     // 5. Armar las URLs (¡Estándar WHIP!)
-    const ingestUrl = `https://stream.place/api/whip`;
+    // ¡ARMAMOS LA URL PERFECTA (Codificada para soportar DIDs)!
+    const ingestUrl = `https://stream.place/api/ingest/webrtc/${encodeURIComponent(streamKey)}`;
     const playbackUrl = `https://stream.place/hls/${channelDid}/index.m3u8`;
 
     // 6. Limpiar directos "fantasma" previos
