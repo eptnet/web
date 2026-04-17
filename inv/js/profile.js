@@ -154,8 +154,17 @@ const ProfileApp = {
             const profile = preloadedProfile || (await this.supabase.from('profiles').select('*').eq('id', profileId).single()).data;
             if (!profile) throw new Error('Perfil no encontrado.');
 
-            const { data: bskyCreds } = await this.supabase.from('bsky_credentials').select('handle').eq('user_id', profile.id).maybeSingle();
+            // Buscamos las credenciales para este perfil específico
+            const { data: bskyCreds, error: bskyError } = await this.supabase
+                .from('bsky_credentials')
+                .select('handle, did')
+                .eq('user_id', profile.id)
+                .maybeSingle();
+
             this.bskyCreds = bskyCreds;
+
+            // Verificación binaria: Si hay handle y DID, el investigador está verificado
+            const hasBsky = !!(this.bskyCreds && this.bskyCreds.did);
 
             this.checkOnboarding(profile, this.bskyCreds);
 
@@ -169,7 +178,6 @@ const ProfileApp = {
 
             // --- LÓGICA DE GAMIFICACIÓN E INSIGNIAS ---
             const hasOrcid = profile.orcid && profile.orcid !== '0000';
-            const hasBsky = !!this.bskyCreds;
 
             // 1. Encendemos las insignias correspondientes
             const badgeCitizen = document.getElementById('badge-citizen');
@@ -472,7 +480,7 @@ const ProfileApp = {
             buttonsHTML += `<a href="/inv/directorio.html" class="profile-card-nav__link"><i class="fa-solid fa-users"></i> Directorio</a>`;
         }
         if (isMyOwnProfile) {
-            buttonsHTML += `<a href="/inv/comunidad.html" class="profile-card-nav__link"><i class="fa-solid fa-comments"></i> Ir a la Comunidad</a>`;
+            buttonsHTML += `<a href="/comunidad.html" class="profile-card-nav__link"><i class="fa-solid fa-comments"></i> Ir a la Comunidad</a>`;
         }
         buttonsHTML += `<a href="/inv/dashboard.html" class="profile-card-nav__link"><i class="fa-solid fa-arrow-right"></i> Ir al Dashboard</a>`;
 
