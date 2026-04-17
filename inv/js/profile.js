@@ -154,7 +154,7 @@ const ProfileApp = {
             const profile = preloadedProfile || (await this.supabase.from('profiles').select('*').eq('id', profileId).single()).data;
             if (!profile) throw new Error('Perfil no encontrado.');
 
-            const { data: bskyCreds } = await this.supabase.from('bsky_credentials').select('handle').eq('user_id', profile.id).single();
+            const { data: bskyCreds } = await this.supabase.from('bsky_credentials').select('handle').eq('user_id', profile.id).maybeSingle();
             this.bskyCreds = bskyCreds;
 
             this.checkOnboarding(profile, this.bskyCreds);
