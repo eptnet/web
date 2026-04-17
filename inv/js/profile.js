@@ -10,15 +10,17 @@ const ProfileApp = {
     bskyCreds: null,
 
     async init() {
-        // --- CORRECCIÓN: Unifica el cliente de Supabase ---
         this.supabase = window.supabaseClient || window.supabase.createClient(
             'https://seyknzlheaxmwztkfxmk.supabase.co',
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E'
         );
 
         await this.handleUserSession();
-        // --- FUNCIÓN RESTAURADA ---
         this.checkForOrcidCode();
+        
+        // --- NUEVA LÍNEA: Revisamos si venimos regresando de Bluesky ---
+        this.checkForBlueskyCallback(); 
+        
         this.applyTheme();
     },
 
@@ -807,7 +809,12 @@ const ProfileApp = {
         modalContent.appendChild(template.content.cloneNode(true));
         
         modalContainer.querySelector('.modal-close-btn').addEventListener('click', () => this.closeCommunityModal());
-        modalContainer.querySelector('#bsky-connect-form').addEventListener('submit', (e) => this.handleBlueskyConnect(e));
+        
+        // --- CAMBIO AQUÍ: Escuchamos el botón de OAuth en lugar del formulario viejo ---
+        const oauthBtn = modalContainer.querySelector('#bsky-oauth-start-btn');
+        if (oauthBtn) {
+            oauthBtn.addEventListener('click', () => this.handleBlueskyOAuthStart());
+        }
     },
 
     closeCommunityModal() {
@@ -819,6 +826,41 @@ const ProfileApp = {
             modal.addEventListener('animationend', () => {
                 modalContainer.innerHTML = '';
             }, { once: true });
+        }
+    },
+
+    async handleBlueskyOAuthStart() {
+        const oauthBtn = document.getElementById('bsky-oauth-start-btn');
+        if (oauthBtn) {
+            oauthBtn.disabled = true;
+            oauthBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Iniciando...';
+        }
+
+        try {
+            // Llamamos a la Edge Function que genera la URL de autorización
+            // Le enviamos la URL actual como "redirect_uri" para que sepa a dónde volver
+            const redirectUri = window.location.origin + window.location.pathname;
+            
+            const { data, error } = await this.supabase.functions.invoke('bsky-oauth-init', {
+                body: { redirect_uri: redirectUri }
+            });
+
+            if (error) throw error;
+
+            // ¡Salto al hiperespacio! Redirigimos al usuario a la página de Bluesky
+            if (data?.auth_url) {
+                window.location.href = data.auth_url;
+            } else {
+                throw new Error("No se recibió la URL de autorización.");
+            }
+
+        } catch (error) {
+            console.error("Error al iniciar OAuth con Bluesky:", error);
+            alert("❌ No pudimos conectar con Bluesky en este momento. Inténtalo de nuevo más tarde.");
+            if (oauthBtn) {
+                oauthBtn.disabled = false;
+                oauthBtn.innerHTML = '<i class="fa-brands fa-bluesky"></i> Autorizar con Bluesky';
+            }
         }
     },
     
@@ -1117,7 +1159,41 @@ const ProfileApp = {
                     }).join('');
                 } else { eventList.innerHTML = '<li style="text-align: center; color: #888; padding: 20px;">Sin eventos.</li>'; }
             } catch (error) { console.error("Error:", error); }
+        },
+
+    async checkForBlueskyCallback() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const state = urlParams.get('state'); // Bluesky envía este 'state' por seguridad
+
+        if (code && state) {
+            // Limpiamos la URL de inmediato para que el usuario no vea códigos raros
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            if (window.showToast) window.showToast("⏳ Finalizando conexión con Bluesky...");
+
+            try {
+                // Enviamos el código a la Edge Function para intercambiarlo por tokens y el DID
+                const { data, error } = await this.supabase.functions.invoke('bsky-oauth-callback', {
+                    body: { 
+                        code: code, 
+                        state: state,
+                        redirect_uri: window.location.origin + window.location.pathname 
+                    }
+                });
+
+                if (error) throw error;
+
+                // ÉXITO TOTAL
+                alert(`✅ ¡Cuenta de Bluesky conectada! Bienvenido, @${data.handle}`);
+                location.reload(); // Recargamos para que se activen las insignias y el Live
+
+            } catch (error) {
+                console.error("Error en el callback de Bluesky:", error);
+                alert("❌ Hubo un problema al validar tu cuenta de Bluesky. Por favor, intenta de nuevo.");
+            }
         }
+    },
 };
 
 // --- LÓGICA DE BANNER ---

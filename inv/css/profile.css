@@ -1266,3 +1266,24 @@ body:not(.dark-theme) .supporter-logos img {
 .pm-detail { background: var(--color-background); padding: 15px; border-radius: 12px; margin-top: -5px; border: 1px solid var(--color-border); border-top: none; }
 .qr-small { width: 120px; display: block; margin: 0 auto 10px; }
 .modal-footer-msg { font-size: 0.8rem; color: var(--color-secondary); text-align: center; margin-bottom: 15px; }
+
+/* --- ESTILOS PARA EL BOTÓN OAUTH DE BLUESKY --- */
+.btn-bsky-oauth {
+    box-shadow: 0 4px 15px rgba(0, 133, 255, 0.3);
+}
+
+.btn-bsky-oauth:hover {
+    background-color: #0070d6 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 133, 255, 0.4);
+}
+
+.btn-bsky-oauth:active {
+    transform: scale(0.98);
+}
+
+/* Ajuste del modal para el nuevo contenido */
+#modal-container .modal-content {
+    max-width: 450px;
+    border-radius: 24px;
+}
