@@ -12,10 +12,12 @@ const ComunidadApp = {
 
     // --- INICIALIZACIÓN DE LA APLICACIÓN ---
     async init() {
-        // Heredamos la conexión global creada por main.js
         this.supabase = window.supabaseClient;
-
         await this.handleUserSession();
+        
+        // Atrapamos la redirección si el usuario se autenticó desde la página de comunidad
+        this.checkForBlueskyCallback(); 
+        
         this.subscribeToLiveBroadcasts();
         this.addEventListeners();
     },
@@ -404,14 +406,23 @@ const ComunidadApp = {
         else { avatarImg.onload = draw; }
     },
 
-    // --- CONEXIÓN AL SERVIDOR ---
+    // --- CONEXIÓN AL SERVIDOR (FASE 2: AT PROTOCOL) ---
     async startBroadcastToStreamplace() {
+        // 1. EL GUARDIÁN: Validar Identidad Descentralizada
+        if (!this.bskyCreds || !this.bskyCreds.did) {
+            alert("⚠️ Debes conectar tu identidad digital (Bluesky) para poder transmitir en tu propio canal.");
+            this.closeGoLiveModal(); // Cerramos la cámara para no gastar batería
+            this.openBskyConnectModal(); // Levantamos tu modal real
+            return;
+        }
+
         const btnReady = document.getElementById('btn-ready-to-live');
         btnReady.disabled = true;
         btnReady.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Conectando...';
         
         try {
-            const { data, error } = await this.supabase.functions.invoke('start-broadcast');
+            // 2. EL NEGOCIADOR: Llamamos a la nueva Edge Function (Cambiamos 'start-broadcast' por 'streamplace-init')
+            const { data, error } = await this.supabase.functions.invoke('streamplace-init');
             if (error) throw error;
 
             const whipUrl = data.ingestUrl;
@@ -432,13 +443,14 @@ const ComunidadApp = {
             const offer = await this.peerConnection.createOffer();
             await this.peerConnection.setLocalDescription(offer);
 
+            // 3. LA INYECCIÓN WHIP
             const response = await fetch(whipUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/sdp' },
                 body: offer.sdp
             });
 
-            if (!response.ok) throw new Error("Fallo en servidor");
+            if (!response.ok) throw new Error("Fallo en servidor WHIP");
 
             const answerSdp = await response.text();
             await this.peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: answerSdp }));
@@ -459,14 +471,12 @@ const ComunidadApp = {
                 this.wakeUpChatOverlay(); // Lo despertamos si lo abren
             };
 
-            // FIX CRÍTICO BLINDADO V2: Sin ordenar por created_at para evitar error 42703
+            // FIX CRÍTICO BLINDADO V2: Buscamos el ID del Broadcast
             let broadcastId = null;
 
-            // Plan A: A veces la Edge Function ya devuelve el ID directamente
             if (data && (data.id || data.broadcast_id || data.broadcastId)) {
                 broadcastId = data.id || data.broadcast_id || data.broadcastId;
             } 
-            // Plan B: Buscar en la base de datos sin ordenar por columnas inexistentes
             else {
                 for(let i=0; i<4; i++) {
                     const { data: dbData, error: dbError } = await this.supabase.from('active_broadcasts')
@@ -2397,6 +2407,55 @@ const ComunidadApp = {
             overlay.style.opacity = '0.2'; 
             if (controls) controls.style.opacity = '0.4'; 
         }, 5000);
+    },
+
+    async handleBlueskyOAuthStart() {
+        const oauthBtn = document.getElementById('bsky-oauth-start-btn');
+        if (oauthBtn) {
+            oauthBtn.disabled = true;
+            oauthBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Iniciando...';
+        }
+        try {
+            const redirectUri = window.location.origin + window.location.pathname;
+            const { data, error } = await this.supabase.functions.invoke('bsky-oauth-init', {
+                body: { redirect_uri: redirectUri }
+            });
+            if (error) throw error;
+            if (data?.auth_url) window.location.href = data.auth_url;
+        } catch (error) {
+            alert("❌ No pudimos conectar con Bluesky en este momento.");
+            if (oauthBtn) {
+                oauthBtn.disabled = false;
+                oauthBtn.innerHTML = '<i class="fa-brands fa-bluesky"></i> Autorizar con Bluesky';
+            }
+        }
+    },
+
+    async checkForBlueskyCallback() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const state = urlParams.get('state');
+
+        if (code && state) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            if (window.showToast) window.showToast("⏳ Finalizando conexión con Bluesky...");
+
+            try {
+                const { data, error } = await this.supabase.functions.invoke('bsky-oauth-callback', {
+                    body: { 
+                        code: code, 
+                        state: state,
+                        redirect_uri: window.location.origin + window.location.pathname 
+                    }
+                });
+                if (error) throw error;
+                
+                alert(`✅ ¡Cuenta de Bluesky conectada! Bienvenido, @${data.handle}`);
+                location.reload(); 
+            } catch (error) {
+                alert("❌ Hubo un problema al guardar tu cuenta de Bluesky. Intenta de nuevo.");
+            }
+        }
     },
 
 };

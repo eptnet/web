@@ -333,39 +333,24 @@
     </template>
 
     <template id="bsky-connect-template">
-        <div class="bento-box">
-            <h3><i class="fa-solid fa-link"></i> Conectar Cuenta para Participar</h3>
-            
-            <div class="step">
-                <h4>Paso 1: Ten una cuenta de Bluesky</h4>
-                <p class="form-hint">Para interactuar necesitas una cuenta en la red social descentralizada Bluesky. Si no tienes una, ¡es gratis y fácil de crear!</p>
-                <a href="https://bsky.app" target="_blank" class="btn btn-secondary" style="width:100%; text-decoration: none;">
-                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Crear o Iniciar Sesión en Bluesky
-                </a>
+        <div class="bsky-oauth-container" style="text-align: center; padding: 1rem;">
+            <div class="bsky-logo-area" style="margin-bottom: 1.5rem;">
+                <i class="fa-brands fa-bluesky" style="font-size: 4rem; color: #0085ff;"></i>
             </div>
             
-            <hr>
+            <h3>Conectar con el Protocolo AT</h3>
+            <p style="margin-bottom: 1.5rem; color: var(--color-text-secondary);">
+                Al conectar tu cuenta, podrás participar en la <strong>Comunidad</strong> y realizar <strong>transmisiones en vivo</strong> desde tu perfil.
+            </p>
 
-            <div class="step">
-                <h4>Paso 2: Conecta de Forma Segura</h4>
-                <p class="form-hint">Genera una <strong>Contraseña de Aplicación</strong> (no tu contraseña principal) para darnos permiso de publicar en tu nombre.</p>
-                <form id="bsky-connect-form">
-                    <div class="form-group">
-                        <label for="bsky-handle">Tu Handle de Bluesky</label>
-                        <input type="text" id="bsky-handle" placeholder="tu-usuario.bsky.social" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="bsky-app-password">Contraseña de Aplicación</label>
-                        <input type="password" id="bsky-app-password" placeholder="xxxx-xxxx-xxxx-xxxx" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-link"></i> Conectar Cuenta</button>
-                </form>
-            </div>
-
-            <div class="troubleshooting-note">
-                <p><strong>¿Problemas para conectar?</strong> Si recibes un error de "credenciales inválidas" a pesar de que son correctas, te recomendamos seguir estos pasos en Bluesky: <strong>1. Reinicia tu contraseña principal. 2. Genera una nueva Contraseña de Aplicación.</strong> Esto suele solucionar el problema.</p>
-            </div>
-            </div>
+            <button id="bsky-oauth-start-btn" class="btn-bsky-oauth" style="width: 100%; padding: 15px; border-radius: 50px; background: #0085ff; color: white; border: none; font-weight: 700; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.3s;">
+                <i class="fa-brands fa-bluesky"></i> Autorizar con Bluesky
+            </button>
+            
+            <p class="form-hint" style="margin-top: 1.5rem; font-size: 0.8rem;">
+                Serás redirigido a Bluesky para autorizar el acceso seguro.
+            </p>
+        </div>
     </template>
 
     <template id="thread-reader-template">
