@@ -4,7 +4,8 @@
   "client_uri": "https://epistecnologia.com",
   "logo_uri": "https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png",
   "redirect_uris": [
-    "https://epistecnologia.com/inv/profile.html"
+    "https://epistecnologia.com/inv/profile.html",
+    "https://epistecnologia.com/inv/profile"
   ],
   "scope": "atproto transition:generic",
   "grant_types": ["authorization_code", "refresh_token"],
