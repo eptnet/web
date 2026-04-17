@@ -446,7 +446,10 @@ const ComunidadApp = {
             // 3. LA INYECCIÓN WHIP
             const response = await fetch(whipUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/sdp' },
+                headers: { 
+                    'Content-Type': 'application/sdp',
+                    'Authorization': `Bearer ${data.streamToken}` // <--- NUEVO: Pasaporte Web3
+                },
                 body: offer.sdp
             });
 

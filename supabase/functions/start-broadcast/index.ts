@@ -92,7 +92,8 @@ serve(async (req) => {
       success: true, 
       ingestUrl: ingestUrl,
       playbackUrl: playbackUrl,
-      broadcast_id: broadcastData.id // ¡CRÍTICO PARA EL CHAT EFÍMERO!
+      broadcast_id: broadcastData.id, // ¡CRÍTICO PARA EL CHAT EFÍMERO!
+      streamToken: userJwt
     }), {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       status: 200,
