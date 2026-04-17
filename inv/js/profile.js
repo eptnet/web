@@ -16,9 +16,9 @@ const ProfileApp = {
         );
 
         await this.handleUserSession();
-        this.checkForOrcidCode();
         
-        // --- NUEVA LÍNEA: Revisamos si venimos regresando de Bluesky ---
+        // Revisamos si venimos de alguna validación
+        this.checkForOrcidCode();
         this.checkForBlueskyCallback(); 
         
         this.applyTheme();
@@ -544,7 +544,10 @@ const ProfileApp = {
     async checkForOrcidCode() {
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
-        if (code) {
+        const state = urlParams.get('state'); // Bluesky usa 'state', ORCID no.
+
+        // SOLO se ejecuta si hay 'code' pero NO hay 'state' (Es decir, es de ORCID)
+        if (code && !state) {
             window.history.replaceState({}, document.title, window.location.pathname);
             alert("Verificando código de ORCID...");
             try {
@@ -553,16 +556,13 @@ const ProfileApp = {
                 });
                 if (error) throw error;
 
-                // --- AQUÍ ESTÁ LA CORRECCIÓN ---
-                // Añadimos 'role: 'researcher'' al objeto que se actualiza en la base de datos.
                 const { error: updateError } = await this.supabase
                     .from('profiles')
                     .update({ 
                         orcid: `https://orcid.org/${data.orcid}`,
-                        role: 'researcher' // <-- LÍNEA AÑADIDA
+                        role: 'researcher'
                     })
                     .eq('id', this.user.id);
-                // --- FIN DE LA CORRECCIÓN ---
 
                 if (updateError) throw updateError;
                 
@@ -580,6 +580,38 @@ const ProfileApp = {
         const { error } = await this.supabase.from('profiles').update({ orcid: null }).eq('id', this.user.id);
         if (error) { alert("Error al desconectar la cuenta."); } 
         else { alert("Cuenta de ORCID desconectada."); location.reload(); }
+    },
+
+    async checkForBlueskyCallback() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const state = urlParams.get('state');
+
+        // SOLO se ejecuta si hay 'code' Y también hay 'state' (Es decir, es de Bluesky)
+        if (code && state) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            if (window.showToast) window.showToast("⏳ Finalizando conexión con Bluesky...");
+
+            try {
+                const { data, error } = await this.supabase.functions.invoke('bsky-oauth-callback', {
+                    body: { 
+                        code: code, 
+                        state: state,
+                        redirect_uri: window.location.origin + window.location.pathname 
+                    }
+                });
+
+                if (error) throw error;
+
+                alert(`✅ ¡Cuenta de Bluesky conectada! Bienvenido, @${data.handle}`);
+                location.reload(); 
+
+            } catch (error) {
+                console.error("Error en el callback de Bluesky:", error);
+                alert("❌ Hubo un problema al guardar tu cuenta de Bluesky. Intenta de nuevo.");
+            }
+        }
     },
 
     async handleSyncWorks() {
@@ -1168,40 +1200,6 @@ const ProfileApp = {
                 } else { eventList.innerHTML = '<li style="text-align: center; color: #888; padding: 20px;">Sin eventos.</li>'; }
             } catch (error) { console.error("Error:", error); }
         },
-
-    async checkForBlueskyCallback() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
-        const state = urlParams.get('state'); // Bluesky envía este 'state' por seguridad
-
-        if (code && state) {
-            // Limpiamos la URL de inmediato para que el usuario no vea códigos raros
-            window.history.replaceState({}, document.title, window.location.pathname);
-            
-            if (window.showToast) window.showToast("⏳ Finalizando conexión con Bluesky...");
-
-            try {
-                // Enviamos el código a la Edge Function para intercambiarlo por tokens y el DID
-                const { data, error } = await this.supabase.functions.invoke('bsky-oauth-callback', {
-                    body: { 
-                        code: code, 
-                        state: state,
-                        redirect_uri: window.location.origin + window.location.pathname 
-                    }
-                });
-
-                if (error) throw error;
-
-                // ÉXITO TOTAL
-                alert(`✅ ¡Cuenta de Bluesky conectada! Bienvenido, @${data.handle}`);
-                location.reload(); // Recargamos para que se activen las insignias y el Live
-
-            } catch (error) {
-                console.error("Error en el callback de Bluesky:", error);
-                alert("❌ Hubo un problema al validar tu cuenta de Bluesky. Por favor, intenta de nuevo.");
-            }
-        }
-    },
 };
 
 // --- LÓGICA DE BANNER ---
