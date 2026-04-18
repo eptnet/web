@@ -203,8 +203,8 @@
                     </div>
 
                     <div class="channel-switcher" id="tv-channel-switcher">
-                        <button class="channel-btn active" data-type="video" data-src="https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=1&controls=1" title="EPT TV (Canal Principal)"><i class="fa-solid fa-tower-broadcast"></i></button>
                         <button class="channel-btn" data-type="podcast" title="Podcast Oficial"><i class="fa-solid fa-podcast"></i></button>
+                        <button class="channel-btn active" data-type="video" data-src="https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=1&controls=1" title="EPT TV (Canal Principal)"><i class="fa-solid fa-tower-broadcast"></i></button>
                         <button class="channel-btn" data-type="video" data-src="https://www.youtube.com/embed/PgRfV6NKcHU?autoplay=1&mute=1&controls=1" title="Radio Relax (Lofi)"><i class="fa-solid fa-radio"></i></button>
                     </div>
                 </div>
@@ -488,6 +488,9 @@
 
             <div class="studio-header-ui">
                 <div class="live-indicator is-live"><span class="dot"></span> EN VIVO</div>
+                <div style="background: rgba(0,0,0,0.5); color: white; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(4px);">
+                    <i class="fa-regular fa-eye"></i> <span id="studio-viewer-count">0</span>
+                </div>
             </div>
 
             <div id="studio-chat-overlay" class="hidden">

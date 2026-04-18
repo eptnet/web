@@ -2200,7 +2200,10 @@ const ComunidadApp = {
                     <iframe src="${embedUrl}" allow="autoplay; fullscreen" allowfullscreen></iframe>
                     <div class="video-overlay-info">
                         <span class="badge-live"><span class="dot"></span> EN VIVO</span>
-                        <span class="user-handle">@${handle}</span>
+                        <span style="background: rgba(0,0,0,0.6); color: white; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 0.8rem; margin-left: 8px; backdrop-filter: blur(4px);">
+                            <i class="fa-regular fa-eye"></i> <span id="golive-viewer-count">0</span>
+                        </span>
+                        <span class="user-handle" style="margin-left: 8px;">@${handle}</span>
                     </div>
                 </div>
 
@@ -2254,15 +2257,38 @@ const ComunidadApp = {
 
         if (this.liveChatChannel) this.supabase.removeChannel(this.liveChatChannel);
 
-        this.liveChatChannel = this.supabase.channel(`chat_${broadcastId}`)
-            // Escuchamos mensajes normales (Base de datos)
+        // Generamos un ID único temporal por si es un invitado sin cuenta
+        const presenceKey = this.user ? this.user.id : 'guest_' + Math.floor(Math.random() * 1000000);
+
+        // Activamos la configuración de 'presence' al crear el canal
+        this.liveChatChannel = this.supabase.channel(`chat_${broadcastId}`, {
+            config: { presence: { key: presenceKey } }
+        })
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'golive_chat', filter: `broadcast_id=eq.${broadcastId}` }, 
-            payload => { this.renderUnifiedChatMessage(payload.new, containerId); })
-            // NUEVO: Escuchamos reacciones en tiempo real (Broadcast)
+                payload => { this.renderUnifiedChatMessage(payload.new, containerId); }
+            )
             .on('broadcast', { event: 'reaction' }, payload => {
                 this.animateReaction(payload.payload.emoji, containerId);
             })
-            .subscribe();
+            // NUEVO: Escuchamos cuando la presencia se sincroniza (alguien entra o sale)
+            .on('presence', { event: 'sync' }, () => {
+                const newState = this.liveChatChannel.presenceState();
+                let viewerCount = 0;
+                // Sumamos todos los usuarios presentes
+                for (let key in newState) { viewerCount += newState[key].length; }
+                
+                // Actualizamos ambos contadores (si existen en la pantalla actual)
+                const viewerEl = document.getElementById('golive-viewer-count');
+                const studioEl = document.getElementById('studio-viewer-count');
+                if (viewerEl) viewerEl.innerText = viewerCount;
+                if (studioEl) studioEl.innerText = viewerCount;
+            })
+            // Nos suscribimos y rastreamos a nosotros mismos como "presentes"
+            .subscribe(async (status) => {
+                if (status === 'SUBSCRIBED') {
+                    await this.liveChatChannel.track({ online_at: new Date().toISOString() });
+                }
+            });
             
         // NUEVO: Listeners para los botones de reacción
         const btnReactViewer = document.getElementById('btn-react-viewer');
