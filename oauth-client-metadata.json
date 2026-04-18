@@ -5,7 +5,9 @@
   "logo_uri": "https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png",
   "redirect_uris": [
     "https://epistecnologia.com/inv/profile.html",
-    "https://epistecnologia.com/inv/profile"
+    "https://epistecnologia.com/inv/profile",
+    "https://epistecnologia.com/comunidad.html",
+    "https://epistecnologia.com/comunidad"
   ],
   "scope": "atproto transition:generic",
   "grant_types": ["authorization_code", "refresh_token"],
