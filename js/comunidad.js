@@ -2175,7 +2175,8 @@ const ComunidadApp = {
         const modalContainer = document.getElementById('modal-container');
         if (!modalContainer) return;
 
-        const embedUrl = "https://stream.place/embed/epistecnologia.com";
+        // FIX: Hacemos que el reproductor sea dinámico según el usuario que transmite
+        const embedUrl = `https://stream.place/embed/${handle}`;
         
         const chatInputHtml = this.user 
             ? `<div style="display: flex; gap: 8px; align-items: center;">
