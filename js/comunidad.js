@@ -424,7 +424,8 @@ const ComunidadApp = {
                     btnReady.disabled = false;
                     btnReady.innerHTML = '<i class="fa-solid fa-bolt"></i> Iniciar Transmisión';
                 }
-                this.openStreamKeyModal();
+                // Si por alguna razón llega aquí sin llave, le avisamos sin romper el UI
+                alert("No se detectó tu Stream Key. Cierra el estudio y vuelve a intentarlo.");
                 return;
             }
 
@@ -727,9 +728,13 @@ const ComunidadApp = {
             const directoBtn = target.closest('a');
             if (directoBtn && directoBtn.innerHTML.includes('fa-bolt')) {
                 e.preventDefault();
-                // Verificamos que sea un investigador con cuenta conectada
                 if (this.bskyCreds && (this.userProfile?.role === 'researcher' || this.userProfile?.role === 'admin')) {
-                    this.openGoLiveModal();
+                    // FIX UX: Verificar llave ANTES de abrir el estudio
+                    if (!this.bskyCreds.stream_key) {
+                        this.openStreamKeyModal();
+                    } else {
+                        this.openGoLiveModal();
+                    }
                 } else {
                     alert("Solo los investigadores verificados pueden iniciar transmisiones en vivo.");
                 }
@@ -826,9 +831,14 @@ const ComunidadApp = {
             if (button && button.id === 'fab-golive') {
                 fabContainer.classList.remove('is-open'); // Lo cerramos
                 if (this.bskyCreds && (this.userProfile?.role === 'researcher' || this.userProfile?.role === 'admin')) {
-                    this.openGoLiveModal();
+                    // FIX UX: Verificar llave ANTES de abrir el estudio
+                    if (!this.bskyCreds.stream_key) {
+                        this.openStreamKeyModal();
+                    } else {
+                        this.openGoLiveModal();
+                    }
                 } else {
-                    alert("Solo los investigadores verificados pueden iniciar transmisiones en vivo.");
+                    alert("Por seguiridad, solo los investigadores verificados con ORCID y cuenta BlueSky pueden iniciar transmisiones en vivo, ve a tu perfil he inicia tu verificación.");
                 }
             }
 
@@ -2513,7 +2523,9 @@ const ComunidadApp = {
             if (!this.bskyCreds) this.bskyCreds = {};
             this.bskyCreds.stream_key = keyInput;
             modalContainer.innerHTML = ''; 
-            this.startBroadcastToStreamplace(); 
+            
+            // FIX UX: Una vez guardada la llave, abrimos el estudio de cámaras.
+            this.openGoLiveModal(); 
         });
     },
 
