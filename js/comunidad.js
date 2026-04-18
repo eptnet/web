@@ -451,20 +451,17 @@ const ComunidadApp = {
             const offer = await this.peerConnection.createOffer();
             await this.peerConnection.setLocalDescription(offer);
 
-            // 3. LA INYECCIÓN WHIP (Limpiando la llave para que sea base58btc puro)
-            const cleanKey = streamKey.replace('did:key:', '');
-
+            // 3. LA INYECCIÓN WHIP (Enviando la llave secreta real al servidor)
             const response = await fetch(whipUrl, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/sdp',
-                    'Authorization': `Bearer ${cleanKey}` 
+                    'Authorization': `Bearer ${streamKey}` 
                 },
                 body: offer.sdp
             });
 
             if (!response.ok) {
-                // Capturamos el texto real del error para no quedarnos a ciegas
                 const errorText = await response.text();
                 throw new Error(`Fallo en servidor WHIP: ${response.status} - ${errorText}`);
             }
@@ -2496,7 +2493,9 @@ const ComunidadApp = {
         const saveBtn = modalContainer.querySelector('#save-streamkey-btn');
         saveBtn.addEventListener('click', async () => {
             const keyInput = modalContainer.querySelector('#streamkey-input').value.trim();
-            if(!keyInput.startsWith('did:key:')) return alert("La llave debe empezar con did:key:");
+            
+            // FIX: Eliminada la barrera del did:key: para dejar pasar el Stream Key real
+            if(keyInput === '') return alert("Ingresa tu Stream Key.");
             
             saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
             saveBtn.disabled = true;
@@ -2511,10 +2510,10 @@ const ComunidadApp = {
                 return;
             }
 
-            if (!this.bskyCreds) this.bskyCreds = {}; // <-- Asegura que el objeto exista
+            if (!this.bskyCreds) this.bskyCreds = {};
             this.bskyCreds.stream_key = keyInput;
-            modalContainer.innerHTML = ''; // Cierra el modal
-            this.startBroadcastToStreamplace(); // Reanuda
+            modalContainer.innerHTML = ''; 
+            this.startBroadcastToStreamplace(); 
         });
     },
 
