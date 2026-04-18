@@ -1520,8 +1520,9 @@ const ComunidadApp = {
         const template = document.getElementById('bsky-connect-template');
         if (!template) { console.error("La plantilla del modal no existe."); return; }
 
-        const modalContainer = document.getElementById('modal-container') || document.createElement('div');
-        if (!document.getElementById('modal-container')) {
+        let modalContainer = document.getElementById('modal-container');
+        if (!modalContainer) {
+            modalContainer = document.createElement('div');
             modalContainer.id = 'modal-container';
             document.body.appendChild(modalContainer);
         }
@@ -1530,9 +1531,16 @@ const ComunidadApp = {
         const modalContent = modalContainer.querySelector('.modal-content');
         modalContent.appendChild(template.content.cloneNode(true));
 
+        const overlay = modalContainer.querySelector('.modal-overlay');
+
+        // 1. Cerrar con la X
         modalContainer.querySelector('.modal-close-btn').addEventListener('click', () => this.closeBskyConnectModal());
         
-        // EL FIX: Escuchar al nuevo botón OAuth en lugar del formulario viejo
+        // 2. Cerrar haciendo clic en el fondo oscuro
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) this.closeBskyConnectModal();
+        });
+        
         const oauthBtn = modalContainer.querySelector('#bsky-oauth-start-btn');
         if (oauthBtn) {
             oauthBtn.addEventListener('click', () => this.handleBlueskyOAuthStart());
@@ -1541,7 +1549,18 @@ const ComunidadApp = {
 
     closeBskyConnectModal() {
         const modalContainer = document.getElementById('modal-container');
-        if (modalContainer) modalContainer.innerHTML = '';
+        if (!modalContainer) return;
+        
+        const overlay = modalContainer.querySelector('.modal-overlay');
+        if (overlay) {
+            // Removemos la clase para iniciar la transición suave del CSS
+            overlay.classList.remove('is-visible');
+            
+            // Esperamos 300ms a que la animación termine antes de borrar el HTML
+            setTimeout(() => {
+                modalContainer.innerHTML = '';
+            }, 300);
+        }
     },
 
     async handleBlueskyConnect(e) {
@@ -2471,14 +2490,21 @@ const ComunidadApp = {
             oauthBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Iniciando...';
         }
         try {
+            // Esta es la URL que Bluesky validará contra tu .json público
             const redirectUri = window.location.origin + window.location.pathname;
+            
             const { data, error } = await this.supabase.functions.invoke('bsky-oauth-init', {
                 body: { redirect_uri: redirectUri }
             });
+            
             if (error) throw error;
             if (data?.auth_url) window.location.href = data.auth_url;
+            
         } catch (error) {
-            alert("❌ No pudimos conectar con Bluesky en este momento.");
+            // Imprimimos el error real en la consola para facilitar el diagnóstico
+            console.error("Error al iniciar OAuth con Bluesky:", error);
+            alert("❌ No pudimos conectar con Bluesky. Asegúrate de que el oauth-client-metadata.json esté actualizado en producción.");
+            
             if (oauthBtn) {
                 oauthBtn.disabled = false;
                 oauthBtn.innerHTML = '<i class="fa-brands fa-bluesky"></i> Autorizar con Bluesky';
