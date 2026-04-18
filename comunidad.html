@@ -354,15 +354,32 @@
     </template>
 
     <template id="streamkey-connect-template">
-        <div style="text-align: center; padding: 1.5rem;">
-            <div style="margin-bottom: 1.5rem; color: var(--color-accent);">
-                <i class="fa-solid fa-key" style="font-size: 3rem;"></i>
+        <div style="text-align: left; padding: 1.5rem;">
+            <div style="text-align: center; margin-bottom: 1rem; color: var(--color-accent);">
+                <i class="fa-solid fa-satellite-dish" style="font-size: 3rem;"></i>
             </div>
-            <h3 style="margin-bottom: 10px;">Activa tu Servidor de Video</h3>
-            <p style="margin-bottom: 1.5rem; color: var(--color-secondary-text); font-size: 0.95rem;">
-                Para tu primera transmisión, necesitamos tu llave criptográfica. Ve a <a href="https://stream.place" target="_blank" style="color: #0085ff; text-decoration: underline;">stream.place</a>, inicia sesión con tu Bluesky, y copia tu <strong>Stream Key</strong>.
-            </p>
-            <input type="text" id="streamkey-input" placeholder="did:key:zQ3shUg..." style="width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-background); color: var(--color-primary-text);">
+            <h3 style="text-align: center; margin-bottom: 15px;">Conecta tu Servidor de Video</h3>
+            
+            <div style="background: rgba(0,0,0,0.03); padding: 12px; border-radius: 12px; margin-bottom: 15px; border: 1px solid var(--color-border);">
+                <p style="margin: 0 0 8px 0; font-size: 0.95rem; font-weight: 700; color: var(--color-primary-text);">1. Obtén tu Llave</p>
+                <ol style="margin: 0; padding-left: 20px; font-size: 0.85rem; color: var(--color-secondary-text); line-height: 1.5;">
+                    <li>Abre <a href="https://stream.place" target="_blank" style="color: #0085ff; text-decoration: none; font-weight: bold;">stream.place</a> e inicia sesión.</li>
+                    <li>Ve a <strong>Stream from OBS</strong> y selecciona la pestaña <strong>WHIP</strong>.</li>
+                    <li>Copia tu <strong>Stream Key</strong> secreto y pégalo abajo.</li>
+                </ol>
+            </div>
+
+            <input type="text" id="streamkey-input" placeholder="Pega tu Stream Key aquí..." autocomplete="off" style="width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-background); color: var(--color-primary-text); font-family: monospace;">
+            
+            <div style="background: rgba(183, 42, 30, 0.05); padding: 12px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(183, 42, 30, 0.2);">
+                <p style="margin: 0 0 8px 0; font-size: 0.95rem; font-weight: 700; color: var(--color-accent);"><i class="fa-solid fa-triangle-exclamation"></i> 2. Antes de salir al aire</p>
+                <ul style="margin: 0; padding-left: 20px; font-size: 0.85rem; color: var(--color-secondary-text); line-height: 1.5;">
+                    <li>Haz clic en "Guardar y Transmitir" aquí abajo.</li>
+                    <li>Vuelve rápido a Streamplace y <strong>DESMARCA</strong> la casilla <br><span style="background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 4px; font-weight: 600;">End livestream automatically</span>.</li>
+                    <li>Ponle un título a tu sesión y espera a que el botón azul cambie para iniciar el vivo.</li>
+                </ul>
+            </div>
+
             <button id="save-streamkey-btn" style="width: 100%; padding: 15px; border-radius: 50px; background: var(--color-accent); color: white; border: none; font-weight: 700; font-size: 1.1rem; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(183, 42, 30, 0.3);">
                 Guardar y Transmitir
             </button>
