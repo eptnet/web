@@ -1724,7 +1724,7 @@ const ComunidadApp = {
                         paintedLiveUsers.add(broadcast.user_id);
                         const profile = broadcast.profiles;
                         html += `
-                            <div class="story-item is-live" onclick="ComunidadApp.openLiveViewer('${broadcast.playback_url}', '${profile.username || profile.display_name}', '${broadcast.id}')">
+                            <div class="story-item is-live" onclick="ComunidadApp.openLiveViewer('${broadcast.playback_url}', '${profile.username || profile.display_name}', '${broadcast.id}', '${broadcast.streamplace_id}')">
                                 <div class="story-avatar-container" style="background: linear-gradient(45deg, #ef4444, #b72a1e); animation: pulse-border 2s infinite;">
                                     <img src="${profile.avatar_url || `https://api.dicebear.com/9.x/shapes/svg?seed=${broadcast.user_id}`}" alt="Avatar" class="story-avatar">
                                 </div>
@@ -2170,13 +2170,14 @@ const ComunidadApp = {
     currentBroadcastId: null,
     chatFadeTimer: null,
 
-    openLiveViewer(playbackUrl, handle, broadcastId) {
+    // Añadimos streamplaceId como cuarto parámetro
+    openLiveViewer(playbackUrl, handle, broadcastId, streamplaceId) {
         this.currentBroadcastId = broadcastId;
         const modalContainer = document.getElementById('modal-container');
         if (!modalContainer) return;
 
-        // FIX: Hacemos que el reproductor sea dinámico según el usuario que transmite
-        const embedUrl = `https://stream.place/embed/${handle}`;
+        // FIX DEFINITIVO: Usamos el DID universal en lugar de adivinar el dominio del handle
+        const embedUrl = `https://stream.place/embed/${streamplaceId}`;
         
         const chatInputHtml = this.user 
             ? `<div style="display: flex; gap: 8px; align-items: center;">
