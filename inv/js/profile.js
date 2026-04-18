@@ -860,12 +860,16 @@ const ProfileApp = {
     closeCommunityModal() {
         const modalContainer = document.getElementById('modal-container');
         if (!modalContainer) return;
+        
         const modal = modalContainer.querySelector('.modal-overlay');
         if (modal) {
-            modal.classList.add('fade-out');
-            modal.addEventListener('animationend', () => {
+            // 1. Removemos la clase que lo hace visible (esto detona la transición CSS)
+            modal.classList.remove('is-visible');
+            
+            // 2. Esperamos los 300ms exactos que dura la transición en profile.css antes de vaciar el DOM
+            setTimeout(() => {
                 modalContainer.innerHTML = '';
-            }, { once: true });
+            }, 300);
         }
     },
 
