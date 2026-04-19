@@ -231,6 +231,62 @@ const ComunidadApp = {
         }
     },
 
+    async switchMicDevice() {
+        try {
+            // 1. Obtener TODOS los micrófonos conectados
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const audioDevices = devices.filter(d => d.kind === 'audioinput');
+
+            if (audioDevices.length < 2) {
+                window.showToast ? window.showToast("No hay otros micrófonos detectados.") : alert("No hay otros micrófonos detectados.");
+                return;
+            }
+
+            // 2. Identificar el actual y el siguiente
+            const currentTrack = this.localMediaStream.getAudioTracks()[0];
+            const currentDeviceId = currentTrack ? currentTrack.getSettings().deviceId : null;
+
+            let currentIndex = audioDevices.findIndex(d => d.deviceId === currentDeviceId);
+            let nextIndex = (currentIndex + 1) % audioDevices.length; 
+            let nextDevice = audioDevices[nextIndex];
+
+            // 3. Apagar el hardware actual para liberarlo
+            if (currentTrack) {
+                currentTrack.stop();
+                this.localMediaStream.removeTrack(currentTrack);
+            }
+
+            // 4. Pedir el nuevo micrófono
+            const newStream = await navigator.mediaDevices.getUserMedia({ 
+                audio: { deviceId: { exact: nextDevice.deviceId }, echoCancellation: true, noiseSuppression: true } 
+            });
+            const newAudioTrack = newStream.getAudioTracks()[0];
+            
+            // 5. Inyectarlo localmente
+            this.localMediaStream.addTrack(newAudioTrack);
+            
+            // 6. Magia WebRTC: Reemplazarlo en Streamplace sin cortar el directo
+            if (this.peerConnection) {
+                const sender = this.peerConnection.getSenders().find(s => s.track && s.track.kind === 'audio');
+                if (sender) {
+                    await sender.replaceTrack(newAudioTrack);
+                }
+            }
+
+            // 7. Sincronizar UI secreta
+            const audioSelect = document.getElementById('golive-audio-select');
+            if (audioSelect) audioSelect.value = nextDevice.deviceId;
+
+            // Avisamos al usuario
+            const micName = nextDevice.label ? nextDevice.label.substring(0, 20) : `Micrófono ${nextIndex + 1}`;
+            window.showToast ? window.showToast(`Audio: ${micName}...`) : console.log(`Audio: ${micName}`);
+            
+        } catch (err) {
+            console.error("Error al cambiar de micrófono:", err);
+            alert("No se pudo acceder al nuevo micrófono.");
+        }
+    },
+
     async populateDeviceSelectors() {
         try {
             const devices = await navigator.mediaDevices.enumerateDevices();
@@ -475,6 +531,7 @@ const ComunidadApp = {
             document.getElementById('golive-live-ui').classList.remove('hidden');
             
             document.getElementById('btn-switch-lens').onclick = () => this.switchLens();
+            document.getElementById('btn-switch-mic').onclick = () => this.switchMicDevice();
             document.getElementById('btn-toggle-camera').onclick = () => this.toggleCamera();
             document.getElementById('btn-toggle-mic').onclick = () => this.toggleMic();
             document.getElementById('btn-stop-broadcast').onclick = () => this.stopBroadcast();
