@@ -1,17 +1,31 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { encode as base64UrlEncode } from "https://deno.land/std@0.168.0/encoding/base64url.ts"
-import { corsHeaders } from '../_shared/cors.ts'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
 // --- HELPER 1: Forjar la Firma Criptográfica DPoP ---
 async function generateDpopProof(htu: string, htm: string, privateJwk: any, nonce?: string) {
   const privateKey = await crypto.subtle.importKey(
-    "jwk", privateJwk, { name: "ECDSA", namedCurve: "P-256" }, true, ["sign"]
+    "jwk",
+    privateJwk,
+    { name: "ECDSA", namedCurve: "P-256" },
+    true,
+    ["sign"]
   );
+
   const publicJwk = { kty: privateJwk.kty, crv: privateJwk.crv, x: privateJwk.x, y: privateJwk.y };
 
   const header = { typ: "dpop+jwt", alg: "ES256", jwk: publicJwk };
-  const payload: any = { jti: crypto.randomUUID(), htm: htm, htu: htu, iat: Math.floor(Date.now() / 1000) };
+  const payload: any = {
+    jti: crypto.randomUUID(),
+    htm: htm,
+    htu: htu,
+    iat: Math.floor(Date.now() / 1000)
+  };
   if (nonce) payload.nonce = nonce;
 
   const encoder = new TextEncoder();
@@ -20,7 +34,9 @@ async function generateDpopProof(htu: string, htm: string, privateJwk: any, nonc
   const dataToSign = encoder.encode(`${headerB64}.${payloadB64}`);
 
   const signature = await crypto.subtle.sign(
-    { name: "ECDSA", hash: { name: "SHA-256" } }, privateKey, dataToSign
+    { name: "ECDSA", hash: { name: "SHA-256" } },
+    privateKey,
+    dataToSign
   );
 
   return `${headerB64}.${payloadB64}.${base64UrlEncode(new Uint8Array(signature))}`;
@@ -42,9 +58,14 @@ async function getUserPDS(did: string) {
 // --- HELPER 3: Fetch Nativo con Manejo de Nonce ---
 async function fetchWithDpop(url: string, method: string, accessJwt: string, privateJwk: any, body: any) {
   let proof = await generateDpopProof(url, method, privateJwk);
+  
   let reqOptions = {
     method,
-    headers: { 'Authorization': `DPoP ${accessJwt}`, 'DPoP': proof, 'Content-Type': 'application/json' },
+    headers: {
+      'Authorization': `DPoP ${accessJwt}`,
+      'DPoP': proof,
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify(body)
   };
 
@@ -60,7 +81,6 @@ async function fetchWithDpop(url: string, method: string, accessJwt: string, pri
   return response;
 }
 
-// --- LÓGICA PRINCIPAL ---
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -73,10 +93,9 @@ serve(async (req) => {
     const { data: { user } } = await supabaseClient.auth.getUser()
     if (!user) throw new Error('Usuario no autenticado.')
 
-    // 1. Obtener datos de la petición
-    const { postUri, postCid, likeUri } = await req.json()
+    const { postText, postLink } = await req.json()
+    if (!postText) throw new Error('El texto del post es obligatorio.')
 
-    // 2. Obtener credenciales
     const { data: creds, error: credsError } = await supabaseClient
       .from('bsky_credentials')
       .select('access_jwt, refresh_jwt, did, handle')
@@ -85,68 +104,63 @@ serve(async (req) => {
       
     if (credsError || !creds) throw new Error('Cuenta de Bluesky no conectada.')
 
-    // 3. Extraer la llave privada DPoP
-    const secureData = JSON.parse(creds.refresh_jwt);
-    const privateJwk = secureData.jwk;
-    if (!privateJwk) throw new Error('Llave criptográfica no encontrada.');
-
-    // 4. Ubicar PDS
-    const pdsUrl = await getUserPDS(creds.did);
-
-    // --- LÓGICA DE QUITAR LIKE (UNLIKE) ---
-    if (likeUri) {
-      const deleteRecordUrl = `${pdsUrl}/xrpc/com.atproto.repo.deleteRecord`;
-      
-      // Una URI es así: at://did:plc:xyz/app.bsky.feed.like/3kxyz...
-      // El rkey es la última parte.
-      const rkey = likeUri.split('/').pop(); 
-
-      const deleteBody = {
-        repo: creds.did,
-        collection: 'app.bsky.feed.like',
-        rkey: rkey
-      };
-
-      const bskyResponse = await fetchWithDpop(deleteRecordUrl, 'POST', creds.access_jwt, privateJwk, deleteBody);
-      
-      if (!bskyResponse.ok) throw new Error(`Fallo al quitar Like: ${await bskyResponse.text()}`);
-
-      return new Response(JSON.stringify({ success: true, message: 'Like eliminado' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200
-      });
-    } 
-    
-    // --- LÓGICA DE DAR LIKE ---
-    else {
-      if (!postUri || !postCid) throw new Error('Faltan datos del post (URI y CID).')
-      
-      const createRecordUrl = `${pdsUrl}/xrpc/com.atproto.repo.createRecord`;
-      
-      const likeRecord = {
-        $type: 'app.bsky.feed.like',
-        subject: { uri: postUri, cid: postCid },
-        createdAt: new Date().toISOString()
-      };
-
-      const createBody = {
-        repo: creds.did,
-        collection: 'app.bsky.feed.like',
-        record: likeRecord
-      };
-
-      const bskyResponse = await fetchWithDpop(createRecordUrl, 'POST', creds.access_jwt, privateJwk, createBody);
-      
-      if (!bskyResponse.ok) throw new Error(`Fallo al dar Like: ${await bskyResponse.text()}`);
-      
-      const likeResult = await bskyResponse.json();
-
-      return new Response(JSON.stringify({ success: true, message: 'Post likeado', uri: likeResult.uri }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200
-      });
+    // 4. Desempaquetar la llave privada DPoP (De forma segura y robusta)
+    let privateJwk;
+    try {
+      const secureData = JSON.parse(creds.refresh_jwt);
+      privateJwk = secureData.jwk;
+    } catch (e) {
+      throw new Error('AUTH_EXPIRED: Tu sesión utiliza un formato antiguo. Por favor, desconecta y vuelve a conectar tu cuenta de Bluesky.');
     }
 
+    if (!privateJwk) {
+      throw new Error('AUTH_EXPIRED: Llave criptográfica no encontrada. Por favor, reconecta tu cuenta.');
+    }
+
+    const pdsUrl = await getUserPDS(creds.did);
+    const createRecordUrl = `${pdsUrl}/xrpc/com.atproto.repo.createRecord`;
+
+    const record = {
+      $type: 'app.bsky.feed.post',
+      text: postText,
+      createdAt: new Date().toISOString(),
+      langs: ["es"]
+    };
+
+    const lexiconBody = {
+      repo: creds.did,
+      collection: 'app.bsky.feed.post',
+      record: record
+    };
+
+    const bskyResponse = await fetchWithDpop(createRecordUrl, 'POST', creds.access_jwt, privateJwk, lexiconBody);
+    
+    if (!bskyResponse.ok) {
+        const errorText = await bskyResponse.text();
+        throw new Error(`Fallo en Bluesky (${bskyResponse.status}): ${errorText}`);
+    }
+
+    const published = await bskyResponse.json();
+
+    // Guardar en Caché de Epistecnología
+    const { data: profile } = await supabaseClient.from('profiles').select('display_name, avatar_url').eq('id', user.id).single();
+    await supabaseClient.from('community_feed_cache').insert([{
+        uri: published.uri,
+        cid: published.cid,
+        author_did: creds.did,
+        author_handle: creds.handle,
+        author_display_name: profile?.display_name || creds.handle,
+        author_avatar_url: profile?.avatar_url,
+        post_text: postText,
+        indexed_at: new Date().toISOString()
+    }]);
+
+    return new Response(JSON.stringify({ success: true, message: "Publicado vía Lexicon", uri: published.uri }), { 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 
+    });
+
   } catch (error) {
-    console.error("Error en bsky-like-post:", error);
+    console.error("Error en bsky-create-post:", error);
     return new Response(JSON.stringify({ success: false, error: error.message }), { 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 
     });
