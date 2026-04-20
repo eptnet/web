@@ -1578,7 +1578,7 @@ const ComunidadApp = {
                 alert('No se pudo copiar el enlace.');
             });
         }
-    }
+    },
 
     // --- FUNCIONES DEL MODAL (Nuevas) ---
 
