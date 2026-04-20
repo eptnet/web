@@ -80,28 +80,38 @@ serve(async (req) => {
       case 'create_post': {
         let embedData = undefined;
 
-        // LA MAGIA EN MEMORIA (Cero almacenamiento en Supabase)
+        // RADARES DE DIAGNÓSTICO DE IMAGEN
         if (payload.imageUrl) {
+            console.log("📸 Iniciando procesamiento de imagen:", payload.imageUrl);
             try {
                 let imgBuffer;
                 let mimeType = 'image/jpeg';
 
                 if (payload.imageUrl.startsWith('data:')) {
-                    // 1. Es una imagen subida desde el PC del usuario (Base64)
+                    console.log("📸 Detectado formato Base64 local.");
                     const [header, base64Data] = payload.imageUrl.split(',');
                     mimeType = header.split(';')[0].split(':')[1];
-                    
                     const binaryStr = atob(base64Data);
                     imgBuffer = new Uint8Array(binaryStr.length);
                     for (let i = 0; i < binaryStr.length; i++) imgBuffer[i] = binaryStr.charCodeAt(i);
                 } else {
-                    // 2. Es una URL externa (Como en tu archivo anchor-post)
-                    const imgRes = await fetch(payload.imageUrl);
+                    console.log("📸 Detectada URL externa. Haciendo Fetch...");
+                    // Añadimos User-Agent para engañar a ImgBB si tiene bloqueo
+                    const imgRes = await fetch(payload.imageUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+                    
+                    if (!imgRes.ok) throw new Error(`Fallo descargando URL externa. HTTP: ${imgRes.status}`);
+                    
                     imgBuffer = await imgRes.arrayBuffer();
                     mimeType = imgRes.headers.get('content-type') || 'image/jpeg';
+                    console.log(`📸 Imagen descargada con éxito. Tamaño: ${imgBuffer.byteLength} bytes | Tipo: ${mimeType}`);
+
+                    // Si ImgBB nos da un HTML en vez de una foto, detenemos el proceso de imagen.
+                    if (mimeType.includes('text/html')) {
+                        throw new Error("ImgBB devolvió una página web (HTML), no el enlace directo de la foto (.jpg).");
+                    }
                 }
 
-                // 3. Subir el Blob resultante directo a Bluesky
+                console.log("📸 Subiendo imagen en crudo (Blob) a Bluesky...");
                 const uploadUrl = `${pdsUrl}/xrpc/com.atproto.repo.uploadBlob`;
                 let proof = await generateDpopProof(uploadUrl, 'POST', privateJwk, undefined, creds.access_jwt);
                 
@@ -122,11 +132,14 @@ serve(async (req) => {
 
                 if (blobRes.ok) {
                     const blobJson = await blobRes.json();
+                    console.log("✅ Blob guardado exitosamente en Bsky:", blobJson.blob.ref);
                     embedData = { $type: 'app.bsky.embed.images', images: [{ alt: "Imagen de comunidad", image: blobJson.blob }] };
                 } else {
-                    console.error("Fallo al subir Blob a Bsky:", await blobRes.text());
+                    throw new Error(`Error en PDS de Bsky: ${await blobRes.text()}`);
                 }
-            } catch (e) { console.error("Error procesando imagen en memoria:", e); }
+            } catch (e) { 
+                console.error("🚨 ERROR PROCESANDO IMAGEN:", e.message); 
+            }
         }
 
         const lexiconBody: any = {
@@ -140,15 +153,13 @@ serve(async (req) => {
         if (!bskyResponse.ok) throw new Error(`Error Lexicon: ${await bskyResponse.text()}`);
         const published = await bskyResponse.json();
 
-        // Guardar en la caché del feed de la plataforma
         const { data: profile } = await supabaseClient.from('profiles').select('display_name, avatar_url').eq('id', user.id).single();
         await supabaseClient.from('community_feed_cache').insert([{
             uri: published.uri, cid: published.cid, author_did: creds.did, author_handle: creds.handle, 
             author_display_name: profile?.display_name || creds.handle, author_avatar_url: profile?.avatar_url, 
-            post_text: payload.text, indexed_at: new Date().toISOString()
+            post_text: payload.text, embed_external_thumb: payload.imageUrl || null, indexed_at: new Date().toISOString()
         }]);
 
-        // Retornamos SIEMPRE la URI y el CID reales
         return new Response(JSON.stringify({ success: true, uri: published.uri, cid: published.cid }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
       }
 
