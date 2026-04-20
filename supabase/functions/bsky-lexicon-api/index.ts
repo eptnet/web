@@ -73,20 +73,17 @@ serve(async (req) => {
     const { data: { user } } = await supabaseClient.auth.getUser()
     if (!user) throw new Error('Usuario no autenticado.')
 
-    // RECIBIMOS LA ACCIÓN SOLICITADA DESDE EL FRONTEND
     const payload = await req.json()
     const { action } = payload;
-    
-    if (!action) throw new Error('No se especificó ninguna acción (action) en la petición.');
+    if (!action) throw new Error('No se especificó ninguna acción (action).');
 
-    // AUTENTICACIÓN BLUESKY UNIFICADA
     const { data: creds, error: credsError } = await supabaseClient
       .from('bsky_credentials')
       .select('access_jwt, refresh_jwt, did, handle')
       .eq('user_id', user.id)
       .single()
       
-    if (credsError || !creds) throw new Error('AUTH_EXPIRED: No se encontraron credenciales de Bluesky.')
+    if (credsError || !creds) throw new Error('AUTH_EXPIRED: No se encontraron credenciales.');
 
     let privateJwk;
     try {
@@ -98,36 +95,95 @@ serve(async (req) => {
     const pdsUrl = await getUserPDS(creds.did);
 
     // ==========================================
-    // ENRUTADOR DE FUNCIONES (El corazón del API)
+    // ENRUTADOR DE FUNCIONES
     // ==========================================
     switch (action) {
 
       // ----------------------------------------
-      // ACCIÓN: CREAR PUBLICACIÓN
+      // ACCIÓN: CREAR PUBLICACIÓN (AHORA SOPORTA IMÁGENES)
       // ----------------------------------------
       case 'create_post': {
         if (!payload.text) throw new Error('El texto del post es obligatorio.');
         
+        let embedData = undefined;
+
+        // MAGIA DE IMÁGENES: Convertir URL a Blob de Bluesky
+        if (payload.imageUrl) {
+            try {
+                // 1. Descargar la imagen desde tu Supabase
+                const imgRes = await fetch(payload.imageUrl);
+                const imgBuffer = await imgRes.arrayBuffer();
+                const mimeType = imgRes.headers.get('content-type') || 'image/jpeg';
+
+                // 2. Subir el formato binario crudo al PDS de Bluesky
+                const uploadBlobUrl = `${pdsUrl}/xrpc/com.atproto.repo.uploadBlob`;
+                
+                let proofBlob = await generateDpopProof(uploadBlobUrl, 'POST', privateJwk, undefined, creds.access_jwt);
+                let blobReqOptions = {
+                    method: 'POST',
+                    headers: { 'Authorization': `DPoP ${creds.access_jwt}`, 'DPoP': proofBlob, 'Content-Type': mimeType },
+                    body: imgBuffer
+                };
+
+                let blobRes = await fetch(uploadBlobUrl, blobReqOptions);
+
+                // Reintento si Bluesky pide un Nonce para el archivo binario
+                if (blobRes.status === 401 && blobRes.headers.has('dpop-nonce')) {
+                    proofBlob = await generateDpopProof(uploadBlobUrl, 'POST', privateJwk, blobRes.headers.get('dpop-nonce')!, creds.access_jwt);
+                    blobReqOptions.headers['DPoP'] = proofBlob;
+                    blobRes = await fetch(uploadBlobUrl, blobReqOptions);
+                }
+
+                if (blobRes.ok) {
+                    const blobJson = await blobRes.json();
+                    embedData = {
+                        $type: 'app.bsky.embed.images',
+                        images: [{ alt: "Imagen de Epistecnología", image: blobJson.blob }]
+                    };
+                } else {
+                    console.error("Fallo subiendo imagen a Bsky:", await blobRes.text());
+                }
+            } catch (err) {
+                console.error("Error procesando imagen:", err);
+            }
+        }
+
         const createRecordUrl = `${pdsUrl}/xrpc/com.atproto.repo.createRecord`;
-        const lexiconBody = {
+        const lexiconBody: any = {
           repo: creds.did,
           collection: 'app.bsky.feed.post',
           record: { $type: 'app.bsky.feed.post', text: payload.text, createdAt: new Date().toISOString(), langs: ["es"] }
         };
 
+        // Si se procesó la imagen correctamente, la empaquetamos
+        if (embedData) {
+            lexiconBody.record.embed = embedData;
+        }
+
         const bskyResponse = await fetchWithDpop(createRecordUrl, 'POST', creds.access_jwt, privateJwk, lexiconBody);
         if (!bskyResponse.ok) throw new Error(`Error Bsky (${bskyResponse.status}): ${await bskyResponse.text()}`);
         const published = await bskyResponse.json();
 
-        // Guardar en caché
+        // Guardar en la base de datos de Epistecnología (Caché)
         const { data: profile } = await supabaseClient.from('profiles').select('display_name, avatar_url').eq('id', user.id).single();
         await supabaseClient.from('community_feed_cache').insert([{
-            uri: published.uri, cid: published.cid, author_did: creds.did, author_handle: creds.handle,
-            author_display_name: profile?.display_name || creds.handle, author_avatar_url: profile?.avatar_url,
-            post_text: payload.text, indexed_at: new Date().toISOString()
+            uri: published.uri, 
+            cid: published.cid, 
+            author_did: creds.did, 
+            author_handle: creds.handle,
+            author_display_name: profile?.display_name || creds.handle, 
+            author_avatar_url: profile?.avatar_url,
+            post_text: payload.text, 
+            embed_external_thumb: payload.imageUrl || null, 
+            indexed_at: new Date().toISOString()
         }]);
 
-        return new Response(JSON.stringify({ success: true, uri: published.uri }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
+        // EL FIX VITAL: Retornamos el 'cid' para que comunidad.js no dibuje "undefined"
+        return new Response(JSON.stringify({ 
+            success: true, 
+            uri: published.uri,
+            cid: published.cid 
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
       }
 
       // ----------------------------------------
@@ -135,7 +191,6 @@ serve(async (req) => {
       // ----------------------------------------
       case 'like_post': {
         if (!payload.postUri || !payload.postCid) throw new Error('Faltan postUri o postCid.');
-        
         const createRecordUrl = `${pdsUrl}/xrpc/com.atproto.repo.createRecord`;
         const createBody = {
           repo: creds.did, collection: 'app.bsky.feed.like',
@@ -154,7 +209,6 @@ serve(async (req) => {
       // ----------------------------------------
       case 'unlike_post': {
         if (!payload.likeUri) throw new Error('Falta el likeUri para eliminarlo.');
-        
         const deleteRecordUrl = `${pdsUrl}/xrpc/com.atproto.repo.deleteRecord`;
         const rkey = payload.likeUri.split('/').pop(); 
         const deleteBody = { repo: creds.did, collection: 'app.bsky.feed.like', rkey: rkey };
@@ -165,13 +219,8 @@ serve(async (req) => {
         return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
       }
 
-      // ----------------------------------------
-      // ACCIÓN FUTURA: RESPONDER A UN POST
-      // case 'reply_post': { ... }
-      // ----------------------------------------
-
       default:
-        throw new Error(`La acción '${action}' no está soportada por el API.`);
+        throw new Error(`La acción '${action}' no está soportada.`);
     }
 
   } catch (error) {
