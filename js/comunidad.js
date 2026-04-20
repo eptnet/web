@@ -926,10 +926,12 @@ const ComunidadApp = {
             const likeButton = e.target.closest('.like-btn');
             const replyButton = e.target.closest('.reply-btn');
             const shareButton = e.target.closest('.share-btn');
+            const deleteButton = e.target.closest('.delete-btn');
 
             if (likeButton) this.handleLike(likeButton);
             if (replyButton) this.handleReply(replyButton);
             if (shareButton) this.handleShare(shareButton);
+            if (deleteButton) this.handleDeletePost(deleteButton);
         });
     },
 
@@ -1268,6 +1270,34 @@ const ComunidadApp = {
             button.disabled = false;
         }
     },
+
+    async handleDeletePost(button) {
+        if (!confirm("¿Seguro que deseas eliminar esta publicación? Esta acción no se puede deshacer.")) return;
+
+        const postElement = button.closest('.feed-post');
+        const postUri = postElement.dataset.uri;
+        
+        // Efecto visual instantáneo
+        postElement.style.opacity = '0.5';
+        button.disabled = true;
+
+        try {
+            const { data, error } = await this.supabase.functions.invoke('bsky-lexicon-api', {
+                body: { action: 'delete_post', postUri: postUri }
+            });
+            if (error) throw error;
+            if (data && data.error) throw new Error(data.error);
+
+            // Lo borramos de la pantalla al instante
+            postElement.remove();
+            
+        } catch (error) {
+            console.error("Error al eliminar post:", error);
+            alert("No se pudo eliminar la publicación.");
+            postElement.style.opacity = '1';
+            button.disabled = false;
+        }
+    },
     
     /**
      * Intercepta el clic en "Comentar" y abre el lector de hilos nativo.
@@ -1470,6 +1500,13 @@ const ComunidadApp = {
         }
         // --- FIN DE LA MODIFICACIÓN ---
 
+        const isMyPost = this.bskyCreds && author.handle === this.bskyCreds.handle;
+        const deleteBtnHtml = isMyPost ? `
+            <button class="post-action-btn delete-btn" title="Eliminar publicación" style="margin-left: auto;">
+                <i class="fa-solid fa-trash-can"></i>
+            </button>
+        ` : '';
+
         return `
             <div class="bento-box feed-post" data-uri="${post.uri}" data-cid="${post.cid}">
                 <div class="post-header">
@@ -1478,6 +1515,7 @@ const ComunidadApp = {
                         <strong>${author.displayName || author.handle}</strong>
                         <span class="post-handle">@${author.handle}</span>
                     </div>
+                    ${deleteBtnHtml} </div>
                 </div>
                 <div class="post-body">
                     <p>${postText}</p>

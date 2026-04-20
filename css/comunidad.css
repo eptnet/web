@@ -244,8 +244,8 @@ body.dark-theme {
 }
 
 .post-action-btn.is-liked { 
-    color: white; 
-    background-color: #e0245e; 
+    color: #e0245e; /* El corazón y el número se vuelven rojos */
+    background-color: rgba(224, 36, 94, 0.1); /* Fondo rosado transparente y elegante */
 }
 
 /* --- COLUMNA DERECHA (Nuevos Elementos) --- */
