@@ -54,7 +54,12 @@ async function fetchWithDpop(url: string, method: string, accessJwt: string, pri
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   try {
+    // 1. Cliente Normal (Para validar quién es el usuario)
     const supabaseClient = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_ANON_KEY') ?? '', { global: { headers: { Authorization: req.headers.get('Authorization')! } } })
+    
+    // 2. Cliente Administrador (Para forzar escritura/borrado en la caché sin que el RLS lo bloquee)
+    const supabaseAdmin = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '')
+
     const { data: { user } } = await supabaseClient.auth.getUser()
     if (!user) throw new Error('No autenticado.');
 
@@ -70,7 +75,7 @@ serve(async (req) => {
     switch (action) {
       case 'create_post': {
         let embedData = undefined;
-        let cdnImageUrl = null; // Guardaremos la URL pública de Bluesky aquí
+        let cdnImageUrl = null;
 
         if (payload.imageUrl) {
             try {
@@ -101,8 +106,6 @@ serve(async (req) => {
                 if (blobRes.ok) {
                     const blobJson = await blobRes.json();
                     embedData = { $type: 'app.bsky.embed.images', images: [{ alt: "Post de la Comunidad", image: blobJson.blob }] };
-                    
-                    // EL FIX DE LA BASE DE DATOS: Calculamos la URL pública real de Bluesky
                     const cidRef = blobJson.blob.ref.$link || blobJson.blob.ref;
                     cdnImageUrl = `https://cdn.bsky.app/img/feed_thumbnail/plain/${creds.did}/${cidRef}@jpeg`;
                 }
@@ -116,15 +119,16 @@ serve(async (req) => {
         if (!bskyResponse.ok) throw new Error(`Error Lexicon: ${await bskyResponse.text()}`);
         const published = await bskyResponse.json();
 
-        // EL FIX DE CACHÉ: Guardamos cdnImageUrl en embed_image_url (como pide tu tabla)
         const { data: profile } = await supabaseClient.from('profiles').select('display_name, avatar_url').eq('id', user.id).single();
-        await supabaseClient.from('community_feed_cache').insert([{
+        
+        // USAMOS SUPABASE ADMIN PARA FORZAR EL INSERTADO
+        const { error: insertError } = await supabaseAdmin.from('community_feed_cache').insert([{
             uri: published.uri, cid: published.cid, author_did: creds.did, author_handle: creds.handle, 
             author_display_name: profile?.display_name || creds.handle, author_avatar_url: profile?.avatar_url, 
-            post_text: payload.text, 
-            embed_image_url: cdnImageUrl, // <-- Ya no guardamos el texto Base64 gigante
-            indexed_at: new Date().toISOString()
+            post_text: payload.text, embed_image_url: cdnImageUrl, indexed_at: new Date().toISOString()
         }]);
+        
+        if (insertError) console.error("Error forzando guardado en caché:", insertError);
 
         return new Response(JSON.stringify({ success: true, uri: published.uri, cid: published.cid }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
       }
@@ -142,7 +146,6 @@ serve(async (req) => {
         return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
       }
 
-      // NUEVO: ACCIÓN PARA ELIMINAR POST
       case 'delete_post': {
         if (!payload.postUri) throw new Error('Falta el postUri para eliminarlo.');
         const rkey = payload.postUri.split('/').pop();
@@ -150,8 +153,13 @@ serve(async (req) => {
         // 1. Borramos de Bluesky
         await fetchWithDpop(`${pdsUrl}/xrpc/com.atproto.repo.deleteRecord`, 'POST', creds.access_jwt, privateJwk, { repo: creds.did, collection: 'app.bsky.feed.post', rkey });
         
-        // 2. Borramos de nuestra tabla caché instantáneamente
-        await supabaseClient.from('community_feed_cache').delete().eq('uri', payload.postUri);
+        // 2. Borramos de la caché USANDO SUPABASE ADMIN para saltar las reglas de bloqueo
+        const { error: deleteError } = await supabaseAdmin.from('community_feed_cache').delete().eq('uri', payload.postUri);
+        
+        if (deleteError) {
+            console.error("Error forzando el borrado en caché:", deleteError);
+            throw new Error("No se pudo borrar el post de la base de datos de Epistecnología.");
+        }
         
         return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
       }
