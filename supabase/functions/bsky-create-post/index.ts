@@ -7,77 +7,48 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// --- HELPER 1: Forjar la Firma Criptográfica DPoP ---
 async function generateDpopProof(htu: string, htm: string, privateJwk: any, nonce?: string) {
-  const privateKey = await crypto.subtle.importKey(
-    "jwk",
-    privateJwk,
-    { name: "ECDSA", namedCurve: "P-256" },
-    true,
-    ["sign"]
-  );
-
+  const privateKey = await crypto.subtle.importKey("jwk", privateJwk, { name: "ECDSA", namedCurve: "P-256" }, true, ["sign"]);
   const publicJwk = { kty: privateJwk.kty, crv: privateJwk.crv, x: privateJwk.x, y: privateJwk.y };
-
   const header = { typ: "dpop+jwt", alg: "ES256", jwk: publicJwk };
-  const payload: any = {
-    jti: crypto.randomUUID(),
-    htm: htm,
-    htu: htu,
-    iat: Math.floor(Date.now() / 1000)
-  };
+  const payload: any = { jti: crypto.randomUUID(), htm: htm, htu: htu, iat: Math.floor(Date.now() / 1000) };
   if (nonce) payload.nonce = nonce;
-
+  
   const encoder = new TextEncoder();
   const headerB64 = base64UrlEncode(encoder.encode(JSON.stringify(header)));
   const payloadB64 = base64UrlEncode(encoder.encode(JSON.stringify(payload)));
   const dataToSign = encoder.encode(`${headerB64}.${payloadB64}`);
-
-  const signature = await crypto.subtle.sign(
-    { name: "ECDSA", hash: { name: "SHA-256" } },
-    privateKey,
-    dataToSign
-  );
-
+  
+  const signature = await crypto.subtle.sign({ name: "ECDSA", hash: { name: "SHA-256" } }, privateKey, dataToSign);
   return `${headerB64}.${payloadB64}.${base64UrlEncode(new Uint8Array(signature))}`;
 }
 
-// --- HELPER 2: Descubrir el Servidor (PDS) del Usuario ---
 async function getUserPDS(did: string) {
   try {
     const res = await fetch(`https://plc.directory/${did}`);
     if (res.ok) {
       const doc = await res.json();
-      const pdsService = doc.service?.find((s: any) => s.id === '#atproto_pds');
-      if (pdsService) return pdsService.serviceEndpoint;
+      const pds = doc.service?.find((s: any) => s.id === '#atproto_pds');
+      if (pds) return pds.serviceEndpoint;
     }
-  } catch (e) { console.error("Error resolviendo DID:", e); }
+  } catch (e) { console.error("PDS Error", e); }
   return 'https://bsky.network';
 }
 
-// --- HELPER 3: Fetch Nativo con Manejo de Nonce ---
 async function fetchWithDpop(url: string, method: string, accessJwt: string, privateJwk: any, body: any) {
   let proof = await generateDpopProof(url, method, privateJwk);
-  
   let reqOptions = {
     method,
-    headers: {
-      'Authorization': `DPoP ${accessJwt}`,
-      'DPoP': proof,
-      'Content-Type': 'application/json'
-    },
+    headers: { 'Authorization': `DPoP ${accessJwt}`, 'DPoP': proof, 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   };
-
   let response = await fetch(url, reqOptions);
-
+  
   if (response.status === 401 && response.headers.has('dpop-nonce')) {
-    const nonce = response.headers.get('dpop-nonce')!;
-    proof = await generateDpopProof(url, method, privateJwk, nonce);
+    proof = await generateDpopProof(url, method, privateJwk, response.headers.get('dpop-nonce')!);
     reqOptions.headers['DPoP'] = proof;
     response = await fetch(url, reqOptions);
   }
-
   return response;
 }
 
@@ -93,76 +64,59 @@ serve(async (req) => {
     const { data: { user } } = await supabaseClient.auth.getUser()
     if (!user) throw new Error('Usuario no autenticado.')
 
-    const { postText, postLink } = await req.json()
-    if (!postText) throw new Error('El texto del post es obligatorio.')
-
+    const { postText } = await req.json()
+    
     const { data: creds, error: credsError } = await supabaseClient
       .from('bsky_credentials')
       .select('access_jwt, refresh_jwt, did, handle')
       .eq('user_id', user.id)
       .single()
       
-    if (credsError || !creds) throw new Error('Cuenta de Bluesky no conectada.')
+    if (credsError || !creds) throw new Error('No se encontraron credenciales de Bluesky en la base de datos.')
 
-    // 4. Desempaquetar la llave privada DPoP (De forma segura y robusta)
     let privateJwk;
     try {
       const secureData = JSON.parse(creds.refresh_jwt);
       privateJwk = secureData.jwk;
     } catch (e) {
-      throw new Error('AUTH_EXPIRED: Tu sesión utiliza un formato antiguo. Por favor, desconecta y vuelve a conectar tu cuenta de Bluesky.');
+      throw new Error('El token refresh_jwt guardado no tiene el formato JSON esperado.');
     }
 
-    if (!privateJwk) {
-      throw new Error('AUTH_EXPIRED: Llave criptográfica no encontrada. Por favor, reconecta tu cuenta.');
-    }
+    if (!privateJwk) throw new Error('El JSON existe, pero la llave privada DPoP (jwk) está vacía o nula.');
 
     const pdsUrl = await getUserPDS(creds.did);
     const createRecordUrl = `${pdsUrl}/xrpc/com.atproto.repo.createRecord`;
 
-    const record = {
-      $type: 'app.bsky.feed.post',
-      text: postText,
-      createdAt: new Date().toISOString(),
-      langs: ["es"]
-    };
-
     const lexiconBody = {
       repo: creds.did,
       collection: 'app.bsky.feed.post',
-      record: record
+      record: {
+        $type: 'app.bsky.feed.post',
+        text: postText,
+        createdAt: new Date().toISOString(),
+        langs: ["es"]
+      }
     };
 
     const bskyResponse = await fetchWithDpop(createRecordUrl, 'POST', creds.access_jwt, privateJwk, lexiconBody);
     
     if (!bskyResponse.ok) {
         const errorText = await bskyResponse.text();
-        throw new Error(`Fallo en Bluesky (${bskyResponse.status}): ${errorText}`);
+        // Lanzamos el error detallado de Bluesky
+        throw new Error(`Bluesky Lexicon Error (${bskyResponse.status}): ${errorText}`);
     }
 
     const published = await bskyResponse.json();
-
-    // Guardar en Caché de Epistecnología
-    const { data: profile } = await supabaseClient.from('profiles').select('display_name, avatar_url').eq('id', user.id).single();
-    await supabaseClient.from('community_feed_cache').insert([{
-        uri: published.uri,
-        cid: published.cid,
-        author_did: creds.did,
-        author_handle: creds.handle,
-        author_display_name: profile?.display_name || creds.handle,
-        author_avatar_url: profile?.avatar_url,
-        post_text: postText,
-        indexed_at: new Date().toISOString()
-    }]);
-
-    return new Response(JSON.stringify({ success: true, message: "Publicado vía Lexicon", uri: published.uri }), { 
+    return new Response(JSON.stringify({ success: true, message: "Publicado", uri: published.uri }), { 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 
     });
 
   } catch (error) {
-    console.error("Error en bsky-create-post:", error);
+    // EL TRUCO: Devolvemos 200 para eludir el FunctionsHttpError de comunidad.js
+    // pero enviamos el error real en la carga útil.
+    console.error("Error capturado:", error.message);
     return new Response(JSON.stringify({ success: false, error: error.message }), { 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 
     });
   }
 })
