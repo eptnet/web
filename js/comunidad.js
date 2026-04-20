@@ -1545,44 +1545,60 @@ const ComunidadApp = {
 
     async handleShare(button) {
         const postElement = button.closest('.feed-post');
-        const postUri = postElement.dataset.uri; 
+        const postUri = postElement.dataset.uri;
 
-        // Extraemos datos para construir la URL y el texto
+        // Extraemos handle y rkey para construir la URL
         const parts = postUri.split('/');
-        const handle = postElement.querySelector('.post-handle').textContent.substring(1); // quitamos el @
+        const handle = postElement.querySelector('.post-handle').textContent.substring(1); 
         const rkey = parts[parts.length - 1];
-        const webUrl = `https://bsky.app/profile/${handle}/post/${rkey}`;
         
-        // Extraemos un pedacito del texto para el mensaje a compartir
+        // Extraemos texto para el mensaje de WhatsApp
         const postTextElement = postElement.querySelector('.post-body p');
         const postText = postTextElement ? postTextElement.textContent.substring(0, 60) + '...' : 'Mira esta publicación';
 
-        // MAGIA NATIVA: Si el navegador soporta compartir (Celulares y PC modernas)
-        if (navigator.share) {
+        // ==========================================
+        // AQUÍ DEFINIMOS QUÉ URL VAMOS A COMPARTIR
+        // ==========================================
+        // Opción A (Actual): URL de Bluesky (Garantiza miniatura, pero pierdes tráfico)
+        // const urlToShare = `https://bsky.app/profile/${handle}/post/${rkey}`;
+        
+        // Opción B (La Meta): Tu dominio. 
+        // Nota: Para que esta opción tenga la foto dinámica en WhatsApp, requerirá la Edge Function "Puente Proxy".
+        const encodedUri = encodeURIComponent(postUri);
+        const urlToShare = `https://epistecnologia.com/comunidad.html?post=${encodedUri}`; 
+
+        // 1. SIEMPRE copiamos al portapapeles primero (Ideal para PC)
+        try {
+            await navigator.clipboard.writeText(urlToShare);
+            // Mostramos un aviso amigable
+            if (window.showToast) {
+                window.showToast('¡Enlace copiado al portapapeles!');
+            } else {
+                alert('¡Enlace copiado al portapapeles!');
+            }
+        } catch (err) {
+            console.error('Error al copiar el enlace:', err);
+        }
+
+        // 2. Si es un dispositivo móvil/tablet, lanzamos la interfaz nativa encima
+        // Usamos una pequeña validación (UserAgent o max-width) para no lanzar esto en PC
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        if (isMobile && navigator.share) {
             try {
                 await navigator.share({
-                    title: `Post de @${handle} en Epistecnología`,
-                    text: `Interesante aporte de @${handle}:\n"${postText}"`,
-                    url: webUrl
+                    title: `Aporte de @${handle} en Epistecnología`,
+                    text: `Mira este aporte en la comunidad:\n"${postText}"`,
+                    url: urlToShare
                 });
             } catch (err) {
-                // Ignoramos el error si el usuario simplemente canceló el menú de compartir
+                // Si el usuario simplemente cancela o cierra el menú, no hacemos nada
                 if (err.name !== 'AbortError') console.error('Error al compartir nativamente:', err);
             }
-        } else {
-            // FALLBACK: Si es una PC muy antigua, usamos el portapapeles
-            navigator.clipboard.writeText(webUrl).then(() => {
-                alert('¡Enlace al post copiado al portapapeles!');
-            }).catch(err => {
-                console.error('Error al copiar el enlace:', err);
-                alert('No se pudo copiar el enlace.');
-            });
         }
     },
 
     // --- FUNCIONES DEL MODAL (Nuevas) ---
-
-    // REEMPLAZA ESTAS DOS FUNCIONES en comunidad.js
 
     openPostModal() {
         const modalContainer = document.getElementById('modal-container');
