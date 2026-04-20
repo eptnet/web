@@ -1498,7 +1498,6 @@ const ComunidadApp = {
                     </a>`;
             }
         }
-        // --- FIN DE LA MODIFICACIÓN ---
 
         const isMyPost = this.bskyCreds && author.handle === this.bskyCreds.handle;
         const deleteBtnHtml = isMyPost ? `
@@ -1507,6 +1506,7 @@ const ComunidadApp = {
             </button>
         ` : '';
 
+        // ESTRUCTURA HTML LIMPIA (Sin </div> extras)
         return `
             <div class="bento-box feed-post" data-uri="${post.uri}" data-cid="${post.cid}">
                 <div class="post-header">
@@ -1515,7 +1515,7 @@ const ComunidadApp = {
                         <strong>${author.displayName || author.handle}</strong>
                         <span class="post-handle">@${author.handle}</span>
                     </div>
-                    ${deleteBtnHtml} </div>
+                    ${deleteBtnHtml}
                 </div>
                 <div class="post-body">
                     <p>${postText}</p>
