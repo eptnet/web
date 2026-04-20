@@ -1543,24 +1543,42 @@ const ComunidadApp = {
         `;
     },
 
-    handleShare(button) {
+    async handleShare(button) {
         const postElement = button.closest('.feed-post');
-        const postUri = postElement.dataset.uri; // at://did:plc:user/app.bsky.feed.post/rkey
+        const postUri = postElement.dataset.uri; 
 
-        // Extraemos el handle y el rkey del URI para construir una URL web
+        // Extraemos datos para construir la URL y el texto
         const parts = postUri.split('/');
         const handle = postElement.querySelector('.post-handle').textContent.substring(1); // quitamos el @
         const rkey = parts[parts.length - 1];
-        
         const webUrl = `https://bsky.app/profile/${handle}/post/${rkey}`;
+        
+        // Extraemos un pedacito del texto para el mensaje a compartir
+        const postTextElement = postElement.querySelector('.post-body p');
+        const postText = postTextElement ? postTextElement.textContent.substring(0, 60) + '...' : 'Mira esta publicación';
 
-        navigator.clipboard.writeText(webUrl).then(() => {
-            alert('¡Enlace al post copiado al portapapeles!');
-        }).catch(err => {
-            console.error('Error al copiar el enlace:', err);
-            alert('No se pudo copiar el enlace.');
-        });
-    },
+        // MAGIA NATIVA: Si el navegador soporta compartir (Celulares y PC modernas)
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: `Post de @${handle} en Epistecnología`,
+                    text: `Interesante aporte de @${handle}:\n"${postText}"`,
+                    url: webUrl
+                });
+            } catch (err) {
+                // Ignoramos el error si el usuario simplemente canceló el menú de compartir
+                if (err.name !== 'AbortError') console.error('Error al compartir nativamente:', err);
+            }
+        } else {
+            // FALLBACK: Si es una PC muy antigua, usamos el portapapeles
+            navigator.clipboard.writeText(webUrl).then(() => {
+                alert('¡Enlace al post copiado al portapapeles!');
+            }).catch(err => {
+                console.error('Error al copiar el enlace:', err);
+                alert('No se pudo copiar el enlace.');
+            });
+        }
+    }
 
     // --- FUNCIONES DEL MODAL (Nuevas) ---
 
