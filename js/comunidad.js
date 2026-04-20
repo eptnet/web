@@ -1544,57 +1544,68 @@ const ComunidadApp = {
     },
 
     async handleShare(button) {
-        const postElement = button.closest('.feed-post');
-        const postUri = postElement.dataset.uri;
+        // 1. Efecto Visual de Carga
+        const originalHtml = button.innerHTML;
+        button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        button.disabled = true;
 
-        // Extraemos handle y rkey para construir la URL
-        const parts = postUri.split('/');
-        const handle = postElement.querySelector('.post-handle').textContent.substring(1); 
-        const rkey = parts[parts.length - 1];
-        
-        // Extraemos texto para el mensaje de WhatsApp
-        const postTextElement = postElement.querySelector('.post-body p');
-        const postText = postTextElement ? postTextElement.textContent.substring(0, 60) + '...' : 'Mira esta publicación';
-
-        // ==========================================
-        // AQUÍ DEFINIMOS QUÉ URL VAMOS A COMPARTIR
-        // ==========================================
-        // Opción A (Actual): URL de Bluesky (Garantiza miniatura, pero pierdes tráfico)
-        // const urlToShare = `https://bsky.app/profile/${handle}/post/${rkey}`;
-        
-        // Opción B (La Meta): Tu dominio. 
-        // Nota: Para que esta opción tenga la foto dinámica en WhatsApp, requerirá la Edge Function "Puente Proxy".
-        const encodedUri = encodeURIComponent(postUri);
-        const urlToShare = `https://epistecnologia.com/comunidad.html?post=${encodedUri}`; 
-
-        // 1. SIEMPRE copiamos al portapapeles primero (Ideal para PC)
         try {
-            await navigator.clipboard.writeText(urlToShare);
-            // Mostramos un aviso amigable
-            if (window.showToast) {
-                window.showToast('¡Enlace copiado al portapapeles!');
-            } else {
-                alert('¡Enlace copiado al portapapeles!');
-            }
-        } catch (err) {
-            console.error('Error al copiar el enlace:', err);
-        }
+            const postElement = button.closest('.feed-post');
+            const postUri = postElement.dataset.uri;
 
-        // 2. Si es un dispositivo móvil/tablet, lanzamos la interfaz nativa encima
-        // Usamos una pequeña validación (UserAgent o max-width) para no lanzar esto en PC
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        
-        if (isMobile && navigator.share) {
+            const handle = postElement.querySelector('.post-handle').textContent.substring(1); 
+            const postTextElement = postElement.querySelector('.post-body p');
+            const postText = postTextElement ? postTextElement.textContent.substring(0, 60) + '...' : 'Mira esta publicación';
+
+            // 2. Construimos el enlace largo original (El Puente Proxy)
+            const encodedUri = encodeURIComponent(postUri);
+            const longUrl = `https://seyknzlheaxmwztkfxmk.supabase.co/functions/v1/share-post?uri=${encodedUri}`; 
+
+            // 3. LLAMADA AL ACORTADOR (Usando is.gd por defecto)
+            let urlToShare = longUrl; // Plan B por defecto
             try {
-                await navigator.share({
-                    title: `Aporte de @${handle} en Epistecnología`,
-                    text: `Mira este aporte en la comunidad:\n"${postText}"`,
-                    url: urlToShare
-                });
-            } catch (err) {
-                // Si el usuario simplemente cancela o cierra el menú, no hacemos nada
-                if (err.name !== 'AbortError') console.error('Error al compartir nativamente:', err);
+                // Hacemos la petición a la API gratuita de is.gd
+                const shortenerResponse = await fetch(`https://is.gd/create.php?format=json&url=${encodeURIComponent(longUrl)}`);
+                if (shortenerResponse.ok) {
+                    const shortenerData = await shortenerResponse.json();
+                    if (shortenerData.shorturl) {
+                        urlToShare = shortenerData.shorturl; // ¡Éxito! Tenemos el enlace corto
+                    }
+                }
+            } catch (shortenerError) {
+                console.warn("El acortador falló, usando el enlace largo como respaldo.", shortenerError);
             }
+
+            // 4. Copiamos al portapapeles
+            try {
+                await navigator.clipboard.writeText(urlToShare);
+                if (window.showToast) {
+                    window.showToast('¡Enlace corto copiado al portapapeles!');
+                } else {
+                    alert('¡Enlace corto copiado al portapapeles!');
+                }
+            } catch (err) {
+                console.error('Error al copiar el enlace:', err);
+            }
+
+            // 5. Interfaz nativa para Móviles
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            if (isMobile && navigator.share) {
+                try {
+                    await navigator.share({
+                        title: `Aporte de @${handle} en Epistecnología`,
+                        text: `Mira este debate en nuestra comunidad:\n"${postText}"`,
+                        url: urlToShare // Pasamos el enlace CORTO
+                    });
+                } catch (err) {
+                    if (err.name !== 'AbortError') console.error('Error al compartir nativamente:', err);
+                }
+            }
+        } finally {
+            // 6. Restauramos el botón a la normalidad sin importar qué pase
+            button.innerHTML = originalHtml;
+            button.disabled = false;
         }
     },
 
