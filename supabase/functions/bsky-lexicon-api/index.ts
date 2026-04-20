@@ -82,7 +82,7 @@ serve(async (req) => {
 
         // RADARES DE DIAGNÓSTICO DE IMAGEN
         if (payload.imageUrl) {
-            console.log("📸 Iniciando procesamiento de imagen:", payload.imageUrl);
+            console.log("📸 Iniciando procesamiento de imagen (Base64 recibido)...");
             try {
                 let imgBuffer;
                 let mimeType = 'image/jpeg';

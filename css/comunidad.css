@@ -215,13 +215,38 @@ body.dark-theme {
 }
 .post-date { font-size: 0.8rem; color: var(--color-secondary-text); }
 .post-actions { display: flex; gap: 1rem; }
+/* FIX: Botones de acción del post (Like, Reply, Share) */
 .post-action-btn {
-    background: var(--color-background); border: none; color: var(--color-secondary-text); cursor: pointer;
-    display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; padding: 0.4rem 0.8rem;
-    border-radius: 20px; transition: all 0.2s ease; font-weight: 600;
+    background: var(--color-background); 
+    border: none; 
+    color: var(--color-secondary-text); 
+    cursor: pointer;
+    display: flex; 
+    align-items: center; 
+    gap: 0.5rem; 
+    font-size: 0.9rem; 
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px; 
+    transition: all 0.2s ease; 
+    font-weight: 600;
+    outline: none; /* Elimina el cuadro azul/negro al hacer clic en PC */
+    -webkit-tap-highlight-color: transparent; /* Elimina el cuadro gris al tocar en celular */
 }
-.post-action-btn:hover { color: var(--color-accent); background-color: var(--color-accent-light); transform: scale(1.05); }
-.post-action-btn.is-liked { color: white; background-color: #e0245e; }
+
+.post-action-btn:focus, .post-action-btn:active {
+    outline: none;
+}
+
+.post-action-btn:hover { 
+    color: var(--color-accent); 
+    background-color: var(--color-accent-light); 
+    transform: scale(1.05); 
+}
+
+.post-action-btn.is-liked { 
+    color: white; 
+    background-color: #e0245e; 
+}
 
 /* --- COLUMNA DERECHA (Nuevos Elementos) --- */
 .suggestions-box h4, .promo-box h4 {

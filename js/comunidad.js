@@ -1117,7 +1117,7 @@ const ComunidadApp = {
             if (data && data.error) throw new Error(data.error);
 
             // 5. ÉXITO: Limpiamos y actualizamos la UI
-            this.prependNewPost(postText, this.selectedImageFile);
+            this.prependNewPost(postText, this.selectedImageFile, data.uri, data.cid);
             textArea.value = '';
             this.removeSelectedImage();
             this.updateCharCounter({ target: textArea });
@@ -1145,8 +1145,11 @@ const ComunidadApp = {
     /**
      * Crea el HTML para un nuevo post y lo añade al principio del feed.
      * @param {string} postText - El contenido del post.
+     * @param {File} imageFile - Opcional. La imagen a mostrar en local.
+     * @param {string} uri - La URI real devuelta por Bluesky.
+     * @param {string} cid - El CID real devuelto por Bluesky.
      */
-    prependNewPost(postText, imageFile = null) {
+    prependNewPost(postText, imageFile = null, uri = "", cid = "") {
         const container = document.getElementById('feed-container');
         if (!container) return;
 
@@ -1166,7 +1169,10 @@ const ComunidadApp = {
             };
         }
         
+        // ¡AQUÍ ESTABA EL ERROR! Le pasamos el uri y cid reales al objeto
         const fakePost = {
+            uri: uri,   // <--- ¡INYECCIÓN DE LA LLAVE!
+            cid: cid,   // <--- ¡INYECCIÓN DE LA LLAVE!
             author: author,
             record: { text: postText },
             embed: embed,
@@ -1175,6 +1181,7 @@ const ComunidadApp = {
             viewer: {}
         };
         
+        // La función createPostHtml leerá el uri y cid y los pondrá en los data-atributos
         const postHtml = this.createPostHtml(fakePost);
         container.insertAdjacentHTML('afterbegin', postHtml);
     },
