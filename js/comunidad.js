@@ -1174,7 +1174,6 @@ const ComunidadApp = {
      * Maneja el evento de "Me Gusta" (funcionalidad futura).
      */
     async handleLike(button) {
-        // Si el usuario no está conectado a Bluesky, no hacemos nada.
         if (!this.bskyCreds) {
             alert("Necesitas conectar tu cuenta de Bluesky para poder interactuar.");
             return;
@@ -1182,52 +1181,73 @@ const ComunidadApp = {
         if (button.disabled) return;
 
         const postElement = button.closest('.feed-post');
+        
+        // ¡Validación Anti-Undefined!
         const postUri = postElement.dataset.uri;
         const postCid = postElement.dataset.cid;
         let likeUri = button.dataset.likeUri;
+        
+        console.log("🛠️ DEBUG LIKE - Leído del HTML:", { uri: postUri, cid: postCid });
+        
+        if (!postUri || postUri === "undefined" || !postCid || postCid === "undefined") {
+            alert("Error: El HTML del post no tiene los atributos data-uri o data-cid correctos. Revisa tu función renderFeed.");
+            return;
+        }
 
         const isLiked = button.classList.contains('is-liked');
         const countSpan = button.querySelector('span');
         const icon = button.querySelector('i');
-        const originalCount = parseInt(countSpan.textContent);
+        const originalCount = parseInt(countSpan.textContent) || 0;
 
-        // 1. Actualización Optimista: Cambiamos la UI al instante.
+        // 1. Actualización Optimista
         button.disabled = true;
         button.classList.toggle('is-liked');
-        if (!isLiked) { // Si NO tenía like... ahora lo tiene
+        
+        if (!isLiked) {
             icon.className = 'fa-solid fa-heart';
             countSpan.textContent = originalCount + 1;
-        } else { // Si SÍ tenía like... ahora se lo quitamos
+        } else {
             icon.className = 'fa-regular fa-heart';
-            countSpan.textContent = originalCount - 1;
+            countSpan.textContent = Math.max(0, originalCount - 1);
         }
 
-        // 2. Llamada a la Edge Function
+        // 2. Llamada al NUEVO Cerebro Central (bsky-lexicon-api)
         try {
-            const { data, error } = await this.supabase.functions.invoke('bsky-like-post', {
+            // Decidimos la acción basados en el estado
+            const actionName = isLiked ? 'unlike_post' : 'like_post';
+            
+            const { data, error } = await this.supabase.functions.invoke('bsky-lexicon-api', {
                 body: { 
+                    action: actionName,      // Le decimos al API qué hacer
                     postUri: postUri, 
                     postCid: postCid,
-                    likeUri: isLiked ? likeUri : undefined // Si ya tenía like, enviamos su URI para borrarlo
+                    likeUri: likeUri
                 },
             });
 
             if (error) throw error;
+            if (data && data.error) throw new Error(data.error); // Por si devolvemos error 200
 
-            // Si la acción fue un 'like' exitoso, guardamos el nuevo likeUri que nos devuelve la función.
+            // 3. Éxito: Guardamos el estado
             if (!isLiked && data.uri) {
                 button.dataset.likeUri = data.uri;
             } else if (isLiked) {
-                button.dataset.likeUri = ''; // Limpiamos el likeUri si lo quitamos
+                button.dataset.likeUri = '';
             }
 
         } catch (error) {
             console.error("Error al procesar el Like:", error);
-            // 3. Reversión: Si algo falla, devolvemos la UI a su estado original.
+            
+            // Reversión
             button.classList.toggle('is-liked');
             icon.className = isLiked ? 'fa-solid fa-heart' : 'fa-regular fa-heart';
             countSpan.textContent = originalCount;
-            alert("No se pudo procesar la acción. Inténtalo de nuevo.");
+            
+            if (error.message.includes('AUTH_EXPIRED')) {
+                alert("Tu sesión de Bluesky expiró. Por favor, reconecta tu cuenta en tu Perfil.");
+            } else {
+                alert("No se pudo procesar la acción. Revisa la consola.");
+            }
         } finally {
             button.disabled = false;
         }
