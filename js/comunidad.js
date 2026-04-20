@@ -1076,8 +1076,12 @@ const ComunidadApp = {
         const previewTitle = document.querySelector('#link-preview-editor strong');
         const previewDesc = document.querySelector('#link-preview-editor p');
 
+        // 3. ARMAMOS EL BODY PARA EL NUEVO CEREBRO CENTRAL (bsky-lexicon-api)
         let body = { 
-            postText: postText,
+            action: 'create_post', // CRÍTICO: Le indicamos al API qué acción tomar
+            text: postText,        // CRÍTICO: La nueva API espera 'text', no 'postText'
+            
+            // Mantenemos tu lógica antigua por si luego le enseñamos al Cerebro a procesar links
             postLink: postLink,
             linkTitle: previewTitle ? previewTitle.textContent : null,
             linkDescription: previewDesc ? previewDesc.textContent : null,
@@ -1086,14 +1090,14 @@ const ComunidadApp = {
 
         if (this.selectedImageFile) {
             try {
-                const base64Image = await new Promise((resolve, reject) => {
+                const fullBase64 = await new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.readAsDataURL(this.selectedImageFile);
-                    reader.onload = () => resolve(reader.result.split(',')[1]);
+                    // CRÍTICO: NO hacemos split. Enviamos reader.result completo con todo el 'data:image...'
+                    reader.onload = () => resolve(reader.result);
                     reader.onerror = error => reject(error);
                 });
-                body.base64Image = base64Image;
-                body.imageMimeType = this.selectedImageFile.type;
+                body.imageUrl = fullBase64; // CRÍTICO: La nueva API espera 'imageUrl'
             } catch (error) {
                 console.error("Error al leer la imagen:", error);
                 alert("No se pudo procesar la imagen.");
@@ -1104,11 +1108,15 @@ const ComunidadApp = {
         }
 
         try {
-            const { error } = await this.supabase.functions.invoke('bsky-create-post', {
+            // 4. LLAMAMOS AL CEREBRO CENTRAL
+            const { data, error } = await this.supabase.functions.invoke('bsky-lexicon-api', {
                 body: body,
             });
+            
             if (error) throw error;
+            if (data && data.error) throw new Error(data.error);
 
+            // 5. ÉXITO: Limpiamos y actualizamos la UI
             this.prependNewPost(postText, this.selectedImageFile);
             textArea.value = '';
             this.removeSelectedImage();
@@ -1118,12 +1126,13 @@ const ComunidadApp = {
         } catch (error) {
             console.error("Error al publicar:", error);
             const errMsg = error.message || "";
-            if (errMsg.includes('non-2xx') || errMsg.includes('revoked') || errMsg.includes('Expired')) {
+            // Hemos unificado también la detección de errores de sesión
+            if (errMsg.includes('non-2xx') || errMsg.includes('revoked') || errMsg.includes('AUTH_EXPIRED') || errMsg.includes('caducado')) {
                 alert("Tu clave de Bluesky ha caducado. Por favor, reconecta tu cuenta.");
                 this.closePostModal();
                 this.openBskyConnectModal();
             } else {
-                alert(`No se pudo publicar. Revisa tu conexión.`);
+                alert(`No se pudo publicar. Revisa tu conexión. Detalle: ${errMsg}`);
             }
         } finally {
             if (submitButton) {
