@@ -1557,29 +1557,34 @@ const ComunidadApp = {
             const postTextElement = postElement.querySelector('.post-body p');
             const postText = postTextElement ? postTextElement.textContent.substring(0, 60) + '...' : 'Mira esta publicación';
 
-            // 2. Construimos el enlace largo original (El Puente Proxy de Supabase)
+            // 2. LA URL DE TU DOMINIO (¡No uses bsky.app aquí o perderás el tráfico!)
             const encodedUri = encodeURIComponent(postUri);
             const longUrl = `https://seyknzlheaxmwztkfxmk.supabase.co/functions/v1/share-post?uri=${encodedUri}`; 
 
-            // 3. LLAMADA AL ACORTADOR (CORS BYPASS)
-            let urlToShare = longUrl;
-            try {
-                // Envolvemos la llamada a is.gd dentro de un proxy público para evitar el bloqueo del navegador
-                const isGdUrl = `https://is.gd/create.php?format=json&url=${encodeURIComponent(longUrl)}`;
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(isGdUrl)}`;
+            // 3. EL TRUCO MAESTRO: JSONP para evadir CORS sin proxies externos
+            let urlToShare = await new Promise((resolve) => {
+                // Creamos un nombre de función único
+                const callbackName = 'isgd_callback_' + Math.round(100000 * Math.random());
                 
-                const shortenerResponse = await fetch(proxyUrl);
+                // Esta es la función que is.gd ejecutará cuando responda
+                window[callbackName] = function(data) {
+                    delete window[callbackName];
+                    document.body.removeChild(script);
+                    resolve(data.shorturl ? data.shorturl : longUrl);
+                };
+
+                // Creamos un script temporal (El navegador NO bloquea esto con CORS)
+                const script = document.createElement('script');
+                script.src = `https://is.gd/create.php?format=json&url=${encodeURIComponent(longUrl)}&callback=${callbackName}`;
                 
-                if (shortenerResponse.ok) {
-                    const proxyData = await shortenerResponse.json();
-                    const shortenerData = JSON.parse(proxyData.contents); // Extraemos la respuesta real de is.gd
-                    if (shortenerData.shorturl) {
-                        urlToShare = shortenerData.shorturl; // ¡El enlace corto funciona!
-                    }
-                }
-            } catch (shortenerError) {
-                console.warn("El acortador falló silenciosamente, usando el enlace largo.", shortenerError);
-            }
+                script.onerror = function() {
+                    delete window[callbackName];
+                    document.body.removeChild(script);
+                    resolve(longUrl); // Si todo falla, devuelve tu enlace de Supabase
+                };
+                
+                document.body.appendChild(script);
+            });
 
             const shareTitle = `Aporte de @${handle} en Epistecnología`;
             const shareText = `Mira este debate en nuestra comunidad:\n"${postText}"`;
@@ -1588,7 +1593,7 @@ const ComunidadApp = {
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             
             if (isMobile && navigator.share) {
-                // CELULAR: Abre el menú nativo del teléfono con el enlace corto
+                // CELULAR: Menú nativo con el enlace cortito de is.gd
                 try {
                     await navigator.share({
                         title: shareTitle,
@@ -1599,7 +1604,7 @@ const ComunidadApp = {
                     if (err.name !== 'AbortError') console.error('Error al compartir nativamente:', err);
                 }
             } else {
-                // PC: Muestra el nuevo menú personalizado con redes sociales
+                // PC: Muestra el Super Menú
                 this.showCustomShareModal(urlToShare, shareTitle, shareText);
             }
         } finally {
