@@ -1330,24 +1330,35 @@ const ComunidadApp = {
         const repliesContainer = document.getElementById('thread-replies');
 
         try {
-            // Llamamos a tu Edge Function experta en hilos
-            const { data, error } = await this.supabase.functions.invoke('bsky-get-post-thread', {
-                body: { postUri: postUri }
+            // LLAMAMOS AL NUEVO CEREBRO CENTRAL
+            const { data, error } = await this.supabase.functions.invoke('bsky-lexicon-api', {
+                body: { 
+                    action: 'get_post_thread', 
+                    uri: postUri 
+                }
             });
 
             if (error) throw error;
+            if (data && data.error) throw new Error(data.error);
 
-            // 1. Dibujamos el post principal usando la función súper-vitaminada que ya tenemos
-            if (data.anchorPost) {
-                // Modificamos el diseño del post principal para quitarle el hover/bordes y hacerlo plano
-                const anchorHtml = this.createPostHtml(data.anchorPost).replace('bento-box', '').replace('border: 1px solid transparent;', 'border: none;');
+            // Obtenemos el objeto puro del hilo desde Bluesky
+            const threadData = data.thread;
+            if (!threadData) throw new Error("Hilo no encontrado");
+
+            // 1. Dibujamos el post principal usando la función súper-vitaminada
+            if (threadData.post) {
+                // Modificamos el diseño para quitarle el hover/bordes y hacerlo plano en el modal
+                const anchorHtml = this.createPostHtml(threadData.post).replace('bento-box', '').replace('border: 1px solid transparent;', 'border: none;');
                 anchorContainer.innerHTML = anchorHtml;
             }
 
             // 2. Dibujamos las respuestas
-            if (data.messages && data.messages.length > 0) {
-                const repliesHtml = data.messages.map(msg => {
-                    // Reutilizamos createPostHtml pero le damos un estilo de "comentario" (fondo distinto, sin márgenes grandes)
+            if (threadData.replies && threadData.replies.length > 0) {
+                const repliesHtml = threadData.replies.map(replyObj => {
+                    // En Bluesky, los datos del post vienen anidados dentro del objeto 'replyObj.post'
+                    const msg = replyObj.post;
+                    if (!msg) return '';
+                    
                     return this.createPostHtml(msg).replace('bento-box', '').replace('padding: 1.5rem;', 'padding: 1rem 1.5rem; background: var(--color-surface); border: none; border-bottom: 1px solid var(--color-background);');
                 }).join('');
                 repliesContainer.innerHTML = repliesHtml;
@@ -1405,24 +1416,29 @@ const ComunidadApp = {
         submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
 
         try {
-            const { error } = await this.supabase.functions.invoke('bsky-create-reply', {
+            // LLAMADA AL NUEVO CEREBRO CENTRAL
+            const { data, error } = await this.supabase.functions.invoke('bsky-lexicon-api', {
                 body: {
-                    replyText: replyText,
-                    // El objeto que espera nuestra Edge Function
-                    parentPost: {
-                        uri: parentPostData.uri,
-                        cid: parentPostData.cid
+                    action: 'create_reply',
+                    text: replyText,
+                    // Estructura oficial de Bluesky: requiere Root y Parent
+                    replyTo: {
+                        rootUri: parentPostData.uri,
+                        rootCid: parentPostData.cid,
+                        parentUri: parentPostData.uri,
+                        parentCid: parentPostData.cid
                     }
                 },
             });
 
             if (error) throw error;
+            if (data && data.error) throw new Error(data.error);
             
-            // Actualización Optimista: incrementamos el contador de comentarios
+            // Actualización Optimista: incrementamos el contador de comentarios en la pantalla
             const originalPostElement = document.querySelector(`.feed-post[data-uri="${parentPostData.uri}"]`);
             if (originalPostElement) {
                 const countSpan = originalPostElement.querySelector('.reply-btn span');
-                countSpan.textContent = parseInt(countSpan.textContent) + 1;
+                countSpan.textContent = parseInt(countSpan.textContent || 0) + 1;
             }
 
             this.closePostModal();
