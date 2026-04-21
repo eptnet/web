@@ -941,16 +941,18 @@ const ComunidadApp = {
         });
     },
 
+    // ==========================================
+    // SISTEMA DE FORMULARIOS UNIFICADOS Y PREVIEWS
+    // ==========================================
     addFormEventListeners(container) {
         const form = container.tagName === 'FORM' ? container : container.querySelector('form');
         if (!form) return;
 
-        // Inyectamos el editor de vista previa si no existe (vital para el Modal de Respuesta)
         const wrapper = form.querySelector('.post-input-wrapper') || form.querySelector('.textarea-container');
         if (wrapper && !form.querySelector('.link-preview-editor')) {
             wrapper.insertAdjacentHTML('beforeend', `
                 <div class="link-preview-loader" style="display:none; font-size: 0.8rem; margin: 10px 0; color: var(--color-accent);">
-                    <i class="fa-solid fa-spinner fa-spin"></i> Generando vista previa...
+                    <i class="fa-solid fa-spinner fa-spin"></i> Analizando enlace...
                 </div>
                 <div class="link-preview-editor link-preview-card" style="display:none; margin-bottom: 15px; position: relative;"></div>
             `);
@@ -958,7 +960,12 @@ const ComunidadApp = {
 
         form.querySelector('textarea')?.addEventListener('input', (e) => {
             this.updateCharCounter(e);
-            this.detectLinkInText(e.target.value, form); // Le pasamos el form específico
+            
+            // DEBOUNCE: Espera 800ms después de que el usuario deja de escribir para no saturar la API
+            clearTimeout(form.previewTimeout);
+            form.previewTimeout = setTimeout(() => {
+                this.detectLinkInText(e.target.value, form);
+            }, 800);
         });
 
         const imageUploadBtn = form.querySelector('.image-upload-btn') || form.querySelector('#image-upload-btn');
@@ -971,6 +978,64 @@ const ComunidadApp = {
         }
         if (removeImageBtn) {
             removeImageBtn.addEventListener('click', () => this.removeSelectedImage(form));
+        }
+    },
+
+    detectLinkInText(text, form) {
+        // REGEX ESTRICTO: Exige que el dominio esté completo (ej: google.com) antes de buscar
+        const urlRegex = /https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?:\/[^\s]*)?/;
+        const match = text.match(urlRegex);
+        const currentUrl = match ? match[0] : null;
+
+        if (currentUrl && currentUrl !== form.dataset.lastProcessedUrl) {
+            form.dataset.lastProcessedUrl = currentUrl;
+            this.fetchLinkPreview(currentUrl, form);
+        } else if (!currentUrl) {
+            form.dataset.lastProcessedUrl = '';
+            const editor = form.querySelector('.link-preview-editor');
+            if(editor) editor.style.display = 'none';
+        }
+    },
+
+    async fetchLinkPreview(url, form) {
+        const loader = form.querySelector('.link-preview-loader');
+        const container = form.querySelector('.link-preview-editor');
+        if (loader) loader.style.display = 'block';
+        if (container) container.style.display = 'none'; // Ocultamos hasta que esté lista
+        
+        try {
+            const res = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`);
+            if (!res.ok) throw new Error("API Limitada o Enlace Inválido");
+
+            const json = await res.json();
+            const meta = json.data;
+
+            if (meta && container) {
+                container.innerHTML = `
+                    <button type="button" class="remove-image-btn" onclick="this.parentElement.style.display='none'; this.closest('form').dataset.lastProcessedUrl='';" style="position: absolute; top: 5px; right: 5px; z-index:10; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer;">&times;</button>
+                    ${meta.image ? `<img src="${meta.image.url}" style="width:100%; height:150px; object-fit:cover; border-bottom:1px solid var(--color-border);">` : ''}
+                    <div style="padding:12px;">
+                        <strong style="display:block; font-size:0.9rem; color:var(--color-primary-text); margin-bottom:4px;">${meta.title || new URL(url).hostname}</strong>
+                        <p style="font-size:0.8rem; color:var(--color-secondary-text); margin:0; line-height:1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${meta.description || 'Vista previa del enlace.'}</p>
+                    </div>
+                `;
+                container.style.display = 'block';
+            }
+        } catch (e) {
+            console.warn("Fallo al obtener la vista previa:", e);
+            // FALLBACK ELEGANTE: Si la API falla, dibujamos una tarjeta limpia con el puro texto
+            if (container) {
+                container.innerHTML = `
+                    <button type="button" class="remove-image-btn" onclick="this.parentElement.style.display='none'; this.closest('form').dataset.lastProcessedUrl='';" style="position: absolute; top: 5px; right: 5px; z-index:10; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer;">&times;</button>
+                    <div style="padding:15px; background: var(--color-background);">
+                        <strong style="display:block; font-size:0.95rem; color:var(--color-primary-text); margin-bottom:4px;"><i class="fa-solid fa-link" style="color: var(--color-accent);"></i> Enlace adjunto</strong>
+                        <p style="font-size:0.85rem; color:var(--color-secondary-text); margin:0; word-break: break-all;">${url}</p>
+                    </div>
+                `;
+                container.style.display = 'block';
+            }
+        } finally {
+            if (loader) loader.style.display = 'none';
         }
     },
 
@@ -2332,51 +2397,6 @@ const ComunidadApp = {
         
         overlay.querySelector('.modal-close-btn').addEventListener('click', closeFn);
         overlay.addEventListener('click', (e) => { if(e.target === overlay) closeFn(); });
-    },
-
-    // Detecta si hay un link mientras el usuario escribe
-    detectLinkInText(text, form) {
-        const urlRegex = /(https?:\/\/[^\s]+)/;
-        const match = text.match(urlRegex);
-        const currentUrl = match ? match[0] : null;
-
-        if (currentUrl && currentUrl !== form.dataset.lastProcessedUrl) {
-            form.dataset.lastProcessedUrl = currentUrl;
-            this.fetchLinkPreview(currentUrl, form);
-        } else if (!currentUrl) {
-            form.dataset.lastProcessedUrl = '';
-            const editor = form.querySelector('.link-preview-editor');
-            if (editor) editor.style.display = 'none';
-        }
-    },
-
-    // Obtiene los datos del link y los muestra en el editor
-    async fetchLinkPreview(url, form) {
-        const loader = form.querySelector('.link-preview-loader');
-        const container = form.querySelector('.link-preview-editor');
-        if (loader) loader.style.display = 'block';
-        
-        try {
-            const res = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`);
-            const json = await res.json();
-            const meta = json.data;
-
-            if (meta && container) {
-                container.innerHTML = `
-                    <button type="button" class="remove-image-btn" onclick="this.parentElement.style.display='none'; this.closest('form').dataset.lastProcessedUrl='';" style="position: absolute; top: 5px; right: 5px; z-index:10; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer;">&times;</button>
-                    ${meta.image ? `<img src="${meta.image.url}" style="width:100%; height:150px; object-fit:cover; border-bottom:1px solid var(--color-border);">` : ''}
-                    <div style="padding:12px;">
-                        <strong style="display:block; font-size:0.9rem; color:var(--color-primary-text); margin-bottom:4px;">${meta.title || 'Enlace'}</strong>
-                        <p style="font-size:0.8rem; color:var(--color-secondary-text); margin:0; line-height:1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${meta.description || ''}</p>
-                    </div>
-                `;
-                container.style.display = 'block';
-            }
-        } catch (e) {
-            console.error("Error preview:", e);
-        } finally {
-            if (loader) loader.style.display = 'none';
-        }
     },
 
     // ==========================================
