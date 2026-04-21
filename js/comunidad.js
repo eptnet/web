@@ -923,19 +923,28 @@ const ComunidadApp = {
 
         // 3. Listener para el FEED (Likes, Reply, Share, y Abrir Hilo)
         document.getElementById('feed-container')?.addEventListener('click', (e) => {
-            const likeButton = e.target.closest('.like-btn');
-            const replyButton = e.target.closest('.reply-btn');
-            const shareButton = e.target.closest('.share-btn');
-            const deleteButton = e.target.closest('.delete-btn');
-            const postBody = e.target.closest('.post-body') || e.target.closest('.post-header');
+            const target = e.target;
+            
+            // Si el clic fue en una imagen, abortamos aquí (el listener global ya abre el Lightbox)
+            const embedImg = target.closest('.post-embed-image img');
+            if (embedImg) return;
 
-            if (likeButton) this.handleLike(likeButton);
-            else if (replyButton) this.handleReply(replyButton);
-            else if (shareButton) this.handleShare(shareButton);
-            else if (deleteButton) this.handleDeletePost(deleteButton);
-            else if (postBody && !e.target.closest('a') && !e.target.closest('button')) {
-                // Al hacer clic en el texto del post, abrimos el lector de hilos
-                const postElement = postBody.closest('.feed-post');
+            const likeButton = target.closest('.like-btn');
+            const replyButton = target.closest('.reply-btn');
+            const shareButton = target.closest('.share-btn');
+            const deleteButton = target.closest('.delete-btn');
+            const postBody = target.closest('.post-body') || target.closest('.post-header');
+
+            if (likeButton) {
+                this.handleLike(likeButton);
+            } else if (shareButton) {
+                this.handleShare(shareButton);
+            } else if (deleteButton) {
+                this.handleDeletePost(deleteButton);
+            } 
+            // LA MAGIA: Si tocan el botón de comentar O el cuerpo del texto, abre el hilo
+            else if (replyButton || (postBody && !target.closest('a') && !target.closest('button'))) {
+                const postElement = target.closest('.feed-post');
                 if (postElement) this.openThreadReaderModal(postElement.dataset.uri);
             }
         });
@@ -1001,34 +1010,56 @@ const ComunidadApp = {
         const loader = form.querySelector('.link-preview-loader');
         const container = form.querySelector('.link-preview-editor');
         if (loader) loader.style.display = 'block';
-        if (container) container.style.display = 'none'; // Ocultamos hasta que esté lista
+        if (container) container.style.display = 'none'; 
         
         try {
-            const res = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`);
-            if (!res.ok) throw new Error("API Limitada o Enlace Inválido");
+            let meta = null;
+            
+            // 1. ESTRATEGIA YOUTUBE: Usamos Noembed (100% libre de CORS y oficial para videos)
+            if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                const res = await fetch(`https://noembed.com/embed?url=${encodeURIComponent(url)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (!data.error) {
+                        meta = { 
+                            title: data.title, 
+                            description: data.author_name, 
+                            image: { url: data.thumbnail_url } 
+                        };
+                    }
+                }
+            }
+            
+            // 2. ESTRATEGIA GENERAL: Si no es YouTube (o falló), usamos Microlink
+            // Como ya tenemos el Debounce de 800ms, ya no nos bloquearán por spam.
+            if (!meta) {
+                const res = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`);
+                if (!res.ok) throw new Error("API Limitada");
+                const json = await res.json();
+                meta = json.data;
+            }
 
-            const json = await res.json();
-            const meta = json.data;
-
+            // DIBUJAMOS LA TARJETA
             if (meta && container) {
+                const imgUrl = meta.image?.url || meta.image;
                 container.innerHTML = `
-                    <button type="button" class="remove-image-btn" onclick="this.parentElement.style.display='none'; this.closest('form').dataset.lastProcessedUrl='';" style="position: absolute; top: 5px; right: 5px; z-index:10; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer;">&times;</button>
-                    ${meta.image ? `<img src="${meta.image.url}" style="width:100%; height:150px; object-fit:cover; border-bottom:1px solid var(--color-border);">` : ''}
-                    <div style="padding:12px;">
+                    <button type="button" class="remove-image-btn" onclick="this.parentElement.style.display='none'; this.closest('.thread-reply-box, form').dataset.lastProcessedUrl='';" style="position: absolute; top: 5px; right: 5px; z-index:10; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer;">&times;</button>
+                    ${imgUrl ? `<img src="${imgUrl}" style="width:100%; height:150px; object-fit:cover; border-bottom:1px solid var(--color-border); border-radius: 12px 12px 0 0;">` : ''}
+                    <div style="padding:12px; background: var(--color-surface); border-radius: 0 0 12px 12px;">
                         <strong style="display:block; font-size:0.9rem; color:var(--color-primary-text); margin-bottom:4px;">${meta.title || new URL(url).hostname}</strong>
-                        <p style="font-size:0.8rem; color:var(--color-secondary-text); margin:0; line-height:1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${meta.description || 'Vista previa del enlace.'}</p>
+                        <p style="font-size:0.8rem; color:var(--color-secondary-text); margin:0; line-height:1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${meta.description || ''}</p>
                     </div>
                 `;
                 container.style.display = 'block';
             }
         } catch (e) {
             console.warn("Fallo al obtener la vista previa:", e);
-            // FALLBACK ELEGANTE: Si la API falla, dibujamos una tarjeta limpia con el puro texto
+            // 3. FALLBACK DE SEGURIDAD: Si no hay internet o fallan las APIs, mostramos enlace limpio
             if (container) {
                 container.innerHTML = `
-                    <button type="button" class="remove-image-btn" onclick="this.parentElement.style.display='none'; this.closest('form').dataset.lastProcessedUrl='';" style="position: absolute; top: 5px; right: 5px; z-index:10; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer;">&times;</button>
-                    <div style="padding:15px; background: var(--color-background);">
-                        <strong style="display:block; font-size:0.95rem; color:var(--color-primary-text); margin-bottom:4px;"><i class="fa-solid fa-link" style="color: var(--color-accent);"></i> Enlace adjunto</strong>
+                    <button type="button" class="remove-image-btn" onclick="this.parentElement.style.display='none'; this.closest('.thread-reply-box, form').dataset.lastProcessedUrl='';" style="position: absolute; top: 5px; right: 5px; z-index:10; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer;">&times;</button>
+                    <div style="padding:15px; background: var(--color-background); border-radius: 12px;">
+                        <strong style="display:block; font-size:0.95rem; color:var(--color-primary-text); margin-bottom:4px;"><i class="fa-solid fa-link" style="color: var(--color-accent);"></i> Enlace detectado</strong>
                         <p style="font-size:0.85rem; color:var(--color-secondary-text); margin:0; word-break: break-all;">${url}</p>
                     </div>
                 `;
@@ -1505,26 +1536,66 @@ const ComunidadApp = {
             if (data && data.error) throw new Error(data.error);
 
             const threadData = data.thread;
-            if (!threadData) throw new Error("Hilo no encontrado");
+            if (!threadData || !threadData.post) throw new Error("Hilo no encontrado");
 
-            if (threadData.post) {
-                const anchorHtml = this.createPostHtml(threadData.post).replace('bento-box', '').replace('border: 1px solid transparent;', 'border: none;');
-                anchorContainer.innerHTML = anchorHtml;
-            }
+            // 1. Dibujar Post Principal
+            anchorContainer.innerHTML = this.createPostHtml(threadData.post).replace('bento-box', '').replace('border: 1px solid transparent;', 'border: none;');
 
+            // 2. Dibujar Respuestas Anteriores
             if (threadData.replies && threadData.replies.length > 0) {
-                const repliesHtml = threadData.replies.map(replyObj => {
+                repliesContainer.innerHTML = threadData.replies.map(replyObj => {
                     const msg = replyObj.post;
                     if (!msg) return '';
                     return this.createPostHtml(msg).replace('bento-box', '').replace('padding: 1.5rem;', 'padding: 1rem 1.5rem; background: var(--color-surface); border: none; border-bottom: 1px solid var(--color-background);');
                 }).join('');
-                repliesContainer.innerHTML = repliesHtml;
             } else {
                 repliesContainer.innerHTML = `<p style="text-align: center; padding: 2rem; color: var(--color-secondary-text);">Aún no hay respuestas. ¡Sé el primero en comentar!</p>`;
             }
 
+            // 3. LA NUEVA CAJA ESTILO WHATSAPP (Barra inferior pegajosa elevada para móviles)
+            const replyBoxHtml = `
+                <div class="thread-reply-box" style="margin-top: auto; border-top: 1px solid var(--color-border); padding: 10px 10px 85px 10px; background: var(--color-surface); position: sticky; bottom: 0; z-index: 10;">
+                    
+                    <div class="link-preview-loader" style="display:none; font-size: 0.8rem; margin-bottom: 5px; color: var(--color-accent);"><i class="fa-solid fa-spinner fa-spin"></i> Buscando enlace...</div>
+                    <div class="link-preview-editor link-preview-card" style="display:none; margin-bottom: 10px; position: relative;"></div>
+
+                    <form id="thread-reply-form" style="display: flex; gap: 8px; align-items: flex-end; margin: 0;">
+                        <img src="${this.userProfile?.avatar_url || 'https://api.dicebear.com/9.x/shapes/svg?seed=user'}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; margin-bottom: 4px;">
+                        
+                        <div class="post-input-wrapper" style="flex-grow: 1; display: flex; align-items: center; background: var(--color-background); border: 1px solid var(--color-border); border-radius: 20px; padding: 4px 12px;">
+                            <textarea placeholder="Responder..." required style="flex-grow: 1; min-height: 24px; max-height: 100px; background: transparent; border: none; color: var(--color-primary-text); font-family: inherit; resize: none; outline: none; padding: 8px 0; margin: 0; overflow-y: auto;" rows="1" oninput="this.style.height = ''; this.style.height = Math.min(this.scrollHeight, 100) + 'px'"></textarea>
+                            <button type="submit" class="btn-primary" style="background: transparent; color: var(--color-accent); border: none; font-size: 1.2rem; cursor: pointer; padding: 4px 0 4px 8px; display: flex; align-items: center; justify-content: center;"><i class="fa-solid fa-paper-plane"></i></button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            // Lo insertamos dentro de la caja principal de contenido para que se pegue al fondo
+            contentBox.insertAdjacentHTML('beforeend', replyBoxHtml);
+
+            // 4. Activamos eventos dinámicos para esta caja (Link preview, etc)
+            const replyForm = document.getElementById('thread-reply-form');
+            
+            // Habilitamos el debounce manual para esta textarea específica
+            replyForm.querySelector('textarea').addEventListener('input', (e) => {
+                clearTimeout(replyForm.previewTimeout);
+                replyForm.previewTimeout = setTimeout(() => {
+                    this.detectLinkInText(e.target.value, replyForm.parentElement);
+                }, 800);
+            });
+
+            // 5. Conectamos el envío
+            replyForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const text = replyForm.querySelector('textarea').value;
+                const parentData = { uri: threadData.post.uri, cid: threadData.post.cid };
+                // Pasamos el contenedor padre como 'form' para que el submit encuentre la vista previa
+                this.submitReply(text, parentData, replyForm.parentElement); 
+            });
+
             loader.style.display = 'none';
-            contentBox.style.display = 'block';
+            contentBox.style.display = 'flex';
+            contentBox.style.flexDirection = 'column';
+            contentBox.style.height = '100%';
         } catch (err) {
             console.error(err);
             loader.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="color: var(--color-accent); font-size: 2rem;"></i><p>No se pudo cargar la conversación.</p>`;
@@ -1809,7 +1880,6 @@ const ComunidadApp = {
 
     openPostModal() {
         const modalContainer = document.getElementById('modal-container');
-        // CORRECCIÓN: Comprobamos si el contenedor específico de modales dinámicos ya tiene algo adentro
         if (modalContainer && modalContainer.innerHTML.trim() !== '') return; 
 
         const template = document.getElementById('post-form-template');
@@ -1824,13 +1894,12 @@ const ComunidadApp = {
         modalNode.querySelector('#modal-user-avatar').src = this.userProfile?.avatar_url || `https://api.dicebear.com/9.x/shapes/svg?seed=invitado`;
         modalNode.querySelector('.modal-close-btn').addEventListener('click', () => this.closePostModal());
         
-        const textArea = modalNode.querySelector('textarea');
-        textArea.addEventListener('input', (e) => {
-            this.updateCharCounter(e);
-            this.detectLinkInText(e.target.value);
-        });
+        // ELIMINAMOS EL LISTENER DUPLICADO AQUÍ. 
+        // addFormEventListeners ya se encarga de esto de forma segura.
 
         modalContainer.appendChild(modalNode);
+        
+        // Activamos los vigilantes oficiales de enlaces e imágenes
         this.addFormEventListeners(modalContainer);
 
         requestAnimationFrame(() => {
@@ -1856,10 +1925,14 @@ const ComunidadApp = {
         const maxLength = 300;
         const currentLength = e.target.value.length;
         const remaining = maxLength - currentLength;
-        // Buscamos el contador relativo al formulario actual
         const form = e.target.closest('form');
-        if(form) {
-            form.querySelector('.char-counter').textContent = remaining;
+        
+        if (form) {
+            const counterEl = form.querySelector('.char-counter');
+            // Solo actualiza si el elemento realmente existe en ese formulario
+            if (counterEl) {
+                counterEl.textContent = remaining;
+            }
         }
     },
 
