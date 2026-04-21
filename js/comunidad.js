@@ -921,38 +921,56 @@ const ComunidadApp = {
             }
         });
 
-        // 3. Listener para el FEED (Likes, Reply, Share)
+        // 3. Listener para el FEED (Likes, Reply, Share, y Abrir Hilo)
         document.getElementById('feed-container')?.addEventListener('click', (e) => {
             const likeButton = e.target.closest('.like-btn');
             const replyButton = e.target.closest('.reply-btn');
             const shareButton = e.target.closest('.share-btn');
             const deleteButton = e.target.closest('.delete-btn');
+            const postBody = e.target.closest('.post-body') || e.target.closest('.post-header');
 
             if (likeButton) this.handleLike(likeButton);
-            if (replyButton) this.handleReply(replyButton);
-            if (shareButton) this.handleShare(shareButton);
-            if (deleteButton) this.handleDeletePost(deleteButton);
+            else if (replyButton) this.handleReply(replyButton);
+            else if (shareButton) this.handleShare(shareButton);
+            else if (deleteButton) this.handleDeletePost(deleteButton);
+            else if (postBody && !e.target.closest('a') && !e.target.closest('button')) {
+                // Al hacer clic en el texto del post, abrimos el lector de hilos
+                const postElement = postBody.closest('.feed-post');
+                if (postElement) this.openThreadReaderModal(postElement.dataset.uri);
+            }
         });
     },
 
     addFormEventListeners(container) {
-        // Enlaza el texto para los links y contadores
-        container.querySelector('textarea')?.addEventListener('input', (e) => {
+        const form = container.tagName === 'FORM' ? container : container.querySelector('form');
+        if (!form) return;
+
+        // Inyectamos el editor de vista previa si no existe (vital para el Modal de Respuesta)
+        const wrapper = form.querySelector('.post-input-wrapper') || form.querySelector('.textarea-container');
+        if (wrapper && !form.querySelector('.link-preview-editor')) {
+            wrapper.insertAdjacentHTML('beforeend', `
+                <div class="link-preview-loader" style="display:none; font-size: 0.8rem; margin: 10px 0; color: var(--color-accent);">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Generando vista previa...
+                </div>
+                <div class="link-preview-editor link-preview-card" style="display:none; margin-bottom: 15px; position: relative;"></div>
+            `);
+        }
+
+        form.querySelector('textarea')?.addEventListener('input', (e) => {
             this.updateCharCounter(e);
-            this.detectLinkInText(e.target.value); 
+            this.detectLinkInText(e.target.value, form); // Le pasamos el form específico
         });
 
-        // Enlaza la subida de imágenes usando CLASES relativas al contenedor actual
-        const imageUploadBtn = container.querySelector('.image-upload-btn') || container.querySelector('#image-upload-btn');
-        const imageUploadInput = container.querySelector('.image-upload-input') || container.querySelector('#image-upload-input');
-        const removeImageBtn = container.querySelector('.remove-image-btn');
+        const imageUploadBtn = form.querySelector('.image-upload-btn') || form.querySelector('#image-upload-btn');
+        const imageUploadInput = form.querySelector('.image-upload-input') || form.querySelector('#image-upload-input');
+        const removeImageBtn = form.querySelector('.remove-image-btn');
 
         if (imageUploadBtn && imageUploadInput) {
             imageUploadBtn.addEventListener('click', () => imageUploadInput.click());
-            imageUploadInput.addEventListener('change', (e) => this.handleImageSelection(e, container));
+            imageUploadInput.addEventListener('change', (e) => this.handleImageSelection(e, form));
         }
         if (removeImageBtn) {
-            removeImageBtn.addEventListener('click', () => this.removeSelectedImage(container));
+            removeImageBtn.addEventListener('click', () => this.removeSelectedImage(form));
         }
     },
 
@@ -1054,7 +1072,6 @@ const ComunidadApp = {
         const textArea = form.querySelector('textarea[name="post-text"]');
         const postText = textArea.value.trim();
 
-        // 1. DETECCIÓN AUTOMÁTICA DE URL (Regex)
         const urlRegex = /(https?:\/\/[^\s]+)/g;
         const match = postText.match(urlRegex);
         const postLink = match ? match[0] : null;
@@ -1064,7 +1081,6 @@ const ComunidadApp = {
             return;
         }
 
-        // 2. VALIDACIÓN DE LÍMITE DE 1MB
         if (this.selectedImageFile && this.selectedImageFile.size > 1048576) {
             alert("La imagen es demasiado pesada para Bluesky (máximo 1MB).");
             return;
@@ -1073,21 +1089,17 @@ const ComunidadApp = {
         submitButton.disabled = true;
         submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Publicando...';
 
-        // Capturamos los datos de la vista previa generada por Microlink si existen
-        const previewImg = document.querySelector('#link-preview-editor img');
-        const previewTitle = document.querySelector('#link-preview-editor strong');
-        const previewDesc = document.querySelector('#link-preview-editor p');
+        // NUEVO: Busca el contenedor dinámico de la vista previa
+        const previewContainer = form.querySelector('.link-preview-editor');
+        const hasPreview = previewContainer && previewContainer.style.display !== 'none';
 
-        // 3. ARMAMOS EL BODY PARA EL NUEVO CEREBRO CENTRAL (bsky-lexicon-api)
         let body = { 
-            action: 'create_post', // CRÍTICO: Le indicamos al API qué acción tomar
-            text: postText,        // CRÍTICO: La nueva API espera 'text', no 'postText'
-            
-            // Mantenemos tu lógica antigua por si luego le enseñamos al Cerebro a procesar links
+            action: 'create_post',
+            text: postText,
             postLink: postLink,
-            linkTitle: previewTitle ? previewTitle.textContent : null,
-            linkDescription: previewDesc ? previewDesc.textContent : null,
-            linkThumb: previewImg ? previewImg.src : null
+            linkTitle: hasPreview && previewContainer.querySelector('strong') ? previewContainer.querySelector('strong').textContent : null,
+            linkDescription: hasPreview && previewContainer.querySelector('p') ? previewContainer.querySelector('p').textContent : null,
+            linkThumb: hasPreview && previewContainer.querySelector('img') ? previewContainer.querySelector('img').src : null
         };
 
         if (this.selectedImageFile) {
@@ -1095,11 +1107,10 @@ const ComunidadApp = {
                 const fullBase64 = await new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.readAsDataURL(this.selectedImageFile);
-                    // CRÍTICO: NO hacemos split. Enviamos reader.result completo con todo el 'data:image...'
                     reader.onload = () => resolve(reader.result);
                     reader.onerror = error => reject(error);
                 });
-                body.imageUrl = fullBase64; // CRÍTICO: La nueva API espera 'imageUrl'
+                body.imageUrl = fullBase64;
             } catch (error) {
                 console.error("Error al leer la imagen:", error);
                 alert("No se pudo procesar la imagen.");
@@ -1110,26 +1121,21 @@ const ComunidadApp = {
         }
 
         try {
-            // 4. LLAMAMOS AL CEREBRO CENTRAL
-            const { data, error } = await this.supabase.functions.invoke('bsky-lexicon-api', {
-                body: body,
-            });
+            const { data, error } = await this.supabase.functions.invoke('bsky-lexicon-api', { body: body });
             
             if (error) throw error;
             if (data && data.error) throw new Error(data.error);
 
-            // 5. ÉXITO: Limpiamos y actualizamos la UI
             this.prependNewPost(postText, this.selectedImageFile, data.uri, data.cid);
             textArea.value = '';
-            this.removeSelectedImage();
+            this.removeSelectedImage(form);
             this.updateCharCounter({ target: textArea });
             this.closePostModal();
 
         } catch (error) {
             console.error("Error al publicar:", error);
             const errMsg = error.message || "";
-            // Hemos unificado también la detección de errores de sesión
-            if (errMsg.includes('non-2xx') || errMsg.includes('revoked') || errMsg.includes('AUTH_EXPIRED') || errMsg.includes('caducado')) {
+            if (errMsg.includes('AUTH_EXPIRED') || errMsg.includes('caducado')) {
                 alert("Tu clave de Bluesky ha caducado. Por favor, reconecta tu cuenta.");
                 this.closePostModal();
                 this.openBskyConnectModal();
@@ -1304,107 +1310,56 @@ const ComunidadApp = {
      */
     async handleReply(button) {
         const postElement = button.closest('.feed-post');
-        const postUri = postElement.dataset.uri;
-        this.openThreadReaderModal(postUri);
-    },
-
-    /**
-     * Abre el modal inmersivo, descarga el hilo de Bluesky y lo dibuja.
-     */
-    async openThreadReaderModal(postUri) {
-        const template = document.getElementById('thread-reader-template');
-        if (!template) return;
-
-        const modalContainer = document.getElementById('modal-container');
-        modalContainer.innerHTML = ''; // Limpiamos previos
-        const modalNode = template.content.cloneNode(true);
-        
-        // Listener para cerrar
-        modalNode.querySelector('.modal-close-btn').addEventListener('click', () => this.closePostModal());
-        
-        modalContainer.appendChild(modalNode);
-
-        const loader = document.getElementById('thread-loader');
-        const contentBox = document.getElementById('thread-content');
-        const anchorContainer = document.getElementById('thread-anchor-post');
-        const repliesContainer = document.getElementById('thread-replies');
-
-        try {
-            // LLAMAMOS AL NUEVO CEREBRO CENTRAL
-            const { data, error } = await this.supabase.functions.invoke('bsky-lexicon-api', {
-                body: { 
-                    action: 'get_post_thread', 
-                    uri: postUri 
-                }
-            });
-
-            if (error) throw error;
-            if (data && data.error) throw new Error(data.error);
-
-            // Obtenemos el objeto puro del hilo desde Bluesky
-            const threadData = data.thread;
-            if (!threadData) throw new Error("Hilo no encontrado");
-
-            // 1. Dibujamos el post principal usando la función súper-vitaminada
-            if (threadData.post) {
-                // Modificamos el diseño para quitarle el hover/bordes y hacerlo plano en el modal
-                const anchorHtml = this.createPostHtml(threadData.post).replace('bento-box', '').replace('border: 1px solid transparent;', 'border: none;');
-                anchorContainer.innerHTML = anchorHtml;
-            }
-
-            // 2. Dibujamos las respuestas
-            if (threadData.replies && threadData.replies.length > 0) {
-                const repliesHtml = threadData.replies.map(replyObj => {
-                    // En Bluesky, los datos del post vienen anidados dentro del objeto 'replyObj.post'
-                    const msg = replyObj.post;
-                    if (!msg) return '';
-                    
-                    return this.createPostHtml(msg).replace('bento-box', '').replace('padding: 1.5rem;', 'padding: 1rem 1.5rem; background: var(--color-surface); border: none; border-bottom: 1px solid var(--color-background);');
-                }).join('');
-                repliesContainer.innerHTML = repliesHtml;
-            } else {
-                repliesContainer.innerHTML = `<p style="text-align: center; padding: 2rem; color: var(--color-secondary-text);">Aún no hay respuestas. ¡Sé el primero en comentar!</p>`;
-            }
-
-            loader.style.display = 'none';
-            contentBox.style.display = 'block';
-
-        } catch (err) {
-            console.error("Error al cargar el hilo:", err);
-            loader.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="color: var(--color-accent); font-size: 2rem;"></i><p>No se pudo cargar la conversación.</p>`;
-        }
+        const postData = {
+            uri: postElement.dataset.uri,
+            cid: postElement.dataset.cid,
+            author: {
+                avatar: postElement.querySelector('.post-avatar').src,
+                displayName: postElement.querySelector('.post-author-info strong').textContent
+            },
+            text: postElement.querySelector('.post-body p').innerHTML
+        };
+        this.openReplyModal(postData);
     },
 
     openReplyModal(postData) {
         const template = document.getElementById('reply-modal-template');
-        if (!template) return console.error("La plantilla de respuesta no existe.");
+        if (!template) return;
 
         const modalContainer = document.getElementById('modal-container');
         const modalNode = template.content.cloneNode(true);
 
-        // Rellenamos el modal con la información del post padre
         modalNode.querySelector('#parent-post-avatar').src = postData.author.avatar;
         modalNode.querySelector('#parent-post-author').textContent = postData.author.displayName;
         modalNode.querySelector('#parent-post-text').innerHTML = postData.text;
-        modalNode.querySelector('#reply-user-avatar').src = this.userProfile.avatar_url || `https://api.dicebear.com/9.x/shapes/svg?seed=${this.userProfile.username || 'user'}`;
+        modalNode.querySelector('#reply-user-avatar').src = this.userProfile?.avatar_url || `https://api.dicebear.com/9.x/shapes/svg?seed=user`;
         
-        // Añadimos los listeners
         modalNode.querySelector('.modal-close-btn').addEventListener('click', () => this.closePostModal());
+        
         const form = modalNode.querySelector('#reply-form');
-        const textArea = form.querySelector('textarea');
-        const charCounter = form.querySelector('.char-counter');
+        
+        // Damos estilos básicos al campo de texto del modal
+        const textarea = form.querySelector('textarea');
+        textarea.style.width = '100%';
+        textarea.style.minHeight = '80px';
+        textarea.style.border = '1px solid var(--color-border)';
+        textarea.style.borderRadius = '8px';
+        textarea.style.padding = '10px';
+        textarea.style.marginTop = '10px';
+        textarea.style.background = 'transparent';
+        textarea.style.color = 'var(--color-primary-text)';
+        textarea.style.fontFamily = 'inherit';
+        textarea.style.resize = 'none';
 
-        textArea.addEventListener('input', () => {
-            const remaining = 300 - textArea.value.length;
-            charCounter.textContent = remaining;
-        });
+        // Activamos la detección de Link Preview en este nuevo modal
+        this.addFormEventListeners(form);
 
         form.addEventListener('submit', (e) => {
             e.preventDefault();
-            this.submitReply(textArea.value, postData, form);
+            this.submitReply(textarea.value, postData, form);
         });
         
-        modalContainer.innerHTML = ''; // Limpiamos por si había otro modal
+        modalContainer.innerHTML = '';
         modalContainer.appendChild(modalNode);
     },
 
@@ -1415,26 +1370,33 @@ const ComunidadApp = {
         submitButton.disabled = true;
         submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
 
-        try {
-            // LLAMADA AL NUEVO CEREBRO CENTRAL
-            const { data, error } = await this.supabase.functions.invoke('bsky-lexicon-api', {
-                body: {
-                    action: 'create_reply',
-                    text: replyText,
-                    // Estructura oficial de Bluesky: requiere Root y Parent
-                    replyTo: {
-                        rootUri: parentPostData.uri,
-                        rootCid: parentPostData.cid,
-                        parentUri: parentPostData.uri,
-                        parentCid: parentPostData.cid
-                    }
-                },
-            });
+        // Escaneamos la vista previa para enviarla si existe
+        const previewContainer = form.querySelector('.link-preview-editor');
+        const hasPreview = previewContainer && previewContainer.style.display !== 'none';
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        const match = replyText.match(urlRegex);
 
+        let body = {
+            action: 'create_reply',
+            text: replyText,
+            replyTo: {
+                rootUri: parentPostData.uri,
+                rootCid: parentPostData.cid,
+                parentUri: parentPostData.uri,
+                parentCid: parentPostData.cid
+            },
+            postLink: match ? match[0] : null,
+            linkTitle: hasPreview && previewContainer.querySelector('strong') ? previewContainer.querySelector('strong').textContent : null,
+            linkDescription: hasPreview && previewContainer.querySelector('p') ? previewContainer.querySelector('p').textContent : null,
+            linkThumb: hasPreview && previewContainer.querySelector('img') ? previewContainer.querySelector('img').src : null
+        };
+
+        try {
+            const { data, error } = await this.supabase.functions.invoke('bsky-lexicon-api', { body: body });
             if (error) throw error;
             if (data && data.error) throw new Error(data.error);
             
-            // Actualización Optimista: incrementamos el contador de comentarios en la pantalla
+            // Actualizamos la pantalla principal (suma +1 al botón de respuesta)
             const originalPostElement = document.querySelector(`.feed-post[data-uri="${parentPostData.uri}"]`);
             if (originalPostElement) {
                 const countSpan = originalPostElement.querySelector('.reply-btn span');
@@ -1442,11 +1404,65 @@ const ComunidadApp = {
             }
 
             this.closePostModal();
+            if (window.showToast) window.showToast("¡Respuesta publicada!");
+            else alert("¡Respuesta publicada!");
             
         } catch (error) {
             alert(`Error al publicar el comentario: ${error.message}`);
             submitButton.disabled = false;
             submitButton.innerHTML = 'Responder';
+        }
+    },
+
+    /**
+     * Abre el modal inmersivo, descarga el hilo de Bluesky y lo dibuja.
+     */
+    async openThreadReaderModal(postUri) {
+        const template = document.getElementById('thread-reader-template');
+        if (!template) return;
+
+        const modalContainer = document.getElementById('modal-container');
+        modalContainer.innerHTML = ''; 
+        const modalNode = template.content.cloneNode(true);
+        modalNode.querySelector('.modal-close-btn').addEventListener('click', () => this.closePostModal());
+        modalContainer.appendChild(modalNode);
+
+        const loader = document.getElementById('thread-loader');
+        const contentBox = document.getElementById('thread-content');
+        const anchorContainer = document.getElementById('thread-anchor-post');
+        const repliesContainer = document.getElementById('thread-replies');
+
+        try {
+            const { data, error } = await this.supabase.functions.invoke('bsky-lexicon-api', { 
+                body: { action: 'get_post_thread', uri: postUri } 
+            });
+            if (error) throw error;
+            if (data && data.error) throw new Error(data.error);
+
+            const threadData = data.thread;
+            if (!threadData) throw new Error("Hilo no encontrado");
+
+            if (threadData.post) {
+                const anchorHtml = this.createPostHtml(threadData.post).replace('bento-box', '').replace('border: 1px solid transparent;', 'border: none;');
+                anchorContainer.innerHTML = anchorHtml;
+            }
+
+            if (threadData.replies && threadData.replies.length > 0) {
+                const repliesHtml = threadData.replies.map(replyObj => {
+                    const msg = replyObj.post;
+                    if (!msg) return '';
+                    return this.createPostHtml(msg).replace('bento-box', '').replace('padding: 1.5rem;', 'padding: 1rem 1.5rem; background: var(--color-surface); border: none; border-bottom: 1px solid var(--color-background);');
+                }).join('');
+                repliesContainer.innerHTML = repliesHtml;
+            } else {
+                repliesContainer.innerHTML = `<p style="text-align: center; padding: 2rem; color: var(--color-secondary-text);">Aún no hay respuestas. ¡Sé el primero en comentar!</p>`;
+            }
+
+            loader.style.display = 'none';
+            contentBox.style.display = 'block';
+        } catch (err) {
+            console.error(err);
+            loader.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="color: var(--color-accent); font-size: 2rem;"></i><p>No se pudo cargar la conversación.</p>`;
         }
     },
 
@@ -2319,42 +2335,39 @@ const ComunidadApp = {
     },
 
     // Detecta si hay un link mientras el usuario escribe
-    detectLinkInText(text) {
+    detectLinkInText(text, form) {
         const urlRegex = /(https?:\/\/[^\s]+)/;
         const match = text.match(urlRegex);
         const currentUrl = match ? match[0] : null;
 
-        // Si hay una URL y es distinta a la última procesada
-        if (currentUrl && currentUrl !== this.lastProcessedUrl) {
-            this.lastProcessedUrl = currentUrl;
-            this.fetchLinkPreview(currentUrl);
+        if (currentUrl && currentUrl !== form.dataset.lastProcessedUrl) {
+            form.dataset.lastProcessedUrl = currentUrl;
+            this.fetchLinkPreview(currentUrl, form);
         } else if (!currentUrl) {
-            this.lastProcessedUrl = null;
-            document.getElementById('link-preview-editor').style.display = 'none';
+            form.dataset.lastProcessedUrl = '';
+            const editor = form.querySelector('.link-preview-editor');
+            if (editor) editor.style.display = 'none';
         }
     },
 
     // Obtiene los datos del link y los muestra en el editor
-    async fetchLinkPreview(url) {
-        const loader = document.getElementById('link-preview-loader');
-        const container = document.getElementById('link-preview-editor');
-        
-        loader.style.display = 'block';
+    async fetchLinkPreview(url, form) {
+        const loader = form.querySelector('.link-preview-loader');
+        const container = form.querySelector('.link-preview-editor');
+        if (loader) loader.style.display = 'block';
         
         try {
-            // Usamos una API gratuita de ayuda para obtener metadatos rápidamente en el cliente
             const res = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`);
             const json = await res.json();
             const meta = json.data;
 
-            if (meta) {
+            if (meta && container) {
                 container.innerHTML = `
-                    <button type="button" class="remove-image-btn" onclick="document.getElementById('link-preview-editor').style.display='none'" style="top: 5px; right: 5px;">&times;</button>
+                    <button type="button" class="remove-image-btn" onclick="this.parentElement.style.display='none'; this.closest('form').dataset.lastProcessedUrl='';" style="position: absolute; top: 5px; right: 5px; z-index:10; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer;">&times;</button>
                     ${meta.image ? `<img src="${meta.image.url}" style="width:100%; height:150px; object-fit:cover; border-bottom:1px solid var(--color-border);">` : ''}
                     <div style="padding:12px;">
                         <strong style="display:block; font-size:0.9rem; color:var(--color-primary-text); margin-bottom:4px;">${meta.title || 'Enlace'}</strong>
-                        <p style="font-size:0.8rem; color:var(--color-secondary-text); margin:0; line-height:1.2;">${meta.description || ''}</p>
-                        <span style="font-size:0.75rem; color:var(--color-accent); margin-top:8px; display:block;"><i class="fa-solid fa-link"></i> ${new URL(url).hostname}</span>
+                        <p style="font-size:0.8rem; color:var(--color-secondary-text); margin:0; line-height:1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${meta.description || ''}</p>
                     </div>
                 `;
                 container.style.display = 'block';
@@ -2362,7 +2375,7 @@ const ComunidadApp = {
         } catch (e) {
             console.error("Error preview:", e);
         } finally {
-            loader.style.display = 'none';
+            if (loader) loader.style.display = 'none';
         }
     },
 
