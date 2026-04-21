@@ -1544,112 +1544,76 @@ const ComunidadApp = {
     },
 
     async handleShare(button) {
-        // 1. Efecto Visual de Carga
-        const originalHtml = button.innerHTML;
-        button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-        button.disabled = true;
+        const postElement = button.closest('.feed-post');
+        const postUri = postElement.dataset.uri;
 
-        try {
-            const postElement = button.closest('.feed-post');
-            const postUri = postElement.dataset.uri;
+        const handle = postElement.querySelector('.post-handle').textContent.substring(1); 
+        const postTextElement = postElement.querySelector('.post-body p');
+        const postText = postTextElement ? postTextElement.textContent.substring(0, 60) + '...' : 'Mira esta publicación';
 
-            const handle = postElement.querySelector('.post-handle').textContent.substring(1); 
-            const postTextElement = postElement.querySelector('.post-body p');
-            const postText = postTextElement ? postTextElement.textContent.substring(0, 60) + '...' : 'Mira esta publicación';
+        // EL ENLACE LARGO (Tu Proxy en Supabase, vital para las miniaturas)
+        const encodedUri = encodeURIComponent(postUri);
+        const longUrl = `https://seyknzlheaxmwztkfxmk.supabase.co/functions/v1/share-post?uri=${encodedUri}`; 
 
-            // 2. LA URL DE TU DOMINIO (¡No uses bsky.app aquí o perderás el tráfico!)
-            const encodedUri = encodeURIComponent(postUri);
-            const longUrl = `https://seyknzlheaxmwztkfxmk.supabase.co/functions/v1/share-post?uri=${encodedUri}`; 
+        const shareTitle = `Aporte de @${handle} en Epistecnología`;
+        const shareText = `Mira este debate en nuestra comunidad:\n"${postText}"`;
 
-            // 3. EL TRUCO MAESTRO: JSONP para evadir CORS sin proxies externos
-            let urlToShare = await new Promise((resolve) => {
-                // Creamos un nombre de función único
-                const callbackName = 'isgd_callback_' + Math.round(100000 * Math.random());
-                
-                // Esta es la función que is.gd ejecutará cuando responda
-                window[callbackName] = function(data) {
-                    delete window[callbackName];
-                    document.body.removeChild(script);
-                    resolve(data.shorturl ? data.shorturl : longUrl);
-                };
-
-                // Creamos un script temporal (El navegador NO bloquea esto con CORS)
-                const script = document.createElement('script');
-                script.src = `https://is.gd/create.php?format=json&url=${encodeURIComponent(longUrl)}&callback=${callbackName}`;
-                
-                script.onerror = function() {
-                    delete window[callbackName];
-                    document.body.removeChild(script);
-                    resolve(longUrl); // Si todo falla, devuelve tu enlace de Supabase
-                };
-                
-                document.body.appendChild(script);
-            });
-
-            const shareTitle = `Aporte de @${handle} en Epistecnología`;
-            const shareText = `Mira este debate en nuestra comunidad:\n"${postText}"`;
-
-            // 4. DECISIÓN DE INTERFAZ (PC vs MÓVIL)
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            
-            if (isMobile && navigator.share) {
-                // CELULAR: Menú nativo con el enlace cortito de is.gd
-                try {
-                    await navigator.share({
-                        title: shareTitle,
-                        text: shareText,
-                        url: urlToShare 
-                    });
-                } catch (err) {
-                    if (err.name !== 'AbortError') console.error('Error al compartir nativamente:', err);
-                }
-            } else {
-                // PC: Muestra el Super Menú
-                this.showCustomShareModal(urlToShare, shareTitle, shareText);
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        if (isMobile && navigator.share) {
+            // CELULAR: Compartimos el enlace largo INMEDIATAMENTE para evitar el "NotAllowedError".
+            // Redes como WhatsApp lo transformarán en una hermosa tarjeta, ocultando la URL larga.
+            try {
+                await navigator.share({
+                    title: shareTitle,
+                    text: shareText,
+                    url: longUrl 
+                });
+            } catch (err) {
+                if (err.name !== 'AbortError') console.error('Error al compartir nativamente:', err);
             }
-        } finally {
-            button.innerHTML = originalHtml;
-            button.disabled = false;
+        } else {
+            // PC: Abrimos el modal al instante. El modal se encargará de acortar el enlace de forma segura.
+            this.showCustomShareModal(longUrl, shareTitle, shareText);
         }
     },
 
     // ==============================================================
-    // NUEVA FUNCIÓN: EL MENÚ DE COMPARTIR PARA PC (ESTILO BENTO)
+    // EL MENÚ DE COMPARTIR PARA PC CON ACORTADOR EN SEGUNDO PLANO
     // ==============================================================
-    showCustomShareModal(url, title, text) {
-        // Elimina el modal anterior si se quedó pegado
+    showCustomShareModal(longUrl, title, text) {
         const existingModal = document.getElementById('custom-share-modal');
         if (existingModal) existingModal.remove();
 
-        const encodedUrl = encodeURIComponent(url);
         const encodedText = encodeURIComponent(text);
 
+        // Renderizamos el modal inmediatamente usando el enlace largo por defecto (Plan B)
         const modalHtml = `
             <div id="custom-share-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); opacity: 0; transition: opacity 0.3s ease;">
                 <div style="background: var(--color-surface); padding: 25px; border-radius: 20px; width: 90%; max-width: 380px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); transform: translateY(20px); transition: transform 0.3s ease; border: 1px solid var(--color-border);">
                     <h3 style="margin-top: 0; margin-bottom: 20px; color: var(--color-primary-text); font-size: 1.2rem; text-align: center;">Compartir en redes</h3>
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-                        <a href="https://api.whatsapp.com/send?text=${encodedText}%0A${encodedUrl}" target="_blank" style="display: flex; flex-direction: column; align-items: center; gap: 8px; text-decoration: none; color: var(--color-primary-text); padding: 15px; border-radius: 15px; background: rgba(37, 211, 102, 0.1); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        <a id="share-wa" href="https://api.whatsapp.com/send?text=${encodedText}%0A${encodeURIComponent(longUrl)}" target="_blank" style="display: flex; flex-direction: column; align-items: center; gap: 8px; text-decoration: none; color: var(--color-primary-text); padding: 15px; border-radius: 15px; background: rgba(37, 211, 102, 0.1); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                             <i class="fa-brands fa-whatsapp" style="font-size: 2rem; color: #25D366;"></i>
                             <span style="font-size: 0.85rem; font-weight: 600;">WhatsApp</span>
                         </a>
-                        <a href="https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}" target="_blank" style="display: flex; flex-direction: column; align-items: center; gap: 8px; text-decoration: none; color: var(--color-primary-text); padding: 15px; border-radius: 15px; background: rgba(0, 0, 0, 0.05); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        <a id="share-tw" href="https://twitter.com/intent/tweet?text=${encodedText}&url=${encodeURIComponent(longUrl)}" target="_blank" style="display: flex; flex-direction: column; align-items: center; gap: 8px; text-decoration: none; color: var(--color-primary-text); padding: 15px; border-radius: 15px; background: rgba(0, 0, 0, 0.05); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                             <i class="fa-brands fa-x-twitter" style="font-size: 2rem; color: var(--color-primary-text);"></i>
                             <span style="font-size: 0.85rem; font-weight: 600;">X (Twitter)</span>
                         </a>
-                        <a href="https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}" target="_blank" style="display: flex; flex-direction: column; align-items: center; gap: 8px; text-decoration: none; color: var(--color-primary-text); padding: 15px; border-radius: 15px; background: rgba(24, 119, 242, 0.1); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        <a id="share-fb" href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(longUrl)}" target="_blank" style="display: flex; flex-direction: column; align-items: center; gap: 8px; text-decoration: none; color: var(--color-primary-text); padding: 15px; border-radius: 15px; background: rgba(24, 119, 242, 0.1); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                             <i class="fa-brands fa-facebook" style="font-size: 2rem; color: #1877F2;"></i>
                             <span style="font-size: 0.85rem; font-weight: 600;">Facebook</span>
                         </a>
-                        <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}" target="_blank" style="display: flex; flex-direction: column; align-items: center; gap: 8px; text-decoration: none; color: var(--color-primary-text); padding: 15px; border-radius: 15px; background: rgba(10, 102, 194, 0.1); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        <a id="share-in" href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(longUrl)}" target="_blank" style="display: flex; flex-direction: column; align-items: center; gap: 8px; text-decoration: none; color: var(--color-primary-text); padding: 15px; border-radius: 15px; background: rgba(10, 102, 194, 0.1); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                             <i class="fa-brands fa-linkedin" style="font-size: 2rem; color: #0a66c2;"></i>
                             <span style="font-size: 0.85rem; font-weight: 600;">LinkedIn</span>
                         </a>
                     </div>
 
                     <button id="btn-copy-share" style="width: 100%; padding: 12px; background: var(--color-accent); color: white; border: none; border-radius: 12px; font-weight: 600; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.2s;">
-                        <i class="fa-regular fa-copy"></i> Copiar Enlace
+                        <i class="fa-solid fa-spinner fa-spin"></i> Generando enlace...
                     </button>
                     
                     <button id="btn-close-share" style="width: 100%; padding: 10px; margin-top: 10px; background: transparent; color: var(--color-secondary-text); border: none; border-radius: 12px; font-weight: 600; cursor: pointer;">
@@ -1661,23 +1625,55 @@ const ComunidadApp = {
 
         document.body.insertAdjacentHTML('beforeend', modalHtml);
         const modal = document.getElementById('custom-share-modal');
-        
+        let finalUrl = longUrl; // Por defecto es el largo
+
         // Animación de entrada
         setTimeout(() => {
             modal.style.opacity = '1';
             modal.children[0].style.transform = 'translateY(0)';
         }, 10);
 
+        // =========================================================
+        // INICIAMOS EL ACORTADOR EN SEGUNDO PLANO (Método JSONP seguro)
+        // Este método nunca es bloqueado por las políticas de CORS
+        // =========================================================
+        const callbackName = 'isgd_callback_' + Math.round(100000 * Math.random());
+        window[callbackName] = function(data) {
+            delete window[callbackName];
+            if (data.shorturl) {
+                finalUrl = data.shorturl;
+                // Actualizamos los botones de redes sociales con el nuevo enlace corto
+                document.getElementById('share-wa').href = `https://api.whatsapp.com/send?text=${encodedText}%0A${encodeURIComponent(finalUrl)}`;
+                document.getElementById('share-tw').href = `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodeURIComponent(finalUrl)}`;
+                document.getElementById('share-fb').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(finalUrl)}`;
+                document.getElementById('share-in').href = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(finalUrl)}`;
+            }
+            // Restauramos el botón de copiar
+            const copyBtn = document.getElementById('btn-copy-share');
+            copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i> Copiar Enlace Corto';
+        };
+
+        const script = document.createElement('script');
+        script.src = `https://is.gd/create.php?format=json&url=${encodeURIComponent(longUrl)}&callback=${callbackName}`;
+        script.onerror = function() {
+            delete window[callbackName];
+            // Si falla el internet, restauramos el botón pero usamos el enlace largo
+            document.getElementById('btn-copy-share').innerHTML = '<i class="fa-regular fa-copy"></i> Copiar Enlace';
+        };
+        document.body.appendChild(script);
+
+        // =========================================================
         // Lógica de copiar al portapapeles
+        // =========================================================
         document.getElementById('btn-copy-share').addEventListener('click', async () => {
             try {
-                await navigator.clipboard.writeText(url);
+                await navigator.clipboard.writeText(finalUrl);
                 const copyBtn = document.getElementById('btn-copy-share');
-                copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> ¡Enlace copiado!';
+                copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> ¡Copiado!';
                 copyBtn.style.background = '#25D366'; // Se pone verde
-                setTimeout(() => closeModal(), 1500); // Se cierra solo después de copiar
+                setTimeout(() => closeModal(), 1500); // Se cierra solo
             } catch (e) {
-                console.error(e);
+                console.error("Error copiando al portapapeles:", e);
             }
         });
 
