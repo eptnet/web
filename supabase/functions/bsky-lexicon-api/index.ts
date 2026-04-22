@@ -122,6 +122,7 @@ serve(async (req) => {
                 };
             }
         } 
+        // 2. SI NO HAY IMAGEN SOLA, PERO HAY ENLACE (Ej. Eventos y Comunidad)
         else if (payload.postLink) {
           embed = {
             $type: 'app.bsky.embed.external',
@@ -131,8 +132,28 @@ serve(async (req) => {
               description: payload.linkDescription || '',
             }
           };
+          
+          // 🔥 MAGIA PARA MINIATURAS: Descargamos la URL y la subimos al PDS como Blob
           if (payload.linkThumb && payload.linkThumb.startsWith('http')) {
-             embed.external.thumb = payload.linkThumb; 
+             try {
+                 console.log("Procesando miniatura de enlace...");
+                 const thumbRes = await fetch(payload.linkThumb);
+                 const thumbBuffer = await thumbRes.arrayBuffer();
+                 const thumbBytes = new Uint8Array(thumbBuffer);
+                 const mimeType = thumbRes.headers.get('content-type') || 'image/jpeg';
+                 
+                 const uploadRes = await fetchWithDpop(
+                   `${pdsUrl}/xrpc/com.atproto.repo.uploadBlob`, 
+                   'POST', creds.access_jwt, privateJwk, thumbBytes, undefined, mimeType
+                 );
+                 
+                 if (uploadRes.ok) {
+                     const uploadData = await uploadRes.json();
+                     embed.external.thumb = uploadData.blob; // Adjuntamos el recibo (Blob)
+                 }
+             } catch(e) {
+                 console.error("Aviso: No se pudo subir la miniatura a Bluesky", e);
+             }
           }
         }
 

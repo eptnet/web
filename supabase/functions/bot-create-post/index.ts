@@ -87,6 +87,7 @@ serve(async (req) => {
         }
     } 
     // --- 2. PROCESAMIENTO DE ENLACE (Si no hay imagen) ---
+    // --- 2. PROCESAMIENTO DE ENLACE (Para eventos y comunidad) ---
     else if (postLink) {
         embedInfo = {
             $type: 'app.bsky.embed.external',
@@ -96,6 +97,23 @@ serve(async (req) => {
                 description: linkDescription || '',
             }
         };
+        
+        // El Bot también descarga y sube la miniatura como Blob
+        if (linkThumb && linkThumb.startsWith('http')) {
+            try {
+                const thumbRes = await fetch(linkThumb);
+                const thumbBuffer = await thumbRes.arrayBuffer();
+                const thumbBytes = new Uint8Array(thumbBuffer);
+                const mimeType = thumbRes.headers.get('content-type') || 'image/jpeg';
+                
+                const uploadRes = await agent.uploadBlob(thumbBytes, { encoding: mimeType });
+                if (uploadRes.success) {
+                    embedInfo.external.thumb = uploadRes.data.blob;
+                }
+            } catch(e) {
+                console.log("Aviso: El bot no pudo subir la miniatura", e);
+            }
+        }
     }
 
     // --- PUBLICAMOS EL POST FINAL ---

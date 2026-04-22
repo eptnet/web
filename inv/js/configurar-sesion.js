@@ -656,9 +656,13 @@ const SessionConfigApp = {
                     thumb: sessionData.thumbnail_url
                 };
 
-                // Invocamos la Edge Function (Ella maneja Supabase + Bluesky)
+                // 🔥 CORRECCIÓN: Enviamos hostOrigin en lugar de directLink
                 const { data, error } = await this.supabase.functions.invoke('create-session-and-bsky-thread', {
-                    body: { sessionData, directLink, previewData }
+                    body: { 
+                        sessionData: sessionData, 
+                        hostOrigin: window.location.origin, 
+                        previewData: previewData 
+                    }
                 });
 
                 if (error) throw error;
