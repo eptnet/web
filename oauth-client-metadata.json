@@ -7,7 +7,9 @@
     "https://epistecnologia.com/inv/profile.html",
     "https://epistecnologia.com/inv/profile",
     "https://epistecnologia.com/comunidad.html",
-    "https://epistecnologia.com/comunidad"
+    "https://epistecnologia.com/comunidad",
+    "https://epistecnologia.com/inv/dashboard.html",
+    "https://epistecnologia.com/inv/dashboard"
   ],
   "scope": "atproto transition:generic",
   "grant_types": ["authorization_code", "refresh_token"],
