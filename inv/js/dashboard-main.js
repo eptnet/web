@@ -166,10 +166,45 @@ const BlueskyIntegration = {
 
     openConnectModal() {
         const template = document.getElementById('bsky-connect-template');
-        if (template) {
-            UI.showModal(template.content.cloneNode(true));
-            // Escuchamos el clic en el botón de autorizar del modal
-            document.getElementById('bsky-oauth-start-btn')?.addEventListener('click', (e) => this.handleConnectSubmit(e));
+        if (!template) {
+            console.error("No se encontró el template bsky-connect-template en el HTML.");
+            return;
+        }
+
+        // 1. Creamos un contenedor flotante infalible inyectado directamente en el Body
+        let modalContainer = document.getElementById('ept-global-modal');
+        if (!modalContainer) {
+            modalContainer = document.createElement('div');
+            modalContainer.id = 'ept-global-modal';
+            document.body.appendChild(modalContainer);
+        }
+
+        // 2. Dibujamos la ventana oscura con estilos nativos
+        modalContainer.innerHTML = `
+            <div class="modal-overlay is-visible" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:99999; display:flex; align-items:center; justify-content:center; backdrop-filter: blur(5px);">
+                <div class="modal-content" style="background:var(--color-surface, #1e293b); padding:2.5rem; border-radius:16px; border:1px solid var(--color-border, rgba(255,255,255,0.1)); position:relative; width:90%; max-width:420px; box-shadow: 0 15px 40px rgba(0,0,0,0.6);">
+                    <button class="modal-close-btn" style="position:absolute; top:15px; right:15px; background:none; border:none; font-size:1.8rem; color:var(--color-text-secondary, #94a3b8); cursor:pointer; transition:0.2s;">&times;</button>
+                    <div id="modal-template-injection-zone"></div>
+                </div>
+            </div>
+        `;
+
+        // 3. Inyectamos el contenido de tu Template
+        const injectionZone = modalContainer.querySelector('#modal-template-injection-zone');
+        injectionZone.appendChild(template.content.cloneNode(true));
+
+        // 4. Lógica para cerrar la ventana
+        const closeModal = () => { modalContainer.innerHTML = ''; };
+        modalContainer.querySelector('.modal-close-btn').addEventListener('click', closeModal);
+        modalContainer.querySelector('.modal-overlay').addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal-overlay')) closeModal();
+        });
+
+        // 5. Conectar el botón Azul de OAuth
+        const oauthBtn = modalContainer.querySelector('#bsky-oauth-start-btn');
+        if (oauthBtn) {
+            // Pasamos el evento (e) para que handleConnectSubmit lo procese
+            oauthBtn.addEventListener('click', (e) => this.handleConnectSubmit(e));
         }
     },
 
@@ -281,3 +316,17 @@ async function checkForBlueskyCallback() {
         }
     }
 }
+
+// DELEGACIÓN DE EVENTOS GLOBAL PARA EL DASHBOARD
+document.addEventListener('click', (e) => {
+    // 1. Detectar clic en el botón de conectar Bluesky (incluso si se acaba de crear)
+    if (e.target.id === 'open-bsky-modal' || e.target.closest('#open-bsky-modal')) {
+        console.log("Abriendo modal de Bluesky...");
+        BlueskyIntegration.openConnectModal();
+    }
+    
+    // 2. Detectar clic en el botón de autorizar dentro del modal
+    if (e.target.id === 'bsky-oauth-start-btn' || e.target.closest('#bsky-oauth-start-btn')) {
+        BlueskyIntegration.handleConnectSubmit(e);
+    }
+});

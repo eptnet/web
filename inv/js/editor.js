@@ -724,10 +724,17 @@ const StudioApp = {
 
             let bskyErrorMsg = null;
             if (postToCommunity) {
-                try {
-                    const includeImage = !!this.socialImageBase64;
+                // 1. Definimos las variables base FUERA del try para que todos puedan leerlas
+                let cleanBase64 = null;
+                if (this.socialImageBase64) {
+                    cleanBase64 = this.socialImageBase64.includes(',') 
+                        ? this.socialImageBase64.split(',')[1] 
+                        : this.socialImageBase64;
+                }
 
-                    // 1. Preparamos el paquete para el Cerebro Central (bsky-lexicon-api)
+                try {
+                    console.log("Intentando publicar con tu identidad (OAuth 2.0)...");
+                    
                     const payloadBluesky = {
                         action: 'create_post',
                         text: textForCommunity,
@@ -737,11 +744,11 @@ const StudioApp = {
                         linkThumb: linkThumb
                     };
 
-                    if (includeImage) {
-                        payloadBluesky.imageUrl = this.socialImageBase64; // El nuevo API acepta la cadena Base64 completa
+                    if (cleanBase64) {
+                        payloadBluesky.imageBase64 = cleanBase64;
+                        payloadBluesky.imageMimeType = 'image/jpeg';
                     }
 
-                    console.log("Intentando publicar con tu identidad (OAuth 2.0)...");
                     const { data: lexData, error: lexError } = await this.supabase.functions.invoke('bsky-lexicon-api', { 
                         body: payloadBluesky 
                     });
@@ -752,11 +759,13 @@ const StudioApp = {
                     console.log("✅ Publicado en Bluesky con tu cuenta personal.");
 
                 } catch (investigatorError) {
-                    console.log("⚠️ No se pudo publicar con tu cuenta (no conectada). Fallback al Bot EPT...");
+                    // 🔥 AQUÍ IMPRIMIMOS EL ERROR REAL 🔥
+                    console.error("🚨 MOTIVO EXACTO DEL FALLO OAUTH:", investigatorError.message || investigatorError);
+                    console.log("⚠️ Activando Plan B: Fallback al Bot EPT...");
                     
-                    // 2. PLAN B: Usamos el Bot antiguo
+                    // 2. PLAN B: Usamos el Bot antiguo (Y usamos las variables correctas)
                     const payloadBot = {
-                        postText: textForCommunity,
+                        postText: textForCommunity, // El bot EPT usa postText
                         postLink: postLink,
                         linkTitle: linkTitle,
                         linkDescription: linkDescription,
@@ -769,8 +778,8 @@ const StudioApp = {
                         }
                     };
 
-                    if (this.socialImageBase64) {
-                        payloadBot.base64Image = this.socialImageBase64.split(',')[1];
+                    if (cleanBase64) {
+                        payloadBot.base64Image = cleanBase64;
                         payloadBot.imageMimeType = 'image/jpeg';
                     }
 

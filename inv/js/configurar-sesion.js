@@ -547,6 +547,7 @@ const SessionConfigApp = {
         return { director_url, guest_url, viewer_url, recording_source_url };
     },
 
+    
     async saveSession() {
         const btn = document.getElementById('btn-save-session');
         const originalText = btn.innerHTML;
@@ -559,7 +560,7 @@ const SessionConfigApp = {
         const broadcastMode = document.getElementById('broadcast-mode')?.value;
         
         if (!title || !start) { 
-            alert("El título y la fecha son obligatorios."); 
+            alert("Título y fecha son obligatorios."); 
             btn.disabled=false; btn.innerHTML=originalText; 
             return; 
         }
@@ -569,14 +570,12 @@ const SessionConfigApp = {
         let generatedStreamKey = this.currentSession?.stream_key || null;
 
         if (platform !== 'vdo_ninja' && broadcastMode === 'official') {
-            // Verificamos si ya tenemos una clave válida generada para ESTA plataforma
             const alreadyHasOfficialKey = this.isEditMode && 
                                           this.currentSession?.platform === platform && 
                                           this.currentSession?.stream_key && 
                                           !this.currentSession?.platform_id?.includes('http');
             
             if (alreadyHasOfficialKey) {
-                // Si ya existe (estamos editando), mantenemos el evento intacto
                 platformIdToSave = this.currentSession.platform_id;
                 generatedStreamKey = this.currentSession.stream_key;
             } else {
@@ -584,28 +583,25 @@ const SessionConfigApp = {
                     if (platform === 'youtube') {
                         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creando en YouTube...';
                         
-                        // LLAMAMOS A LA EDGE FUNCTION DE GOOGLE API
                         const { data, error } = await this.supabase.functions.invoke('create-youtube-live', {
                             body: {
                                 title: title,
                                 description: document.getElementById('session-description')?.value || '',
-                                thumbnailUrl: document.getElementById('session-thumbnail')?.value || '' // <-- ¡LÍNEA NUEVA AÑADIDA!
+                                thumbnailUrl: document.getElementById('session-thumbnail')?.value || '' 
                             }
                         });
                         
                         if (error) throw error;
                         if (!data.success) throw new Error(data.error);
                         
-                        // La API nos devuelve el ID del video y la clave en tiempo real
                         platformIdToSave = data.videoId;
                         generatedStreamKey = data.streamKey;
 
                     } else if (platform === 'twitch') {
                         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Asignando clave Twitch...';
                         generatedStreamKey = await this.assignStreamKey(platform, start, document.getElementById('session-end')?.value);
-                        platformIdToSave = 'epistecnologia'; // Canal oficial de Twitch
+                        platformIdToSave = 'epistecnologia'; 
                     } else {
-                        // Substack / Otros (Aún usan piscina)
                         generatedStreamKey = await this.assignStreamKey(platform, start, document.getElementById('session-end')?.value);
                     }
                 } catch (err) {
@@ -619,12 +615,12 @@ const SessionConfigApp = {
             generatedStreamKey = this.currentSession?.stream_key || `ept-live-${self.crypto.randomUUID().slice(0, 8)}`;
             platformIdToSave = null;
         }
-        // --- FIN MAGIA API ---
 
+        // 👉 AQUÍ ESTABA EL ERROR: Hemos restaurado todos los campos que la Base de Datos exige
         let sessionData = {
             user_id: this.user.id,
-            project_title: this.currentProject.title,
-            project_doi: this.currentProject.doi,
+            project_title: this.currentProject ? this.currentProject.title : null,
+            project_doi: this.currentProject ? this.currentProject.doi : null,
             session_title: title,
             session_type: document.getElementById('session-category').value,
             scheduled_at: new Date(start).toISOString(),
@@ -637,55 +633,47 @@ const SessionConfigApp = {
             stream_key: generatedStreamKey 
         };
 
-        const authorInfo = {
-            displayName: this.userProfile.display_name || this.userProfile.full_name,
-            orcid: this.userProfile.orcid || ''
-        };
-
         try {
             let savedSession;
 
             if (this.isEditMode) {
+                // MODO EDICIÓN
                 const { data, error } = await this.supabase.from('sessions').update(sessionData).eq('id', this.editSessionId).select().single();
                 if (error) throw error;
                 savedSession = data;
             } else {
+                // MODO CREACIÓN
                 sessionData.status = 'PROGRAMADO';
                 sessionData.is_archived = false;
                 
                 const vdoUrls = this.generateVdoNinjaUrls();
                 sessionData = { ...sessionData, ...vdoUrls };
-
-                let postMethod = 'none';
-                try {
-                    const { data: status, error: checkError } = await this.supabase.functions.invoke('bsky-check-status');
-                    if (checkError) throw checkError;
-
-                    if (status && status.connected) {
-                        postMethod = 'user';
-                    } else {
-                        const confirmed = confirm("Tu conexión con Bluesky ha fallado o no está configurada. ¿Deseas que el bot de Epistecnología publique el anuncio del evento por ti?");
-                        if (confirmed) postMethod = 'bot';
-                    }
-                } catch (err) {
-                    alert(`No se pudo verificar la conexión con Bluesky. La sesión se agendará sin crear el hilo de chat. Error: ${err.message}`);
-                }
                 
+                const directLink = `${window.location.origin}/l/${sessionData.id}`;
+                const previewData = {
+                    title: sessionData.session_title,
+                    description: sessionData.description,
+                    thumb: sessionData.thumbnail_url
+                };
+
+                // Invocamos la Edge Function (Ella maneja Supabase + Bluesky)
                 const { data, error } = await this.supabase.functions.invoke('create-session-and-bsky-thread', {
-                    body: { sessionData, authorInfo, postMethod }
+                    body: { sessionData, directLink, previewData }
                 });
 
                 if (error) throw error;
-                savedSession = data.savedSession;
+                if (!data.success) throw new Error(data.error || "Error desconocido en el servidor");
                 
+                savedSession = data.savedSession;
                 this.isEditMode = true;
                 this.editSessionId = savedSession.id;
-                window.history.replaceState({}, '', `/inv/configurar-sesion.html?edit=${savedSession.id}`);
+                window.history.replaceState({}, '', `?edit=${savedSession.id}`);
             }
 
-            this.currentSession = savedSession; // Actualizamos la memoria
+            this.currentSession = savedSession; 
 
-            if (this.addedParticipants.length > 0) {
+            // Guardar participantes invitados
+            if (this.addedParticipants && this.addedParticipants.length > 0) {
                 await this.supabase.from('event_participants').delete().eq('session_id', savedSession.id);
                 const participantsData = this.addedParticipants.map(p => ({ session_id: savedSession.id, user_id: p.id }));
                 await this.supabase.from('event_participants').insert(participantsData);
@@ -698,7 +686,7 @@ const SessionConfigApp = {
             this.showLinksPanel(savedSession);
 
         } catch (err) {
-            alert(`No se pudo guardar la sesión: ${err.message}`);
+            alert(`Error: ${err.message}`);
             console.error('Error al guardar la sesión:', err);
             btn.disabled = false; 
             btn.innerHTML = originalText;
