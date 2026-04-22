@@ -1206,7 +1206,11 @@ const ComunidadApp = {
                     reader.onload = () => resolve(reader.result);
                     reader.onerror = error => reject(error);
                 });
-                body.imageUrl = fullBase64;
+                
+                // 🔥 LA CORRECCIÓN: Le quitamos el prefijo y usamos las variables correctas
+                body.imageBase64 = fullBase64.includes(',') ? fullBase64.split(',')[1] : fullBase64;
+                body.imageMimeType = this.selectedImageFile.type || 'image/jpeg';
+                
             } catch (error) {
                 console.error("Error al leer la imagen:", error);
                 alert("No se pudo procesar la imagen.");

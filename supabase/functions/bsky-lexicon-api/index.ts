@@ -197,6 +197,35 @@ serve(async (req) => {
         return new Response(JSON.stringify({ success: true, uri: res.uri }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
       }
 
+      // --- BLOQUES RESTAURADOS PARA BORRAR Y DAR LIKE ---
+      
+      case 'delete_post': {
+        const rkey = payload.postUri.split('/').pop();
+        await fetchWithDpop(`${pdsUrl}/xrpc/com.atproto.repo.deleteRecord`, 'POST', creds.access_jwt, privateJwk, { repo: creds.did, collection: 'app.bsky.feed.post', rkey });
+        return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
+      }
+      
+      case 'like_post': {
+        const createBody = {
+          repo: creds.did,
+          collection: 'app.bsky.feed.like',
+          record: {
+            subject: { uri: payload.postUri, cid: payload.postCid },
+            createdAt: new Date().toISOString()
+          }
+        };
+        const bskyResponse = await fetchWithDpop(`${pdsUrl}/xrpc/com.atproto.repo.createRecord`, 'POST', creds.access_jwt, privateJwk, createBody);
+        const res = await bskyResponse.json();
+        return new Response(JSON.stringify({ success: true, uri: res.uri }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
+      }
+
+      case 'unlike_post': {
+        const rkey = payload.likeUri.split('/').pop();
+        await fetchWithDpop(`${pdsUrl}/xrpc/com.atproto.repo.deleteRecord`, 'POST', creds.access_jwt, privateJwk, { repo: creds.did, collection: 'app.bsky.feed.like', rkey });
+        return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
+      }
+      // --------------------------------------------------
+
       default: throw new Error(`Acción ${payload.action} no soportada`);
     }
 
