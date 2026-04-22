@@ -26,6 +26,9 @@ const App = {
         }
         this.userId = session.user.id;
         
+        // 👉 AÑADE ESTA LÍNEA AQUÍ PARA ATRAPAR EL RETORNO DE BLUESKY
+        await checkForBlueskyCallback();
+        
         // 1. Hacemos una consulta simple y segura solo para el perfil
         const { data: profile, error } = await this.supabase
             .from('profiles')
@@ -42,14 +45,16 @@ const App = {
         this.userProfile = profile;
         console.log("Perfil cargado correctamente en Dashboard:", profile);
 
-        // Exponer globalmente ANTES de inicializar los submódulos
+        // Exponer globalmente
         window.App = this;
         window.UI = UI;
 
         // Inicializar UI General
         Header.init(this.userProfile);
-        Navigation.init();
-        BlueskyIntegration.init();
+        Navigation.init(); // Esto renderiza el home-section y bsky-status-container
+        
+        // CAMBIO: Agregamos el await para que espere la respuesta de la red social
+        await BlueskyIntegration.init(); 
     }
 };
 
@@ -103,119 +108,92 @@ const UI = {
     }
 };
 
-/// Objeto para manejar la integración con Bluesky (Versión EPT Bot Logic)
+// Objeto para manejar la integración con Bluesky (Versión EPT Bot Logic)
 const BlueskyIntegration = {
+    // Restauramos init para que App.init() no se rompa
     async init() {
-        // 1. IMPORTANTE: Hacemos el objeto global AL PRINCIPIO para que el botón funcione siempre
-        window.BlueskyIntegration = this;
-        this.checkConnection();
+        await this.checkStatus();
     },
 
-    async checkConnection() {
-        const banner = document.getElementById('bsky-status-banner');
-        if (!banner) return;
+    async checkStatus() {
+        // Asegúrate de que este ID coincida con el del HTML
+        const container = document.getElementById('bsky-status-container');
+        if (!container) {
+            console.warn("No se encontró el contenedor #bsky-status-container");
+            return;
+        }
 
-        banner.classList.add('is-loading');
-        
         try {
-            // Usamos .maybeSingle() para evitar el error 406 si no existe el registro
-            const { data: creds, error } = await App.supabase
-                .from('bsky_credentials')
-                .select('handle')
-                .eq('user_id', App.userId)
-                .maybeSingle();
+            // Verificamos el estado real en Bluesky vía OAuth 2.0
+            const { data, error } = await App.supabase.functions.invoke('bsky-check-status');
+            
+            if (error) throw error;
 
-            banner.classList.remove('is-loading');
-
-            if (creds) {
-                // ESTADO: CONECTADO (Usa su propia cuenta)
-                banner.classList.add('is-connected');
-                banner.classList.remove('is-disconnected');
-                banner.innerHTML = `<p><i class="fa-solid fa-circle-check"></i> Conectado a Bluesky como <strong>@${creds.handle}</strong>. Publicarás con tu propia identidad académica.</p>`;
-            } else {
-                // ESTADO: DESCONECTADO (Usa el EPT Bot)
-                banner.classList.add('is-disconnected');
-                banner.classList.remove('is-connected');
-                banner.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center; width:100%; gap:15px;">
-                        <p style="margin:0; line-height:1.4;"><i class="fa-solid fa-robot"></i> No estás conectado a tu Bluesky. El chat será creado por <strong>🤖 EPT Bot</strong>. Crea/Conecta tu propia cuenta para una mejor experiencia.</p>
-                        <button class="btn-connect" onclick="BlueskyIntegration.openConnectModal()" style="border:none; cursor:pointer; white-space:nowrap; background:var(--color-accent); color:white; padding:8px 16px; border-radius:6px; font-weight:600;">Conectar mi Cuenta</button>
+            if (data && data.connected) {
+                // ESTADO: INVESTIGADOR CONECTADO
+                container.innerHTML = `
+                    <div class="status-badge connected">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <span>Conectado como <strong>@${data.handle}</strong></span>
                     </div>
+                    <p class="status-msg">Tus hilos y eventos se publicarán con tu identidad real.</p>
                 `;
+            } else {
+                // ESTADO: MODO BOT (FALLBACK)
+                container.innerHTML = `
+                    <div class="status-badge disconnected">
+                        <i class="fa-solid fa-robot"></i>
+                        <span>Modo <strong>EPT Bot</strong> activo</span>
+                    </div>
+                    <p class="status-msg">Tus publicaciones serán realizadas por 🤖EPT Bot</p>
+                    <button class="btn-secondary btn-sm" id="open-bsky-modal" style="margin-top:10px;">Conectar mi Bluesky</button>
+                `;
+                // Re-vinculamos el evento al nuevo botón
+                document.getElementById('open-bsky-modal')?.addEventListener('click', () => this.openConnectModal());
             }
-        } catch (err) {
-            banner.classList.remove('is-loading');
-            banner.classList.add('is-disconnected');
-            banner.innerHTML = `<p><i class="fa-solid fa-triangle-exclamation"></i> Error al verificar conexión. Se usará el 🤖EPT Bot por defecto.</p>`;
-            console.error("Error al verificar el estado de Bluesky:", err);
+        } catch (error) {
+            console.error("Error al verificar Bluesky:", error);
+            container.innerHTML = `
+                <div class="status-badge error">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <span>Error de verificación</span>
+                </div>
+                <button class="btn-secondary btn-sm" id="open-bsky-modal" style="margin-top:10px;">Reintentar Conexión</button>
+            `;
+            document.getElementById('open-bsky-modal')?.addEventListener('click', () => this.openConnectModal());
         }
     },
 
     openConnectModal() {
-        const container = document.getElementById('modal-overlay-container');
         const template = document.getElementById('bsky-connect-template');
-        if (!container || !template) return;
-
-        // Inyectamos el diseño del modal
-        container.innerHTML = `
-            <div class="modal" style="background:var(--color-surface); border-radius:12px; width:90%; max-width:450px; display:flex; flex-direction:column; box-shadow: 0 20px 50px rgba(0,0,0,0.2); padding: 0; animation: fadeIn 0.2s ease;">
-                ${template.innerHTML}
-            </div>
-        `;
-        
-        // Hacemos visible el fondo oscuro
-        container.style.display = 'flex';
-        container.classList.add('active');
-
-        // Evento de cerrar
-        const closeBtn = container.querySelector('.btn-close-modal');
-        if (closeBtn) closeBtn.addEventListener('click', () => this.closeConnectModal());
-
-        // Evento de formulario
-        const form = container.querySelector('#bsky-connect-form');
-        if (form) form.addEventListener('submit', (e) => this.handleConnectSubmit(e));
-    },
-
-    closeConnectModal() {
-        const container = document.getElementById('modal-overlay-container');
-        if (container) {
-            container.innerHTML = '';
-            container.classList.remove('active');
-            container.style.display = 'none';
+        if (template) {
+            UI.showModal(template.content.cloneNode(true));
+            // Escuchamos el clic en el botón de autorizar del modal
+            document.getElementById('bsky-oauth-start-btn')?.addEventListener('click', (e) => this.handleConnectSubmit(e));
         }
     },
 
     async handleConnectSubmit(e) {
         e.preventDefault();
-        const form = e.target;
-        const submitBtn = form.querySelector('button[type="submit"]');
-        const originalHtml = submitBtn.innerHTML;
-        
-        const handle = form.querySelector('#bsky-handle').value.trim();
-        const appPassword = form.querySelector('#bsky-app-password').value.trim();
-
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verificando...';
+        const btn = e.currentTarget;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Redirigiendo...';
 
         try {
-            const { data, error } = await App.supabase.functions.invoke('bsky-auth', { 
-                body: { handle, appPassword } 
+            const redirectUri = window.location.origin + window.location.pathname;
+            const { data, error } = await App.supabase.functions.invoke('bsky-oauth-init', {
+                body: { redirect_uri: redirectUri }
             });
 
-            if (error) throw new Error(error.message || 'Error desconocido al conectar.');
-
-            if (window.UI) window.UI.showAlert("✅ ¡Cuenta de Bluesky conectada!");
-            else alert("¡Cuenta de Bluesky conectada!");
-            
-            this.closeConnectModal();
-            this.checkConnection(); 
-
+            if (error) throw error;
+            if (data?.auth_url) {
+                window.location.href = data.auth_url;
+            }
         } catch (error) {
-            const detail = error.message.includes('password') ? 'Verifica tu handle y contraseña de aplicación.' : error.message;
-            alert(`❌ Error: ${detail}`);
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalHtml;
+            console.error("Error iniciando OAuth:", error);
+            alert("No se pudo iniciar la conexión segura.");
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-brands fa-bluesky"></i> Autorizar con Bluesky';
         }
     }
 };
@@ -270,3 +248,36 @@ document.addEventListener('DOMContentLoaded', () => {
     applyTheme(savedTheme);
     setTimeout(() => { App.init(); }, 150);
 });
+
+// Añadir esta función dentro de App o al final del archivo dashboard-main.js
+async function checkForBlueskyCallback() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
+
+    if (code && state) {
+        // Limpiamos la URL de inmediato para una experiencia limpia
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        if (window.showToast) window.showToast("⏳ Finalizando conexión con Bluesky...");
+
+        try {
+            const { data, error } = await App.supabase.functions.invoke('bsky-oauth-callback', {
+                body: { 
+                    code: code, 
+                    state: state, 
+                    redirect_uri: window.location.origin + window.location.pathname 
+                }
+            });
+
+            if (error) throw error;
+            if (window.showToast) window.showToast(`✅ ¡Cuenta conectada como @${data.handle}!`);
+            
+            // Actualizamos la interfaz
+            await BlueskyIntegration.checkStatus();
+        } catch (error) {
+            console.error("Error en callback de Bluesky:", error);
+            alert("Hubo un problema al autorizar tu cuenta. Por favor, intenta de nuevo.");
+        }
+    }
+}

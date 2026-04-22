@@ -765,26 +765,42 @@ const PublicRoomApp = {
         if (!commentsFeed) return;
 
         try {
-            // Usamos tu Edge Function nativa que trae todo el hilo
-            const { data: chatData, error } = await this.supabase.functions.invoke('bsky-get-post-thread', { body: { postUri } });
+            // CAMBIO: Usamos el Cerebro Central con OAuth 2.0
+            const { data: chatData, error } = await this.supabase.functions.invoke('bsky-lexicon-api', { 
+                body: { action: 'get_post_thread', uri: postUri } 
+            });
             if (error) throw error;
+            if (chatData && chatData.error) throw new Error(chatData.error);
             
             commentsFeed.innerHTML = '';
             
+            const threadData = chatData.thread;
+            if (!threadData) throw new Error("Hilo no encontrado");
+
             // 1. Mostrar SIEMPRE el mensaje original (El post Ancla del evento) al tope
-            if (chatData.anchorPost) {
-                this.appendCommentMessage(chatData.anchorPost, false, true); // El 'true' activa el diseño de Ancla
+            if (threadData.post) {
+                this.appendCommentMessage({
+                    author: threadData.post.author,
+                    record: threadData.post.record,
+                    indexedAt: threadData.post.indexedAt
+                }, false, true); // El 'true' activa el diseño de Ancla
             }
 
-            if (!chatData.messages || chatData.messages.length === 0) {
+            if (!threadData.replies || threadData.replies.length === 0) {
                 commentsFeed.insertAdjacentHTML('beforeend', '<p class="text-muted text-center empty-msg" style="margin-top:20px;">Sé el primero en iniciar la conversación.</p>');
                 return;
             }
 
             // 2. Invertimos el arreglo para que los comentarios MÁS RECIENTES salgan arriba
-            const sortedMessages = chatData.messages.reverse();
-            sortedMessages.forEach(msg => {
-                this.appendCommentMessage(msg, false);
+            const sortedMessages = threadData.replies.reverse();
+            sortedMessages.forEach(replyObj => {
+                if(replyObj.post) {
+                    this.appendCommentMessage({
+                        author: replyObj.post.author,
+                        record: replyObj.post.record,
+                        indexedAt: replyObj.post.indexedAt
+                    }, false);
+                }
             });
 
         } catch (error) {
@@ -875,19 +891,26 @@ const PublicRoomApp = {
         document.getElementById('comment-char-counter').textContent = '300';
 
         try {
-            // 2. Disparar a Bluesky (Tu Edge Function se encarga de subirlo y emitir el Broadcast)
-            const { error } = await this.supabase.functions.invoke('bsky-create-reply', {
+            // 2. CAMBIO: Disparar a Bluesky con OAuth 2.0 (Cerebro Central)
+            const { data, error } = await this.supabase.functions.invoke('bsky-lexicon-api', {
                 body: {
-                    replyText: text,
-                    parentPost: { uri: threadUri, cid: threadCid }
+                    action: 'create_reply',
+                    text: text,
+                    replyTo: { 
+                        rootUri: threadUri, 
+                        rootCid: threadCid, 
+                        parentUri: threadUri, 
+                        parentCid: threadCid 
+                    }
                 }
             });
             if (error) throw error;
+            if (data && data.error) throw new Error(data.error);
         } catch (error) {
             alert("Tu sesión de Bluesky expiró o hubo un error de conexión.");
             console.error(error);
         } finally {
-            submitBtn.disabled = true; 
+            submitBtn.disabled = false; // FIX: Rehabilitar botón
             submitBtn.innerHTML = 'Comentar';
         }
     },

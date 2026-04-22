@@ -725,12 +725,12 @@ const StudioApp = {
             let bskyErrorMsg = null;
             if (postToCommunity) {
                 try {
-                    const { data: creds } = await this.supabase.from('bsky_credentials').select('*').eq('user_id', this.userId).single();
-                    
                     const includeImage = !!this.socialImageBase64;
 
+                    // 1. Preparamos el paquete para el Cerebro Central (bsky-lexicon-api)
                     const payloadBluesky = {
-                        postText: textForCommunity,
+                        action: 'create_post',
+                        text: textForCommunity,
                         postLink: postLink,
                         linkTitle: linkTitle,
                         linkDescription: linkDescription,
@@ -738,33 +738,58 @@ const StudioApp = {
                     };
 
                     if (includeImage) {
-                        payloadBluesky.base64Image = this.socialImageBase64.split(',')[1];
-                        payloadBluesky.imageMimeType = 'image/jpeg';
+                        payloadBluesky.imageUrl = this.socialImageBase64; // El nuevo API acepta la cadena Base64 completa
                     }
 
-                    if (creds) {
-                        const { error } = await this.supabase.functions.invoke('bsky-create-post', { body: payloadBluesky });
-                        if (error) throw error;
-                    } else {
-                        const authorInfo = {
-                            displayName: this.currentUserProfile.display_name,
+                    console.log("Intentando publicar con tu identidad (OAuth 2.0)...");
+                    const { data: lexData, error: lexError } = await this.supabase.functions.invoke('bsky-lexicon-api', { 
+                        body: payloadBluesky 
+                    });
+                    
+                    if (lexError) throw lexError;
+                    if (lexData && lexData.error) throw new Error(lexData.error);
+                    
+                    console.log("✅ Publicado en Bluesky con tu cuenta personal.");
+
+                } catch (investigatorError) {
+                    console.log("⚠️ No se pudo publicar con tu cuenta (no conectada). Fallback al Bot EPT...");
+                    
+                    // 2. PLAN B: Usamos el Bot antiguo
+                    const payloadBot = {
+                        postText: textForCommunity,
+                        postLink: postLink,
+                        linkTitle: linkTitle,
+                        linkDescription: linkDescription,
+                        linkThumb: linkThumb,
+                        isBot: true,
+                        authorInfo: {
+                            displayName: this.currentUserProfile?.display_name || 'Investigador',
                             handle: null,
-                            orcid: this.currentUserProfile.orcid
-                        };
-                        payloadBluesky.authorInfo = authorInfo;
-                        const { error: botError } = await this.supabase.functions.invoke('bot-create-post', { body: payloadBluesky });
-                        if (botError) throw botError;
+                            orcid: this.currentUserProfile?.orcid
+                        }
+                    };
+
+                    if (this.socialImageBase64) {
+                        payloadBot.base64Image = this.socialImageBase64.split(',')[1];
+                        payloadBot.imageMimeType = 'image/jpeg';
                     }
-                } catch (bskyErr) {
-                    console.error("Fallo interno en Bluesky:", bskyErr);
-                    bskyErrorMsg = bskyErr.message || "La función falló.";
+
+                    const { data: botData, error: botError } = await this.supabase.functions.invoke('bot-create-post', { body: payloadBot });
+                    
+                    if (botError) {
+                        bskyErrorMsg = botError.message;
+                    } else if (botData && botData.error) {
+                        bskyErrorMsg = botData.error;
+                    } else {
+                        console.log("🤖 Publicado vía EPT Bot.");
+                    }
                 }
             }
 
             if (bskyErrorMsg) {
-                alert(`⚠️ El artículo fue publicado, PERO falló la publicación en redes. Motivo: ${bskyErrorMsg}`);
+                alert(`⚠️ El artículo fue guardado, PERO falló la publicación en redes. Motivo: ${bskyErrorMsg}`);
             } else {
-                alert("¡Contenido publicado con éxito!");
+                alert("¡Contenido publicado con éxito en la plataforma y en redes!");
             }
             
         } catch (error) {
