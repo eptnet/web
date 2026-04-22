@@ -48,9 +48,13 @@ async function fetchWithDpop(url: string, method: string, accessToken: string, p
 
   let res = await makeRequest(currentNonce);
   
-  if (res.status === 401 && res.headers.has('use-dpop-nonce')) {
-    currentNonce = res.headers.get('use-dpop-nonce')!;
-    res = await makeRequest(currentNonce);
+  // 🔥 CORRECCIÓN DEL NONCE: Buscamos la cabecera correcta (dpop-nonce)
+  const newNonce = res.headers.get('dpop-nonce');
+  
+  // Si Bluesky nos pide el Nonce (Error 401 o 400), lo atrapamos y reintentamos mágicamente
+  if ((res.status === 401 || res.status === 400) && newNonce) {
+    currentNonce = newNonce;
+    res = await makeRequest(currentNonce); 
   }
   return res;
 }
@@ -70,24 +74,32 @@ serve(async (req) => {
     const { data: creds, error: credsError } = await supabaseClient.from('bsky_credentials').select('*').eq('user_id', user.id).single()
     if (credsError || !creds) throw new Error("Credenciales de Bluesky no encontradas");
 
-    // 🔥 LA CORRECCIÓN MAESTRA: Extraer el JWK de la columna refresh_jwt
     const refreshData = JSON.parse(creds.refresh_jwt);
     const privateJwk = refreshData.jwk;
-    const pdsUrl = 'https://bsky.social'; // Valor por defecto seguro
+    
+    let pdsUrl = 'https://bsky.social'; 
+    try {
+      if (creds.did.startsWith('did:plc:')) {
+        const didRes = await fetch(`https://plc.directory/${creds.did}`);
+        const didDoc = await didRes.json();
+        const pdsService = didDoc.service?.find((s: any) => s.id === '#atproto_pds');
+        if (pdsService) pdsUrl = pdsService.serviceEndpoint;
+      }
+    } catch (e) {
+      console.log("Aviso: No se pudo resolver PDS dinámico, usando bsky.social", e);
+    }
+
     const payload = await req.json();
 
     switch (payload.action) {
-      
       case 'create_post': {
         let embed: any = undefined;
 
-        // 1. SI HAY IMAGEN: Subimos directo a Bluesky (PDS)
         if (payload.imageBase64) {
-            console.log("Procesando imagen nativa para Bluesky...");
+            console.log(`Subiendo imagen nativa al PDS: ${pdsUrl}...`);
             const byteArray = base64Decode(payload.imageBase64);
             const mimeType = payload.imageMimeType || 'image/jpeg';
             
-            // Subimos el Blob binario
             const uploadRes = await fetchWithDpop(
               `${pdsUrl}/xrpc/com.atproto.repo.uploadBlob`, 
               'POST', creds.access_jwt, privateJwk, byteArray, undefined, mimeType
@@ -95,12 +107,11 @@ serve(async (req) => {
             
             if (!uploadRes.ok) {
                 const errText = await uploadRes.text();
-                throw new Error(`Fallo al subir Blob a Bluesky: ${errText}`);
+                throw new Error(`Rechazo del PDS al subir imagen: ${errText}`);
             }
             
             const uploadData = await uploadRes.json();
             
-            // Si Bluesky aceptó la imagen, armamos el contenedor
             if (uploadData.blob) {
                 embed = {
                     $type: 'app.bsky.embed.images',
@@ -111,7 +122,6 @@ serve(async (req) => {
                 };
             }
         } 
-        // 2. SI NO HAY IMAGEN, PERO HAY ENLACE: Creamos la tarjeta web
         else if (payload.postLink) {
           embed = {
             $type: 'app.bsky.embed.external',
@@ -126,7 +136,6 @@ serve(async (req) => {
           }
         }
 
-        // 3. Enviamos el Post completo
         const createBody = {
           repo: creds.did,
           collection: 'app.bsky.feed.post',
@@ -138,7 +147,7 @@ serve(async (req) => {
         };
 
         const bskyResponse = await fetchWithDpop(`${pdsUrl}/xrpc/com.atproto.repo.createRecord`, 'POST', creds.access_jwt, privateJwk, createBody);
-        if (!bskyResponse.ok) throw new Error(`Error en createRecord: ${await bskyResponse.text()}`);
+        if (!bskyResponse.ok) throw new Error(`Error al publicar Post: ${await bskyResponse.text()}`);
         
         const res = await bskyResponse.json();
         return new Response(JSON.stringify({ success: true, uri: res.uri, cid: res.cid }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
@@ -172,7 +181,6 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("Error Lexicon API:", error);
-    // Detector de mentiras activo para ver cualquier otro error
-    return new Response(JSON.stringify({ success: false, error: `Error interno en Bluesky: ${error.message}` }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+    return new Response(JSON.stringify({ success: false, error: `Fallo OAuth: ${error.message}` }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
   }
 })
