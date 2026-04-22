@@ -2,7 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { encode as base64UrlEncode } from "https://deno.land/std@0.168.0/encoding/base64url.ts"
-import { decode as base64Decode } from "https://deno.land/std@0.168.0/encoding/base64.ts" // NUEVO: Decodificador nativo de Deno
+import { decode as base64Decode } from "https://deno.land/std@0.168.0/encoding/base64.ts" 
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,7 +30,6 @@ async function generateDpopProof(htu: string, htm: string, privateJwk: any, nonc
   return `${headerB64}.${payloadB64}.${signatureB64}`;
 }
 
-// ACTUALIZADO: Ahora acepta "contentType" para enviar imágenes crudas (Uint8Array)
 async function fetchWithDpop(url: string, method: string, accessToken: string, privateJwk: any, body?: any, nonce?: string, contentType: string = 'application/json') {
   const htu = url.split('?')[0];
   let currentNonce = nonce;
@@ -71,8 +70,10 @@ serve(async (req) => {
     const { data: creds, error: credsError } = await supabaseClient.from('bsky_credentials').select('*').eq('user_id', user.id).single()
     if (credsError || !creds) throw new Error("Credenciales de Bluesky no encontradas");
 
-    const pdsUrl = creds.pds_endpoint || 'https://bsky.social';
-    const privateJwk = JSON.parse(creds.dpop_private_jwk);
+    // 🔥 LA CORRECCIÓN MAESTRA: Extraer el JWK de la columna refresh_jwt
+    const refreshData = JSON.parse(creds.refresh_jwt);
+    const privateJwk = refreshData.jwk;
+    const pdsUrl = 'https://bsky.social'; // Valor por defecto seguro
     const payload = await req.json();
 
     switch (payload.action) {
@@ -122,7 +123,6 @@ serve(async (req) => {
           };
           if (payload.linkThumb && payload.linkThumb.startsWith('http')) {
              embed.external.thumb = payload.linkThumb; 
-             // Nota: En un futuro ideal, las miniaturas de enlaces también deberían subirse como Blobs
           }
         }
 
@@ -144,8 +144,7 @@ serve(async (req) => {
         return new Response(JSON.stringify({ success: true, uri: res.uri, cid: res.cid }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }});
       }
 
-      // ... resto de tus endpoints (get_post_thread, create_reply, etc) los dejamos intactos
-      
+      // ... resto de endpoints intactos
       case 'get_post_thread': {
         const url = `${pdsUrl}/xrpc/app.bsky.feed.getPostThread?uri=${encodeURIComponent(payload.uri)}`;
         const bskyResponse = await fetchWithDpop(url, 'GET', creds.access_jwt, privateJwk);
@@ -173,13 +172,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("Error Lexicon API:", error);
-    // 🔥 EL DETECTOR DE MENTIRAS: Devolvemos 200 pero success false 🔥
-    return new Response(JSON.stringify({ 
-        success: false, 
-        error: `Error interno en Bluesky: ${error.message}` 
-    }), { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-        status: 200 
-    });
+    // Detector de mentiras activo para ver cualquier otro error
+    return new Response(JSON.stringify({ success: false, error: `Error interno en Bluesky: ${error.message}` }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
   }
 })
