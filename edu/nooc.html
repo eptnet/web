@@ -14,19 +14,26 @@
     <canvas id="edu-canvas"></canvas>
 
     <div class="nooc-layout">
-        <aside class="nooc-sidebar-nav">
-            <div class="nav-brand">
+        
+        <div class="mobile-top-bar">
+            <button class="hamburger-btn" onclick="NoocRoom.toggleMobileMenu()"><i class="fa-solid fa-bars"></i></button>
+            <div class="nav-brand" style="margin:0;"><img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo"> EPT <span class="accent-text">EDU</span></div>
+        </div>
+
+        <div id="mobile-overlay" class="mobile-overlay" onclick="NoocRoom.toggleMobileMenu()"></div>
+
+        <aside class="nooc-sidebar-nav" id="sidebar-nav">
+            <div class="nav-brand desktop-brand">
                 <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo">
                 <span>EPT <span class="accent-text">EDU</span></span>
             </div>
+            
             <nav class="course-menu">
-                <button class="menu-item active" onclick="NoocRoom.showView('start')"><i class="fa-solid fa-house"></i> Inicio</button>
-                <button class="menu-item" onclick="NoocRoom.showView('feed')"><i class="fa-solid fa-comments"></i> El Pasillo (Feed)</button>
-                <div class="menu-divider">Módulos</div>
+                <button id="btn-nav-inicio" class="menu-item active-main" onclick="NoocRoom.showView('start')"><i class="fa-solid fa-house"></i> Inicio</button>
+                <button id="btn-nav-feed" class="menu-item" onclick="NoocRoom.showView('feed')"><i class="fa-solid fa-users-rays"></i> Comunidad</button>
+                <div class="menu-divider">Plan de Estudios</div>
                 <div id="modules-nav-list">
                     </div>
-                <div class="menu-divider">Finalización</div>
-                <button class="menu-item" onclick="NoocRoom.showView('cert')"><i class="fa-solid fa-certificate"></i> Certificación</button>
             </nav>
             <a href="/edu" class="btn-exit"><i class="fa-solid fa-arrow-left"></i> Salir al Campus</a>
         </aside>
@@ -68,10 +75,17 @@
 
     <div id="lesson-modal" class="lesson-modal">
         <div class="modal-body">
-            <button class="close-modal" onclick="NoocRoom.closeLesson()">&times;</button>
-            <div id="lesson-modal-content"></div>
-            <div class="modal-footer">
-                <button class="btn-complete" onclick="NoocRoom.markComplete()"><i class="fa-solid fa-check"></i> Marcar como Completada (+20 XP)</button>
+            <div class="modal-top-bar">
+                <span style="font-weight:bold; color:var(--color-text-secondary);"><i class="fa-solid fa-book-open"></i> Sala de Estudio</span>
+                <button class="btn-close-modal" id="close-modal-btn" title="Cerrar lección"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="modal-content-scroll" id="lesson-modal-content">
+                </div>
+            
+            <div class="modal-footer-bar">
+                <p style="margin:0; font-size:0.85rem; opacity:0.6;">Asegúrate de revisar todo el material antes de continuar.</p>
+                <button class="btn-action" onclick="NoocRoom.closeLessonModal()" style="margin:0;"><i class="fa-solid fa-check-double"></i> Completar Lección (+20 XP)</button>
             </div>
         </div>
     </div>
