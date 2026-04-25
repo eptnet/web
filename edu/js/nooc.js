@@ -168,6 +168,25 @@ const NoocRoom = {
                     ${cardsHtml}
                 </div>
             `;
+
+        } else if (view === 'cert') {
+            document.getElementById('btn-nav-cert').classList.add('active-main');
+            this.toggleMobileMenu(true); // Auto-cerrar menú en móvil
+
+            stage.innerHTML = `
+                <div class="bento-card glow-hover" style="text-align: center; padding: 50px 20px;">
+                    <i class="fa-solid fa-award" style="font-size: 4rem; color: var(--edu-accent); margin-bottom: 20px;"></i>
+                    <h2 style="font-size: 2.2rem; margin: 0 0 15px 0;">Certificación EPT</h2>
+                    <p style="opacity:0.8; font-size:1.1rem; max-width: 600px; margin: 0 auto 30px auto;">
+                        Completa todos los módulos y participa en la comunidad para desbloquear tu certificado verificado en la red.
+                    </p>
+                    <div class="progress-bar-container" style="max-width: 400px; margin: 0 auto 20px auto; height: 12px;">
+                        <div class="progress-bar-fill" style="width: 0%;"></div>
+                    </div>
+                    <p style="font-size: 0.9rem; color: #a0aab5;">0% Completado</p>
+                    <button class="btn-action" style="margin-top: 20px; opacity: 0.5; cursor: not-allowed;"><i class="fa-solid fa-lock"></i> Reclamar Certificado</button>
+                </div>
+            `;
         }
     },
 
