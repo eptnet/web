@@ -1,0 +1,77 @@
+/* EPT EDU - AULA VIRTUAL (MOBILE FIRST) */
+:root {
+    --edu-bg: #070a13;
+    --edu-surface: rgba(15, 23, 42, 0.8);
+    --edu-accent: #ff3e3e;
+    --edu-border: rgba(255, 255, 255, 0.1);
+}
+
+body.nooc-classroom-body {
+    background-color: var(--edu-bg);
+    color: #fff;
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    overflow: hidden;
+}
+
+#edu-canvas { position: fixed; top: 0; left: 0; z-index: 0; pointer-events: none; }
+
+.nooc-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr 280px;
+    height: 100vh;
+    position: relative;
+    z-index: 1;
+}
+
+/* SIDEBAR NAV (IZQUIERDA) */
+.nooc-sidebar-nav {
+    background: rgba(5, 7, 14, 0.9);
+    border-right: 1px solid var(--edu-border);
+    display: flex; flex-direction: column; padding: 20px;
+    backdrop-filter: blur(10px);
+}
+
+.nav-brand { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 1.2rem; margin-bottom: 30px; }
+.nav-brand img { height: 30px; }
+.menu-item {
+    background: transparent; border: none; color: #94a3b8; width: 100%; text-align: left;
+    padding: 12px 15px; border-radius: 8px; cursor: pointer; transition: 0.2s;
+    font-size: 0.9rem; margin-bottom: 5px; display: flex; align-items: center; gap: 10px;
+}
+.menu-item:hover, .menu-item.active { background: rgba(255,62,62,0.1); color: #fff; }
+.menu-item.active { border-left: 3px solid var(--edu-accent); }
+.menu-divider { font-size: 0.7rem; color: #475569; text-transform: uppercase; letter-spacing: 1px; margin: 20px 0 10px 0; font-weight: 800; }
+
+/* ESCENARIO (CENTRO) */
+.nooc-main-stage {
+    overflow-y: auto;
+    background: rgba(0,0,0,0.2);
+    padding: 40px;
+}
+.content-container { max-width: 900px; margin: 0 auto; }
+
+/* SIDEBAR STATUS (DERECHA) */
+.nooc-sidebar-status {
+    background: rgba(5, 7, 14, 0.9);
+    border-left: 1px solid var(--edu-border);
+    padding: 20px;
+}
+.status-card { background: var(--edu-surface); border: 1px solid var(--edu-border); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+
+/* PROGRESO */
+.progress-bar-container { background: rgba(255,255,255,0.1); height: 8px; border-radius: 10px; margin-top: 10px; overflow: hidden; }
+.progress-bar-fill { background: var(--edu-accent); height: 100%; width: 0%; transition: 1s ease; box-shadow: 0 0 10px var(--edu-accent); }
+
+/* MOBILE RESPONSIVE */
+@media (max-width: 1024px) {
+    .nooc-layout { grid-template-columns: 1fr 280px; }
+    .nooc-sidebar-nav { position: fixed; left: -260px; height: 100%; z-index: 1000; transition: 0.3s; }
+    .nooc-sidebar-nav.active { left: 0; }
+}
+
+@media (max-width: 768px) {
+    .nooc-layout { display: flex; flex-direction: column; }
+    .nooc-sidebar-status { order: 2; border-left: none; border-top: 1px solid var(--edu-border); }
+    .nooc-main-stage { order: 1; padding: 20px; height: auto; }
+}

@@ -41,7 +41,7 @@ serve(async (req) => {
     try {
       const payloadBluesky = {
         action: 'create_post',
-        text: `🎙️ ¡Nuevo evento en vivo!\n\n"${sessionData.session_title}"\n\nÚnete a la conversación aquí:`,
+        text: `🎙️ ¡Nuevo evento en vivo!\n"${sessionData.session_title}"\n\nÚnete a la conversación aquí:`,
         postLink: directLink,
         linkTitle: previewData.title,
         linkDescription: previewData.description,
@@ -60,13 +60,13 @@ serve(async (req) => {
     } catch (e) {
       const { data: botData } = await supabaseClient.functions.invoke('bot-create-post', {
         body: {
-          postText: `🎙️ ¡Nuevo evento en vivo!\n\n"${sessionData.session_title}"\n\nÚnete aquí:`,
+          postText: `🎙️ ¡Nuevo evento en vivo!\n"${sessionData.session_title}"\n\nÚnete aquí:`,
           postLink: directLink,
           linkTitle: previewData.title,
           linkDescription: previewData.description || 'Únete al Ágora de Epistecnología',
           linkThumb: previewData.thumb,
           isBot: true,
-          authorInfo: { displayName: "Epistecnología Live", handle: null }
+          authorInfo: { displayName: "EPT Live", handle: null }
         }
       })
       if (botData && botData.uri) {

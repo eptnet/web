@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fábrica de NOOCs | EPT Edu</title>
+    <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/edu/css/nooc-editor.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/image@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/raw"></script>
+</head>
+<body class="nooc-builder-body">
+
+    <header class="builder-header">
+        <div class="header-left">
+            <a href="/inv/dashboard.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Dashboard</a>
+            <span class="builder-title">Constructor de NOOC</span>
+        </div>
+        <div class="header-right">
+            <div class="xp-counter-global" id="total-xp-display">
+                <i class="fa-solid fa-star"></i> <span id="xp-value">0</span> XP Totales
+            </div>
+            <button id="btn-save-course" class="btn-publish"><i class="fa-solid fa-cloud-arrow-up"></i> Publicar Curso</button>
+        </div>
+    </header>
+
+    <div class="builder-layout">
+        <aside class="config-sidebar bento-panel">
+            <h3><i class="fa-solid fa-sliders"></i> Ajustes Generales</h3>
+            
+            <div class="input-group">
+                <label>Título del Curso</label>
+                <input type="text" id="course-title" placeholder="Ej. Pensamiento Crítico Digital">
+            </div>
+
+            <div class="input-group">
+                <label>Slug (URL amistosa)</label>
+                <input type="text" id="course-slug" placeholder="pensamiento-critico">
+            </div>
+
+            <div class="input-group">
+                <label>Portada del Curso (ImgBB)</label>
+                <div class="img-upload-box" id="thumbnail-upload-box">
+                    <i class="fa-solid fa-image"></i>
+                    <span>Clic para subir imagen</span>
+                    <img id="course-thumbnail-preview" src="" style="display:none; width:100%; border-radius:8px; margin-top:10px;">
+                </div>
+            </div>
+
+            <hr class="separator">
+            
+            <h3><i class="fa-solid fa-gamepad"></i> Reglas de Gamificación</h3>
+            <div class="toggle-group">
+                <label>Respaldo Institucional (Duplica XP de módulos)</label>
+                <label class="switch"><input type="checkbox" id="toggle-institutional" onchange="NoocApp.calculateXP()"><span class="slider"></span></label>
+            </div>
+            <div class="toggle-group">
+                <label>XP por Hilo de Bienvenida (+50 XP)</label>
+                <label class="switch"><input type="checkbox" id="toggle-start-feed" checked onchange="NoocApp.calculateXP()"><span class="slider"></span></label>
+            </div>
+            <div class="toggle-group">
+                <label>XP por Hilo Final/Certificación (+50 XP)</label>
+                <label class="switch"><input type="checkbox" id="toggle-end-feed" checked onchange="NoocApp.calculateXP()"><span class="slider"></span></label>
+            </div>
+            <div class="toggle-group">
+                <label>Activar Hilos por Módulo</label>
+                <label class="switch"><input type="checkbox" id="toggle-module-comments"><span class="slider"></span></label>
+            </div>
+        </aside>
+
+        <main class="canvas-area">
+            <div class="canvas-header">
+                <h2>Plan de Estudios</h2>
+                <button onclick="NoocApp.addModule()" class="btn-add-module"><i class="fa-solid fa-plus"></i> Añadir Módulo</button>
+            </div>
+
+            <div id="modules-container"></div>
+            
+            <div class="empty-state" id="empty-canvas-state">
+                <i class="fa-solid fa-layer-group"></i>
+                <p>Comienza añadiendo tu primer módulo al curso.</p>
+            </div>
+        </main>
+
+        <aside class="ai-sidebar bento-panel">
+            <h3><i class="fa-solid fa-robot"></i> Asistente EPT</h3>
+            <p class="ai-desc">La IA puede ayudarte a mejorar la redacción de tus lecciones o sugerir prompts visuales.</p>
+            
+            <div class="ai-chat-box">
+                <div id="ai-response-area" class="ai-response">
+                    <em>Selecciona un bloque de texto en tus lecciones y pide optimización.</em>
+                </div>
+            </div>
+            
+            <button id="btn-ai-optimize" class="btn-ai w-100 mt-2"><i class="fa-solid fa-wand-magic-sparkles"></i> Optimizar Lección Activa</button>
+        </aside>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/edu/js/nooc-editor.js"></script>
+</body>
+</html>
