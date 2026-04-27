@@ -279,3 +279,29 @@ input:checked + .slider:before { transform: translateX(20px); background-color: 
         display: flex; align-items: center; justify-content: center;
     }
 }
+/* FORZAR TAMAÑO Y POSICIÓN DEL EDITOR.JS */
+.codex-editor__redactor {
+    min-height: 50vh !important; /* Obliga al editor a ocupar al menos la mitad de la pantalla */
+    padding-bottom: 100px !important; /* Da espacio extra abajo para que el botón "+" flote tranquilo */
+}
+
+.ce-block__content, .ce-toolbar__content {
+    max-width: 900px !important; /* Ensancha el área de escritura para que use más pantalla */
+}
+
+/* El contenedor que rodea al editor.js en tu HTML */
+#lesson-editor-container {
+    flex-grow: 1; /* Hace que empuje los límites para ocupar todo lo que sobra */
+    display: flex;
+    flex-direction: column;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Esto asegura que las opciones de Editor.js (como los subtítulos H1, H2) 
+   pasen por encima de otros divs y no queden ocultas */
+.ce-popover {
+    z-index: 1000 !important;
+}

@@ -1,4 +1,4 @@
-// ARCHIVO: /supabase/functions/bot-create-post/index.ts (Con soporte de IMÁGENES)
+// ARCHIVO: /supabase/functions/bot-create-post/index.ts (Soporte Multi-Bot e Hilos)
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -11,9 +11,7 @@ const CORS_HEADERS = {
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: CORS_HEADERS })
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS })
 
   try {
     const supabaseClient = createClient(
@@ -22,121 +20,94 @@ serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     )
     
-    // Verificamos autorización
     const { data: { user } } = await supabaseClient.auth.getUser()
     if (!user) throw new Error("Acción no autorizada: se requiere iniciar sesión.")
 
-    // Recibimos todos los datos (incluyendo la imagen Base64)
     const payload = await req.json()
     const { 
-        postText, authorInfo, isBot,
-        base64Image, imageMimeType, 
-        postLink, linkTitle, linkDescription, linkThumb 
+        postText, authorInfo, botType, replyTo, // Nuevas variables para el motor de cursos
+        base64Image, imageMimeType, postLink, linkTitle, linkDescription, linkThumb 
     } = payload;
 
-    if (!postText || !authorInfo) {
-        throw new Error("Faltan datos para la publicación (texto y autor).")
-    }
+    if (!postText || !authorInfo) throw new Error("Faltan datos para la publicación (texto y autor).")
 
-    // --- LÓGICA DE ATRIBUCIÓN MEJORADA ---
+    // --- LÓGICA DE ATRIBUCIÓN ---
     let finalPostText = '';
-    const { displayName, handle, orcid } = authorInfo;
-
-    if (handle) {
-        finalPostText = `${postText}\n\n✍️ por @${handle}`;
+    // Si botType es 'cursos', hacemos un post más limpio sin la atribución tan grande
+    if (botType === 'cursos') {
+        finalPostText = postText; 
     } else {
-        const authorName = displayName || 'un investigador de la red';
-        const orcidLink = orcid ? orcid.replace('https://', '') : ''; 
-        finalPostText = `${postText}\n\n✍️ por ${authorName}\n${orcidLink}`;
+        const { displayName, handle, orcid } = authorInfo;
+        if (handle) {
+            finalPostText = `${postText}\n\n✍️ por @${handle}`;
+        } else {
+            const authorName = displayName || 'un investigador de la red';
+            finalPostText = `${postText}\n\n✍️ por ${authorName}`;
+        }
     }
 
-    // --- INICIAMOS SESIÓN CON EL BOT ---
+    // --- SELECCIÓN DEL BOT ---
+    let identifier = Deno.env.get('BSKY_HANDLE')!;
+    let password = Deno.env.get('BSKY_APP_PASSWORD')!;
+
+    if (botType === 'cursos') {
+        identifier = Deno.env.get('CURSOS_BSKY_HANDLE')!;
+        password = Deno.env.get('CURSOS_BSKY_APP_PASSWORD')!;
+    }
+
+    // --- INICIAMOS SESIÓN CON EL BOT SELECCIONADO ---
     const agent = new BskyAgent({ service: BSKY_SERVICE_URL });
-    await agent.login({
-      identifier: Deno.env.get('BSKY_HANDLE')!,
-      password: Deno.env.get('BSKY_APP_PASSWORD')!,
-    });
+    await agent.login({ identifier, password });
     
     let embedInfo = undefined;
 
-    // --- 1. PROCESAMIENTO DE IMAGEN ---
+    // Procesamiento de Imagen (Mantenemos tu lógica intacta)
     if (base64Image) {
-        console.log("Procesando imagen para el Bot...");
-        
-        // Convertimos el Base64 puro a un arreglo binario (Uint8Array)
         const byteCharacters = atob(base64Image);
         const byteArray = new Uint8Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-            byteArray[i] = byteCharacters.charCodeAt(i);
-        }
-
-        // Subimos el Blob a Bluesky
-        const uploadRes = await agent.uploadBlob(byteArray, { 
-            encoding: imageMimeType || 'image/jpeg' 
-        });
-
+        for (let i = 0; i < byteCharacters.length; i++) byteArray[i] = byteCharacters.charCodeAt(i);
+        const uploadRes = await agent.uploadBlob(byteArray, { encoding: imageMimeType || 'image/jpeg' });
         if (uploadRes.success) {
-            // Preparamos el contenedor de la imagen para el Post
-            embedInfo = {
-                $type: 'app.bsky.embed.images',
-                images: [{
-                    alt: linkTitle || 'Imagen compartida desde Epistecnología',
-                    image: uploadRes.data.blob
-                }]
-            };
+            embedInfo = { $type: 'app.bsky.embed.images', images: [{ alt: linkTitle || 'Imagen EPT', image: uploadRes.data.blob }] };
         }
     } 
-    // --- 2. PROCESAMIENTO DE ENLACE (Si no hay imagen) ---
-    // --- 2. PROCESAMIENTO DE ENLACE (Para eventos y comunidad) ---
+    // Procesamiento de Enlaces (Mantenemos tu lógica intacta)
     else if (postLink) {
-        embedInfo = {
-            $type: 'app.bsky.embed.external',
-            external: {
-                uri: postLink,
-                title: linkTitle || 'Enlace de Epistecnología',
-                description: linkDescription || '',
-            }
-        };
-        
-        // El Bot también descarga y sube la miniatura como Blob
+        embedInfo = { $type: 'app.bsky.embed.external', external: { uri: postLink, title: linkTitle || 'Enlace', description: linkDescription || '' } };
         if (linkThumb && linkThumb.startsWith('http')) {
             try {
                 const thumbRes = await fetch(linkThumb);
-                const thumbBuffer = await thumbRes.arrayBuffer();
-                const thumbBytes = new Uint8Array(thumbBuffer);
-                const mimeType = thumbRes.headers.get('content-type') || 'image/jpeg';
-                
-                const uploadRes = await agent.uploadBlob(thumbBytes, { encoding: mimeType });
-                if (uploadRes.success) {
-                    embedInfo.external.thumb = uploadRes.data.blob;
-                }
-            } catch(e) {
-                console.log("Aviso: El bot no pudo subir la miniatura", e);
-            }
+                const uploadRes = await agent.uploadBlob(new Uint8Array(await thumbRes.arrayBuffer()), { encoding: thumbRes.headers.get('content-type') || 'image/jpeg' });
+                if (uploadRes.success) embedInfo.external.thumb = uploadRes.data.blob;
+            } catch(e) { console.log("Error miniatura", e); }
         }
     }
 
-    // --- PUBLICAMOS EL POST FINAL ---
-    const response = await agent.post({ 
-        text: finalPostText, 
-        embed: embedInfo 
-    });
+    // --- CONSTRUCCIÓN DEL POST (Con soporte para Hilos) ---
+    const postRecord: any = { text: finalPostText };
+    if (embedInfo) postRecord.embed = embedInfo;
+    
+    // Si nos pasan un replyTo, anidamos este post como respuesta
+    if (replyTo && replyTo.rootUri && replyTo.parentUri) {
+        postRecord.reply = {
+            root: { uri: replyTo.rootUri, cid: replyTo.rootCid },
+            parent: { uri: replyTo.parentUri, cid: replyTo.parentCid }
+        };
+    }
+
+    // --- PUBLICAMOS EL POST ---
+    const response = await agent.post(postRecord);
 
     return new Response(JSON.stringify({ 
         success: true, 
         uri: response.uri,
-        cid: response.cid,
-        message: "Publicado en la comunidad por el Bot con contenido multimedia." 
-    }), {
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-      status: 200,
-    })
+        cid: response.cid
+    }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }, status: 200 })
 
   } catch (error) {
-    console.error("Error en la función bot-create-post:", error)
+    console.error("Error en bot-create-post:", error)
     return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-      status: 500, // Devolvemos 500 para que el front-end lo interprete como fallo
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }, status: 500
     })
   }
 })

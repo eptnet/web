@@ -64,10 +64,34 @@ const NoocApp = {
         document.getElementById('xp-value').innerText = totalXP;
     },
 
+    // --- NUEVA FUNCIÓN: Guarda TODOS los editores antes de recargar el DOM ---
+    async saveAllEditors() {
+        const editorKeys = Object.keys(this.editorInstances);
+        for (let i = 0; i < editorKeys.length; i++) {
+            const lessonId = editorKeys[i];
+            const editor = this.editorInstances[lessonId];
+            try {
+                if (editor && typeof editor.save === 'function') {
+                    const savedData = await editor.save();
+                    // Buscamos a qué lección pertenece y guardamos el JSON
+                    this.modules.forEach(m => {
+                        const les = m.lessons.find(l => l.id === lessonId);
+                        if (les && les.type === 'texto') {
+                            les.content_payload = savedData;
+                        }
+                    });
+                }
+            } catch (e) {
+                console.warn("Editor aún no listo o vacío:", lessonId);
+            }
+        }
+    },
+
     // --- CONSTRUCTOR MODULAR ---
     generateId() { return Math.random().toString(36).substr(2, 9); },
 
-    addModule() {
+    async addModule() {
+        await this.saveAllEditors(); // Salvamos textos antes de redibujar
         document.getElementById('empty-canvas-state').style.display = 'none';
         const modId = 'mod_' + this.generateId();
         
@@ -76,30 +100,33 @@ const NoocApp = {
         this.calculateXP();
     },
 
-    deleteModule(moduleId) {
+    async deleteModule(moduleId) {
         if(confirm("¿Estás seguro de borrar todo el módulo? Se perderán todas sus lecciones.")) {
+            await this.saveAllEditors(); // Salvamos textos antes de redibujar
             this.modules = this.modules.filter(m => m.id !== moduleId);
-            // También limpiamos los editores asociados a sus lecciones
             this.renderCanvas();
             this.calculateXP();
         }
     },
 
-    addLesson(moduleId) {
+    async addLesson(moduleId) {
+        await this.saveAllEditors(); // AQUÍ ESTABA EL ERROR: Ahora salva todo antes de añadir
         const mod = this.modules.find(m => m.id === moduleId);
         if (!mod) return;
 
         const lessonId = 'les_' + this.generateId();
-        mod.lessons.push({ id: lessonId, title: 'Nueva Lección', type: 'texto', content: null });
+        // Inicializamos content_payload como un objeto vacío para Editor.js
+        mod.lessons.push({ id: lessonId, title: 'Nueva Lección', type: 'texto', content_payload: {} });
         
         this.renderCanvas();
         this.calculateXP();
     },
 
-    deleteLesson(moduleId, lessonId) {
+    async deleteLesson(moduleId, lessonId) {
+        await this.saveAllEditors();
         const mod = this.modules.find(m => m.id === moduleId);
         mod.lessons = mod.lessons.filter(l => l.id !== lessonId);
-        delete this.editorInstances[lessonId]; // Limpiar memoria
+        delete this.editorInstances[lessonId]; 
         this.renderCanvas();
         this.calculateXP();
     },
@@ -127,20 +154,19 @@ const NoocApp = {
             container.insertAdjacentHTML('beforeend', modHtml);
         });
 
-        // Inicializar los editores nuevos
+        // Volvemos a inicializar los editores de texto pasando los datos guardados
         this.modules.forEach(mod => {
             mod.lessons.forEach(les => {
-                if (les.type === 'texto' && !this.editorInstances[les.id]) {
-                    this.initEditorJs(les.id);
+                if (les.type === 'texto') {
+                    this.initEditorJs(les.id, les.content_payload);
                 }
             });
         });
     },
 
-    // Reemplaza o añade estas funciones en tu objeto NoocApp:
-
     generateLessonHTML(modId, les, index) {
-        const savedContent = typeof les.content_payload === 'string' ? les.content_payload : '';
+        // Si no es texto, extraemos el string guardado
+        const savedContent = (les.type !== 'texto' && typeof les.content_payload === 'string') ? les.content_payload : '';
 
         return `
             <div class="lesson-card">
@@ -167,46 +193,38 @@ const NoocApp = {
         `;
     },
 
-    updateLessonType(mId, lId, val) { 
+    async updateLessonType(mId, lId, val) { 
+        await this.saveAllEditors();
         const lesson = this.modules.find(m => m.id === mId).lessons.find(l => l.id === lId);
         lesson.type = val; 
-        
-        // Si cambiamos de tipo, limpiamos el contenido anterior para evitar conflictos
         lesson.content_payload = val === 'texto' ? {} : '';
-        
         if(val !== 'texto') delete this.editorInstances[lId];
         this.renderCanvas(); 
     },
 
-    // NUEVA FUNCIÓN: Guarda el texto del iframe o video en la memoria del JSON
     updateLessonContent(mId, lId, val) {
         this.modules.find(m => m.id === mId).lessons.find(l => l.id === lId).content_payload = val;
     },
 
-    // Actualizadores de estado
     updateModTitle(id, val) { this.modules.find(m => m.id === id).title = val; },
     updateLessonTitle(mId, lId, val) { this.modules.find(m => m.id === mId).lessons.find(l => l.id === lId).title = val; },
 
     // --- INTEGRACIÓN EDITOR.JS ---
-    initEditorJs(lessonId) {
+    initEditorJs(lessonId, existingData = {}) {
+        // Destruir instancia previa si por algún motivo quedó en memoria
+        if (this.editorInstances[lessonId] && typeof this.editorInstances[lessonId].destroy === 'function') {
+            try { this.editorInstances[lessonId].destroy(); } catch(e) {}
+        }
+
         const editor = new EditorJS({
             holder: `editor_${lessonId}`,
             placeholder: 'Escribe tu lección aquí. Usa "/" para comandos o selecciona texto.',
-            // Activamos la barra de herramientas al seleccionar texto
+            data: existingData, // Inyectamos el texto que habíamos guardado
             inlineToolbar: ['link', 'bold', 'italic'], 
             tools: {
-                header: {
-                    class: Header,
-                    inlineToolbar: true,
-                    config: { placeholder: 'Título de sección', levels: [2, 3, 4], defaultLevel: 2 }
-                },
-                list: {
-                    class: EditorjsList, // <-- SOLUCIÓN AL ERROR DE CONSOLA
-                    inlineToolbar: true
-                },
-                raw: {
-                    class: RawTool, // <-- NUEVA HERRAMIENTA DE HTML/CÓDIGO
-                },
+                header: { class: Header, inlineToolbar: true, config: { placeholder: 'Título de sección', levels: [2, 3, 4], defaultLevel: 2 } },
+                list: { class: EditorjsList, inlineToolbar: true },
+                raw: { class: RawTool },
                 image: {
                     class: ImageTool,
                     config: {
@@ -262,7 +280,23 @@ const NoocApp = {
         }, 2000);
     },
 
-    // --- ENSAMBLE Y GUARDADO (SUPABASE) ---
+    // --- NUEVA FUNCIÓN: Salva el texto antes de que cambies de lección ---
+    async saveCurrentEditorState() {
+        if (this.activeLessonId && this.editorInstances[this.activeLessonId]) {
+            try {
+                const savedData = await this.editorInstances[this.activeLessonId].save();
+                // Busca la lección en la memoria y le guarda el texto
+                this.modules.forEach(m => {
+                    const les = m.lessons.find(l => l.id === this.activeLessonId);
+                    if (les) les.content_payload = savedData;
+                });
+            } catch (e) {
+                console.error("Error guardando el texto en memoria:", e);
+            }
+        }
+    },
+
+    // --- FUNCIÓN PUBLICAR BLINDADA CONTRA NULOS ---
     async publishCourse() {
         const btn = document.getElementById('btn-save-course');
         const title = document.getElementById('course-title').value;
@@ -271,57 +305,79 @@ const NoocApp = {
         if (!title || !slug) return alert("El título y el slug son obligatorios.");
         if (this.modules.length === 0) return alert("Debes añadir al menos un módulo.");
 
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Ensamblando...';
+        // 1. Aseguramos que guarde la última lección en la que estabas escribiendo
+        await this.saveAllEditors();
+
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creando Árbol de Conocimiento...';
         btn.disabled = true;
 
         try {
-            // 1. Recopilar datos de todos los editores
-            for (let mod of this.modules) {
-                for (let les of mod.lessons) {
-                    if (les.type === 'texto' && this.editorInstances[les.id]) {
-                        les.content_payload = await this.editorInstances[les.id].save();
-                    }
-                }
-            }
+            // 2. Traemos al usuario de forma segura (AQUÍ ESTÁ LA SOLUCIÓN AL ERROR NULL)
+            const { data: { user } } = await this.supabase.auth.getUser();
+            if (!user) throw new Error("Sesión expirada. Por favor, recarga la página e inicia sesión.");
 
-            // 2. Guardar Curso (Insert)
+            // 3. CREAR EL "POST TRONCO" EN BLUESKY
+            const { data: tronco, error: troncoError } = await this.supabase.functions.invoke('bot-create-post', {
+                body: {
+                    postText: `🏫 NUEVO NOOC: ${title}\n\nEste hilo será el Ágora oficial para los alumnos. ¡Bienvenidos investigadores! 🎓\n\n#EPTedu`,
+                    authorInfo: { displayName: 'Motor EPT' },
+                    botType: 'cursos'
+                }
+            });
+            if (troncoError || !tronco?.success) throw new Error("Error creando el hilo maestro en Bsky");
+
+            // 4. GUARDAR EL CURSO EN SUPABASE
             const { data: courseData, error: courseError } = await this.supabase.from('nooc_courses').insert([{
                 title: title, slug: slug,
-                thumbnail_url: this.courseData.thumbnail_url,
-                created_by: this.user.id,
-                is_published: true
+                thumbnail_url: this.courseData?.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg',
+                created_by: user.id, // Usamos la variable segura
+                is_published: true,
+                bsky_uri: tronco.uri, 
+                bsky_cid: tronco.cid
             }]).select().single();
             if (courseError) throw courseError;
 
-            // 3. Guardar Módulos y Lecciones (Relacional)
+            // 5. PROCESAR MÓDULOS Y LECCIONES
             for (let i = 0; i < this.modules.length; i++) {
                 let mod = this.modules[i];
                 const { data: savedMod, error: modError } = await this.supabase.from('nooc_modules').insert([{
                     course_id: courseData.id, order_index: i + 1,
-                    title: mod.title, content_type: 'bloque',
-                    xp_reward: document.getElementById('toggle-institutional').checked ? 200 : 100
+                    title: mod.title, xp_reward: document.getElementById('toggle-institutional').checked ? 200 : 100
                 }]).select().single();
-                if (modError) throw modError;
 
                 for (let j = 0; j < mod.lessons.length; j++) {
                     let les = mod.lessons[j];
+                    
+                    // CREAR "POST RAMA" (Hilo de la lección)
+                    const { data: rama } = await this.supabase.functions.invoke('bot-create-post', {
+                        body: {
+                            postText: `📖 Lección: ${les.title}\n\nUsa este espacio para debatir los contenidos de este bloque.`,
+                            authorInfo: { displayName: 'Motor EPT' },
+                            botType: 'cursos',
+                            replyTo: { rootUri: tronco.uri, rootCid: tronco.cid, parentUri: tronco.uri, parentCid: tronco.cid }
+                        }
+                    });
+
+                    // Insertamos la lección en la BD (les.content_payload ya está guardado por la nueva función)
                     await this.supabase.from('nooc_lessons').insert([{
                         module_id: savedMod.id, order_index: j + 1,
                         title: les.title, content_type: les.type,
-                        content_payload: les.content_payload || {},
+                        content_payload: les.content_payload,
+                        bsky_uri: rama?.uri, 
+                        bsky_cid: rama?.cid,
                         xp_reward: 20
                     }]);
                 }
             }
 
-            btn.innerHTML = '<i class="fa-solid fa-check"></i> Publicado con Éxito';
-            alert(`¡Curso "${title}" publicado e indexado en el ecosistema!`);
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> Ecosistema Listo';
+            alert(`¡Curso publicado! Hilos académicos generados en @cursos.epistecnologia.com`);
             setTimeout(() => window.location.href = '/edu', 2000);
 
         } catch (err) {
             console.error(err);
-            alert("Error al publicar: " + err.message);
-            btn.innerHTML = 'Reintentar Publicación';
+            alert("Fallo en el ensamble: " + err.message);
+            btn.innerHTML = '<i class="fa-solid fa-rocket"></i> Publicar Curso';
             btn.disabled = false;
         }
     }
