@@ -305,3 +305,11 @@ input:checked + .slider:before { transform: translateX(20px); background-color: 
 .ce-popover {
     z-index: 1000 !important;
 }
+
+/* Ajuste para que la caja de comentarios no se vea gigante */
+.feed-composer .avatar-sm {
+    width: 40px; 
+    height: 40px; 
+    font-size: 1rem;
+    margin-bottom: 0;
+}

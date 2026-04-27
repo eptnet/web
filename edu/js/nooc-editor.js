@@ -88,8 +88,9 @@ const NoocApp = {
         if (!mod) return;
 
         const lessonId = 'les_' + this.generateId();
-        // CORRECCIÓN EDITOR.JS: Le pasamos la estructura correcta vacía
-        mod.lessons.push({ id: lessonId, title: 'Nueva Lección', type: 'texto', content_payload: { blocks: [] } });
+        // CORRECCIÓN: Estructura estricta que exige Editor.js para no dar error
+        const emptyEditorData = { time: Date.now(), blocks: [], version: "2.28.2" };
+        mod.lessons.push({ id: lessonId, title: 'Nueva Lección', type: 'texto', content_payload: emptyEditorData });
         
         this.renderCanvas();
         this.calculateXP();
@@ -163,8 +164,10 @@ const NoocApp = {
         await this.saveAllEditors();
         const lesson = this.modules.find(m => m.id === mId).lessons.find(l => l.id === lId);
         lesson.type = val; 
-        // CORRECCIÓN EDITOR.JS
-        lesson.content_payload = val === 'texto' ? { blocks: [] } : '';
+        
+        // CORRECCIÓN: Estructura estricta para evitar el error amarillo
+        lesson.content_payload = val === 'texto' ? { time: Date.now(), blocks: [], version: "2.28.2" } : '';
+        
         if(val !== 'texto') delete this.editorInstances[lId];
         this.renderCanvas(); 
     },
@@ -267,11 +270,13 @@ const NoocApp = {
             for (let i = 0; i < this.modules.length; i++) {
                 let mod = this.modules[i];
                 const { data: savedMod, error: modError } = await this.supabase.from('nooc_modules').insert([{
-                    course_id: courseData.id, order_index: i + 1,
-                    title: mod.title, xp_reward: document.getElementById('toggle-institutional').checked ? 200 : 100
+                    course_id: courseData.id, 
+                    order_index: i + 1,
+                    title: mod.title, 
+                    content_type: 'modulo', // <-- ESTA LÍNEA SALVA EL ERROR DE LA BD
+                    xp_reward: document.getElementById('toggle-institutional').checked ? 200 : 100
                 }]).select().single();
                 
-                // SEGURO AÑADIDO: Atrapa error si los permisos SELECT fallan
                 if (modError) throw new Error("Error DB Módulo: " + modError.message);
 
                 for (let j = 0; j < mod.lessons.length; j++) {
