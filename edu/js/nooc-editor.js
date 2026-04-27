@@ -248,11 +248,19 @@ const NoocApp = {
             const { data: { user } } = await this.supabase.auth.getUser();
             if (!user) throw new Error("Sesión expirada. Por favor recarga.");
 
+            // 3. CREAR EL "POST TRONCO" EN BLUESKY (Con Tarjeta de Imagen y Enlace)
+            const courseUrl = `https://epistecnologia.com/edu/nooc.html?c=${slug}`; // Cambia el dominio si usas otro
+            
             const { data: tronco, error: troncoError } = await this.supabase.functions.invoke('bot-create-post', {
                 body: {
-                    postText: `🏫 NUEVO NOOC: ${title}\n\nEste hilo será el Ágora oficial para los alumnos. ¡Bienvenidos investigadores! 🎓\n\n#EPTedu`,
+                    postText: `🏫 NUEVO CURSO: ${title}\n\n¡Te damos oficialmente la bienvenida! 🎓\n\n#EPTedu`,
                     authorInfo: { displayName: 'Motor EPT' },
-                    botType: 'cursos'
+                    botType: 'cursos',
+                    // --- MAGIA MULTIMEDIA ---
+                    postLink: courseUrl,
+                    linkTitle: `NOOC: ${title}`,
+                    linkDescription: 'Inscríbete, aprende y valida tu conocimiento en la red académica descentralizada.',
+                    linkThumb: this.courseData?.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg'
                 }
             });
             if (troncoError || !tronco?.success) throw new Error("Error de conexión con Bluesky al crear el Tronco.");
