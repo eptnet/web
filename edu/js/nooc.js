@@ -106,7 +106,7 @@ const NoocRoom = {
         
         if (view === 'start') {
             document.getElementById('btn-nav-inicio').classList.add('active-main');
-            this.toggleMobileMenu(true); // Auto-cerrar menú en móvil
+            this.toggleMobileMenu(true); 
 
             stage.innerHTML = `
                 <div class="course-intro bento-card glow-hover">
@@ -118,7 +118,7 @@ const NoocRoom = {
             `;
         } else if (view === 'feed') {
             document.getElementById('btn-nav-feed').classList.add('active-main');
-            this.toggleMobileMenu(true); // Auto-cerrar menú en móvil
+            this.toggleMobileMenu(true); 
 
             stage.innerHTML = `
                 <div class="bento-card glow-hover">
@@ -128,15 +128,21 @@ const NoocRoom = {
                     <div class="organic-feed-box">
                         <div class="feed-composer">
                             <div class="avatar-sm"><i class="fa-solid fa-user"></i></div>
-                            <input type="text" placeholder="Comparte un hallazgo o duda con la clase..." class="feed-input">
-                            <button class="btn-action" style="padding: 8px 15px; font-size: 0.8rem;"><i class="fa-solid fa-paper-plane"></i></button>
+                            <input type="text" id="course-feed-input" placeholder="Comparte un hallazgo o duda con la clase..." class="feed-input">
+                            <button class="btn-action" style="padding: 8px 15px; font-size: 0.8rem;" onclick="NoocRoom.postComment('course-feed-input', '${this.currentCourse.bsky_uri}', '${this.currentCourse.bsky_cid}', 'organic-feed-stream')"><i class="fa-solid fa-paper-plane"></i></button>
                         </div>
-                        <div id="organic-feed-stream" style="margin-top: 20px;">
+                        
+                        <div id="organic-feed-stream" style="margin-top: 25px;">
                             <p style="opacity:0.5; text-align:center; padding: 20px;"><i class="fa-solid fa-circle-notch fa-spin"></i> Sincronizando red...</p>
                         </div>
                     </div>
                 </div>
             `;
+            // Disparamos la carga de comentarios al abrir la vista
+            if(this.currentCourse.bsky_uri) {
+                this.loadCommunityFeed(this.currentCourse.bsky_uri, 'organic-feed-stream');
+            }
+            
         } else if (view === 'module') {
             const mod = this.currentCourse.nooc_modules.find(m => m.id === payload);
             if (!mod) return;
@@ -168,10 +174,9 @@ const NoocRoom = {
                     ${cardsHtml}
                 </div>
             `;
-
         } else if (view === 'cert') {
             document.getElementById('btn-nav-cert').classList.add('active-main');
-            this.toggleMobileMenu(true); // Auto-cerrar menú en móvil
+            this.toggleMobileMenu(true); 
 
             stage.innerHTML = `
                 <div class="bento-card glow-hover" style="text-align: center; padding: 50px 20px;">
@@ -195,7 +200,7 @@ const NoocRoom = {
         this.currentCourse.nooc_modules.forEach(m => { const found = m.nooc_lessons.find(l => l.id === lessonId); if(found) lesson = found; });
         if(!lesson) return;
 
-        this.toggleMobileMenu(true); // Si seleccionó la lección desde el menú lateral móvil, lo cerramos.
+        this.toggleMobileMenu(true); 
 
         const modal = document.getElementById('lesson-modal');
         const contentArea = document.getElementById('lesson-modal-content');
@@ -239,14 +244,23 @@ const NoocRoom = {
             <div class="organic-feed-box" style="background:transparent; border:none; padding:0;">
                 <h3 style="margin-top:0;"><i class="fa-solid fa-comments"></i> Debate de la Lección</h3>
                 <div class="feed-composer">
-                    <input type="text" placeholder="¿Qué aprendiste aquí? Añade tus notas..." class="feed-input">
-                    <button class="btn-action" style="padding: 8px 15px;"><i class="fa-solid fa-paper-plane"></i></button>
+                    <input type="text" id="lesson-feed-input" placeholder="¿Qué aprendiste aquí? Añade tus notas..." class="feed-input">
+                    <button class="btn-action" style="padding: 8px 15px;" onclick="NoocRoom.postComment('lesson-feed-input', '${lesson.bsky_uri}', '${lesson.bsky_cid}', 'lesson-comments-stream')"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+                
+                <div id="lesson-comments-stream" style="margin-top: 25px;">
+                     <p style="opacity:0.5; text-align:center; padding: 20px;"><i class="fa-solid fa-circle-notch fa-spin"></i> Cargando debate...</p>
                 </div>
             </div>
         `;
 
         modal.classList.add('active');
         document.body.style.overflow = 'hidden'; 
+
+        // Disparamos la carga de comentarios de la lección
+        if(lesson.bsky_uri) {
+            this.loadCommunityFeed(lesson.bsky_uri, 'lesson-comments-stream');
+        }
     },
 
     closeLessonModal() {
@@ -260,6 +274,96 @@ const NoocRoom = {
         document.getElementById('lesson-modal').addEventListener('click', (e) => {
             if (e.target.id === 'lesson-modal') this.closeLessonModal();
         });
+    },
+
+    // --- NUEVAS FUNCIONES DE LA COMUNIDAD (MOTOR EPT) ---
+
+    // 1. DIBUJAR LOS COMENTARIOS
+    async loadCommunityFeed(threadUri, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        try {
+            // Usamos tu Edge Function (que llama a la API pública de Bsky) para leer el hilo
+            const res = await this.supabase.functions.invoke('bsky-lexicon-api', {
+                body: { action: 'get_post_thread', uri: threadUri }
+            });
+
+            if (res.error) throw res.error;
+            const thread = res.data.thread;
+
+            // Si el post principal no tiene respuestas
+            if (!thread.replies || thread.replies.length === 0) {
+                container.innerHTML = '<p style="opacity:0.5; text-align:center;">El foro está abierto. ¡Sé el primero en compartir tu perspectiva!</p>';
+                return;
+            }
+
+            // Dibujamos las respuestas nativamente en tu UI
+            let html = '';
+            thread.replies.forEach(reply => {
+                const post = reply.post;
+                const author = post.author;
+                html += `
+                    <div style="padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; gap: 15px;">
+                        <img src="${author.avatar || 'https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png'}" style="width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--edu-border);">
+                        <div style="flex: 1;">
+                            <div style="display: flex; gap: 10px; align-items: baseline;">
+                                <strong style="color: white; font-size: 0.95rem;">${author.displayName || author.handle}</strong>
+                                <span style="color: #a0aab5; font-size: 0.8rem;">@${author.handle}</span>
+                            </div>
+                            <p style="margin: 5px 0 0 0; color: #e2e8f0; line-height: 1.5; font-size: 0.95rem;">${post.record.text}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+
+        } catch (err) {
+            console.error("Error cargando debate:", err);
+            container.innerHTML = '<p style="color: var(--edu-accent); text-align:center;">Error de sincronización con la red académica.</p>';
+        }
+    },
+
+    // 2. ENVIAR UN COMENTARIO
+    async postComment(inputId, targetUri, targetCid, containerId) {
+        const input = document.getElementById(inputId);
+        const text = input.value.trim();
+        if (!text) return;
+
+        const btn = input.nextElementSibling;
+        const originalIcon = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        btn.disabled = true;
+
+        try {
+            // Verificamos sesión
+            const { data: { user } } = await this.supabase.auth.getUser();
+            if (!user) throw new Error("Debes iniciar sesión en la plataforma para comentar.");
+
+            // Enviamos el comentario usando las credenciales del ALUMNO (bsky_credentials)
+            const res = await this.supabase.functions.invoke('bsky-lexicon-api', {
+                body: {
+                    action: 'create_reply',
+                    text: text,
+                    replyTo: { rootUri: targetUri, rootCid: targetCid, parentUri: targetUri, parentCid: targetCid }
+                }
+            });
+
+            // Si falla, es probable que el usuario no haya vinculado su cuenta descentralizada
+            if (res.error || (res.data && !res.data.uri && res.data.error)) {
+                throw new Error("Asegúrate de haber vinculado tu Identidad Descentralizada en el Dashboard.");
+            }
+
+            // Limpiamos el input y recargamos el feed para que vea su comentario al instante
+            input.value = '';
+            await this.loadCommunityFeed(targetUri, containerId);
+
+        } catch (err) {
+            alert(err.message);
+        } finally {
+            btn.innerHTML = originalIcon;
+            btn.disabled = false;
+        }
     },
 
     initPlexus() {

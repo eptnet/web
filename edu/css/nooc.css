@@ -186,7 +186,7 @@ body.nooc-classroom-body {
 }
 
 .profile-xp { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 25px 20px; }
-.avatar-sm { width: 70px; height: 70px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 2px solid var(--edu-border); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 15px; overflow: hidden; }
+.avatar-sm { width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 2px solid var(--edu-border); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 15px; overflow: hidden; }
 .xp-info h4 { margin: 0 0 5px 0; font-size: 1.1rem; }
 .rank-tag { background: #222; color: #fff; padding: 3px 10px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; border: 1px solid rgba(255,255,255,0.2); }
 
