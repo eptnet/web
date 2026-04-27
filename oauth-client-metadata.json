@@ -9,7 +9,11 @@
     "https://epistecnologia.com/comunidad.html",
     "https://epistecnologia.com/comunidad",
     "https://epistecnologia.com/inv/dashboard.html",
-    "https://epistecnologia.com/inv/dashboard"
+    "https://epistecnologia.com/inv/dashboard",
+    "https://epistecnologia.com/edu/index.html",
+    "https://epistecnologia.com/edu/index",
+    "https://epistecnologia.com/edu/nooc.html",
+    "https://epistecnologia.com/edu/nooc"
   ],
   "scope": "atproto transition:generic",
   "grant_types": ["authorization_code", "refresh_token"],

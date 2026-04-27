@@ -245,7 +245,7 @@
                 </a>
                 
                 <div style="display: flex; align-items: center; gap: 15px;">
-                    <button onclick="window.location.href='/?auth=open';" class="btn-action" style="margin: 0; padding: 8px 20px; font-size: 0.8rem; width: auto; box-shadow: none;">MI CUENTA</button>
+                    <button class="btn-action trigger-login-modal" style="margin: 0; padding: 8px 20px; font-size: 0.8rem; width: auto; box-shadow: none;">MI CUENTA</button>
                 </div>
             </div>
         </header>
@@ -290,7 +290,7 @@
                     </div>
                 </div>
 
-                <button onclick="window.location.href='/?auth=open';" class="btn-action"><i class="fa-brands fa-space-awesome"></i> Iniciar Misiones</button>
+                <button class="btn-action trigger-login-modal"><i class="fa-brands fa-space-awesome"></i> Iniciar Misiones</button>
             </div>
 
             <div id="dynamic-courses-container" style="display: contents;">
@@ -302,6 +302,39 @@
                 <p class="nooc-desc" style="font-size: 0.95rem; opacity: 0.8; line-height: 1.5;">Toda interacción dentro de los cursos se rige por las normas de nuestra <strong>comunidad</strong>. Respeto, rigor científico y empatía digital.</p>
             </div>
 
+        </div>
+
+        <template id="bsky-connect-template">
+            <div style="text-align: center; padding: 10px;">
+                <i class="fa-brands fa-bluesky" style="font-size: 3rem; color: #0085ff; margin-bottom: 15px;"></i>
+                <h3 style="margin-bottom: 10px; color: white;">Conectar con Bluesky</h3>
+                <p style="font-size: 0.9rem; color: #a0aab5; margin-bottom: 20px; line-height: 1.4;">
+                    Autoriza a Epistecnología para participar en los hilos de debate y validar tu identidad académica.
+                </p>
+                <button id="bsky-oauth-start-btn" class="btn-action" style="width:100%; background: #0085ff; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    <i class="fa-brands fa-bluesky"></i> Autorizar con Bluesky
+                </button>
+            </div>
+        </template>
+
+        <div id="login-modal-overlay" class="modal-overlay">
+            <div class="modal login-modal">
+                <header class="modal-header">
+                    <h2>Accede a Epistecnología</h2>
+                    <button id="login-modal-close-btn" class="modal-close-btn">&times;</button>
+                </header>
+                <main class="modal-content">
+                    <p>Usa tu cuenta preferida para continuar y GANAR tus primeros XP. Al iniciar sesión, podrás acceder a tu perfil y participar en la comunidad.</p>
+                    <div class="login-options">
+                        <a href="#" class="login-provider-btn" data-provider="google">
+                            <i class="fa-brands fa-google"></i> Continuar con Google
+                        </a>
+                        <a href="#" class="login-provider-btn" data-provider="github">
+                            <i class="fa-brands fa-github"></i> Continuar con GitHub
+                        </a>
+                    </div>
+                </main>
+            </div>
         </div>
 
         <footer class="site-footer">

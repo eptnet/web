@@ -9,6 +9,30 @@ const NoocRoom = {
             const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
             this.supabase = window.supabaseClient || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+            // --- 1. CAPTURA DEL CALLBACK DE BLUESKY OAUTH ---
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const state = urlParams.get('state');
+
+            if (code && state) {
+                // Limpiamos la URL visualmente sin recargar la página para quitar los tokens
+                const cleanUrl = window.location.pathname + '?c=' + urlParams.get('c');
+                window.history.replaceState({}, document.title, cleanUrl);
+                
+                // Invocamos a la Edge Function para guardar las credenciales
+                this.supabase.functions.invoke('bsky-oauth-callback', {
+                    body: { 
+                        code: code, 
+                        state: state, 
+                        redirect_uri: window.location.origin + window.location.pathname + '?c=' + urlParams.get('c') 
+                    }
+                }).then(({ data, error }) => {
+                    if (!error) alert("¡Cuenta de Bluesky conectada! Ya puedes comentar.");
+                });
+            }
+            // --------------------------------------------------
+
+            // --- 2. GUARDIÁN DE SESIÓN DEL AULA ---
             const { data: { session } } = await this.supabase.auth.getSession();
             if (session) {
                 const { data: profile } = await this.supabase.from('profiles').select('display_name, username, avatar_url, xp_total').eq('id', session.user.id).single();
@@ -17,11 +41,15 @@ const NoocRoom = {
                     if (profile.avatar_url) document.getElementById('user-avatar-placeholder').innerHTML = `<img src="${profile.avatar_url}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
                     if (profile.xp_total !== undefined) document.getElementById('progress-percent').textContent = profile.xp_total + ' XP';
                 }
+            } else {
+                // Si no hay sesión iniciada, lo expulsamos de vuelta al campus
+                window.location.href = '/edu/';
+                return;
             }
+            // --------------------------------------------------
 
-            const params = new URLSearchParams(window.location.search);
-            const slug = params.get('c');
-            if (!slug) { window.location.href = '/edu'; return; }
+            const slug = urlParams.get('c');
+            if (!slug) { window.location.href = '/edu/'; return; }
 
             await this.loadCourseData(slug);
             this.initPlexus();
