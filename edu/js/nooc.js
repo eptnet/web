@@ -278,13 +278,12 @@ const NoocRoom = {
 
     // --- NUEVAS FUNCIONES DE LA COMUNIDAD (MOTOR EPT) ---
 
-    // 1. DIBUJAR LOS COMENTARIOS
+    // 1. DIBUJAR LOS COMENTARIOS (CON FILTRO INTELIGENTE)
     async loadCommunityFeed(threadUri, containerId) {
         const container = document.getElementById(containerId);
         if (!container) return;
 
         try {
-            // Usamos tu Edge Function (que llama a la API pública de Bsky) para leer el hilo
             const res = await this.supabase.functions.invoke('bsky-lexicon-api', {
                 body: { action: 'get_post_thread', uri: threadUri }
             });
@@ -292,15 +291,22 @@ const NoocRoom = {
             if (res.error) throw res.error;
             const thread = res.data.thread;
 
-            // Si el post principal no tiene respuestas
-            if (!thread.replies || thread.replies.length === 0) {
+            // FILTRO INTELIGENTE: Ignoramos los posts que haya hecho el Motor Oculto
+            let validReplies = [];
+            if (thread.replies) {
+                validReplies = thread.replies.filter(reply => {
+                    // Oculta todo lo publicado por la cuenta de infraestructura
+                    return reply.post.author.handle !== 'cursos.epistecnologia.com';
+                });
+            }
+
+            if (validReplies.length === 0) {
                 container.innerHTML = '<p style="opacity:0.5; text-align:center;">El foro está abierto. ¡Sé el primero en compartir tu perspectiva!</p>';
                 return;
             }
 
-            // Dibujamos las respuestas nativamente en tu UI
             let html = '';
-            thread.replies.forEach(reply => {
+            validReplies.forEach(reply => {
                 const post = reply.post;
                 const author = post.author;
                 html += `
@@ -324,8 +330,8 @@ const NoocRoom = {
         }
     },
 
-    // 2. ENVIAR UN COMENTARIO
-    async postComment(inputId, targetUri, targetCid, containerId) {
+    // 2. ENVIAR UN COMENTARIO (CON RUTEO PRECISO DEL PROTOCOLO AT)
+    async postComment(inputId, parentUri, parentCid, containerId) {
         const input = document.getElementById(inputId);
         const text = input.value.trim();
         if (!text) return;
@@ -336,27 +342,31 @@ const NoocRoom = {
         btn.disabled = true;
 
         try {
-            // Verificamos sesión
             const { data: { user } } = await this.supabase.auth.getUser();
             if (!user) throw new Error("Debes iniciar sesión en la plataforma para comentar.");
 
-            // Enviamos el comentario usando las credenciales del ALUMNO (bsky_credentials)
+            // EL SECRETO DEL ORDEN: 
+            // Para Bluesky, 'root' es SIEMPRE el curso principal. 'parent' es el post exacto al que respondes (curso o lección).
+            const rootUri = this.currentCourse.bsky_uri;
+            const rootCid = this.currentCourse.bsky_cid;
+
             const res = await this.supabase.functions.invoke('bsky-lexicon-api', {
                 body: {
                     action: 'create_reply',
                     text: text,
-                    replyTo: { rootUri: targetUri, rootCid: targetCid, parentUri: targetUri, parentCid: targetCid }
+                    replyTo: { 
+                        rootUri: rootUri, rootCid: rootCid, 
+                        parentUri: parentUri, parentCid: parentCid 
+                    }
                 }
             });
 
-            // Si falla, es probable que el usuario no haya vinculado su cuenta descentralizada
             if (res.error || (res.data && !res.data.uri && res.data.error)) {
                 throw new Error("Asegúrate de haber vinculado tu Identidad Descentralizada en el Dashboard.");
             }
 
-            // Limpiamos el input y recargamos el feed para que vea su comentario al instante
             input.value = '';
-            await this.loadCommunityFeed(targetUri, containerId);
+            await this.loadCommunityFeed(parentUri, containerId);
 
         } catch (err) {
             alert(err.message);
