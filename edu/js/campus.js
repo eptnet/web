@@ -23,32 +23,63 @@ const EptCampus = {
         }, 1500);
     },
 
-    // --- NUEVO: CONFIGURACIÓN DINÁMICA DE INTERFAZ ---
+    // --- NUEVO: CONFIGURACIÓN DINÁMICA DE INTERFAZ Y RECOMPENSAS ---
     async setupUserUI() {
         const { data: { session } } = await this.supabase.auth.getSession();
         if (!session) return;
 
-        // Leemos solo el handle, el Edge Function ya se encargó del JSON
-        const { data: bsky, error: dbError } = await this.supabase
-            .from('bsky_credentials')
-            .select('handle')
-            .eq('user_id', session.user.id)
-            .maybeSingle();
+        // 1. Pedimos el perfil para ver los XP y las credenciales
+        const [profileRes, bskyRes] = await Promise.all([
+            this.supabase.from('profiles').select('xp_total').eq('id', session.user.id).single(),
+            this.supabase.from('bsky_credentials').select('handle').eq('user_id', session.user.id).maybeSingle()
+        ]);
 
-        if (dbError) console.error("Error buscando credenciales:", dbError);
+        let currentXP = profileRes.data?.xp_total || 0;
+        const handle = bskyRes.data?.handle;
 
-        this.updateMissionUI(bsky?.handle);
+        // 2. LÓGICA DE RECOMPENSAS (Gamificación en tiempo real)
+        if (!handle && currentXP < 30) {
+            // Misión 1 (Registro): Le damos 30 XP
+            await this.awardXP(session.user.id, 30);
+            currentXP = 30;
+            this.shootConfetti(1); // Confeti suave
+        } else if (handle && currentXP < 100) {
+            // Misión 2 (Bluesky vinculada): Llega a los 100 XP
+            await this.awardXP(session.user.id, 100);
+            currentXP = 100;
+            this.shootConfetti(2); // Confeti intenso
+        }
+
+        // 3. Dibujamos la interfaz con los datos actualizados
+        this.updateMissionUI(handle, currentXP);
     },
 
     // Función que cambia el HTML sin necesidad de recargar la página
-    updateMissionUI(handle) {
+    updateMissionUI(handle, xp) {
         const missionBtn = document.querySelector('.visitor-profile-card .btn-action');
         const statusText = document.querySelector('.visitor-profile-card p');
         const missionsList = document.querySelector('.missions-box ul');
+        
+        // Actualizamos la barra de progreso y Nivel
+        const xpBar = document.getElementById('visitor-xp');
+        const levelTag = document.querySelector('.level-tag');
+        const xpTextContainer = document.querySelector('.visitor-profile-card .xp-container').previousElementSibling;
 
+        if(xpBar) xpBar.style.width = `${xp}%`;
+        if(levelTag) levelTag.innerText = xp >= 100 ? 'LVL 1' : 'LVL 0';
+        if(xpTextContainer) {
+            xpTextContainer.innerHTML = `
+                <span>EXPERIENCIA (XP)</span>
+                <span style="color: var(--color-edu-accent);">${xp} / 100 XP</span>
+            `;
+        }
+
+        // Actualizamos textos y botones según el estado
         if (handle) {
-            // ESTADO: USUARIO CON BLUESKY (MISIONES COMPLETADAS)
+            // ESTADO: USUARIO CON BLUESKY (100 XP)
+            document.querySelector('.visitor-profile-card h3').innerText = 'Estado: Investigador';
             if(statusText) statusText.innerHTML = `<span style="color:#0085ff; font-weight:bold;">@${handle}</span> verificado`;
+            
             if(missionBtn) {
                 missionBtn.innerHTML = '<i class="fa-solid fa-user-check"></i> Ir a mi Perfil';
                 missionBtn.onclick = () => window.location.href = '/inv/profile.html';
@@ -61,7 +92,7 @@ const EptCampus = {
                 `;
             }
         } else {
-            // ESTADO: USUARIO DE SUPABASE (LE FALTA BLUESKY)
+            // ESTADO: USUARIO DE SUPABASE (30 XP)
             if(missionBtn) {
                 missionBtn.innerHTML = '<i class="fa-brands fa-bluesky"></i> Vincular Bluesky';
                 missionBtn.onclick = () => this.openBlueskyModal();
@@ -69,11 +100,49 @@ const EptCampus = {
             }
             if(missionsList) {
                 missionsList.innerHTML = `
-                    <li><strong>Misión 1:</strong> ✅ ¡Logrado!</li>
+                    <li><strong>Misión 1:</strong> ✅ ¡Logrado! (+30 XP)</li>
                     <li><strong>Misión 2:</strong> Conecta tu cuenta Bluesky.</li>
                 `;
             }
         }
+    },
+
+    // --- FUNCIONES AUXILIARES DE GAMIFICACIÓN ---
+    async awardXP(userId, newTotalXP) {
+        const { error } = await this.supabase
+            .from('profiles')
+            .update({ xp_total: newTotalXP })
+            .eq('id', userId);
+        
+        if (error) console.error("Error al guardar los XP en la base de datos:", error);
+    },
+
+    shootConfetti(intensityLevel = 1) {
+        if (typeof confetti === 'undefined') return;
+
+        const duration = intensityLevel === 1 ? 1500 : 3500;
+        const end = Date.now() + duration;
+
+        (function frame() {
+            confetti({
+                particleCount: intensityLevel === 1 ? 3 : 6,
+                angle: 60,
+                spread: 55,
+                origin: { x: 0 },
+                colors: ['#b72a1e', '#ff3e3e', '#ffffff', '#0085ff']
+            });
+            confetti({
+                particleCount: intensityLevel === 1 ? 3 : 6,
+                angle: 120,
+                spread: 55,
+                origin: { x: 1 },
+                colors: ['#b72a1e', '#ff3e3e', '#ffffff', '#0085ff']
+            });
+
+            if (Date.now() < end) {
+                requestAnimationFrame(frame);
+            }
+        }());
     },
 
     // --- CAPTURADOR OAUTH SIN RECARGAS ---
