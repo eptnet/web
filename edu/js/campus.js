@@ -386,11 +386,37 @@ const EptCampus = {
         `;
     },
 
+    // --- EL GUARDIÁN DE ENTRADA E INSCRIPCIÓN SILENCIOSA ---
     async attemptEntry(slug) {
         const { data: { session } } = await this.supabase.auth.getSession();
+        
         if (session) {
+            // 1. Efecto visual inmersivo
+            const btn = document.querySelector('#course-preview-modal .btn-action');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Preparando tu expediente...';
+            }
+
+            // 2. Buscar el ID del curso
+            const course = this.loadedCourses.find(c => c.slug === slug);
+            
+            if (course) {
+                // 3. Inscribir silenciosamente
+                const { error } = await this.supabase
+                    .from('nooc_enrollments')
+                    .insert([{ user_id: session.user.id, course_id: course.id }]);
+                
+                // Si el error es 23505 (Unique violation), significa que ya estaba inscrito. ¡Lo dejamos pasar!
+                if (error && error.code !== '23505') {
+                    console.warn("Aviso de inscripción:", error.message);
+                }
+            }
+
+            // 4. Salto hiperespacial al aula
             window.location.href = `/edu/nooc.html?c=${slug}`;
         } else {
+            // Usuario sin cuenta -> Abrir login
             document.getElementById('course-preview-modal').innerHTML = '';
             const loginBtn = document.querySelector('.trigger-login-modal');
             if (loginBtn) {
