@@ -37,62 +37,111 @@ const EptCampus = {
         let currentXP = profileRes.data?.xp_total || 0;
         const handle = bskyRes.data?.handle;
 
-        // 2. LÓGICA DE RECOMPENSAS (Gamificación en tiempo real)
+        // 2. LÓGICA DE RECOMPENSAS (Gamificación del Onboarding)
         if (!handle && currentXP < 30) {
-            // Misión 1 (Registro): Le damos 30 XP
             await this.awardXP(session.user.id, 30);
             currentXP = 30;
-            this.shootConfetti(1); // Confeti suave
+            this.shootConfetti(1); 
         } else if (handle && currentXP < 100) {
-            // Misión 2 (Bluesky vinculada): Llega a los 100 XP
             await this.awardXP(session.user.id, 100);
             currentXP = 100;
-            this.shootConfetti(2); // Confeti intenso
+            this.shootConfetti(2); 
         }
 
-        // 3. Dibujamos la interfaz con los datos actualizados
-        this.updateMissionUI(handle, currentXP);
+        // 3. VARIABLE PREPARADA: Aquí sumaremos los XP de los cursos en los que se inscriba.
+        // Por ahora es 0, pero el motor ya está preparado para calcularlo.
+        let pendingXP = 0; 
+
+        // 4. Dibujamos la interfaz con los datos actualizados
+        this.updateMissionUI(handle, currentXP, pendingXP);
     },
 
-    // Función que cambia el HTML sin necesidad de recargar la página
-    updateMissionUI(handle, xp) {
+    // --- HELPER: RANGOS SIMPLES ---
+    getSimpleRank(xp) {
+        if (xp < 30) return 'Recluta';
+        if (xp < 100) return 'Aprendiz';
+        if (xp < 300) return 'Explorador';
+        if (xp < 600) return 'Académico';
+        return 'Investigador';
+    },
+
+    // Función que cambia el HTML basándose en el contrato: XP Actual vs XP Pendientes
+    updateMissionUI(handle, currentXP, pendingXP = 0) {
         const missionBtn = document.querySelector('.visitor-profile-card .btn-action');
         const statusText = document.querySelector('.visitor-profile-card p');
         const missionsList = document.querySelector('.missions-box ul');
         
-        // Actualizamos la barra de progreso y Nivel
+        // NUEVO: Seleccionamos el div del texto rojo de recompensa que está debajo del <ul>
+        const rewardText = document.querySelector('.missions-box div');
+        
+        const rankTitle = this.getSimpleRank(currentXP);
+        
         const xpBar = document.getElementById('visitor-xp');
         const levelTag = document.querySelector('.level-tag');
         const xpTextContainer = document.querySelector('.visitor-profile-card .xp-container').previousElementSibling;
 
-        if(xpBar) xpBar.style.width = `${xp}%`;
-        if(levelTag) levelTag.innerText = xp >= 100 ? 'LVL 1' : 'LVL 0';
+        // --- LA MAGIA DE LA BARRA DE CARGA ---
+        let targetXP = currentXP < 100 ? 100 : (currentXP + pendingXP);
+        let fillPercentage = (currentXP / targetXP) * 100;
+
+        if(xpBar) {
+            xpBar.style.width = `${fillPercentage}%`;
+            
+            // Si el usuario no debe nada (pendingXP = 0) y ya pasó el onboarding, la barra brilla
+            if (currentXP >= 100 && pendingXP === 0) {
+                xpBar.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)'; 
+                xpBar.style.boxShadow = '0 0 15px rgba(245, 158, 11, 0.6)';
+            } else {
+                // Si tiene cursos pendientes (o está en nivel 0), la barra vuelve a rojo mostrando el hueco
+                xpBar.style.background = 'linear-gradient(90deg, #b72a1e, #ff3e3e)'; 
+                xpBar.style.boxShadow = '0 0 10px var(--color-edu-accent)';
+            }
+        }
+
+        if(levelTag) levelTag.innerText = rankTitle.toUpperCase();
+
         if(xpTextContainer) {
             xpTextContainer.innerHTML = `
-                <span>EXPERIENCIA (XP)</span>
-                <span style="color: var(--color-edu-accent);">${xp} / 100 XP</span>
+                <span>XP COMPLETADOS</span>
+                <span style="color: var(--color-edu-accent); font-weight: 900;">${currentXP} / ${targetXP} XP</span>
             `;
         }
 
-        // Actualizamos textos y botones según el estado
+        document.querySelector('.visitor-profile-card h3').innerText = `Rango: ${rankTitle}`;
+
+        // --- TEXTOS Y ADVERTENCIAS ---
         if (handle) {
-            // ESTADO: USUARIO CON BLUESKY (100 XP)
-            document.querySelector('.visitor-profile-card h3').innerText = 'Estado: Investigador';
+            // ESTADO: USUARIO CON BLUESKY (Mínimo 100 XP)
             if(statusText) statusText.innerHTML = `<span style="color:#0085ff; font-weight:bold;">@${handle}</span> verificado`;
             
+            // Ocultamos el texto estático de "Recompensa +100 XP" porque ya la ganó
+            if(rewardText) rewardText.style.display = 'none';
+            
             if(missionBtn) {
-                missionBtn.innerHTML = '<i class="fa-solid fa-user-check"></i> Ir a mi Perfil';
-                missionBtn.onclick = () => window.location.href = '/inv/profile.html';
+                missionBtn.innerHTML = '<i class="fa-solid fa-graduation-cap"></i> Explorar Cursos';
+                missionBtn.onclick = () => document.getElementById('courses-grid').scrollIntoView({behavior: 'smooth'});
                 missionBtn.classList.remove('trigger-login-modal');
             }
+            
             if(missionsList) {
-                missionsList.innerHTML = `
-                    <li><strong>Misión 1:</strong> ✅ ¡Registrado!</li>
-                    <li><strong>Misión 2:</strong> ✅ ¡Identidad Vinculada!</li>
-                `;
+                if (pendingXP > 1000) {
+                    missionsList.innerHTML = `<li style="color: #ef4444;"><strong><i class="fa-solid fa-triangle-exclamation"></i> Sobrecarga Académica:</strong> Tienes más de 1000 XP en cursos pendientes. Concéntrate en terminar uno a la vez.</li>`;
+                } else if (pendingXP > 0) {
+                    missionsList.innerHTML = `<li style="color: #f59e0b;"><strong><i class="fa-solid fa-person-running"></i> Entrenando:</strong> Tienes ${pendingXP} XP en progreso. ¡Ve al Aula para completarlos!</li>`;
+                } else {
+                    missionsList.innerHTML = `
+                        <li style="color: #10b981;"><strong>✓ Identidad Descentralizada Activa</strong></li>
+                        <li style="margin-top: 8px;"><strong>Siguiente Reto:</strong> Inscríbete a un curso para desafiarte y crear un nuevo objetivo en tu barra de XP.</li>
+                    `;
+                }
             }
         } else {
-            // ESTADO: USUARIO DE SUPABASE (30 XP)
+            // ESTADO: USUARIO DE SUPABASE (30 XP - Le falta Bluesky)
+            if(statusText) statusText.innerHTML = `Identidad no vinculada`;
+            
+            // Aseguramos que se vea el texto de recompensa si aún no ha completado la misión
+            if(rewardText) rewardText.style.display = 'block';
+
             if(missionBtn) {
                 missionBtn.innerHTML = '<i class="fa-brands fa-bluesky"></i> Vincular Bluesky';
                 missionBtn.onclick = () => this.openBlueskyModal();
@@ -100,8 +149,8 @@ const EptCampus = {
             }
             if(missionsList) {
                 missionsList.innerHTML = `
-                    <li><strong>Misión 1:</strong> ✅ ¡Logrado! (+30 XP)</li>
-                    <li><strong>Misión 2:</strong> Conecta tu cuenta Bluesky.</li>
+                    <li style="color: #10b981;"><strong>✓ Registro Completado (+30 XP)</strong></li>
+                    <li style="margin-top: 8px;"><strong>Misión 2:</strong> Conecta tu cuenta Bluesky para habilitar la interacción social (+70 XP).</li>
                 `;
             }
         }
@@ -143,6 +192,44 @@ const EptCampus = {
                 requestAnimationFrame(frame);
             }
         }());
+    },
+
+    // --- MOTOR RPG: CALCULADOR DE NIVELES ---
+    getLevelData(xp) {
+        // Define los umbrales de experiencia para cada nivel
+        const levels = [
+            { threshold: 0, title: 'Recluta' },             // Nivel 0
+            { threshold: 30, title: 'Aprendiz' },           // Nivel 1 (Registro)
+            { threshold: 100, title: 'Explorador' },        // Nivel 2 (Bluesky)
+            { threshold: 300, title: 'Académico' },         // Nivel 3 (Tras completar ~1 curso)
+            { threshold: 600, title: 'Investigador' },      // Nivel 4 
+            { threshold: 1200, title: 'Erudito' },          // Nivel 5
+            { threshold: 2500, title: 'Leyenda EPT' }       // Nivel 6 (Máximo actual)
+        ];
+
+        let currentLevel = 0;
+        for (let i = 0; i < levels.length; i++) {
+            if (xp >= levels[i].threshold) currentLevel = i;
+        }
+
+        const isMaxLevel = currentLevel === levels.length - 1;
+        const nextLevelXP = isMaxLevel ? xp : levels[currentLevel + 1].threshold;
+        const previousLevelXP = levels[currentLevel].threshold;
+        
+        let progress = 100;
+        if (!isMaxLevel) {
+            // Calcula el porcentaje EXACTO de la barra para el nivel actual
+            progress = ((xp - previousLevelXP) / (nextLevelXP - previousLevelXP)) * 100;
+        }
+
+        return {
+            levelNum: currentLevel,
+            title: levels[currentLevel].title,
+            currentXP: xp,
+            nextXP: nextLevelXP,
+            progressPercent: progress,
+            isMaxLevel: isMaxLevel
+        };
     },
 
     // --- CAPTURADOR OAUTH SIN RECARGAS ---
