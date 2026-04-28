@@ -35,6 +35,7 @@ const NoocRoom = {
             // --- 2. GUARDIÁN DE SESIÓN DEL AULA ---
             const { data: { session } } = await this.supabase.auth.getSession();
             if (session) {
+                this.user = session.user;
                 const { data: profile } = await this.supabase.from('profiles').select('display_name, username, avatar_url, xp_total').eq('id', session.user.id).single();
                 if (profile) {
                     document.getElementById('user-name-display').textContent = profile.display_name || profile.username || 'Investigador';
@@ -282,6 +283,17 @@ const NoocRoom = {
             </div>
         `;
 
+        // --- INYECCIÓN: BLOQUEO DEL BOTÓN (PEAJE SOCIAL) ---
+        this.activeLesson = lesson; // Guardamos la lección activa
+        const completeBtn = document.querySelector('.modal-footer-bar .btn-action');
+        if (completeBtn) {
+            completeBtn.disabled = true;
+            completeBtn.style.opacity = '0.5';
+            completeBtn.style.background = 'var(--color-secondary)';
+            completeBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Aporta al debate para completar (+20 XP)';
+            completeBtn.onclick = () => this.completeLesson(); // Le asignamos la nueva función
+        }
+       
         modal.classList.add('active');
         document.body.style.overflow = 'hidden'; 
 
@@ -295,6 +307,46 @@ const NoocRoom = {
         document.getElementById('lesson-modal').classList.remove('active');
         document.getElementById('lesson-modal-content').innerHTML = ''; 
         document.body.style.overflow = ''; 
+    },
+
+    async completeLesson() {
+        if (!this.activeLesson || !this.user) return;
+        const btn = document.querySelector('.modal-footer-bar .btn-action');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Registrando progreso...';
+
+        try {
+            // 1. Guardar el progreso en la base de datos
+            const { error } = await this.supabase.from('nooc_progress').insert([{
+                user_id: this.user.id,
+                lesson_id: this.activeLesson.id
+            }]);
+
+            // Si el error NO es "Ya existe" (23505), lanzamos la alerta
+            if (error && error.code !== '23505') throw error;
+
+            // 2. Sumar los XP al perfil (Solo si es la primera vez que la completa)
+            if (!error) {
+                 const { data: profile } = await this.supabase.from('profiles').select('xp_total').eq('id', this.user.id).single();
+                 const newXp = (profile?.xp_total || 0) + (this.activeLesson.xp_reward || 20);
+                 
+                 await this.supabase.from('profiles').update({ xp_total: newXp }).eq('id', this.user.id);
+
+                 // Actualizar la interfaz del aula
+                 const xpDisplay = document.getElementById('progress-percent');
+                 if (xpDisplay) xpDisplay.textContent = newXp + ' XP';
+            }
+
+            // 3. Cerrar y celebrar
+            this.closeLessonModal();
+            alert(`¡Lección completada! Has ganado +${this.activeLesson.xp_reward || 20} XP. Sigue así.`);
+
+        } catch (err) {
+            console.error(err);
+            alert("Hubo un problema al registrar tu progreso.");
+            btn.disabled = false;
+            btn.innerHTML = 'Reintentar';
+        }
     },
 
     setupModalListeners() {
@@ -395,6 +447,15 @@ const NoocRoom = {
 
             input.value = '';
             await this.loadCommunityFeed(parentUri, containerId);
+
+            // --- INYECCIÓN: DESBLOQUEAR BOTÓN TRAS EL APORTE ---
+            const completeBtn = document.querySelector('.modal-footer-bar .btn-action');
+            if (completeBtn && this.activeLesson && parentUri === this.activeLesson.bsky_uri) {
+                completeBtn.disabled = false;
+                completeBtn.style.opacity = '1';
+                completeBtn.style.background = 'var(--color-edu-accent)';
+                completeBtn.innerHTML = `<i class="fa-solid fa-check-double"></i> Completar Lección (+${this.activeLesson.xp_reward || 20} XP)`;
+            }
 
         } catch (err) {
             alert(err.message);
