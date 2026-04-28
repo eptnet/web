@@ -134,19 +134,27 @@ const EptCampus = {
             e.target.disabled = true;
             e.target.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Redirigiendo...';
             
+            // LA CLAVE: Forzamos la URL exacta para que coincida con el JSON sin query strings.
             const exactRedirectUri = window.location.origin + window.location.pathname;
 
             try {
+                // Aquí llamamos a la Edge Function que nos arrojaba el 400
                 const { data, error } = await this.supabase.functions.invoke('bsky-oauth-init', {
                     body: { redirect_uri: exactRedirectUri }
                 });
 
                 if (error) throw error;
-                if (data?.auth_url) window.location.href = data.auth_url;
+                
+                // ¡El salto a la autenticación de Bluesky!
+                if (data?.auth_url) {
+                    window.location.href = data.auth_url;
+                } else {
+                    throw new Error("La Edge Function no devolvió una URL.");
+                }
 
             } catch (err) {
-                console.error("Error Edge Function:", err);
-                alert("No se pudo iniciar la conexión segura con Bluesky.");
+                console.error("Error iniciando OAuth en Campus:", err);
+                alert("No se pudo conectar con Bluesky en este momento. Revisa la consola.");
                 e.target.disabled = false;
                 e.target.innerHTML = '<i class="fa-brands fa-bluesky"></i> Autorizar con Bluesky';
             }
