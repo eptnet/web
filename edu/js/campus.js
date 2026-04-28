@@ -1,50 +1,156 @@
 const EptCampus = {
     supabase: null,
-    loadedCourses: [], // Guardamos los cursos en memoria para el modal
+    loadedCourses: [],
 
     init() {
         document.addEventListener('mainReady', async () => {
             const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
             const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
             this.supabase = window.supabaseClient || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+            // 1. Primero atrapamos cualquier retorno de Bluesky antes de dibujar
+            await this.checkForBlueskyCallback();
+
+            // 2. Luego renderizamos los cursos
             await this.renderCourses();
 
-            // Dentro de NoocRoom.init o EptCampus.init después de obtener la sesión:
-            const { data: { session } } = await this.supabase.auth.getSession();
-            const missionBtn = document.querySelector('.visitor-profile-card .btn-action');
-
-            if (session) {
-                // Verificamos si ya tiene credenciales de Bluesky
-                const { data: creds } = await this.supabase.from('bsky_credentials').select('id').eq('user_id', session.user.id).maybeSingle();
-                
-                if (!creds) {
-                    // CAMBIO DE BOTÓN: El usuario ya está logueado pero falta Bluesky
-                    if (missionBtn) {
-                        missionBtn.innerHTML = '<i class="fa-brands fa-bluesky"></i> Vincular Bluesky';
-                        missionBtn.classList.remove('trigger-login-modal'); // Ya no abre el login
-                        missionBtn.onclick = () => this.openBlueskyModal(); // Abre el modal de Bsky
-                    }
-                    // Actualizamos visualmente la lista de misiones
-                    const missionsList = document.querySelector('.missions-box ul');
-                    if (missionsList) {
-                        missionsList.innerHTML = `
-                            <li><strong>Misión 1:</strong> ✅ ¡Logrado!</li>
-                            <li><strong>Misión 2:</strong> Conecta tu cuenta Bluesky.</li>
-                        `;
-                    }
-                } else {
-                    // USUARIO COMPLETO: Ocultamos el botón o lo mandamos al perfil
-                    if (missionBtn) {
-                        missionBtn.innerHTML = '<i class="fa-solid fa-user-check"></i> Ir a mi Perfil';
-                        missionBtn.onclick = () => window.location.href = '/inv/profile.html';
-                    }
-                }
-            }
+            // 3. Verificamos la sesión para la tarjeta de misiones
+            await this.setupUserUI();
         });
 
         setTimeout(() => {
             if (!this.supabase) document.dispatchEvent(new Event('mainReady'));
         }, 1500);
+    },
+
+    // --- NUEVO: CONFIGURACIÓN DINÁMICA DE INTERFAZ ---
+    async setupUserUI() {
+        const { data: { session } } = await this.supabase.auth.getSession();
+        if (!session) return;
+
+        // Leemos solo el handle, el Edge Function ya se encargó del JSON
+        const { data: bsky, error: dbError } = await this.supabase
+            .from('bsky_credentials')
+            .select('handle')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+
+        if (dbError) console.error("Error buscando credenciales:", dbError);
+
+        this.updateMissionUI(bsky?.handle);
+    },
+
+    // Función que cambia el HTML sin necesidad de recargar la página
+    updateMissionUI(handle) {
+        const missionBtn = document.querySelector('.visitor-profile-card .btn-action');
+        const statusText = document.querySelector('.visitor-profile-card p');
+        const missionsList = document.querySelector('.missions-box ul');
+
+        if (handle) {
+            // ESTADO: USUARIO CON BLUESKY (MISIONES COMPLETADAS)
+            if(statusText) statusText.innerHTML = `<span style="color:#0085ff; font-weight:bold;">@${handle}</span> verificado`;
+            if(missionBtn) {
+                missionBtn.innerHTML = '<i class="fa-solid fa-user-check"></i> Ir a mi Perfil';
+                missionBtn.onclick = () => window.location.href = '/inv/profile.html';
+                missionBtn.classList.remove('trigger-login-modal');
+            }
+            if(missionsList) {
+                missionsList.innerHTML = `
+                    <li><strong>Misión 1:</strong> ✅ ¡Registrado!</li>
+                    <li><strong>Misión 2:</strong> ✅ ¡Identidad Vinculada!</li>
+                `;
+            }
+        } else {
+            // ESTADO: USUARIO DE SUPABASE (LE FALTA BLUESKY)
+            if(missionBtn) {
+                missionBtn.innerHTML = '<i class="fa-brands fa-bluesky"></i> Vincular Bluesky';
+                missionBtn.onclick = () => this.openBlueskyModal();
+                missionBtn.classList.remove('trigger-login-modal');
+            }
+            if(missionsList) {
+                missionsList.innerHTML = `
+                    <li><strong>Misión 1:</strong> ✅ ¡Logrado!</li>
+                    <li><strong>Misión 2:</strong> Conecta tu cuenta Bluesky.</li>
+                `;
+            }
+        }
+    },
+
+    // --- CAPTURADOR OAUTH SIN RECARGAS ---
+    async checkForBlueskyCallback() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const state = urlParams.get('state');
+
+        if (code && state) {
+            // Borra los tokens de la URL limpiamente sin recargar
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            if (window.showToast) window.showToast("⏳ Sincronizando identidad académica...");
+
+            try {
+                const { data, error } = await this.supabase.functions.invoke('bsky-oauth-callback', {
+                    body: { 
+                        code, 
+                        state, 
+                        redirect_uri: window.location.origin + window.location.pathname 
+                    }
+                });
+
+                if (error) throw error;
+                if (window.showToast) window.showToast(`✅ ¡Identidad vinculada, @${data.handle}!`);
+                
+                // MAGIA: Actualizamos el botón de la misión instantáneamente sin refrescar
+                this.updateMissionUI(data.handle);
+                
+            } catch (err) {
+                console.error("Error al procesar el Callback:", err);
+                alert("Hubo un error al validar tu cuenta con Bluesky.");
+            }
+        }
+    },
+
+    openBlueskyModal() {
+        const template = document.getElementById('bsky-connect-template');
+        let modalContainer = document.getElementById('ept-global-modal');
+        if (!modalContainer) {
+            modalContainer = document.createElement('div');
+            modalContainer.id = 'ept-global-modal';
+            document.body.appendChild(modalContainer);
+        }
+
+        modalContainer.innerHTML = `
+            <div class="modal-overlay is-visible" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:99999; display:flex; align-items:center; justify-content:center; backdrop-filter: blur(5px);">
+                <div class="modal-content bento-card" style="position:relative; width:90%; max-width:400px; text-align:center;">
+                    <button onclick="document.getElementById('ept-global-modal').innerHTML=''" style="position:absolute; top:15px; right:15px; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">&times;</button>
+                    <div id="bsky-injection-zone"></div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('bsky-injection-zone').appendChild(template.content.cloneNode(true));
+
+        document.getElementById('bsky-oauth-start-btn').onclick = async (e) => {
+            e.target.disabled = true;
+            e.target.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Redirigiendo...';
+            
+            const exactRedirectUri = window.location.origin + window.location.pathname;
+
+            try {
+                const { data, error } = await this.supabase.functions.invoke('bsky-oauth-init', {
+                    body: { redirect_uri: exactRedirectUri }
+                });
+
+                if (error) throw error;
+                if (data?.auth_url) window.location.href = data.auth_url;
+
+            } catch (err) {
+                console.error("Error Edge Function:", err);
+                alert("No se pudo iniciar la conexión segura con Bluesky.");
+                e.target.disabled = false;
+                e.target.innerHTML = '<i class="fa-brands fa-bluesky"></i> Autorizar con Bluesky';
+            }
+        };
     },
 
     async renderCourses() {
@@ -57,9 +163,9 @@ const EptCampus = {
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
-            if (!courses || courses.length === 0) return; // (Mantenemos tu diseño vacío original)
+            if (!courses || courses.length === 0) return;
 
-            this.loadedCourses = courses; // Guardamos en memoria
+            this.loadedCourses = courses; 
 
             container.innerHTML = courses.map(course => `
                 <div class="edu-card nooc-thumb-card nooc-item" onclick="EptCampus.openCourseModal('${course.slug}')" style="cursor:pointer;">
@@ -82,7 +188,6 @@ const EptCampus = {
         }
     },
 
-    // --- NUEVO: MODAL DE INFORMACIÓN DEL CURSO ---
     openCourseModal(slug) {
         const course = this.loadedCourses.find(c => c.slug === slug);
         if (!course) return;
@@ -117,56 +222,20 @@ const EptCampus = {
         `;
     },
 
-    // --- NUEVO: EL GUARDIÁN DE ENTRADA ---
     async attemptEntry(slug) {
         const { data: { session } } = await this.supabase.auth.getSession();
         if (session) {
-            // Tiene sesión -> Pasa directo al aula
             window.location.href = `/edu/nooc.html?c=${slug}`;
         } else {
-            // No tiene sesión -> Cerramos el modal de info y abrimos el de login
             document.getElementById('course-preview-modal').innerHTML = '';
             const loginBtn = document.querySelector('.trigger-login-modal');
             if (loginBtn) {
-                // Guardamos el destino para redirigir después del login (A implementar en main.js luego si deseas)
                 sessionStorage.setItem('redirect_after_login', `/edu/nooc.html?c=${slug}`);
                 loginBtn.click();
             } else {
                 alert("Debes iniciar sesión para entrar al aula.");
             }
         }
-    },
-
-    openBlueskyModal() {
-        const template = document.getElementById('bsky-connect-template');
-        let modalContainer = document.getElementById('ept-global-modal');
-        if (!modalContainer) {
-            modalContainer = document.createElement('div');
-            modalContainer.id = 'ept-global-modal';
-            document.body.appendChild(modalContainer);
-        }
-
-        modalContainer.innerHTML = `
-            <div class="modal-overlay is-visible" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:99999; display:flex; align-items:center; justify-content:center; backdrop-filter: blur(5px);">
-                <div class="modal-content bento-card" style="position:relative; width:90%; max-width:400px;">
-                    <button onclick="document.getElementById('ept-global-modal').innerHTML=''" style="position:absolute; top:15px; right:15px; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">&times;</button>
-                    <div id="bsky-injection-zone"></div>
-                </div>
-            </div>
-        `;
-
-        document.getElementById('bsky-injection-zone').appendChild(template.content.cloneNode(true));
-
-        document.getElementById('bsky-oauth-start-btn').onclick = async (e) => {
-            e.target.disabled = true;
-            e.target.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Redirigiendo...';
-            
-            // Iniciamos el OAuth
-            const { data, error } = await this.supabase.functions.invoke('bsky-oauth-init', {
-                body: { redirect_uri: window.location.href }
-            });
-            if (data?.auth_url) window.location.href = data.auth_url;
-        };
     }
 };
 
