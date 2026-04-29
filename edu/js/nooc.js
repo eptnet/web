@@ -35,7 +35,16 @@ const NoocRoom = {
             // --- 2. GUARDIÁN DE SESIÓN DEL AULA ---
             const { data: { session } } = await this.supabase.auth.getSession();
             if (session) {
-                this.user = session.user;
+                this.user = session.user; // Guardamos el usuario globalmente
+
+                // VERIFICACIÓN ESTRICTA DE BLUESKY
+                const { data: bsky } = await this.supabase.from('bsky_credentials').select('handle').eq('user_id', session.user.id).maybeSingle();
+                if (!bsky) {
+                    window.location.href = '/edu/'; // Lo expulsamos al campus si no tiene Bluesky
+                    return;
+                }
+
+                // Carga de perfil normal...
                 const { data: profile } = await this.supabase.from('profiles').select('display_name, username, avatar_url, xp_total').eq('id', session.user.id).single();
                 if (profile) {
                     document.getElementById('user-name-display').textContent = profile.display_name || profile.username || 'Investigador';
@@ -43,7 +52,6 @@ const NoocRoom = {
                     if (profile.xp_total !== undefined) document.getElementById('progress-percent').textContent = profile.xp_total + ' XP';
                 }
             } else {
-                // Si no hay sesión iniciada, lo expulsamos de vuelta al campus
                 window.location.href = '/edu/';
                 return;
             }
@@ -421,12 +429,27 @@ const NoocRoom = {
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
         btn.disabled = true;
 
-        try {
-            const { data: { user } } = await this.supabase.auth.getUser();
-            if (!user) throw new Error("Debes iniciar sesión en la plataforma para comentar.");
+        // --- SISTEMA DE EMERGENCIA (FAILSAFE) ---
+        // Si la lección no tiene un hilo asociado en la BD, perdonamos al estudiante y le desbloqueamos el botón
+        if (!parentUri || parentUri === 'undefined' || parentUri === 'null') {
+            alert("⚠️ Esta lección no tiene un hilo de debate generado. Contacta al creador del curso.");
+            
+            if (containerId === 'lesson-comments-stream') {
+                const completeBtn = document.querySelector('.modal-footer-bar .btn-action');
+                if (completeBtn && this.activeLesson) {
+                    completeBtn.disabled = false;
+                    completeBtn.style.opacity = '1';
+                    completeBtn.style.background = 'var(--color-edu-accent)';
+                    completeBtn.innerHTML = `<i class="fa-solid fa-check-double"></i> Completar Lección (+${this.activeLesson.xp_reward || 20} XP)`;
+                }
+            }
+            input.value = '';
+            btn.innerHTML = originalIcon;
+            btn.disabled = false;
+            return;
+        }
 
-            // EL SECRETO DEL ORDEN: 
-            // Para Bluesky, 'root' es SIEMPRE el curso principal. 'parent' es el post exacto al que respondes (curso o lección).
+        try {
             const rootUri = this.currentCourse.bsky_uri;
             const rootCid = this.currentCourse.bsky_cid;
 
@@ -441,24 +464,32 @@ const NoocRoom = {
                 }
             });
 
-            if (res.error || (res.data && !res.data.uri && res.data.error)) {
-                throw new Error("Asegúrate de haber vinculado tu Identidad Descentralizada en el Dashboard.");
-            }
+            if (res.error) throw res.error;
+            if (res.data && res.data.error) throw new Error(res.data.error);
 
             input.value = '';
             await this.loadCommunityFeed(parentUri, containerId);
 
             // --- INYECCIÓN: DESBLOQUEAR BOTÓN TRAS EL APORTE ---
-            const completeBtn = document.querySelector('.modal-footer-bar .btn-action');
-            if (completeBtn && this.activeLesson && parentUri === this.activeLesson.bsky_uri) {
-                completeBtn.disabled = false;
-                completeBtn.style.opacity = '1';
-                completeBtn.style.background = 'var(--color-edu-accent)';
-                completeBtn.innerHTML = `<i class="fa-solid fa-check-double"></i> Completar Lección (+${this.activeLesson.xp_reward || 20} XP)`;
+            // Solo verificamos que esté comentando en la caja de la lección
+            if (containerId === 'lesson-comments-stream') {
+                const completeBtn = document.querySelector('.modal-footer-bar .btn-action');
+                if (completeBtn && this.activeLesson) {
+                    completeBtn.disabled = false;
+                    completeBtn.style.opacity = '1';
+                    completeBtn.style.background = 'var(--color-edu-accent)';
+                    completeBtn.innerHTML = `<i class="fa-solid fa-check-double"></i> Completar Lección (+${this.activeLesson.xp_reward || 20} XP)`;
+                }
             }
+            // ---------------------------------------------------
 
         } catch (err) {
-            alert(err.message);
+            console.error("Error en postComment:", err);
+            if (err.message.includes("jwt") || err.message.includes("auth") || err.message.includes("Token")) {
+                alert("Tu sesión de Bluesky expiró o fue revocada. Ve al Campus para reconectar.");
+            } else {
+                alert("Error al publicar: " + err.message);
+            }
         } finally {
             btn.innerHTML = originalIcon;
             btn.disabled = false;
