@@ -39,6 +39,23 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 </head>
 <body>
+    <!-- Live Bar Persistente -->
+    <div id="live-announcement-bar" class="live-bar hidden">
+        <div class="live-bar-container">
+            <!-- Mini Reproductor (Solo visible en Desktop) -->
+            <div id="live-mini-player" class="live-mini-player hidden-mobile"></div>
+            
+            <div class="live-info">
+                <span class="live-badge">EN VIVO</span>
+                <p id="live-bar-title" class="live-title">Cargando transmisión...</p>
+            </div>
+
+            <div class="live-actions">
+                <a href="#" id="live-bar-link" class="btn-live-go">Ir a la sala <i class="fa-solid fa-arrow-right"></i></a>
+                <button id="close-live-bar" class="btn-close-bar" aria-label="Cerrar">&times;</button>
+            </div>
+        </div>
+    </div>
     <div id="global-plexus-bg" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1;">
         <canvas id="plexus-canvas"></canvas>
     </div>
@@ -373,6 +390,7 @@
     
     <script src="/js/main.js"></script>
     <script src="/js/app.js"></script>
+    <script src="/js/applive.js"></script>
     <script src="/js/video-player.js"></script>
 
     <script>
