@@ -21,6 +21,30 @@ export const Navigation = {
         const link = document.querySelector(`.nav-link[data-section="${sectionId}"]`);
         
         if (container) {
+            // --- EL GUARDIÁN DE ACCESO (BOUNCER) ---
+            const restrictedSections = ['studio-section', 'events-section', 'courses-section'];
+            
+            if (restrictedSections.includes(sectionId) && !window.App.isAdmin && !window.App.hasProjects) {
+                // Si está bloqueado, le inyectamos una pantalla de advertencia elegante
+                container.innerHTML = `
+                    <div class="bento-box" style="text-align: center; padding: 60px 20px; margin-top: 20px;">
+                        <i class="fa-solid fa-lock" style="font-size: 4rem; color: var(--color-accent); margin-bottom: 20px; opacity: 0.8;"></i>
+                        <h2 style="font-size: 1.8rem; margin-bottom: 10px;">Herramienta Bloqueada</h2>
+                        <p style="color: var(--color-text-secondary); max-width: 500px; margin: 0 auto 25px auto; line-height: 1.5;">
+                            Para acceder a las herramientas de publicación (Cursos, Eventos, Estudio), necesitas registrar al menos un proyecto de investigación (DOI) en la plataforma.
+                        </p>
+                        <button class="btn-primary" onclick="window.location.href='/inv/profile.html?tab=tab-proyectos'" style="display: inline-flex; margin: 0 auto;">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Registrar mi primer Proyecto
+                        </button>
+                    </div>
+                `;
+                container.classList.add('active');
+                if(link) link.classList.add('active');
+                return; // Cortamos la ejecución aquí para que no cargue los templates
+            }
+            // ----------------------------------------
+
+            // Si pasa el filtro de seguridad, cargamos la sección normal
             const template = document.getElementById(`template-${sectionId}`);
             if (template && container.innerHTML.trim() === '') {
                 container.appendChild(template.content.cloneNode(true));

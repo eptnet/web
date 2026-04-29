@@ -45,6 +45,17 @@ const App = {
         this.userProfile = profile;
         console.log("Perfil cargado correctamente en Dashboard:", profile);
 
+        // --- NUEVO: EL ESCÁNER DE PERMISOS ---
+        // Consultamos cuántos proyectos tiene el usuario (sin descargar toda la data, solo contando)
+        const { count, error: projError } = await this.supabase
+            .from('projects')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', this.userId);
+            
+        this.hasProjects = count > 0;
+        this.isAdmin = this.userProfile.role === 'admin';
+        // -------------------------------------
+
         // Exponer globalmente
         window.App = this;
         window.UI = UI;
