@@ -56,6 +56,15 @@ const App = {
         this.isAdmin = this.userProfile.role === 'admin';
         // -------------------------------------
 
+        // --- NUEVO: OCULTAR BOTONES DE ADMINISTRADOR ---
+        if (!this.isAdmin) {
+            const commLink = document.querySelector('.nav-link[data-section="community-section"]');
+            const contLink = document.querySelector('.nav-link[data-section="content-section"]');
+            if (commLink) commLink.style.display = 'none';
+            if (contLink) contLink.style.display = 'none';
+        }
+        // -----------------------------------------------
+
         // Exponer globalmente
         window.App = this;
         window.UI = UI;
