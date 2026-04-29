@@ -475,6 +475,16 @@ const ProfileApp = {
 
         let buttonsHTML = '';
 
+        // --- INICIO: NUEVO BOTÓN DESTACADO AL CAMPUS ---
+        if (isMyOwnProfile) {
+            buttonsHTML += `
+                <a href="/edu/" class="profile-card-nav__link" style="background: rgba(183, 42, 30, 0.1); border-color: var(--color-accent); color: var(--color-accent);">
+                    <i class="fa-solid fa-graduation-cap"></i> Ir al Campus (Cursos)
+                </a>
+            `;
+        }
+        // --- FIN ---
+
         // --- Botones de Navegación (como antes) ---
         if (profile.orcid) {
             buttonsHTML += `<a href="/inv/directorio.html" class="profile-card-nav__link"><i class="fa-solid fa-users"></i> Directorio</a>`;

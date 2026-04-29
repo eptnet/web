@@ -776,6 +776,28 @@ body.loading-profile .main-content {
 }
 .btn-option.primary { background: var(--color-accent); color: white; }
 
+/* --- ANIMACIÓN Y BANNER DE XP (ONBOARDING) --- */
+.xp-intro-banner {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px dashed rgba(245, 158, 11, 0.5);
+    border-radius: 12px;
+    padding: 15px;
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    text-align: left;
+}
+.xp-icon-bounce {
+    font-size: 2.2rem;
+    animation: bounce-xp 1.5s infinite;
+    filter: drop-shadow(0 4px 6px rgba(245, 158, 11, 0.3));
+}
+@keyframes bounce-xp {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-5px) scale(1.1); }
+}
+
 /* --- REDISEÑO MENÚ DASHBOARD (Bento Style) --- */
 .profile-card-nav {
     display: grid !important; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
