@@ -1,6 +1,6 @@
 // =================================================================
 // /edu/js/nooc-editor.js - CEREBRO DEL CONSTRUCTOR NOOC
-// Combina gestión modular, ImgBB, Editor.js Dinámico y Gamificación.
+// Combina gestión modular, ImgBB, Editor.js Dinámico y Edición Activa
 // =================================================================
 
 const NoocApp = {
@@ -11,6 +11,12 @@ const NoocApp = {
     courseData: { thumbnail_url: null },
     modules: [], 
     editorInstances: {}, 
+    
+    // Banderas de edición
+    isEditing: false,
+    editingCourseId: null,
+    bsky_uri: null,
+    bsky_cid: null,
 
     async init() {
         const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
@@ -22,14 +28,76 @@ const NoocApp = {
         this.user = session.user;
 
         this.setupListeners();
+
+        // --- LA MAGIA DE LA EDICIÓN: Leer la memoria caché ---
+        const activeCourseData = sessionStorage.getItem('activeCourse');
+        if (activeCourseData) {
+            await this.loadExistingCourse(JSON.parse(activeCourseData));
+        }
+
         this.calculateXP();
-        console.log("NoocApp Inicializado. Listo para ensamblar.");
+        console.log("NoocApp Inicializado.");
     },
 
     setupListeners() {
         document.getElementById('thumbnail-upload-box').addEventListener('click', () => this.uploadImageToImgBB());
         document.getElementById('btn-save-course').addEventListener('click', () => this.publishCourse());
         document.getElementById('btn-ai-optimize').addEventListener('click', () => this.callAIAssistant());
+    },
+
+    // --- NUEVA FUNCIÓN: CARGAR CURSO PARA EDICIÓN ---
+    async loadExistingCourse(course) {
+        this.isEditing = true;
+        this.editingCourseId = course.id;
+        this.bsky_uri = course.bsky_uri; 
+        this.bsky_cid = course.bsky_cid;
+
+        // 1. Llenar campos visuales
+        document.getElementById('course-title').value = course.title;
+        document.getElementById('course-slug').value = course.slug;
+        document.getElementById('btn-save-course').innerHTML = '<i class="fa-solid fa-save"></i> Actualizar Curso';
+
+        if (course.thumbnail_url) {
+            this.courseData.thumbnail_url = course.thumbnail_url;
+            document.getElementById('thumbnail-upload-box').innerHTML = `<img src="${course.thumbnail_url}" style="width:100%; border-radius:8px; display:block; object-fit:cover; height:100%;">`;
+        }
+
+        // 2. Descargar módulos y lecciones de la base de datos
+        document.getElementById('empty-canvas-state').style.display = 'none';
+        const container = document.getElementById('modules-container');
+        container.innerHTML = '<p style="color:white; text-align:center; padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando estructura del curso...</p>';
+
+        try {
+            const { data: modulesData, error } = await this.supabase
+                .from('nooc_modules')
+                .select('*, nooc_lessons(*)')
+                .eq('course_id', course.id)
+                .order('order_index', { ascending: true });
+
+            if (error) throw error;
+
+            if (modulesData && modulesData.length > 0) {
+                // Mapeamos los datos reales a la estructura que usa el Editor
+                this.modules = modulesData.map(m => ({
+                    id: m.id, 
+                    title: m.title,
+                    isFromDB: true, // Etiqueta clave para saber que hay que actualizar, no insertar
+                    lessons: m.nooc_lessons.sort((a, b) => a.order_index - b.order_index).map(l => ({
+                        id: l.id, 
+                        title: l.title,
+                        type: l.content_type,
+                        content_payload: l.content_payload,
+                        bsky_uri: l.bsky_uri,
+                        bsky_cid: l.bsky_cid,
+                        isFromDB: true
+                    }))
+                }));
+            }
+            this.renderCanvas();
+        } catch (err) {
+            console.error("Error cargando el curso para edición:", err);
+            alert("Error al descargar los módulos del curso.");
+        }
     },
 
     calculateXP() {
@@ -76,6 +144,13 @@ const NoocApp = {
     async deleteModule(moduleId) {
         if(confirm("¿Estás seguro de borrar todo el módulo? Se perderán todas sus lecciones.")) {
             await this.saveAllEditors();
+            const mod = this.modules.find(m => m.id === moduleId);
+            
+            // Si el módulo ya existía en la BD, lo borramos permanentemente
+            if (mod && mod.isFromDB) {
+                await this.supabase.from('nooc_modules').delete().eq('id', mod.id);
+            }
+
             this.modules = this.modules.filter(m => m.id !== moduleId);
             this.renderCanvas();
             this.calculateXP();
@@ -88,7 +163,6 @@ const NoocApp = {
         if (!mod) return;
 
         const lessonId = 'les_' + this.generateId();
-        // CORRECCIÓN: Estructura estricta que exige Editor.js para no dar error
         const emptyEditorData = { time: Date.now(), blocks: [], version: "2.28.2" };
         mod.lessons.push({ id: lessonId, title: 'Nueva Lección', type: 'texto', content_payload: emptyEditorData });
         
@@ -97,8 +171,17 @@ const NoocApp = {
     },
 
     async deleteLesson(moduleId, lessonId) {
+        if(!confirm("¿Borrar lección?")) return;
+        
         await this.saveAllEditors();
         const mod = this.modules.find(m => m.id === moduleId);
+        const les = mod.lessons.find(l => l.id === lessonId);
+
+        // Si la lección ya existía en la BD, la borramos en vivo
+        if (les && les.isFromDB) {
+             await this.supabase.from('nooc_lessons').delete().eq('id', les.id);
+        }
+
         mod.lessons = mod.lessons.filter(l => l.id !== lessonId);
         delete this.editorInstances[lessonId]; 
         this.renderCanvas();
@@ -164,10 +247,7 @@ const NoocApp = {
         await this.saveAllEditors();
         const lesson = this.modules.find(m => m.id === mId).lessons.find(l => l.id === lId);
         lesson.type = val; 
-        
-        // CORRECCIÓN: Estructura estricta para evitar el error amarillo
         lesson.content_payload = val === 'texto' ? { time: Date.now(), blocks: [], version: "2.28.2" } : '';
-        
         if(val !== 'texto') delete this.editorInstances[lId];
         this.renderCanvas(); 
     },
@@ -218,7 +298,7 @@ const NoocApp = {
                 const res = await fetch(`https://api.imgbb.com/1/upload?key=${this.IMGBB_KEY}`, { method: 'POST', body: formData });
                 const data = await res.json();
                 this.courseData.thumbnail_url = data.data.url;
-                box.innerHTML = `<img src="${data.data.url}" style="width:100%; border-radius:8px; display:block;">`;
+                box.innerHTML = `<img src="${data.data.url}" style="width:100%; border-radius:8px; display:block; object-fit:cover; height:100%;">`;
             } catch (err) { alert("Error al subir imagen"); box.innerHTML = 'Error'; }
         };
         input.click();
@@ -232,6 +312,7 @@ const NoocApp = {
         }, 2000);
     },
 
+    // --- FUNCIÓN PUBLICAR (CON UPSERT INTELIGENTE) ---
     async publishCourse() {
         const btn = document.getElementById('btn-save-course');
         const title = document.getElementById('course-title').value;
@@ -241,83 +322,106 @@ const NoocApp = {
         if (this.modules.length === 0) return alert("Debes añadir al menos un módulo.");
 
         await this.saveAllEditors();
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Ensamblando Red Académica...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando Curso...';
         btn.disabled = true;
 
         try {
             const { data: { user } } = await this.supabase.auth.getUser();
             if (!user) throw new Error("Sesión expirada. Por favor recarga.");
 
-            // 3. CREAR EL "POST TRONCO" EN BLUESKY (Con Tarjeta de Imagen y Enlace)
-            const courseUrl = `https://epistecnologia.com/edu/nooc.html?c=${slug}`; // Cambia el dominio si usas otro
-            
-            const { data: tronco, error: troncoError } = await this.supabase.functions.invoke('bot-create-post', {
-                body: {
-                    postText: `🏫 NUEVO CURSO: ${title}\n\n¡Te damos oficialmente la bienvenida! 🎓\n\n#EPTedu`,
-                    authorInfo: { displayName: 'Motor EPT' },
-                    botType: 'cursos',
-                    // --- MAGIA MULTIMEDIA ---
-                    postLink: courseUrl,
-                    linkTitle: `NOOC: ${title}`,
-                    linkDescription: 'Inscríbete, aprende y valida tu conocimiento en la red académica descentralizada.',
-                    linkThumb: this.courseData?.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg'
-                }
-            });
-            if (troncoError || !tronco?.success) throw new Error("Error de conexión con Bluesky al crear el Tronco.");
+            let bskyUri = this.bsky_uri;
+            let bskyCid = this.bsky_cid;
 
-            const { data: courseData, error: courseError } = await this.supabase.from('nooc_courses').insert([{
+            // 1. BLUESKY: Solo crear el Tronco si es un curso NUEVO
+            if (!this.isEditing) {
+                const courseUrl = `https://epistecnologia.com/edu/nooc.html?c=${slug}`;
+                const { data: tronco, error: troncoError } = await this.supabase.functions.invoke('bot-create-post', {
+                    body: {
+                        postText: `🏫 NUEVO CURSO: ${title}\n\n¡Te damos oficialmente la bienvenida! 🎓\n\n#EPTedu`,
+                        authorInfo: { displayName: 'Motor EPT' },
+                        botType: 'cursos',
+                        postLink: courseUrl,
+                        linkTitle: `NOOC: ${title}`,
+                        linkDescription: 'Inscríbete, aprende y valida tu conocimiento.',
+                        linkThumb: this.courseData?.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg'
+                    }
+                });
+                if (troncoError || !tronco?.success) throw new Error("Error con Bluesky al crear el Tronco.");
+                bskyUri = tronco.uri;
+                bskyCid = tronco.cid;
+            }
+
+            // 2. UPSERT DEL CURSO (Actualizar o Insertar)
+            const coursePayload = {
                 title: title, slug: slug,
                 thumbnail_url: this.courseData?.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg',
                 created_by: user.id, is_published: true,
-                bsky_uri: tronco.uri, bsky_cid: tronco.cid
-            }]).select().single();
-            
-            // SEGURO AÑADIDO: Si hay error en el SQL, lo atrapa y lo muestra
+                bsky_uri: bskyUri, bsky_cid: bskyCid
+            };
+            if (this.isEditing) coursePayload.id = this.editingCourseId; // Le pasamos el UUID real si existe
+
+            const { data: savedCourse, error: courseError } = await this.supabase.from('nooc_courses').upsert([coursePayload]).select().single();
             if (courseError) throw new Error("Error DB Curso: " + courseError.message);
 
+            // 3. UPSERT DE MÓDULOS Y LECCIONES
             for (let i = 0; i < this.modules.length; i++) {
                 let mod = this.modules[i];
-                const { data: savedMod, error: modError } = await this.supabase.from('nooc_modules').insert([{
-                    course_id: courseData.id, 
+                const modPayload = {
+                    course_id: savedCourse.id, 
                     order_index: i + 1,
                     title: mod.title, 
-                    content_type: 'modulo', // <-- ESTA LÍNEA SALVA EL ERROR DE LA BD
+                    content_type: 'modulo',
                     xp_reward: document.getElementById('toggle-institutional').checked ? 200 : 100
-                }]).select().single();
-                
+                };
+                if (mod.isFromDB) modPayload.id = mod.id;
+
+                const { data: savedMod, error: modError } = await this.supabase.from('nooc_modules').upsert([modPayload]).select().single();
                 if (modError) throw new Error("Error DB Módulo: " + modError.message);
 
                 for (let j = 0; j < mod.lessons.length; j++) {
                     let les = mod.lessons[j];
-                    const { data: rama } = await this.supabase.functions.invoke('bot-create-post', {
-                        body: {
-                            postText: `📖 Lección 0${j+1}: ${les.title}\n\nUsa este espacio para debatir los contenidos de este bloque.`,
-                            authorInfo: { displayName: 'Motor EPT' },
-                            botType: 'cursos',
-                            replyTo: { rootUri: tronco.uri, rootCid: tronco.cid, parentUri: tronco.uri, parentCid: tronco.cid }
-                        }
-                    });
+                    let lesBsUri = les.bsky_uri;
+                    let lesBsCid = les.bsky_cid;
 
-                    const { error: lessonError } = await this.supabase.from('nooc_lessons').insert([{
+                    // Crear Rama en Bluesky SOLO si la lección es nueva y no estamos editando (Para evitar desórdenes en los hilos)
+                    if (!les.isFromDB && !this.isEditing) { 
+                        const { data: rama } = await this.supabase.functions.invoke('bot-create-post', {
+                            body: {
+                                postText: `📖 Lección 0${j+1}: ${les.title}\n\nUsa este espacio para debatir los contenidos de este bloque.`,
+                                authorInfo: { displayName: 'Motor EPT' },
+                                botType: 'cursos',
+                                replyTo: { rootUri: bskyUri, rootCid: bskyCid, parentUri: bskyUri, parentCid: bskyCid }
+                            }
+                        });
+                        lesBsUri = rama?.uri;
+                        lesBsCid = rama?.cid;
+                    }
+
+                    const lesPayload = {
                         module_id: savedMod.id, order_index: j + 1,
                         title: les.title, content_type: les.type,
                         content_payload: les.content_payload,
-                        bsky_uri: rama?.uri, bsky_cid: rama?.cid,
+                        bsky_uri: lesBsUri, bsky_cid: lesBsCid,
                         xp_reward: 20
-                    }]);
-                    
+                    };
+                    if (les.isFromDB) lesPayload.id = les.id;
+
+                    const { error: lessonError } = await this.supabase.from('nooc_lessons').upsert([lesPayload]);
                     if (lessonError) throw new Error("Error DB Lección: " + lessonError.message);
                 }
             }
 
-            btn.innerHTML = '<i class="fa-solid fa-check"></i> Ecosistema Listo';
-            alert(`¡Curso publicado! El Árbol de Conocimiento se ha generado en Bluesky.`);
-            setTimeout(() => window.location.href = '/edu', 2000);
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> Guardado con éxito';
+            alert(`¡Curso ${this.isEditing ? 'actualizado' : 'publicado'} correctamente!`);
+            
+            // Limpiamos caché para evitar bucles visuales y redirigimos
+            sessionStorage.removeItem('activeCourse');
+            setTimeout(() => window.location.href = '/edu', 1000);
 
         } catch (err) {
             console.error(err);
-            alert("Fallo en el ensamble: " + err.message);
-            btn.innerHTML = '<i class="fa-solid fa-rocket"></i> Publicar Curso';
+            alert("Fallo al guardar: " + err.message);
+            btn.innerHTML = '<i class="fa-solid fa-save"></i> Reintentar Guardado';
             btn.disabled = false;
         }
     }
