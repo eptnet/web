@@ -84,7 +84,7 @@ export const CoursesManager = {
             // 1. Crear nuevo curso
             if (button.id === 'create-course-btn') {
                 sessionStorage.removeItem('activeCourse'); // Limpiamos caché
-                window.location.href = '/inv/nooc-editor.html'; // Te lleva al editor de la clase anterior
+                window.location.href = '/edu/nooc-editor.html'; // Te lleva al editor de la clase anterior
             }
 
             // 2. Editar curso existente
@@ -93,7 +93,7 @@ export const CoursesManager = {
                 const courseData = this.courses.find(c => c.id === courseId);
                 if (courseData) {
                     sessionStorage.setItem('activeCourse', JSON.stringify(courseData));
-                    window.location.href = '/inv/nooc-editor.html';
+                    window.location.href = '/edu/nooc-editor.html';
                 }
             }
 
@@ -102,7 +102,7 @@ export const CoursesManager = {
                 const courseId = button.dataset.courseId;
                 // Por ahora lanzamos un alert o redirigimos a una futura página nooc-dashboard.html
                 alert("🚀 Próximamente: Aquí verás la lista de alumnos matriculados, su % de progreso y podrás enviarles DM por Bluesky.");
-                // window.location.href = `/inv/nooc-dashboard.html?id=${courseId}`;
+                // window.location.href = `/edu/nooc-dashboard.html?id=${courseId}`;
             }
 
             // 4. Borrar curso
