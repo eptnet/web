@@ -68,6 +68,59 @@ const NoocRoom = {
         setTimeout(() => { if (!this.supabase) document.dispatchEvent(new Event('mainReady')); }, 1000);
     },
 
+    // --- MOTOR RPG: RANGOS ---
+    getSimpleRank(xp) {
+        if (xp < 30) return 'Recluta';
+        if (xp < 100) return 'Aprendiz';
+        if (xp < 300) return 'Explorador';
+        if (xp < 600) return 'Académico';
+        return 'Investigador';
+    },
+
+    // --- ACTUALIZADOR MAESTRO DE LA BARRA LATERAL ---
+    async updateSidebarUI() {
+        if (!this.user || !this.currentCourse) return;
+
+        // 1. Obtener Perfil Global (XP y Nivel)
+        const { data: profile } = await this.supabase.from('profiles').select('xp_total, display_name, username, avatar_url').eq('id', this.user.id).single();
+        const currentXP = profile?.xp_total || 0;
+        const rank = this.getSimpleRank(currentXP);
+
+        // 2. Calcular Progreso EXACTO del Curso Actual (Micro-Meta)
+        let totalCourseXP = 0;
+        this.currentCourse.nooc_modules.forEach(m => {
+            m.nooc_lessons.forEach(l => totalCourseXP += (l.xp_reward || 20));
+        });
+
+        // Buscamos qué lecciones ya superó este usuario
+        const { data: progressList } = await this.supabase.from('nooc_progress').select('lesson_id').eq('user_id', this.user.id);
+        const completedIds = progressList ? progressList.map(p => p.lesson_id) : [];
+
+        let completedCourseXP = 0;
+        this.currentCourse.nooc_modules.forEach(m => {
+            m.nooc_lessons.forEach(l => {
+                if (completedIds.includes(l.id)) completedCourseXP += (l.xp_reward || 20);
+            });
+        });
+
+        // 3. Pintar la magia en el HTML
+        document.getElementById('user-name-display').textContent = profile?.display_name || profile?.username || 'Investigador';
+        if (profile?.avatar_url) document.getElementById('user-avatar-placeholder').innerHTML = `<img src="${profile.avatar_url}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+        
+        document.getElementById('user-rank').textContent = rank.toUpperCase();
+
+        // Calculamos porcentaje del curso
+        const progressPercent = totalCourseXP > 0 ? Math.round((completedCourseXP / totalCourseXP) * 100) : 0;
+        
+        const xpDisplay = document.getElementById('progress-percent');
+        const progressBar = document.getElementById('course-progress-fill');
+
+        if (progressBar) progressBar.style.width = `${progressPercent}%`;
+        
+        // Unimos el porcentaje del curso con su XP Global
+        if (xpDisplay) xpDisplay.innerHTML = `${progressPercent}% <span style="color: var(--color-edu-accent); font-size: 0.85em; font-weight: normal;">(${currentXP} XP)</span>`;
+    },
+
     // --- NUEVO: CONTROL DEL MENÚ HAMBURGUESA ---
     toggleMobileMenu(forceClose = false) {
         const nav = document.getElementById('sidebar-nav');
@@ -100,6 +153,9 @@ const NoocRoom = {
             if (error) throw error;
             this.currentCourse = data;
             this.currentCourse.nooc_modules.sort((a,b) => a.order_index - b.order_index);
+
+            // --- INYECCIÓN: ACTUALIZAMOS LA UI AQUÍ ---
+            await this.updateSidebarUI();
             
             this.renderSidebar();
             this.showView('start');
@@ -339,6 +395,9 @@ const NoocRoom = {
                  const newXp = (profile?.xp_total || 0) + (this.activeLesson.xp_reward || 20);
                  
                  await this.supabase.from('profiles').update({ xp_total: newXp }).eq('id', this.user.id);
+
+                 // --- INYECCIÓN: RECALCULAR BARRA EN VIVO ---
+                 await this.updateSidebarUI();
 
                  // Actualizar la interfaz del aula
                  const xpDisplay = document.getElementById('progress-percent');
