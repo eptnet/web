@@ -518,9 +518,19 @@ const EptCampus = {
             container.innerHTML = courses.map(course => {
                 const isEnrolled = enrolledIds.includes(course.id);
                 const isWishlisted = savedWishlist.includes(course.id);
+                const isCreator = session && course.created_by === session.user.id; // ¡NUEVO! Detecta al profe
                 
-                const btnText = isEnrolled ? '<i class="fa-solid fa-play"></i> Continuar' : 'Ver Detalles';
-                const btnColor = isEnrolled ? 'background: #10b981; border-color: #10b981;' : ''; 
+                // Lógica del botón principal
+                let actionBtnHtml = '';
+                if (isCreator) {
+                    // Si es el creador, le damos el botón de Analíticas
+                    actionBtnHtml = `<button class="btn-action" style="width: auto; margin: 0; padding: 8px 15px; font-size: 0.8rem; background: #38bdf8; border-color: #38bdf8;" onclick="event.stopPropagation(); window.location.href='/edu/course-analytics.html?c=${course.slug}'"><i class="fa-solid fa-chart-pie"></i> Analíticas</button>`;
+                } else {
+                    // Si es alumno, botón normal
+                    const btnText = isEnrolled ? '<i class="fa-solid fa-play"></i> Continuar' : 'Ver Detalles';
+                    const btnColor = isEnrolled ? 'background: #10b981; border-color: #10b981;' : ''; 
+                    actionBtnHtml = `<button class="btn-action" style="width: auto; margin: 0; padding: 8px 15px; font-size: 0.8rem; ${btnColor}">${btnText}</button>`;
+                }
                 
                 const wishIcon = isWishlisted ? 'fa-solid fa-heart' : 'fa-regular fa-heart';
                 const wishColor = isWishlisted ? 'var(--color-edu-accent)' : 'white';
@@ -551,7 +561,7 @@ const EptCampus = {
                         </p>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <span style="font-size: 0.9rem; font-weight: bold; color: #f59e0b;"><i class="fa-solid fa-star"></i> Gamificado</span>
-                            <button class="btn-action" style="width: auto; margin: 0; padding: 8px 15px; font-size: 0.8rem; ${btnColor}">${btnText}</button>
+                            ${actionBtnHtml}
                         </div>
                     </div>
                 </div>
