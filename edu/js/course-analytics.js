@@ -28,7 +28,6 @@ const CourseAnalytics = {
 
             if (error) throw error;
 
-            // 2. Verificar que el usuario sea el dueño
             if (course.created_by !== userId) {
                 alert("Acceso denegado: No eres el creador de este curso.");
                 window.location.href = '/edu/';
@@ -36,18 +35,31 @@ const CourseAnalytics = {
             }
             this.course = course;
 
-            // Renderizamos la info básica
             document.getElementById('course-title').textContent = course.title;
             document.getElementById('btn-edit-course').onclick = () => {
                 sessionStorage.setItem('activeCourse', JSON.stringify(course));
                 window.location.href = '/edu/nooc-editor.html';
             };
+
+            // 2. CONECTAR TARJETA DE FORO (Bluesky Lexicon)
             if(course.bsky_uri) {
                 const rkey = course.bsky_uri.split('/').pop();
                 document.getElementById('link-course-forum').href = `https://bsky.app/profile/cursos.epistecnologia.com/post/${rkey}`;
+                
+                // Le preguntamos a la red cuántos comentarios hay en el post tronco
+                this.supabase.functions.invoke('bsky-lexicon-api', {
+                    body: { action: 'get_post_thread', uri: course.bsky_uri }
+                }).then(res => {
+                    if (res.data && res.data.thread && res.data.thread.post) {
+                        document.getElementById('stat-comments').textContent = res.data.thread.post.replyCount || 0;
+                    } else {
+                        document.getElementById('stat-comments').textContent = '0';
+                    }
+                }).catch(() => document.getElementById('stat-comments').textContent = 'N/A');
+            } else {
+                document.getElementById('stat-comments').textContent = '0';
             }
 
-            // Calculamos el total de lecciones del curso
             let totalLessons = 0;
             const lessonIds = [];
             course.nooc_modules.forEach(m => {
@@ -55,7 +67,7 @@ const CourseAnalytics = {
                 m.nooc_lessons.forEach(l => lessonIds.push(l.id));
             });
 
-            // 3. Cargar Alumnos Matriculados con sus perfiles
+            // 3. Cargar Alumnos Matriculados
             const { data: enrollments } = await this.supabase
                 .from('nooc_enrollments')
                 .select(`created_at, user_id, profiles(display_name, username, avatar_url, orcid)`)
@@ -63,14 +75,22 @@ const CourseAnalytics = {
 
             document.getElementById('stat-students').textContent = enrollments ? enrollments.length : 0;
 
-            // 4. Obtener todo el progreso de todos los alumnos en estas lecciones
+            // 4. Obtener progreso
             const { data: progressData } = await this.supabase
                 .from('nooc_progress')
                 .select('user_id, lesson_id')
                 .in('lesson_id', lessonIds);
 
-            // 5. Cargar Handles de Bluesky
-            const { data: bskyData } = await this.supabase.from('bsky_credentials').select('user_id, handle');
+            // 5. Cargar Handles de Bluesky (Optimizada)
+            const studentIds = enrollments ? enrollments.map(e => e.user_id) : [];
+            let bskyData = [];
+            if (studentIds.length > 0) {
+                const { data } = await this.supabase
+                    .from('bsky_credentials')
+                    .select('user_id, handle')
+                    .in('user_id', studentIds);
+                bskyData = data;
+            }
 
             this.renderStudentTable(enrollments, progressData, bskyData, totalLessons);
 
