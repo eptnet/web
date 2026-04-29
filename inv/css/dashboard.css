@@ -691,3 +691,45 @@ textarea { resize: vertical; min-height: 100px; }
     font-size: 0.85rem;
     color: var(--color-text-secondary);
 }
+
+/* ==========================================
+   FIX: SCROLL INTERNO PARA LISTA DE PROYECTOS
+   ========================================== */
+
+/* El contenedor principal de los proyectos */
+#projects-list-container {
+    max-height: 400px; /* Limita la altura a ~3 o 4 tarjetas de alto */
+    overflow-y: auto;  /* Si hay más, aparece el scroll vertical */
+    padding-right: 10px; /* Espacio para que el scrollbar no pise el borde */
+    border-radius: 8px; /* Para que quede prolijo */
+}
+
+/* Opcional: Para darle estilo al scrollbar y que no se vea el feo de Windows */
+#projects-list-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+#projects-list-container::-webkit-scrollbar-track {
+    background: var(--color-background);
+    border-radius: 8px;
+}
+
+#projects-list-container::-webkit-scrollbar-thumb {
+    background-color: var(--color-border);
+    border-radius: 8px;
+    border: 2px solid var(--color-background);
+}
+
+#projects-list-container::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-text-secondary);
+}
+
+/* Ajuste para que la barra de búsqueda (si la hay) no se desplace (sticky) */
+.project-search-bar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--color-background);
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+}
