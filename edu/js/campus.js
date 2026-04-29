@@ -202,20 +202,51 @@ const EptCampus = {
     // --- CONFIGURACIÓN DINÁMICA DE INTERFAZ Y RECOMPENSAS ---
     async setupUserUI() {
         const { data: { session } } = await this.supabase.auth.getSession();
-        if (!session) return;
+        
+        // --- 1. GESTIÓN INTELIGENTE DEL HEADER ---
+        const guestView = document.getElementById('guest-view');
+        const userView = document.getElementById('user-view');
+        const headerLoginBtn = document.querySelector('header .trigger-login-modal') || document.querySelector('.btn-nav-access');
 
-        // Pedimos perfil, credenciales E inscripciones
+        if (!session) {
+            // Usuario NO logueado: Mostramos botón de acceso
+            if (guestView) guestView.style.display = 'block';
+            if (userView) userView.style.display = 'none';
+            return;
+        }
+
+        // Usuario SÍ logueado: Ocultamos acceso, mostramos menú de usuario
+        if (guestView) guestView.style.display = 'none';
+        if (userView) {
+            userView.style.display = 'block'; 
+        } else if (headerLoginBtn) {
+            // Fallback por si la estructura del HTML del Campus es un poco diferente
+            headerLoginBtn.innerHTML = '<i class="fa-solid fa-user"></i> Mi Perfil';
+            headerLoginBtn.classList.remove('trigger-login-modal');
+            headerLoginBtn.onclick = () => window.location.href = '/inv/profile.html';
+        }
+        // -----------------------------------------
+
+        // 2. Pedimos perfil, credenciales E inscripciones
         const [profileRes, bskyRes, enrollsRes] = await Promise.all([
-            this.supabase.from('profiles').select('xp_total').eq('id', session.user.id).single(),
+            this.supabase.from('profiles').select('xp_total, avatar_url').eq('id', session.user.id).single(),
             this.supabase.from('bsky_credentials').select('handle').eq('user_id', session.user.id).maybeSingle(),
             this.supabase.from('nooc_enrollments').select('course_id').eq('user_id', session.user.id)
         ]);
 
         let currentXP = profileRes.data?.xp_total || 0;
+        const avatarUrl = profileRes.data?.avatar_url || 'https://api.dicebear.com/9.x/shapes/svg?seed=' + session.user.id;
         const handle = bskyRes.data?.handle;
         const enrolledCount = enrollsRes.data ? enrollsRes.data.length : 0;
 
-        // Gamificación del Onboarding
+        // --- 3. PINTAR EL AVATAR EN EL HEADER ---
+        const avatarLink = document.getElementById('user-avatar-link');
+        if (avatarLink) {
+            avatarLink.innerHTML = `<img src="${avatarUrl}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--color-edu-accent);">`;
+        }
+        // ----------------------------------------
+
+        // 4. Gamificación del Onboarding
         if (!handle && currentXP < 30) {
             await this.awardXP(session.user.id, 30);
             currentXP = 30;
@@ -226,7 +257,7 @@ const EptCampus = {
             this.shootConfetti(2); 
         }
 
-        // Pasamos cuántos cursos tiene para calcular el tamaño de la barra
+        // 5. Pasamos cuántos cursos tiene para calcular el tamaño de la barra
         this.updateMissionUI(handle, currentXP, enrolledCount);
     },
 
