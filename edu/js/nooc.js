@@ -96,6 +96,8 @@ const NoocRoom = {
         const { data: progressList } = await this.supabase.from('nooc_progress').select('lesson_id').eq('user_id', this.user.id);
         const completedIds = progressList ? progressList.map(p => p.lesson_id) : [];
 
+        this.completedLessons = completedIds;
+
         let completedCourseXP = 0;
         this.currentCourse.nooc_modules.forEach(m => {
             m.nooc_lessons.forEach(l => {
@@ -347,16 +349,31 @@ const NoocRoom = {
             </div>
         `;
 
-        // --- INYECCIÓN: BLOQUEO DEL BOTÓN (PEAJE SOCIAL) ---
-        this.activeLesson = lesson; // Guardamos la lección activa
+        // --- INYECCIÓN: ESTADO INTELIGENTE DEL BOTÓN ---
+        this.activeLesson = lesson; 
         const completeBtn = document.querySelector('.modal-footer-bar .btn-action');
+        
         if (completeBtn) {
-            completeBtn.disabled = true;
-            completeBtn.style.opacity = '0.5';
-            completeBtn.style.background = 'var(--color-secondary)';
-            completeBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Aporta al debate para completar (+20 XP)';
-            completeBtn.onclick = () => this.completeLesson(); // Le asignamos la nueva función
+            // Verificamos si la lección ya está en la memoria de completadas
+            if (this.completedLessons && this.completedLessons.includes(lesson.id)) {
+                // 1. ESTADO: LECCIÓN YA SUPERADA
+                completeBtn.disabled = true;
+                completeBtn.style.opacity = '1';
+                completeBtn.style.background = '#10b981'; // Se vuelve verde
+                completeBtn.style.cursor = 'default';
+                completeBtn.innerHTML = '<i class="fa-solid fa-check-double"></i> Lección Superada';
+                completeBtn.onclick = null; // Quitamos el evento para que no puedan darle clic
+            } else {
+                // 2. ESTADO: PEAJE SOCIAL (Falta comentar)
+                completeBtn.disabled = true;
+                completeBtn.style.opacity = '0.5';
+                completeBtn.style.background = 'var(--color-secondary)';
+                completeBtn.style.cursor = 'not-allowed';
+                completeBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Aporta al debate para completar (+20 XP)';
+                completeBtn.onclick = () => this.completeLesson(); 
+            }
         }
+        // --------------------------------------------------
        
         modal.classList.add('active');
         document.body.style.overflow = 'hidden'; 

@@ -41,6 +41,9 @@ export const Navigation = {
         } else if (sectionId === 'events-section') { // --- LÓGICA AÑADIDA ---
             const { EventsManager } = await import('./manager-eventos.js');
             EventsManager.init();
+        } else if (sectionId === 'courses-section') {
+            const { CoursesManager } = await import('./manager-cursos.js');
+            CoursesManager.init();
         } else if (sectionId === 'content-section') {
             if (window.App.userProfile.role === 'admin') {
                 const { ContentManager } = await import('./manager-contenido.js');

@@ -26,6 +26,7 @@
                 <a href="#" class="nav-link active" data-section="home-section" title="Inicio"><i class="fa-solid fa-table-columns"></i><span class="link-text">Dashboard</span></a>                
                 <a href="#" class="nav-link" data-section="studio-section" title="Sesiones de divulgación"><i class="fa-solid fa-podcast"></i><span class="link-text">Estudio</span></a>
                 <a href="#" class="nav-link" data-section="events-section" title="Eventos en Vivo"><i class="fa-solid fa-calendar-day"></i><span class="link-text">Eventos</span></a>
+                <a href="#" class="nav-link" data-section="courses-section" title="Gestión de Cursos"><i class="fa-solid fa-graduation-cap"></i><span class="link-text">Cursos</span></a>
                 <a href="#" class="nav-link" data-section="community-section" title="Comunidad"><i class="fa-solid fa-users"></i><span class="link-text">Comunidad</span></a>
                 <a href="#" class="nav-link" data-section="content-section" title="Contenido"><i class="fa-solid fa-file-alt"></i><span class="link-text">Contenido</span></a>
                 
@@ -48,6 +49,7 @@
                 <div id="home-section" class="content-section active"></div>
                 <div id="studio-section" class="content-section"></div>
                 <div id="events-section" class="content-section"></div>
+                <div id="courses-section" class="content-section"></div>
                 <div id="content-section" class="content-section"></div>
                 <div id="community-section" class="content-section"></div>
             </div>
@@ -107,6 +109,12 @@
                     <i class="fa-solid fa-satellite-dish icon"></i>
                     <h3>Microsite del Proyecto</h3>
                     <p>Crea una landing page para centralizar y compartir tu investigación.</p>
+                </div>
+
+                <div class="creation-card" data-studio-action="courses">
+                    <i class="fa-solid fa-graduation-cap icon"></i>
+                    <h3>Cursos (NOOCs)</h3>
+                    <p>Crea, gestiona y monitorea nano-cursos interactivos para tu comunidad.</p>
                 </div>
             </div>
         </div>
@@ -214,6 +222,21 @@
         </div>
         <div id="events-list-container" class="events-grid">
             </div>
+    </template>
+
+    <template id="template-courses-section">
+        <div class="page-header">
+            <h2><i class="fa-solid fa-graduation-cap"></i> Gestión de Cursos (NOOCs)</h2>
+            <p>Diseña tus cursos, revisa el progreso de tus alumnos e interactúa con ellos.</p>
+        </div>
+        <div class="page-actions">
+            <button id="create-course-btn" class="btn-primary">
+                <i class="fa-solid fa-plus"></i> Crear Nuevo Curso
+            </button>
+        </div>
+        <div id="courses-list-container" class="events-grid">
+            <!-- Las tarjetas de cursos se inyectarán aquí -->
+        </div>
     </template>
 
     <template id="template-community-section">

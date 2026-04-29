@@ -146,14 +146,16 @@ export const Projects = {
                 return; 
             }
 
-            // 2. Clic en las herramientas del "Paso 2"
+            // 2. Clic en las herramientas del "Paso 2 y 3"
             const creationCard = e.target.closest('.creation-card');
             if (creationCard) {
                 const action = creationCard.dataset.studioAction;
 
-                if (action === 'view-live') {
-                    const studioLink = document.querySelector('.nav-link[data-section="studio-section"]');
-                    if (studioLink) studioLink.click();
+                // --- MODIFICADO: Dejamos pasar tanto a 'view-live' como a 'courses' ---
+                if (action === 'view-live' || action === 'courses') {
+                    const sectionMap = { 'view-live': 'studio-section', 'courses': 'courses-section' };
+                    const link = document.querySelector(`.nav-link[data-section="${sectionMap[action]}"]`);
+                    if (link) link.click();
                     return;
                 }
 
@@ -202,8 +204,9 @@ export const Projects = {
                     document.querySelectorAll('.project-card').forEach(card => card.classList.remove('selected'));
                     e.target.closest('.project-card').classList.add('selected');
                     
-                    // ¡Desbloqueamos las herramientas!
-                    document.querySelectorAll('.creation-card').forEach(card => card.classList.remove('disabled'));
+                    // ¡Desbloqueamos las herramientas! (Ignoramos las que nunca están bloqueadas)
+                    document.querySelectorAll('.creation-card:not([data-studio-action="view-live"]):not([data-studio-action="courses"])')
+                            .forEach(card => card.classList.remove('disabled'));
                     
                     // Feedback visual (opcional)
                     if (window.UI && window.showToast) {
