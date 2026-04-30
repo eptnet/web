@@ -195,7 +195,7 @@ const NoocRoom = {
         // NO cerramos el menú aquí para que el usuario pueda ver el acordeón desplegarse
     },
 
-    showView(view, payload = null) {
+    async showView(view, payload = null) {
         document.querySelectorAll('.menu-item').forEach(btn => btn.classList.remove('active-main'));
         const stage = document.getElementById('content-display');
         
@@ -206,7 +206,7 @@ const NoocRoom = {
             stage.innerHTML = `
                 <div class="course-intro bento-card glow-hover">
                     <img src="${this.currentCourse.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg'}" style="width:100%; border-radius:16px; margin-bottom:20px; object-fit:cover; max-height:300px;">
-                    <span class="rank-tag" style="background: var(--edu-accent); color: white; padding: 5px 15px; border-radius: 50px;">Vista General</span>
+                    <span class="rank-tag" style="background: var(--color-edu-accent); color: white; padding: 5px 15px; border-radius: 50px;">Vista General</span>
                     <h1 style="font-size: 2.5rem; margin: 15px 0 10px 0;">${this.currentCourse.title}</h1>
                     <p style="opacity:0.8; font-size:1.1rem;">Selecciona un módulo en la brújula para comenzar tu aprendizaje.</p>
                 </div>
@@ -233,10 +233,7 @@ const NoocRoom = {
                     </div>
                 </div>
             `;
-            // Disparamos la carga de comentarios al abrir la vista
-            if(this.currentCourse.bsky_uri) {
-                this.loadCommunityFeed(this.currentCourse.bsky_uri, 'organic-feed-stream');
-            }
+            if(this.currentCourse.bsky_uri) this.loadCommunityFeed(this.currentCourse.bsky_uri, 'organic-feed-stream');
             
         } else if (view === 'module') {
             const mod = this.currentCourse.nooc_modules.find(m => m.id === payload);
@@ -273,20 +270,73 @@ const NoocRoom = {
             document.getElementById('btn-nav-cert').classList.add('active-main');
             this.toggleMobileMenu(true); 
 
-            stage.innerHTML = `
-                <div class="bento-card glow-hover" style="text-align: center; padding: 50px 20px;">
-                    <i class="fa-solid fa-award" style="font-size: 4rem; color: var(--edu-accent); margin-bottom: 20px;"></i>
-                    <h2 style="font-size: 2.2rem; margin: 0 0 15px 0;">Certificación EPT</h2>
-                    <p style="opacity:0.8; font-size:1.1rem; max-width: 600px; margin: 0 auto 30px auto;">
-                        Completa todos los módulos y participa en la comunidad para desbloquear tu certificado verificado en la red.
-                    </p>
-                    <div class="progress-bar-container" style="max-width: 400px; margin: 0 auto 20px auto; height: 12px;">
-                        <div class="progress-bar-fill" style="width: 0%;"></div>
+            stage.innerHTML = `<div style="text-align: center; padding: 50px;"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><p>Verificando expediente académico...</p></div>`;
+
+            // 1. Calculamos el Progreso
+            let totalCourseXP = 0;
+            let completedCourseXP = 0;
+            const completedIds = this.completedLessons || [];
+            
+            this.currentCourse.nooc_modules.forEach(m => m.nooc_lessons.forEach(l => {
+                totalCourseXP += (l.xp_reward || 20);
+                if (completedIds.includes(l.id)) completedCourseXP += (l.xp_reward || 20);
+            }));
+            const progressPercent = totalCourseXP > 0 ? Math.round((completedCourseXP / totalCourseXP) * 100) : 0;
+
+            // 2. Verificamos si YA tiene el certificado guardado
+            const { data: cert } = await this.supabase.from('nooc_certificates').select('*').eq('user_id', this.user.id).eq('course_id', this.currentCourse.id).maybeSingle();
+
+            if (cert) {
+                // ESTADO 3: CERTIFICADO EMITIDO
+                stage.innerHTML = `
+                    <div class="bento-card glow-hover" style="text-align: center; padding: 30px;">
+                        <h2 style="font-size: 2rem; margin: 0 0 10px 0; color: #10b981;"><i class="fa-solid fa-award"></i> ¡Felicidades!</h2>
+                        <p style="opacity:0.8; margin-bottom: 25px;">Has completado este curso y tu certificado digital ha sido emitido.</p>
+                        
+                        <div style="width: 100%; max-width: 800px; margin: 0 auto; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);">
+                            <canvas id="certificate-canvas" style="width: 100%; display: block;"></canvas>
+                        </div>
+                        
+                        <div style="margin-top: 25px; display: flex; justify-content: center; gap: 15px;">
+                            <button onclick="NoocRoom.downloadCertificate()" class="btn-action" style="background: var(--color-edu-accent); border-color: var(--color-edu-accent);"><i class="fa-solid fa-download"></i> Descargar Imagen</button>
+                            <a href="https://bsky.app/intent/compose?text=¡Acabo de certificarme en %22${encodeURIComponent(this.currentCourse.title)}%22 en el Campus de Epistecnología! 🎓⚡ Míralo aquí: ${window.location.origin}/edu/nooc.html?c=${this.currentCourse.slug}" target="_blank" class="btn-action" style="background: #0085ff; border-color: #0085ff;"><i class="fa-brands fa-bluesky"></i> Presumir Logro</a>
+                        </div>
                     </div>
-                    <p style="font-size: 0.9rem; color: #a0aab5;">0% Completado</p>
-                    <button class="btn-action" style="margin-top: 20px; opacity: 0.5; cursor: not-allowed;"><i class="fa-solid fa-lock"></i> Reclamar Certificado</button>
-                </div>
-            `;
+                `;
+                // Dibujamos el Canvas
+                setTimeout(() => this.drawCertificateCanvas(cert.legal_name, cert.hash_code, cert.created_at), 100);
+
+            } else if (progressPercent >= 100) {
+                // ESTADO 2: DESBLOQUEADO PERO NO RECLAMADO
+                stage.innerHTML = `
+                    <div class="bento-card glow-hover" style="text-align: center; padding: 50px 20px;">
+                        <i class="fa-solid fa-award" style="font-size: 4rem; color: #f59e0b; margin-bottom: 20px; animation: pulse 2s infinite;"></i>
+                        <h2 style="font-size: 2.2rem; margin: 0 0 15px 0;">¡Curso Completado!</h2>
+                        <p style="opacity:0.8; font-size:1.1rem; max-width: 600px; margin: 0 auto 30px auto;">
+                            Has superado todas las lecciones. Estás listo para emitir tu certificado validado en la red.
+                        </p>
+                        <button onclick="NoocRoom.openCertificateModal()" class="btn-action" style="background: #10b981; border-color: #10b981; padding: 15px 30px; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);">
+                            <i class="fa-solid fa-file-signature"></i> Emitir Certificado Ahora
+                        </button>
+                    </div>
+                `;
+            } else {
+                // ESTADO 1: BLOQUEADO
+                stage.innerHTML = `
+                    <div class="bento-card glow-hover" style="text-align: center; padding: 50px 20px;">
+                        <i class="fa-solid fa-award" style="font-size: 4rem; color: var(--color-edu-accent); margin-bottom: 20px; opacity: 0.5;"></i>
+                        <h2 style="font-size: 2.2rem; margin: 0 0 15px 0;">Certificación EPT</h2>
+                        <p style="opacity:0.8; font-size:1.1rem; max-width: 600px; margin: 0 auto 30px auto;">
+                            Completa todos los módulos y participa en la comunidad para desbloquear tu certificado.
+                        </p>
+                        <div class="progress-bar-container" style="max-width: 400px; margin: 0 auto 10px auto; height: 12px;">
+                            <div class="progress-bar-fill" style="width: ${progressPercent}%;"></div>
+                        </div>
+                        <p style="font-size: 0.9rem; color: #a0aab5; margin-bottom: 30px;">${progressPercent}% Completado</p>
+                        <button class="btn-action" style="margin-top: 20px; opacity: 0.5; cursor: not-allowed;"><i class="fa-solid fa-lock"></i> Completar al 100% para reclamar</button>
+                    </div>
+                `;
+            }
         }
     },
 
@@ -602,6 +652,169 @@ const NoocRoom = {
             requestAnimationFrame(animate);
         }
         animate();
+    },
+
+    // --- MOTOR DE CERTIFICACIÓN ---
+    openCertificateModal() {
+        const modal = document.getElementById('lesson-modal');
+        const contentArea = document.getElementById('lesson-modal-content');
+        
+        contentArea.innerHTML = `
+            <div style="text-align: center; padding: 20px;">
+                <i class="fa-solid fa-graduation-cap" style="font-size: 4rem; color: #f59e0b; margin-bottom: 20px;"></i>
+                <h2 style="font-size: 2rem; margin-bottom: 10px;">Emisión de Certificado</h2>
+                <p style="color: var(--color-secondary-text); margin-bottom: 30px;">
+                    Tu certificado se generará en este instante y se guardará permanentemente en la base de datos.
+                    Por favor, ingresa tu <strong>Nombre Legal Completo</strong> tal como deseas que aparezca en el documento.
+                </p>
+                
+                <div style="max-width: 400px; margin: 0 auto; text-align: left;">
+                    <label style="font-weight: bold; font-size: 0.9rem; margin-bottom: 8px; display: block;">Nombre Completo:</label>
+                    <input type="text" id="cert-legal-name" placeholder="Ej: Juan Pérez García" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-background); color: white; font-size: 1rem; margin-bottom: 20px;">
+                    
+                    <button id="btn-claim-submit" onclick="NoocRoom.claimCertificate()" class="btn-action" style="width: 100%; padding: 15px; font-size: 1.1rem; background: #10b981; border-color: #10b981;">
+                        <i class="fa-solid fa-stamp"></i> Firmar y Generar
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    },
+
+    async claimCertificate() {
+        const nameInput = document.getElementById('cert-legal-name').value.trim();
+        if (!nameInput) return alert("Por favor, ingresa tu nombre completo.");
+
+        const btn = document.getElementById('btn-claim-submit');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Inscribiendo en la red...';
+
+        // Generamos un código de verificación único estilo Blockchain: EPT-XXXXXXX
+        const hashCode = 'EPT-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+
+        try {
+            const { error } = await this.supabase.from('nooc_certificates').insert([{
+                user_id: this.user.id,
+                course_id: this.currentCourse.id,
+                legal_name: nameInput,
+                hash_code: hashCode
+            }]);
+
+            if (error) throw error;
+
+            this.closeLessonModal();
+            // Refrescamos la vista de certificación para que dibuje el diploma
+            await this.showView('cert');
+            
+            // ¡Fiesta! Lluvia de confeti de nivel 2 (la que dura más tiempo en tu campus.js)
+            if(window.EptCampus && typeof window.EptCampus.shootConfetti === 'function') {
+                window.EptCampus.shootConfetti(2);
+            } else {
+                alert("¡Felicidades! Certificado generado con éxito.");
+            }
+
+        } catch (err) {
+            console.error("Error al generar certificado:", err);
+            alert("Hubo un problema al generar tu certificado. Intenta nuevamente.");
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-stamp"></i> Firmar y Generar';
+        }
+    },
+
+    drawCertificateCanvas(legalName, hashCode, dateString) {
+        const canvas = document.getElementById('certificate-canvas');
+        if (!canvas) return;
+        
+        // Configuramos alta resolución (Full HD) para que al descargarse se vea perfecto
+        canvas.width = 1920;
+        canvas.height = 1080;
+        const ctx = canvas.getContext('2d');
+
+        // 1. Fondo Oscuro Elegante
+        ctx.fillStyle = '#0f172a'; // Un azul muy oscuro y formal
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 2. Bordes y Acentos (Marco rojo EPT y marco interior dorado)
+        ctx.strokeStyle = '#b72a1e';
+        ctx.lineWidth = 20;
+        ctx.strokeRect(40, 40, canvas.width - 80, canvas.height - 80);
+        
+        ctx.strokeStyle = '#f59e0b'; // Dorado
+        ctx.lineWidth = 4;
+        ctx.strokeRect(70, 70, canvas.width - 140, canvas.height - 140);
+
+        // 3. Textos Centrales
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+
+        ctx.font = '60px "Playfair Display", Georgia, serif';
+        ctx.fillText("CERTIFICADO DE FINALIZACIÓN", canvas.width / 2, 280);
+
+        ctx.font = '35px sans-serif';
+        ctx.fillStyle = '#a0aab5';
+        ctx.fillText("La Red Académica Epistecnología otorga el presente reconocimiento a:", canvas.width / 2, 400);
+
+        // Nombre Legal (Dorado y Grande)
+        ctx.font = 'bold 90px "Playfair Display", Georgia, serif';
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillText(legalName.toUpperCase(), canvas.width / 2, 550);
+
+        ctx.font = '35px sans-serif';
+        ctx.fillStyle = '#a0aab5';
+        ctx.fillText("Por haber superado con excelencia académica el Nano-Curso Abierto:", canvas.width / 2, 700);
+
+        // Título del Curso
+        ctx.font = 'bold 60px sans-serif';
+        ctx.fillStyle = '#ffffff';
+        // Envolvemos el texto si es muy largo (Corte simple)
+        const title = this.currentCourse.title;
+        if (title.length > 45) {
+            ctx.fillText(title.substring(0, 45) + '...', canvas.width / 2, 800);
+        } else {
+            ctx.fillText(title, canvas.width / 2, 800);
+        }
+
+        // 4. Firmas y Validaciones en el Pie
+        const cleanDate = new Date(dateString).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+        
+        ctx.font = '24px monospace';
+        ctx.fillStyle = '#64748b'; // Gris sutil
+        
+        // Bloque Izquierdo (Hash y Fecha)
+        ctx.textAlign = 'left';
+        ctx.fillText(`ID VALIDACIÓN: ${hashCode}`, 120, 980);
+        ctx.fillText(`FECHA DE EMISIÓN: ${cleanDate}`, 120, 1020);
+
+        // Bloque Derecho (URL)
+        ctx.textAlign = 'right';
+        ctx.fillText("Válido en: epistecnologia.com", canvas.width - 120, 1020);
+
+        // Sello Central (Simulado)
+        ctx.beginPath();
+        ctx.arc(canvas.width / 2, 980, 50, 0, 2 * Math.PI);
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 5;
+        ctx.stroke();
+        ctx.fillStyle = '#ef4444';
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 25px sans-serif';
+        ctx.fillText("EPT", canvas.width / 2, 990);
+    },
+
+    downloadCertificate() {
+        const canvas = document.getElementById('certificate-canvas');
+        if (!canvas) return;
+        
+        // Convertimos el canvas en una imagen y forzamos la descarga
+        const imageURI = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = `Certificado_EPT_${this.currentCourse.slug}.png`;
+        link.href = imageURI;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 };
 
