@@ -783,123 +783,100 @@ const NoocRoom = {
             img.src = url;
         });
 
-        const logoRevista = await loadImage('https://i.ibb.co/9kyWJwxz/Banner-Substack-fondo-oscuro.png');
-        const logoIcon = await loadImage('https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png');
+        // CARGAMOS LOS LOGOS
+        const logoEdu = await loadImage('https://i.ibb.co/DHyTWkH0/LOGO-EDU.png'); // Nuevo Logo EDU
+        const logoIcon = await loadImage('https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png'); // Isotipo EPT
 
-        // 1. Fondo Oscuro Elegante
+        // 1. Fondo Oscuro y Plexus
         ctx.fillStyle = '#0f172a';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // --- NUEVO: MOTOR DE PLEXUS PROCEDIMENTAL ---
-        // Generamos 200 nodos aleatorios
+        // Dibujamos Plexus sutil
         const nodes = [];
-        const numNodes = 200;
-        const maxDist = 180; // Distancia máxima para conectar líneas
-
-        for (let i = 0; i < numNodes; i++) {
-            nodes.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                radius: Math.random() * 1.5 + 0.5 // Puntos sutiles
-            });
-        }
-
-        // Dibujamos las conexiones (Líneas)
-        for (let i = 0; i < numNodes; i++) {
-            // Dibujar el punto
-            ctx.beginPath();
-            ctx.arc(nodes[i].x, nodes[i].y, nodes[i].radius, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.15)'; // Blanco sutil
-            ctx.fill();
-
-            // Conectar con los cercanos
-            for (let j = i + 1; j < numNodes; j++) {
-                const dx = nodes[i].x - nodes[j].x;
-                const dy = nodes[i].y - nodes[j].y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-
-                if (dist < maxDist) {
-                    // La opacidad disminuye mientras más lejos están
-                    const opacity = (1 - (dist / maxDist)) * 0.15; 
-                    ctx.beginPath();
-                    ctx.moveTo(nodes[i].x, nodes[i].y);
-                    ctx.lineTo(nodes[j].x, nodes[j].y);
-                    ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
+        for (let i = 0; i < 180; i++) nodes.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, r: Math.random() * 1.5 + 0.5 });
+        for (let i = 0; i < nodes.length; i++) {
+            ctx.beginPath(); ctx.arc(nodes[i].x, nodes[i].y, nodes[i].r, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)'; ctx.fill();
+            for (let j = i + 1; j < nodes.length; j++) {
+                const dist = Math.sqrt((nodes[i].x - nodes[j].x)**2 + (nodes[i].y - nodes[j].y)**2);
+                if (dist < 150) {
+                    ctx.beginPath(); ctx.moveTo(nodes[i].x, nodes[i].y); ctx.lineTo(nodes[j].x, nodes[j].y);
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${(1 - dist/150) * 0.1})`; ctx.stroke();
                 }
             }
         }
-        // ----------------------------------------------
 
-        // 2. Bordes y Acentos (Ahora se pintan SOBRE el plexus)
-        ctx.strokeStyle = '#b72a1e';
-        ctx.lineWidth = 20;
-        ctx.strokeRect(40, 40, canvas.width - 80, canvas.height - 80);
-        
-        ctx.strokeStyle = '#f59e0b';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(70, 70, canvas.width - 140, canvas.height - 140);
+        // 2. Bordes
+        ctx.strokeStyle = '#b72a1e'; ctx.lineWidth = 20; ctx.strokeRect(40, 40, canvas.width - 80, canvas.height - 80);
+        ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 4; ctx.strokeRect(70, 70, canvas.width - 140, canvas.height - 140);
 
-        // 3. Dibujamos el Logo Superior
-        if (logoRevista) {
-            const targetWidth = 350;
-            const targetHeight = (logoRevista.height / logoRevista.width) * targetWidth;
-            ctx.drawImage(logoRevista, canvas.width / 2 - targetWidth / 2, 100, targetWidth, targetHeight);
+        // 3. LOGO CORONANDO (LOGO-EDU)
+        if (logoEdu) {
+            const targetWidth = 450; // Un poco más grande para que sea legible
+            const targetHeight = (logoEdu.height / logoEdu.width) * targetWidth;
+            ctx.drawImage(logoEdu, canvas.width / 2 - targetWidth / 2, 100, targetWidth, targetHeight);
         }
 
-        // 4. Textos Centrales
+        // 4. TEXTOS
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
 
         ctx.font = '55px "Playfair Display", Georgia, serif';
-        ctx.fillText("CERTIFICADO DE FINALIZACIÓN", canvas.width / 2, 320);
+        ctx.fillText("CERTIFICADO DE FINALIZACIÓN", canvas.width / 2, 340);
 
         ctx.font = '32px sans-serif';
         ctx.fillStyle = '#a0aab5';
-        ctx.fillText("La Red Académica Epistecnología otorga el presente reconocimiento a:", canvas.width / 2, 420);
+        ctx.fillText("Epistecnología otorga el presente reconocimiento a:", canvas.width / 2, 440);
 
+        // Nombre (Dorado)
         ctx.font = 'bold 85px "Playfair Display", Georgia, serif';
         ctx.fillStyle = '#f59e0b';
-        ctx.fillText(legalName.toUpperCase(), canvas.width / 2, 540);
+        ctx.fillText(legalName.toUpperCase(), canvas.width / 2, 550);
 
         ctx.font = '32px sans-serif';
         ctx.fillStyle = '#a0aab5';
-        ctx.fillText("Por haber superado con excelencia académica el Nano-Curso Abierto:", canvas.width / 2, 660);
+        ctx.fillText("Por haber superado con éxito la NLE del NOOC:", canvas.width / 2, 660);
 
+        // Título del Curso
         ctx.font = 'bold 55px sans-serif';
         ctx.fillStyle = '#ffffff';
-        const title = this.currentCourse.title;
-        if (title.length > 50) {
-            ctx.fillText(title.substring(0, 50) + '...', canvas.width / 2, 740);
-        } else {
-            ctx.fillText(title, canvas.width / 2, 740);
-        }
+        ctx.fillText(this.currentCourse.title.toUpperCase(), canvas.width / 2, 740);
 
+        // Firma Profe
         ctx.font = 'italic 28px sans-serif';
         ctx.fillStyle = '#94a3b8';
         ctx.fillText(`Diseñado e impartido por: ${instructorName}`, canvas.width / 2, 800);
 
-        // 5. Dibujamos el Sello Inferior
+        // 5. SELLO EPT (Aquí irán patrocinadores en el futuro)
         if (logoIcon) {
             ctx.drawImage(logoIcon, canvas.width / 2 - 40, 830, 80, 80);
         }
 
-        // 6. Pie de Página y Validaciones
+        // 6. VALIDACIÓN Y LEGAL (PIE)
         ctx.font = '22px monospace';
         ctx.fillStyle = '#64748b';
         
+        // Izquierda
         ctx.textAlign = 'left';
         ctx.fillText(`ID VALIDACIÓN: ${safeHash}`, 110, 930);
         ctx.fillText(`FECHA DE EMISIÓN: ${cleanDate}`, 110, 970);
 
+        // Derecha (Validación con ícono simulado)
         ctx.textAlign = 'right';
-        ctx.fillText("VALIDAR EN: epistecnologia.com/verificar", canvas.width - 110, 930);
+        ctx.fillStyle = '#38bdf8'; // Color celeste tecnológico para el link
+        ctx.fillText(`VERIFICAR EN: epistecnologia.com/edu/verificar`, canvas.width - 110, 930);
+        
+        // Dibujamos un pequeño check circular al lado del link
+        ctx.beginPath(); ctx.arc(canvas.width - 90, 922, 12, 0, Math.PI * 2);
+        ctx.fillStyle = '#38bdf8'; ctx.fill();
+        ctx.fillStyle = '#0f172a'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText("✓", canvas.width - 90, 928);
 
+        // Centro (Texto Legal Institucional Actualizado)
         ctx.textAlign = 'center';
         ctx.font = '18px sans-serif';
         ctx.fillStyle = '#475569';
-        ctx.fillText("Registrada y seriada internacionalmente por la Biblioteca Nacional del Perú", canvas.width / 2, 950);
+        ctx.fillText("Epistecnología es una revista registrada y seriada internacionalmente por la Biblioteca Nacional del Perú", canvas.width / 2, 950);
         ctx.fillText("Depósito Legal N°: 2025-10424  |  ISSN: 3119-7108 (En línea)", canvas.width / 2, 980);
     },
 
