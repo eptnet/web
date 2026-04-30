@@ -318,8 +318,11 @@ const NoocRoom = {
                 // Salvavidas: Leemos certificate_hash o hash_code para no dejar a tu primer usuario en null
                 const safeHash = cert.certificate_hash || cert.hash_code;
                 const safeDate = cert.created_at || cert.issue_date;
+                const shouldDownload = payload && payload.autoDownload; // Capturamos la intención de descarga
                 
-                setTimeout(() => this.drawCertificateCanvas(cert.legal_name, safeHash, safeDate, instructorName), 100);
+                setTimeout(() => {
+                    this.drawCertificateCanvas(cert.legal_name, safeHash, safeDate, instructorName, shouldDownload);
+                }, 200);
 
             } else if (progressPercent >= 100) {
                 // ESTADO 2: DESBLOQUEADO PERO NO RECLAMADO
@@ -738,7 +741,7 @@ const NoocRoom = {
             if (error) throw error;
 
             this.closeLessonModal();
-            await this.showView('cert');
+            await this.showView('cert', { autoDownload: true });
             
             setTimeout(() => {
                 this.downloadCertificate();
@@ -763,10 +766,11 @@ const NoocRoom = {
         }
     },
 
-    async drawCertificateCanvas(legalName, hashCode, dateString, instructorName) {
+    async drawCertificateCanvas(legalName, hashCode, dateString, instructorName, autoDownload = false) {
         const canvas = document.getElementById('certificate-canvas');
         if (!canvas) return;
         
+        // Alta resolución 4K para impresión
         canvas.width = 1920;
         canvas.height = 1080;
         const ctx = canvas.getContext('2d');
@@ -783,41 +787,53 @@ const NoocRoom = {
             img.src = url;
         });
 
-        // CARGAMOS LOS LOGOS
-        const logoEdu = await loadImage('https://i.ibb.co/DHyTWkH0/LOGO-EDU.png'); // Nuevo Logo EDU
-        const logoIcon = await loadImage('https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png'); // Isotipo EPT
+        // Cargamos los logos primero
+        const logoEdu = await loadImage('https://i.ibb.co/DHyTWkH0/LOGO-EDU.png'); 
+        const logoIcon = await loadImage('https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png');
 
-        // 1. Fondo Oscuro y Plexus
+        // 1. Fondo Base
         ctx.fillStyle = '#0f172a';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Dibujamos Plexus sutil
+        // 2. PLEXUS (Más visible y denso)
         const nodes = [];
-        for (let i = 0; i < 180; i++) nodes.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, r: Math.random() * 1.5 + 0.5 });
+        const numNodes = 250; 
+        const maxDist = 200;
+        for (let i = 0; i < numNodes; i++) {
+            nodes.push({ 
+                x: Math.random() * canvas.width, 
+                y: Math.random() * canvas.height, 
+                r: Math.random() * 2 + 0.5 
+            });
+        }
+        
         for (let i = 0; i < nodes.length; i++) {
             ctx.beginPath(); ctx.arc(nodes[i].x, nodes[i].y, nodes[i].r, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)'; ctx.fill();
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)'; ctx.fill(); // Puntos más brillantes
             for (let j = i + 1; j < nodes.length; j++) {
                 const dist = Math.sqrt((nodes[i].x - nodes[j].x)**2 + (nodes[i].y - nodes[j].y)**2);
-                if (dist < 150) {
+                if (dist < maxDist) {
+                    const opacity = (1 - dist/maxDist) * 0.25; // Líneas más marcadas
                     ctx.beginPath(); ctx.moveTo(nodes[i].x, nodes[i].y); ctx.lineTo(nodes[j].x, nodes[j].y);
-                    ctx.strokeStyle = `rgba(255, 255, 255, ${(1 - dist/150) * 0.1})`; ctx.stroke();
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`; 
+                    ctx.lineWidth = 1.2;
+                    ctx.stroke();
                 }
             }
         }
 
-        // 2. Bordes
+        // 3. Marcos
         ctx.strokeStyle = '#b72a1e'; ctx.lineWidth = 20; ctx.strokeRect(40, 40, canvas.width - 80, canvas.height - 80);
         ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 4; ctx.strokeRect(70, 70, canvas.width - 140, canvas.height - 140);
 
-        // 3. LOGO CORONANDO (LOGO-EDU)
+        // 4. Logo Superior (Ajustado como corona)
         if (logoEdu) {
-            const targetWidth = 450; // Un poco más grande para que sea legible
+            const targetWidth = 320; 
             const targetHeight = (logoEdu.height / logoEdu.width) * targetWidth;
-            ctx.drawImage(logoEdu, canvas.width / 2 - targetWidth / 2, 100, targetWidth, targetHeight);
+            ctx.drawImage(logoEdu, canvas.width / 2 - targetWidth / 2, 90, targetWidth, targetHeight);
         }
 
-        // 4. TEXTOS
+        // 5. Textos Centrales
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
 
@@ -828,7 +844,6 @@ const NoocRoom = {
         ctx.fillStyle = '#a0aab5';
         ctx.fillText("Epistecnología otorga el presente reconocimiento a:", canvas.width / 2, 440);
 
-        // Nombre (Dorado)
         ctx.font = 'bold 85px "Playfair Display", Georgia, serif';
         ctx.fillStyle = '#f59e0b';
         ctx.fillText(legalName.toUpperCase(), canvas.width / 2, 550);
@@ -837,47 +852,49 @@ const NoocRoom = {
         ctx.fillStyle = '#a0aab5';
         ctx.fillText("Por haber superado con éxito la NLE del NOOC:", canvas.width / 2, 660);
 
-        // Título del Curso
         ctx.font = 'bold 55px sans-serif';
         ctx.fillStyle = '#ffffff';
         ctx.fillText(this.currentCourse.title.toUpperCase(), canvas.width / 2, 740);
 
-        // Firma Profe
         ctx.font = 'italic 28px sans-serif';
         ctx.fillStyle = '#94a3b8';
         ctx.fillText(`Diseñado e impartido por: ${instructorName}`, canvas.width / 2, 800);
 
-        // 5. SELLO EPT (Aquí irán patrocinadores en el futuro)
-        if (logoIcon) {
-            ctx.drawImage(logoIcon, canvas.width / 2 - 40, 830, 80, 80);
-        }
+        // Isotipo Central
+        if (logoIcon) ctx.drawImage(logoIcon, canvas.width / 2 - 40, 830, 80, 80);
 
-        // 6. VALIDACIÓN Y LEGAL (PIE)
+        // 6. Pie de Página (Validación y Legal)
         ctx.font = '22px monospace';
         ctx.fillStyle = '#64748b';
         
         // Izquierda
         ctx.textAlign = 'left';
-        ctx.fillText(`ID VALIDACIÓN: ${safeHash}`, 110, 930);
-        ctx.fillText(`FECHA DE EMISIÓN: ${cleanDate}`, 110, 970);
+        ctx.fillText(`ID VALIDACIÓN: ${safeHash}`, 110, 940);
+        ctx.fillText(`FECHA DE EMISIÓN: ${cleanDate}`, 110, 980);
 
-        // Derecha (Validación con ícono simulado)
+        // Derecha (Check + URL)
         ctx.textAlign = 'right';
-        ctx.fillStyle = '#38bdf8'; // Color celeste tecnológico para el link
-        ctx.fillText(`VERIFICAR EN: epistecnologia.com/edu/verificar`, canvas.width - 110, 930);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText(`epistecnologia.com/edu/verificar`, canvas.width - 150, 940);
         
-        // Dibujamos un pequeño check circular al lado del link
-        ctx.beginPath(); ctx.arc(canvas.width - 90, 922, 12, 0, Math.PI * 2);
+        // Ícono de Verificación (Círculo con Check)
+        ctx.beginPath(); ctx.arc(canvas.width - 110, 932, 18, 0, Math.PI * 2);
         ctx.fillStyle = '#38bdf8'; ctx.fill();
-        ctx.fillStyle = '#0f172a'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText("✓", canvas.width - 90, 928);
+        ctx.fillStyle = '#0f172a'; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText("✓", canvas.width - 110, 940);
 
-        // Centro (Texto Legal Institucional Actualizado)
+        // 7. BLOQUE LEGAL (3 Líneas definidas)
         ctx.textAlign = 'center';
-        ctx.font = '18px sans-serif';
+        ctx.font = '20px sans-serif';
         ctx.fillStyle = '#475569';
-        ctx.fillText("Epistecnología es una revista registrada y seriada internacionalmente por la Biblioteca Nacional del Perú", canvas.width / 2, 950);
-        ctx.fillText("Depósito Legal N°: 2025-10424  |  ISSN: 3119-7108 (En línea)", canvas.width / 2, 980);
+        ctx.fillText("Epistecnología, revista de divulgación científica y cultural", canvas.width / 2, 930);
+        ctx.fillText("Registrada y seriada internacionalmente por la Biblioteca Nacional del Perú", canvas.width / 2, 965);
+        ctx.fillText("Depósito Legal N°: 2025-10424  |  ISSN: 3119-7108 (En línea)", canvas.width / 2, 1000);
+
+        // --- DESCARGA AUTOMÁTICA SEGURA ---
+        if (autoDownload) {
+            setTimeout(() => this.downloadCertificate(), 500);
+        }
     },
 
     downloadCertificate() {
