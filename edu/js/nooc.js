@@ -303,8 +303,8 @@ const NoocRoom = {
                         </div>
                     </div>
                 `;
-                // Dibujamos el Canvas
-                setTimeout(() => this.drawCertificateCanvas(cert.legal_name, cert.hash_code, cert.created_at), 100);
+                // CORRECCIÓN: Leemos cert.certificate_hash en lugar de cert.hash_code
+                setTimeout(() => this.drawCertificateCanvas(cert.legal_name, cert.certificate_hash, cert.created_at), 100);
 
             } else if (progressPercent >= 100) {
                 // ESTADO 2: DESBLOQUEADO PERO NO RECLAMADO
@@ -707,46 +707,38 @@ const NoocRoom = {
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generando expediente...';
 
-        // Generamos un código de verificación único: EPT-XXXXXXX
         const hashCode = 'EPT-' + Math.random().toString(36).substr(2, 9).toUpperCase();
 
         try {
-            // 1. Guardamos en la base de datos (¡Ya no dará error 400!)
+            // CORRECCIÓN: Usamos el nombre exacto de la columna en tu BD (certificate_hash)
             const { error } = await this.supabase.from('nooc_certificates').insert([{
                 user_id: this.user.id,
                 course_id: this.currentCourse.id,
                 legal_name: nameInput,
-                hash_code: hashCode,
+                certificate_hash: hashCode, // <--- LA LLAVE MAESTRA QUE FALTABA
                 birth_date: dobInput,
                 location: locationInput
             }]);
 
             if (error) throw error;
 
-            // 2. Cerramos modal y dibujamos el canvas de éxito
             this.closeLessonModal();
             await this.showView('cert');
             
-            // 3. Forzamos la descarga del certificado al dispositivo del usuario
             setTimeout(() => {
                 this.downloadCertificate();
-            }, 500); // Pequeño retraso para asegurar que el Canvas terminó de dibujar
+            }, 500);
 
-            // 4. Preparamos el mensaje de WhatsApp y redirigimos
             setTimeout(() => {
-                const phone = "51993118573"; // Tu número de EPT
+                const phone = "51993118573"; 
                 const message = `🎓 *Nuevo Certificado Emitido*\n\nHola Epistecnología, acabo de culminar y generar mi certificado digital del curso *${this.currentCourse.title}*.\n\n*Mis Datos de Expediente:*\n👤 Nombre: ${nameInput}\n🎂 Nacimiento: ${dobInput}\n📍 Ubicación: ${locationInput}\n🔖 ID Validación: ${hashCode}\n\n_Adjunto a este mensaje la imagen de mi certificado descargado._`;
                 
-                const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+                window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
                 
-                // Abrimos WhatsApp
-                window.open(waUrl, '_blank');
-                
-                // Fiesta de confeti en el campus subyacente
                 if(window.EptCampus && typeof window.EptCampus.shootConfetti === 'function') {
                     window.EptCampus.shootConfetti(2);
                 }
-            }, 1500); // 1 segundo después de la descarga, abre WhatsApp
+            }, 1500);
 
         } catch (err) {
             console.error("Error al generar certificado:", err);
