@@ -288,6 +288,17 @@ const NoocRoom = {
 
             if (cert) {
                 // ESTADO 3: CERTIFICADO EMITIDO
+
+                // --- NUEVO: Buscamos el nombre del creador del curso ---
+                let instructorName = "Comité Académico EPT";
+                try {
+                    if (this.currentCourse.created_by) {
+                        const { data: inst } = await this.supabase.from('profiles').select('display_name, username').eq('id', this.currentCourse.created_by).maybeSingle();
+                        if (inst) instructorName = inst.display_name || inst.username || instructorName;
+                    }
+                } catch(e) { console.warn("No se pudo obtener al profesor"); }
+                // --------------------------------------------------------
+
                 stage.innerHTML = `
                     <div class="bento-card glow-hover" style="text-align: center; padding: 30px;">
                         <h2 style="font-size: 2rem; margin: 0 0 10px 0; color: #10b981;"><i class="fa-solid fa-award"></i> ¡Felicidades!</h2>
@@ -298,13 +309,17 @@ const NoocRoom = {
                         </div>
                         
                         <div style="margin-top: 25px; display: flex; justify-content: center; gap: 15px;">
-                            <button onclick="NoocRoom.downloadCertificate()" class="btn-action" style="background: var(--color-edu-accent); border-color: var(--color-edu-accent);"><i class="fa-solid fa-download"></i> Descargar Imagen</button>
+                            <button onclick="NoocRoom.downloadCertificate()" class="btn-action" style="background: var(--color-edu-accent); border-color: var(--color-edu-accent);"><i class="fa-solid fa-download"></i> Descargar Alta Calidad</button>
                             <a href="https://bsky.app/intent/compose?text=¡Acabo de certificarme en %22${encodeURIComponent(this.currentCourse.title)}%22 en el Campus de Epistecnología! 🎓⚡ Míralo aquí: ${window.location.origin}/edu/nooc.html?c=${this.currentCourse.slug}" target="_blank" class="btn-action" style="background: #0085ff; border-color: #0085ff;"><i class="fa-brands fa-bluesky"></i> Presumir Logro</a>
                         </div>
                     </div>
                 `;
-                // CORRECCIÓN: Leemos cert.certificate_hash en lugar de cert.hash_code
-                setTimeout(() => this.drawCertificateCanvas(cert.legal_name, cert.certificate_hash, cert.created_at), 100);
+                
+                // Salvavidas: Leemos certificate_hash o hash_code para no dejar a tu primer usuario en null
+                const safeHash = cert.certificate_hash || cert.hash_code;
+                const safeDate = cert.created_at || cert.issue_date;
+                
+                setTimeout(() => this.drawCertificateCanvas(cert.legal_name, safeHash, safeDate, instructorName), 100);
 
             } else if (progressPercent >= 100) {
                 // ESTADO 2: DESBLOQUEADO PERO NO RECLAMADO
@@ -748,84 +763,144 @@ const NoocRoom = {
         }
     },
 
-    drawCertificateCanvas(legalName, hashCode, dateString) {
+    async drawCertificateCanvas(legalName, hashCode, dateString, instructorName) {
         const canvas = document.getElementById('certificate-canvas');
         if (!canvas) return;
         
-        // Configuramos alta resolución (Full HD) para que al descargarse se vea perfecto
         canvas.width = 1920;
         canvas.height = 1080;
         const ctx = canvas.getContext('2d');
 
+        const safeHash = hashCode || 'EPT-PENDIENTE-VERIFICACION';
+        const safeDate = dateString ? new Date(dateString) : new Date();
+        const cleanDate = safeDate.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+
+        const loadImage = (url) => new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.onload = () => resolve(img);
+            img.onerror = () => resolve(null);
+            img.src = url;
+        });
+
+        const logoRevista = await loadImage('https://i.ibb.co/9kyWJwxz/Banner-Substack-fondo-oscuro.png');
+        const logoIcon = await loadImage('https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png');
+
         // 1. Fondo Oscuro Elegante
-        ctx.fillStyle = '#0f172a'; // Un azul muy oscuro y formal
+        ctx.fillStyle = '#0f172a';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // 2. Bordes y Acentos (Marco rojo EPT y marco interior dorado)
+        // --- NUEVO: MOTOR DE PLEXUS PROCEDIMENTAL ---
+        // Generamos 200 nodos aleatorios
+        const nodes = [];
+        const numNodes = 200;
+        const maxDist = 180; // Distancia máxima para conectar líneas
+
+        for (let i = 0; i < numNodes; i++) {
+            nodes.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                radius: Math.random() * 1.5 + 0.5 // Puntos sutiles
+            });
+        }
+
+        // Dibujamos las conexiones (Líneas)
+        for (let i = 0; i < numNodes; i++) {
+            // Dibujar el punto
+            ctx.beginPath();
+            ctx.arc(nodes[i].x, nodes[i].y, nodes[i].radius, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.15)'; // Blanco sutil
+            ctx.fill();
+
+            // Conectar con los cercanos
+            for (let j = i + 1; j < numNodes; j++) {
+                const dx = nodes[i].x - nodes[j].x;
+                const dy = nodes[i].y - nodes[j].y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < maxDist) {
+                    // La opacidad disminuye mientras más lejos están
+                    const opacity = (1 - (dist / maxDist)) * 0.15; 
+                    ctx.beginPath();
+                    ctx.moveTo(nodes[i].x, nodes[i].y);
+                    ctx.lineTo(nodes[j].x, nodes[j].y);
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            }
+        }
+        // ----------------------------------------------
+
+        // 2. Bordes y Acentos (Ahora se pintan SOBRE el plexus)
         ctx.strokeStyle = '#b72a1e';
         ctx.lineWidth = 20;
         ctx.strokeRect(40, 40, canvas.width - 80, canvas.height - 80);
         
-        ctx.strokeStyle = '#f59e0b'; // Dorado
+        ctx.strokeStyle = '#f59e0b';
         ctx.lineWidth = 4;
         ctx.strokeRect(70, 70, canvas.width - 140, canvas.height - 140);
 
-        // 3. Textos Centrales
-        ctx.fillStyle = '#ffffff';
-        ctx.textAlign = 'center';
-
-        ctx.font = '60px "Playfair Display", Georgia, serif';
-        ctx.fillText("CERTIFICADO DE FINALIZACIÓN", canvas.width / 2, 280);
-
-        ctx.font = '35px sans-serif';
-        ctx.fillStyle = '#a0aab5';
-        ctx.fillText("La Red Académica Epistecnología otorga el presente reconocimiento a:", canvas.width / 2, 400);
-
-        // Nombre Legal (Dorado y Grande)
-        ctx.font = 'bold 90px "Playfair Display", Georgia, serif';
-        ctx.fillStyle = '#f59e0b';
-        ctx.fillText(legalName.toUpperCase(), canvas.width / 2, 550);
-
-        ctx.font = '35px sans-serif';
-        ctx.fillStyle = '#a0aab5';
-        ctx.fillText("Por haber superado con excelencia académica el Nano-Curso Abierto:", canvas.width / 2, 700);
-
-        // Título del Curso
-        ctx.font = 'bold 60px sans-serif';
-        ctx.fillStyle = '#ffffff';
-        // Envolvemos el texto si es muy largo (Corte simple)
-        const title = this.currentCourse.title;
-        if (title.length > 45) {
-            ctx.fillText(title.substring(0, 45) + '...', canvas.width / 2, 800);
-        } else {
-            ctx.fillText(title, canvas.width / 2, 800);
+        // 3. Dibujamos el Logo Superior
+        if (logoRevista) {
+            const targetWidth = 350;
+            const targetHeight = (logoRevista.height / logoRevista.width) * targetWidth;
+            ctx.drawImage(logoRevista, canvas.width / 2 - targetWidth / 2, 100, targetWidth, targetHeight);
         }
 
-        // 4. Firmas y Validaciones en el Pie
-        const cleanDate = new Date(dateString).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
-        
-        ctx.font = '24px monospace';
-        ctx.fillStyle = '#64748b'; // Gris sutil
-        
-        // Bloque Izquierdo (Hash y Fecha)
-        ctx.textAlign = 'left';
-        ctx.fillText(`ID VALIDACIÓN: ${hashCode}`, 120, 980);
-        ctx.fillText(`FECHA DE EMISIÓN: ${cleanDate}`, 120, 1020);
-
-        // Bloque Derecho (URL)
-        ctx.textAlign = 'right';
-        ctx.fillText("Válido en: epistecnologia.com", canvas.width - 120, 1020);
-
-        // Sello Central (Simulado)
-        ctx.beginPath();
-        ctx.arc(canvas.width / 2, 980, 50, 0, 2 * Math.PI);
-        ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = 5;
-        ctx.stroke();
-        ctx.fillStyle = '#ef4444';
+        // 4. Textos Centrales
+        ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
-        ctx.font = 'bold 25px sans-serif';
-        ctx.fillText("EPT", canvas.width / 2, 990);
+
+        ctx.font = '55px "Playfair Display", Georgia, serif';
+        ctx.fillText("CERTIFICADO DE FINALIZACIÓN", canvas.width / 2, 320);
+
+        ctx.font = '32px sans-serif';
+        ctx.fillStyle = '#a0aab5';
+        ctx.fillText("La Red Académica Epistecnología otorga el presente reconocimiento a:", canvas.width / 2, 420);
+
+        ctx.font = 'bold 85px "Playfair Display", Georgia, serif';
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillText(legalName.toUpperCase(), canvas.width / 2, 540);
+
+        ctx.font = '32px sans-serif';
+        ctx.fillStyle = '#a0aab5';
+        ctx.fillText("Por haber superado con excelencia académica el Nano-Curso Abierto:", canvas.width / 2, 660);
+
+        ctx.font = 'bold 55px sans-serif';
+        ctx.fillStyle = '#ffffff';
+        const title = this.currentCourse.title;
+        if (title.length > 50) {
+            ctx.fillText(title.substring(0, 50) + '...', canvas.width / 2, 740);
+        } else {
+            ctx.fillText(title, canvas.width / 2, 740);
+        }
+
+        ctx.font = 'italic 28px sans-serif';
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText(`Diseñado e impartido por: ${instructorName}`, canvas.width / 2, 800);
+
+        // 5. Dibujamos el Sello Inferior
+        if (logoIcon) {
+            ctx.drawImage(logoIcon, canvas.width / 2 - 40, 830, 80, 80);
+        }
+
+        // 6. Pie de Página y Validaciones
+        ctx.font = '22px monospace';
+        ctx.fillStyle = '#64748b';
+        
+        ctx.textAlign = 'left';
+        ctx.fillText(`ID VALIDACIÓN: ${safeHash}`, 110, 930);
+        ctx.fillText(`FECHA DE EMISIÓN: ${cleanDate}`, 110, 970);
+
+        ctx.textAlign = 'right';
+        ctx.fillText("VALIDAR EN: epistecnologia.com/verificar", canvas.width - 110, 930);
+
+        ctx.textAlign = 'center';
+        ctx.font = '18px sans-serif';
+        ctx.fillStyle = '#475569';
+        ctx.fillText("Registrada y seriada internacionalmente por la Biblioteca Nacional del Perú", canvas.width / 2, 950);
+        ctx.fillText("Depósito Legal N°: 2025-10424  |  ISSN: 3119-7108 (En línea)", canvas.width / 2, 980);
     },
 
     downloadCertificate() {
