@@ -664,16 +664,27 @@ const NoocRoom = {
                 <i class="fa-solid fa-graduation-cap" style="font-size: 4rem; color: #f59e0b; margin-bottom: 20px;"></i>
                 <h2 style="font-size: 2rem; margin-bottom: 10px;">Emisión de Certificado</h2>
                 <p style="color: var(--color-secondary-text); margin-bottom: 30px;">
-                    Tu certificado se generará en este instante y se guardará permanentemente en la base de datos.
-                    Por favor, ingresa tu <strong>Nombre Legal Completo</strong> tal como deseas que aparezca en el documento.
+                    Tu certificado se generará y se guardará en la red académica.
+                    Por favor, ingresa tus datos reales para validar tu identidad.
                 </p>
                 
                 <div style="max-width: 400px; margin: 0 auto; text-align: left;">
-                    <label style="font-weight: bold; font-size: 0.9rem; margin-bottom: 8px; display: block;">Nombre Completo:</label>
-                    <input type="text" id="cert-legal-name" placeholder="Ej: Juan Pérez García" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-background); color: white; font-size: 1rem; margin-bottom: 20px;">
+                    <label style="font-weight: bold; font-size: 0.9rem; margin-bottom: 5px; display: block;">Nombre Legal Completo:</label>
+                    <input type="text" id="cert-legal-name" placeholder="Ej: Juan Pérez García" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-background); color: white; font-size: 1rem; margin-bottom: 15px;">
+                    
+                    <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                        <div style="flex: 1;">
+                            <label style="font-weight: bold; font-size: 0.9rem; margin-bottom: 5px; display: block;">Fecha de Nacimiento:</label>
+                            <input type="date" id="cert-dob" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-background); color: white; font-size: 1rem;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-weight: bold; font-size: 0.9rem; margin-bottom: 5px; display: block;">Ciudad y País:</label>
+                            <input type="text" id="cert-location" placeholder="Arequipa, Perú" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-background); color: white; font-size: 1rem;">
+                        </div>
+                    </div>
                     
                     <button id="btn-claim-submit" onclick="NoocRoom.claimCertificate()" class="btn-action" style="width: 100%; padding: 15px; font-size: 1.1rem; background: #10b981; border-color: #10b981;">
-                        <i class="fa-solid fa-stamp"></i> Firmar y Generar
+                        <i class="fa-solid fa-stamp"></i> Firmar y Enviar a WhatsApp
                     </button>
                 </div>
             </div>
@@ -685,41 +696,63 @@ const NoocRoom = {
 
     async claimCertificate() {
         const nameInput = document.getElementById('cert-legal-name').value.trim();
-        if (!nameInput) return alert("Por favor, ingresa tu nombre completo.");
+        const dobInput = document.getElementById('cert-dob').value;
+        const locationInput = document.getElementById('cert-location').value.trim();
+
+        if (!nameInput || !dobInput || !locationInput) {
+            return alert("Por favor, completa todos los campos para poder emitir tu certificado.");
+        }
 
         const btn = document.getElementById('btn-claim-submit');
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Inscribiendo en la red...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generando expediente...';
 
-        // Generamos un código de verificación único estilo Blockchain: EPT-XXXXXXX
+        // Generamos un código de verificación único: EPT-XXXXXXX
         const hashCode = 'EPT-' + Math.random().toString(36).substr(2, 9).toUpperCase();
 
         try {
+            // 1. Guardamos en la base de datos (¡Ya no dará error 400!)
             const { error } = await this.supabase.from('nooc_certificates').insert([{
                 user_id: this.user.id,
                 course_id: this.currentCourse.id,
                 legal_name: nameInput,
-                hash_code: hashCode
+                hash_code: hashCode,
+                birth_date: dobInput,
+                location: locationInput
             }]);
 
             if (error) throw error;
 
+            // 2. Cerramos modal y dibujamos el canvas de éxito
             this.closeLessonModal();
-            // Refrescamos la vista de certificación para que dibuje el diploma
             await this.showView('cert');
             
-            // ¡Fiesta! Lluvia de confeti de nivel 2 (la que dura más tiempo en tu campus.js)
-            if(window.EptCampus && typeof window.EptCampus.shootConfetti === 'function') {
-                window.EptCampus.shootConfetti(2);
-            } else {
-                alert("¡Felicidades! Certificado generado con éxito.");
-            }
+            // 3. Forzamos la descarga del certificado al dispositivo del usuario
+            setTimeout(() => {
+                this.downloadCertificate();
+            }, 500); // Pequeño retraso para asegurar que el Canvas terminó de dibujar
+
+            // 4. Preparamos el mensaje de WhatsApp y redirigimos
+            setTimeout(() => {
+                const phone = "51993118573"; // Tu número de EPT
+                const message = `🎓 *Nuevo Certificado Emitido*\n\nHola Epistecnología, acabo de culminar y generar mi certificado digital del curso *${this.currentCourse.title}*.\n\n*Mis Datos de Expediente:*\n👤 Nombre: ${nameInput}\n🎂 Nacimiento: ${dobInput}\n📍 Ubicación: ${locationInput}\n🔖 ID Validación: ${hashCode}\n\n_Adjunto a este mensaje la imagen de mi certificado descargado._`;
+                
+                const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+                
+                // Abrimos WhatsApp
+                window.open(waUrl, '_blank');
+                
+                // Fiesta de confeti en el campus subyacente
+                if(window.EptCampus && typeof window.EptCampus.shootConfetti === 'function') {
+                    window.EptCampus.shootConfetti(2);
+                }
+            }, 1500); // 1 segundo después de la descarga, abre WhatsApp
 
         } catch (err) {
             console.error("Error al generar certificado:", err);
-            alert("Hubo un problema al generar tu certificado. Intenta nuevamente.");
+            alert("Hubo un problema de conexión con la base de datos. Detalles en consola.");
             btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-stamp"></i> Firmar y Generar';
+            btn.innerHTML = '<i class="fa-solid fa-stamp"></i> Firmar y Enviar a WhatsApp';
         }
     },
 
