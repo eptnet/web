@@ -331,7 +331,7 @@ const NoocApp = {
         }
     },
 
-    // --- 5. LÓGICA MAESTRA DE GUARDADO ---
+    // --- 5. LÓGICA MAESTRA DE GUARDADO (SAAS: BORRADOR, PUBLICAR, PREVIEW) ---
     async saveCourseData(isPublished, isPreview = false) {
         const title = document.getElementById('course-title').value;
         const slug = document.getElementById('course-slug').value;
@@ -350,6 +350,7 @@ const NoocApp = {
             let bskyUri = this.bsky_uri;
             let bskyCid = this.bsky_cid;
 
+            // 1. BLUESKY: Crear el Tronco si se publica y NO existe aún
             if (isPublished && !bskyUri) {
                 const courseUrl = `https://epistecnologia.com/edu/nooc.html?c=${slug}`;
                 const { data: tronco, error: troncoError } = await this.supabase.functions.invoke('bot-create-post', {
@@ -363,7 +364,7 @@ const NoocApp = {
                         linkThumb: this.courseData?.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg'
                     }
                 });
-                if (troncoError || !tronco?.success) throw new Error("Error con Bluesky.");
+                if (troncoError || !tronco?.success) throw new Error("Error con Bluesky al crear el Tronco.");
                 bskyUri = tronco.uri;
                 bskyCid = tronco.cid;
             }
@@ -377,7 +378,8 @@ const NoocApp = {
                 thumbnail_url: this.courseData?.thumbnail_url || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg',
                 created_by: this.user.id, 
                 is_published: isPublished,
-                bsky_uri: bskyUri, bsky_cid: bskyCid
+                bsky_uri: bskyUri, bsky_cid: bskyCid,
+                enable_live_room: document.getElementById('toggle-live-room')?.checked || false
             };
 
             if (this.isEditing) coursePayload.id = this.editingCourseId;
@@ -387,7 +389,10 @@ const NoocApp = {
 
             this.editingCourseId = savedCourse.id;
             this.isEditing = true;
+            this.bsky_uri = bskyUri; // Guardamos para la sesión activa
+            this.bsky_cid = bskyCid;
 
+            // 2. MÓDULOS Y LECCIONES
             for (let i = 0; i < this.modules.length; i++) {
                 let mod = this.modules[i];
                 const modPayload = {
@@ -405,17 +410,25 @@ const NoocApp = {
                     let lesBsUri = les.bsky_uri;
                     let lesBsCid = les.bsky_cid;
 
-                    if (isPublished && !les.isFromDB && bskyUri) { 
-                        const { data: rama } = await this.supabase.functions.invoke('bot-create-post', {
-                            body: {
-                                postText: `📖 Lección 0${j+1}: ${les.title}\n\nUsa este espacio para debatir los contenidos de este bloque.`,
-                                authorInfo: { displayName: 'Motor EPT' },
-                                botType: 'cursos',
-                                replyTo: { rootUri: bskyUri, rootCid: bskyCid, parentUri: bskyUri, parentCid: bskyCid }
+                    // --- REPARACIÓN LÓGICA DE HILOS ---
+                    // Si se está publicando y la lección NO tiene hilo (aunque venga de la DB), lo creamos.
+                    if (isPublished && !lesBsUri && bskyUri) { 
+                        try {
+                            const { data: rama } = await this.supabase.functions.invoke('bot-create-post', {
+                                body: {
+                                    postText: `📖 Lección 0${j+1}: ${les.title}\n\nUsa este espacio para debatir los contenidos de este bloque.`,
+                                    authorInfo: { displayName: 'Motor EPT' },
+                                    botType: 'cursos',
+                                    replyTo: { rootUri: bskyUri, rootCid: bskyCid, parentUri: bskyUri, parentCid: bskyCid }
+                                }
+                            });
+                            if (rama?.success) {
+                                lesBsUri = rama.uri;
+                                lesBsCid = rama.cid;
+                                les.bsky_uri = lesBsUri; // Actualizamos objeto en memoria
+                                les.bsky_cid = lesBsCid;
                             }
-                        });
-                        lesBsUri = rama?.uri;
-                        lesBsCid = rama?.cid;
+                        } catch(e) { console.warn("Fallo hilo Bluesky para:", les.title); }
                     }
 
                     const lesPayload = {
@@ -464,6 +477,11 @@ const NoocApp = {
             if (instFields) instFields.style.display = 'block';
             document.getElementById('inst-name').value = course.institution_name;
             document.getElementById('inst-logo').value = course.institution_logo || '';
+        }
+
+        // NUEVO: Cargar estado del Aula en vivo
+        if (document.getElementById('toggle-live-room')) {
+            document.getElementById('toggle-live-room').checked = course.enable_live_room || false;
         }
 
         if (course.thumbnail_url) {

@@ -106,6 +106,17 @@
                 <label>Respaldo Institucional (Duplica XP)</label>
                 <label class="switch"><input type="checkbox" id="toggle-institutional-xp" onchange="NoocApp.calculateXP()"><span class="slider"></span></label>
             </div>
+            <div id="inst-fields" style="display: none; margin-top: 10px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                <input type="text" id="inst-name" placeholder="Nombre de la Institución" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-subtle); background: rgba(0,0,0,0.5); color: white; outline: none; margin-bottom: 10px; font-size: 0.85rem;">
+                <input type="url" id="inst-logo" placeholder="URL del Logo (Opcional)" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-subtle); background: rgba(0,0,0,0.5); color: white; outline: none; font-size: 0.85rem;">
+            </div>
+
+            <div class="input-group" style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed rgba(255,255,255,0.2);">
+                <label style="display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: #10b981; cursor: pointer;">
+                    <input type="checkbox" id="toggle-live-room" style="width: auto;">
+                    <i class="fa-solid fa-video"></i> Activar Aula en Vivo (Sala Jitsi 24/7)
+                </label>
+            </div>
             <div class="toggle-group">
                 <label>XP por Hilo de Bienvenida</label>
                 <label class="switch"><input type="checkbox" id="toggle-start-feed" checked onchange="NoocApp.calculateXP()"><span class="slider"></span></label>

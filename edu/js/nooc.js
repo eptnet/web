@@ -172,7 +172,20 @@ const NoocRoom = {
 
     renderSidebar() {
         const list = document.getElementById('modules-nav-list');
-        list.innerHTML = this.currentCourse.nooc_modules.map((mod, index) => `
+        let html = '';
+
+        // INYECCIÓN: Botón de Aula en Vivo (Si está activado en la DB)
+        if (this.currentCourse.enable_live_room) {
+            html += `
+                <div class="module-group" style="margin-bottom: 15px;">
+                    <button id="btn-nav-meet" class="menu-item module-title" onclick="NoocRoom.showView('meet')" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; border-radius: 8px;">
+                        <i class="fa-solid fa-video"></i> Aula en Vivo 24/7
+                    </button>
+                </div>
+            `;
+        }
+
+        html += this.currentCourse.nooc_modules.map((mod, index) => `
             <div class="module-group" id="nav-mod-${mod.id}">
                 <button class="menu-item module-title" onclick="NoocRoom.toggleModule('${mod.id}')">
                     <i class="fa-solid fa-layer-group"></i> 0${index + 1}. ${mod.title}
@@ -187,6 +200,8 @@ const NoocRoom = {
                 </div>
             </div>
         `).join('');
+        
+        list.innerHTML = html;
     },
 
     toggleModule(moduleId) {
@@ -237,6 +252,31 @@ const NoocRoom = {
                 </div>
             `;
             if(this.currentCourse.bsky_uri) this.loadCommunityFeed(this.currentCourse.bsky_uri, 'organic-feed-stream');
+        
+        } else if (view === 'meet') {
+            // VISTA DEL AULA EN VIVO (JITSI)
+            document.querySelectorAll('.menu-item').forEach(btn => btn.classList.remove('active-main'));
+            if(document.getElementById('btn-nav-meet')) document.getElementById('btn-nav-meet').classList.add('active-main');
+            this.toggleMobileMenu(true); 
+
+            // Creamos un ID de sala único y seguro usando el slug del curso
+            const roomName = `ept_aula_${this.currentCourse.slug.replace(/[^a-zA-Z0-9]/g, '_')}`;
+
+            stage.innerHTML = `
+                <div class="module-stage-header">
+                    <span class="rank-tag" style="background: #ef4444;">🔴 En Directo</span>
+                    <h2 style="font-size: 2.2rem; margin: 10px 0 5px 0;">Aula Virtual Abierta</h2>
+                    <p style="opacity: 0.8; margin-bottom: 20px;">Únete a la sala para debatir en vivo con otros investigadores de este curso. Permite el acceso a tu cámara y micrófono.</p>
+                </div>
+                
+                <div class="bento-card glow-hover" style="padding: 0; overflow: hidden; height: 65vh; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                    <iframe 
+                        allow="camera; microphone; fullscreen; display-capture; autoplay" 
+                        src="https://meet.jit.si/${roomName}" 
+                        style="width: 100%; height: 100%; border: 0;">
+                    </iframe>
+                </div>
+            `;    
             
         } else if (view === 'module') {
             const mod = this.currentCourse.nooc_modules.find(m => m.id === payload);
