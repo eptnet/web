@@ -15,19 +15,22 @@ const NoocRoom = {
             const state = urlParams.get('state');
 
             if (code && state) {
-                // Limpiamos la URL visualmente sin recargar la página para quitar los tokens
                 const cleanUrl = window.location.pathname + '?c=' + urlParams.get('c');
                 window.history.replaceState({}, document.title, cleanUrl);
                 
-                // Invocamos a la Edge Function para guardar las credenciales
                 this.supabase.functions.invoke('bsky-oauth-callback', {
-                    body: { 
-                        code: code, 
-                        state: state, 
-                        redirect_uri: window.location.origin + window.location.pathname + '?c=' + urlParams.get('c') 
+                    body: { code: code, state: state, redirect_uri: window.location.origin + window.location.pathname + '?c=' + urlParams.get('c') }
+                }).then(async ({ data, error }) => {
+                    if (!error) {
+                        // RECOMPENSA DE AULA: Sumar +70 XP
+                        const { data: { session } } = await this.supabase.auth.getSession();
+                        const { data: profile } = await this.supabase.from('profiles').select('xp_total').eq('id', session.user.id).single();
+                        const newXp = (profile?.xp_total || 0) + 70;
+                        await this.supabase.from('profiles').update({ xp_total: newXp }).eq('id', session.user.id);
+
+                        alert("¡Identidad verificada! Has ganado +70 XP y ya puedes participar.");
+                        window.location.reload();
                     }
-                }).then(({ data, error }) => {
-                    if (!error) alert("¡Cuenta de Bluesky conectada! Ya puedes comentar.");
                 });
             }
             // --------------------------------------------------
@@ -310,7 +313,7 @@ const NoocRoom = {
                         
                         <div style="margin-top: 25px; display: flex; justify-content: center; gap: 15px;">
                             <button onclick="NoocRoom.downloadCertificate()" class="btn-action" style="background: var(--color-edu-accent); border-color: var(--color-edu-accent);"><i class="fa-solid fa-download"></i> Descargar Alta Calidad</button>
-                            <a href="https://bsky.app/intent/compose?text=¡Acabo de certificarme en %22${encodeURIComponent(this.currentCourse.title)}%22 en el Campus de Epistecnología! 🎓⚡ Míralo aquí: ${window.location.origin}/edu/nooc.html?c=${this.currentCourse.slug}" target="_blank" class="btn-action" style="background: #0085ff; border-color: #0085ff;"><i class="fa-brands fa-bluesky"></i> Presumir Logro</a>
+                            <a href="https://bsky.app/intent/compose?text=¡Acabo de certificarme en %22${encodeURIComponent(this.currentCourse.title)}%22 en el Campus de Epistecnología! 🎓⚡ Míralo aquí: ${window.location.origin}/edu/nooc.html?c=${this.currentCourse.slug}" target="_blank" class="btn-action" style="background: #ff1100e9; border-color: #0085ff;"><i class="fa-brands fa-bluesky"></i> Presumir Logro</a>
                         </div>
                     </div>
                 `;
@@ -728,12 +731,11 @@ const NoocRoom = {
         const hashCode = 'EPT-' + Math.random().toString(36).substr(2, 9).toUpperCase();
 
         try {
-            // CORRECCIÓN: Usamos el nombre exacto de la columna en tu BD (certificate_hash)
             const { error } = await this.supabase.from('nooc_certificates').insert([{
                 user_id: this.user.id,
                 course_id: this.currentCourse.id,
                 legal_name: nameInput,
-                certificate_hash: hashCode, // <--- LA LLAVE MAESTRA QUE FALTABA
+                certificate_hash: hashCode, 
                 birth_date: dobInput,
                 location: locationInput
             }]);
@@ -741,22 +743,20 @@ const NoocRoom = {
             if (error) throw error;
 
             this.closeLessonModal();
+            
+            // 1. DISPARAMOS LA VISTA: La bandera autoDownload ya se encarga de la descarga única
             await this.showView('cert', { autoDownload: true });
             
-            setTimeout(() => {
-                this.downloadCertificate();
-            }, 500);
-
+            // 2. ABRIR WHATSAPP (Aislamos este proceso para que no choque con la descarga)
             setTimeout(() => {
                 const phone = "51993118573"; 
                 const message = `🎓 *Nuevo Certificado Emitido*\n\nHola Epistecnología, acabo de culminar y generar mi certificado digital del curso *${this.currentCourse.title}*.\n\n*Mis Datos de Expediente:*\n👤 Nombre: ${nameInput}\n🎂 Nacimiento: ${dobInput}\n📍 Ubicación: ${locationInput}\n🔖 ID Validación: ${hashCode}\n\n_Adjunto a este mensaje la imagen de mi certificado descargado._`;
-                
                 window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
                 
                 if(window.EptCampus && typeof window.EptCampus.shootConfetti === 'function') {
                     window.EptCampus.shootConfetti(2);
                 }
-            }, 1500);
+            }, 2000); 
 
         } catch (err) {
             console.error("Error al generar certificado:", err);
@@ -809,7 +809,7 @@ const NoocRoom = {
         
         for (let i = 0; i < nodes.length; i++) {
             ctx.beginPath(); ctx.arc(nodes[i].x, nodes[i].y, nodes[i].r, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)'; ctx.fill(); // Puntos más brillantes
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.2)'; ctx.fill(); // Puntos más brillantes
             for (let j = i + 1; j < nodes.length; j++) {
                 const dist = Math.sqrt((nodes[i].x - nodes[j].x)**2 + (nodes[i].y - nodes[j].y)**2);
                 if (dist < maxDist) {

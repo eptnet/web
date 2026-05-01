@@ -203,31 +203,25 @@ const EptCampus = {
     async setupUserUI() {
         const { data: { session } } = await this.supabase.auth.getSession();
         
-        // --- 1. GESTIÓN INTELIGENTE DEL HEADER ---
         const guestView = document.getElementById('guest-view');
         const userView = document.getElementById('user-view');
         const headerLoginBtn = document.querySelector('header .trigger-login-modal') || document.querySelector('.btn-nav-access');
 
         if (!session) {
-            // Usuario NO logueado: Mostramos botón de acceso
             if (guestView) guestView.style.display = 'block';
             if (userView) userView.style.display = 'none';
             return;
         }
 
-        // Usuario SÍ logueado: Ocultamos acceso, mostramos menú de usuario
         if (guestView) guestView.style.display = 'none';
         if (userView) {
             userView.style.display = 'block'; 
         } else if (headerLoginBtn) {
-            // Fallback por si la estructura del HTML del Campus es un poco diferente
             headerLoginBtn.innerHTML = '<i class="fa-solid fa-user"></i> Mi Perfil';
             headerLoginBtn.classList.remove('trigger-login-modal');
             headerLoginBtn.onclick = () => window.location.href = '/inv/profile.html';
         }
-        // -----------------------------------------
 
-        // 2. Pedimos perfil, credenciales E inscripciones
         const [profileRes, bskyRes, enrollsRes] = await Promise.all([
             this.supabase.from('profiles').select('xp_total, avatar_url').eq('id', session.user.id).single(),
             this.supabase.from('bsky_credentials').select('handle').eq('user_id', session.user.id).maybeSingle(),
@@ -239,26 +233,49 @@ const EptCampus = {
         const handle = bskyRes.data?.handle;
         const enrolledCount = enrollsRes.data ? enrollsRes.data.length : 0;
 
-        // --- 3. PINTAR EL AVATAR EN EL HEADER ---
         const avatarLink = document.getElementById('user-avatar-link');
-        if (avatarLink) {
-            avatarLink.innerHTML = `<img src="${avatarUrl}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--color-edu-accent);">`;
-        }
-        // ----------------------------------------
+        if (avatarLink) avatarLink.innerHTML = `<img src="${avatarUrl}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--color-edu-accent);">`;
 
-        // 4. Gamificación del Onboarding
-        if (!handle && currentXP < 30) {
+        // GAMIFICACIÓN CORREGIDA: Solo damos los 30 XP de bienvenida. Los 70 se dan en los callbacks.
+        if (currentXP < 30) {
             await this.awardXP(session.user.id, 30);
             currentXP = 30;
             this.shootConfetti(1); 
-        } else if (handle && currentXP < 100) {
-            await this.awardXP(session.user.id, 100);
-            currentXP = 100;
-            this.shootConfetti(2); 
         }
 
-        // 5. Pasamos cuántos cursos tiene para calcular el tamaño de la barra
         this.updateMissionUI(handle, currentXP, enrolledCount);
+    },
+
+    async checkForBlueskyCallback() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const state = urlParams.get('state');
+
+        if (code && state) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            if (window.showToast) window.showToast("⏳ Sincronizando identidad académica...");
+
+            try {
+                const { data, error } = await this.supabase.functions.invoke('bsky-oauth-callback', {
+                    body: { code, state, redirect_uri: window.location.origin + window.location.pathname }
+                });
+                if (error) throw error;
+
+                // RECOMPENSA DE CAMPUS: Sumar +70 XP
+                const { data: { session } } = await this.supabase.auth.getSession();
+                const { data: profile } = await this.supabase.from('profiles').select('xp_total').eq('id', session.user.id).single();
+                const newXp = (profile?.xp_total || 0) + 70;
+                await this.supabase.from('profiles').update({ xp_total: newXp }).eq('id', session.user.id);
+
+                if (window.showToast) window.showToast(`✅ ¡Identidad vinculada, +70 XP ganados!`);
+                
+                this.shootConfetti(2);
+                this.updateMissionUI(data.handle, newXp); // Refrescar UI al instante
+                
+            } catch (err) {
+                alert("Hubo un error al validar tu cuenta con Bluesky.");
+            }
+        }
     },
 
     // --- HELPER: RANGOS SIMPLES ---
@@ -282,11 +299,16 @@ const EptCampus = {
         const levelTag = document.querySelector('.level-tag');
         const xpTextContainer = document.querySelector('.visitor-profile-card .xp-container').previousElementSibling;
 
-        // LA MAGIA: Cada curso inscrito aumenta la capacidad total de la barra en 300 XP
-        let targetXP = 100 + (enrolledCount * 300); 
-        
-        // Protección por si gana XP extra de otras formas
-        if (currentXP > targetXP) targetXP = currentXP; 
+        // LA MAGIA DE LA CAPACIDAD:
+        // Si no tiene handle, su "Capacidad Máxima" por ahora es solo 100 (la meta de ser Aprendiz).
+        // Si ya tiene handle, su capacidad crece según sus cursos inscritos.
+        let targetXP = 100;
+        if (handle) {
+            targetXP = 100 + (enrolledCount * 300);
+        } else if (currentXP > 100) {
+            // Protección por si gana XP extra de otras formas
+            targetXP = currentXP + 100;
+        }
 
         // Calculamos cuánto rellenar
         let fillPercentage = (currentXP / targetXP) * 100;
@@ -317,14 +339,17 @@ const EptCampus = {
 
         let pendingXP = targetXP - currentXP;
 
-        // TEXTOS Y ADVERTENCIAS
+        // TEXTOS, ADVERTENCIAS Y BOTONES
         if (handle) {
+            // USUARIO CON BLUESKY (VERIFICADO)
             if(statusText) statusText.innerHTML = `<span style="color:#0085ff; font-weight:bold;">@${handle}</span> verificado`;
+            
             if(missionBtn) {
                 missionBtn.innerHTML = '<i class="fa-solid fa-graduation-cap"></i> Explorar Cursos';
                 missionBtn.onclick = () => document.getElementById('courses-grid').scrollIntoView({behavior: 'smooth'});
                 missionBtn.classList.remove('trigger-login-modal');
             }
+            
             if(missionsList) {
                 if (pendingXP > 1000) {
                     missionsList.innerHTML = `<li style="color: #ef4444;"><strong><i class="fa-solid fa-triangle-exclamation"></i> Sobrecarga:</strong> Tienes más de 1000 XP pendientes. Concéntrate en terminar un curso a la vez.</li>`;
@@ -337,8 +362,22 @@ const EptCampus = {
                     `;
                 }
             }
+        } else {
+            // USUARIO SIN BLUESKY (NO VERIFICADO)
+            if(statusText) statusText.innerHTML = `⚠️ <span style="color:var(--color-edu-accent); font-weight:bold;">Identidad no verificada</span>`;
+            
+            if(missionBtn) {
+                missionBtn.innerHTML = '<i class="fa-brands fa-bluesky"></i> Vincular Bluesky (+70 XP)';
+                missionBtn.classList.remove('trigger-login-modal'); // Evita que se abra el modal de registro de Auth
+                missionBtn.onclick = () => this.openBlueskyModal(); // Abre nuestro nuevo modal de Bluesky
+            }
+            
+            if(missionsList) {
+                missionsList.innerHTML = `
+                    <li style="color: #64748b;"><strong>Misión 1:</strong> Vincula tu cuenta de Bluesky para subir a rango <strong>Aprendiz</strong> y desbloquear todas las funciones.</li>
+                `;
+            }
         }
-        // ... (Si no tiene handle, se queda el código que ya tienes de invitar a vincular Bsky)
     },
 
     // --- FUNCIONES AUXILIARES DE GAMIFICACIÓN ---
@@ -415,40 +454,6 @@ const EptCampus = {
             progressPercent: progress,
             isMaxLevel: isMaxLevel
         };
-    },
-
-    // --- CAPTURADOR OAUTH SIN RECARGAS ---
-    async checkForBlueskyCallback() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
-        const state = urlParams.get('state');
-
-        if (code && state) {
-            // Borra los tokens de la URL limpiamente sin recargar
-            window.history.replaceState({}, document.title, window.location.pathname);
-            
-            if (window.showToast) window.showToast("⏳ Sincronizando identidad académica...");
-
-            try {
-                const { data, error } = await this.supabase.functions.invoke('bsky-oauth-callback', {
-                    body: { 
-                        code, 
-                        state, 
-                        redirect_uri: window.location.origin + window.location.pathname 
-                    }
-                });
-
-                if (error) throw error;
-                if (window.showToast) window.showToast(`✅ ¡Identidad vinculada, @${data.handle}!`);
-                
-                // MAGIA: Actualizamos el botón de la misión instantáneamente sin refrescar
-                this.updateMissionUI(data.handle);
-                
-            } catch (err) {
-                console.error("Error al procesar el Callback:", err);
-                alert("Hubo un error al validar tu cuenta con Bluesky.");
-            }
-        }
     },
 
     openBlueskyModal() {
@@ -687,7 +692,29 @@ const EptCampus = {
                 alert("Debes iniciar sesión para entrar al aula.");
             }
         }
-    }
+    },
+
+    openBlueskyModal() {
+        const modalHtml = `
+            <div id="bsky-connect-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(5px);">
+                <div style="background:var(--color-edu-surface); padding:30px; border-radius:20px; max-width:400px; text-align:center; border:1px solid rgba(255,255,255,0.1);">
+                    <i class="fa-brands fa-bluesky" style="font-size:3rem; color:#0085ff; margin-bottom:20px;"></i>
+                    <h2>Verificar Identidad</h2>
+                    <p style="opacity:0.8; margin-bottom:25px;">Vincula tu cuenta de Bluesky para obtener <strong>+70 XP</strong>, subir al rango <strong>Aprendiz</strong> y desbloquear todas las funciones del aula.</p>
+                    <button id="start-bsky-auth" class="btn-action" style="background:#0085ff; border-color:#0085ff; width:100%;"><i class="fa-solid fa-link"></i> Conectar Bluesky Ahora</button>
+                    <button onclick="document.getElementById('bsky-connect-modal').remove()" style="background:transparent; border:none; color:white; margin-top:15px; cursor:pointer; opacity:0.5;">Cerrar</button>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        document.getElementById('start-bsky-auth').onclick = () => {
+            // Reutilizamos la lógica de redirección a tu función de Edge de Supabase
+            const redirectUrl = window.location.origin + window.location.pathname;
+            this.supabase.functions.invoke('bsky-oauth-auth', {
+                body: { redirect_uri: redirectUrl }
+            }).then(({ data }) => { if (data?.url) window.location.href = data.url; });
+        };
+    },
 };
 
 document.addEventListener('DOMContentLoaded', () => EptCampus.init());

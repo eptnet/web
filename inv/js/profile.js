@@ -592,38 +592,6 @@ const ProfileApp = {
         else { alert("Cuenta de ORCID desconectada."); location.reload(); }
     },
 
-    async checkForBlueskyCallback() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
-        const state = urlParams.get('state');
-
-        // SOLO se ejecuta si hay 'code' Y también hay 'state' (Es decir, es de Bluesky)
-        if (code && state) {
-            window.history.replaceState({}, document.title, window.location.pathname);
-            
-            if (window.showToast) window.showToast("⏳ Finalizando conexión con Bluesky...");
-
-            try {
-                const { data, error } = await this.supabase.functions.invoke('bsky-oauth-callback', {
-                    body: { 
-                        code: code, 
-                        state: state,
-                        redirect_uri: window.location.origin + window.location.pathname 
-                    }
-                });
-
-                if (error) throw error;
-
-                alert(`✅ ¡Cuenta de Bluesky conectada! Bienvenido, @${data.handle}`);
-                location.reload(); 
-
-            } catch (error) {
-                console.error("Error en el callback de Bluesky:", error);
-                alert("❌ Hubo un problema al guardar tu cuenta de Bluesky. Intenta de nuevo.");
-            }
-        }
-    },
-
     async handleSyncWorks() {
         const syncButton = document.getElementById('sync-orcid-works-btn');
         if (!syncButton) return;
@@ -842,10 +810,54 @@ const ProfileApp = {
     },
 
     async handleBlueskyDisconnect() {
-        if (!confirm("¿Estás seguro de que quieres desconectar tu cuenta de Bluesky?")) return;
+        if (!confirm("¿Estás seguro de que quieres desconectar tu cuenta de Bluesky? Perderás los 70 XP de verificación.")) return;
+        
+        // 1. Eliminamos credenciales
         const { error } = await this.supabase.from('bsky_credentials').delete().eq('user_id', this.user.id);
-        if (error) { alert("Error al desconectar la cuenta."); } 
-        else { alert("Cuenta de Bluesky desconectada."); location.reload(); }
+        
+        if (!error) { 
+            // 2. PENALIDAD: Le restamos los 70 XP al perfil
+            const { data: profile } = await this.supabase.from('profiles').select('xp_total').eq('id', this.user.id).single();
+            let newXp = (profile?.xp_total || 0) - 70;
+            if (newXp < 30) newXp = 30; // Nunca lo bajamos de 30 (Misión 1 de registro)
+            
+            await this.supabase.from('profiles').update({ xp_total: newXp }).eq('id', this.user.id);
+            
+            alert("Cuenta de Bluesky desconectada. Se han restado 70 XP por seguridad."); 
+            location.reload(); 
+        } else {
+            alert("Error al desconectar la cuenta."); 
+        }
+    },
+
+    async checkForBlueskyCallback() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const state = urlParams.get('state');
+
+        if (code && state) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            if (window.showToast) window.showToast("⏳ Finalizando conexión con Bluesky...");
+
+            try {
+                const { data, error } = await this.supabase.functions.invoke('bsky-oauth-callback', {
+                    body: { code: code, state: state, redirect_uri: window.location.origin + window.location.pathname }
+                });
+                if (error) throw error;
+
+                // 3. RECOMPENSA: Sumamos exactamente 70 XP al conectar
+                const { data: profile } = await this.supabase.from('profiles').select('xp_total').eq('id', this.user.id).single();
+                const newXp = (profile?.xp_total || 0) + 70;
+                await this.supabase.from('profiles').update({ xp_total: newXp }).eq('id', this.user.id);
+
+                alert(`✅ ¡Cuenta conectada! Has recuperado +70 XP. Bienvenido, @${data.handle}`);
+                location.reload(); 
+
+            } catch (error) {
+                console.error("Error en el callback de Bluesky:", error);
+                alert("❌ Hubo un problema al guardar tu cuenta de Bluesky. Intenta de nuevo.");
+            }
+        }
     },
 
     openCommunityModal() {
