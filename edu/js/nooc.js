@@ -828,7 +828,7 @@ const NoocRoom = {
 
         // 4. Logo Superior (Ajustado como corona)
         if (logoEdu) {
-            const targetWidth = 250; 
+            const targetWidth = 200; 
             const targetHeight = (logoEdu.height / logoEdu.width) * targetWidth;
             ctx.drawImage(logoEdu, canvas.width / 2 - targetWidth / 2, 90, targetWidth, targetHeight);
         }
@@ -886,7 +886,7 @@ const NoocRoom = {
         // 7. BLOQUE LEGAL (3 Líneas definidas)
         ctx.textAlign = 'center';
         ctx.font = '20px sans-serif';
-        ctx.fillStyle = '#475569';
+        ctx.fillStyle = '#92a2b8';
         ctx.fillText("Epistecnología, revista de divulgación científica y cultural", canvas.width / 2, 930);
         ctx.fillText("Registrada y seriada internacionalmente por la Biblioteca Nacional del Perú", canvas.width / 2, 965);
         ctx.fillText("Depósito Legal N°: 2025-10424  |  ISSN: 3119-7108 (En línea)", canvas.width / 2, 1000);
