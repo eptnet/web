@@ -885,7 +885,7 @@ const NoocRoom = {
 
         // 7. BLOQUE LEGAL (3 Líneas definidas)
         ctx.textAlign = 'center';
-        ctx.font = '20px sans-serif';
+        ctx.font = '18px sans-serif';
         ctx.fillStyle = '#92a2b8';
         ctx.fillText("Epistecnología, revista de divulgación científica y cultural", canvas.width / 2, 930);
         ctx.fillText("Registrada y seriada internacionalmente por la Biblioteca Nacional del Perú", canvas.width / 2, 965);
