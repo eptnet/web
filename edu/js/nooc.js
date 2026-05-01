@@ -889,7 +889,7 @@ const NoocRoom = {
         ctx.fillStyle = '#92a2b8';
         ctx.fillText("Epistecnología, revista de divulgación científica y cultural", canvas.width / 2, 930);
         ctx.fillText("Registrada y seriada internacionalmente por la Biblioteca Nacional del Perú", canvas.width / 2, 965);
-        ctx.fillText("Depósito Legal N°: 2025-10424  |  ISSN: 3119-7108 (En línea)", canvas.width / 2, 1000);
+        ctx.fillText("Depósito Legal N°: 2025-10424  |  ISSN: 3119-7108 (En línea) | E360 SAC", canvas.width / 2, 1000);
 
         // --- DESCARGA AUTOMÁTICA SEGURA ---
         if (autoDownload) {
