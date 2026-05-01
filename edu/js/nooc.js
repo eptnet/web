@@ -797,8 +797,8 @@ const NoocRoom = {
 
         // 2. PLEXUS (Más visible y denso)
         const nodes = [];
-        const numNodes = 200; 
-        const maxDist = 200;
+        const numNodes = 180; 
+        const maxDist = 180;
         for (let i = 0; i < numNodes; i++) {
             nodes.push({ 
                 x: Math.random() * canvas.width, 
@@ -828,7 +828,7 @@ const NoocRoom = {
 
         // 4. Logo Superior (Ajustado como corona)
         if (logoEdu) {
-            const targetWidth = 290; 
+            const targetWidth = 250; 
             const targetHeight = (logoEdu.height / logoEdu.width) * targetWidth;
             ctx.drawImage(logoEdu, canvas.width / 2 - targetWidth / 2, 90, targetWidth, targetHeight);
         }
