@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estudio de Podcast | EPT Studio</title>
+    <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="/css/style.css">
+    
+    <style>
+        :root {
+            --bg-studio: #05070e;
+            --header-height: 70px;
+            --accent-red: #ff3e3e;
+            --border-subtle: rgba(255, 255, 255, 0.1);
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: var(--bg-studio);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; /* Evita scroll doble */
+        }
+
+        /* HEADER BRANDING EPT */
+        .studio-header {
+            height: var(--header-height);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 30px;
+            background: rgba(10, 15, 28, 0.95);
+            border-bottom: 1px solid var(--border-subtle);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+        }
+
+        .brand-zone {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .brand-logo {
+            height: 40px;
+        }
+
+        .brand-text {
+            font-weight: 900;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .brand-text span {
+            color: var(--accent-red);
+        }
+
+        /* BOTÓN DE RETORNO */
+        .btn-back {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            border: 1px solid var(--border-subtle);
+            padding: 10px 20px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: 0.3s;
+        }
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: white;
+            transform: translateX(-5px);
+        }
+
+        /* CONTENEDOR DEL IFRAME */
+        .iframe-container {
+            width: 100%;
+            height: calc(100vh - var(--header-height));
+            background: black;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* BARRA DE ESTADO INFERIOR (Opcional) */
+        .status-bar {
+            position: absolute;
+            bottom: 20px;
+            right: 30px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="studio-header">
+        <div class="brand-zone">
+            <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="EPT Logo" class="brand-logo">
+            <div class="brand-text">Podcast <span>Studio</span></div>
+        </div>
+
+        <a href="/inv/dashboard.html" class="btn-back">
+            <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
+        </a>
+    </header>
+
+    <main class="iframe-container">
+        <iframe 
+            id="vdo-ninja-iframe"
+            allow="camera; microphone; fullscreen; display-capture; autoplay" 
+            src="https://vdo.ninja/?podcast&autostart&label=Investigador_EPT"
+            title="EPT Podcast Studio">
+        </iframe>
+    </main>
+
+    <div class="status-bar">
+        <i class="fa-solid fa-shield-halved"></i> Conexión Encriptada de Alta Fidelidad
+    </div>
+
+</body>
+</html>

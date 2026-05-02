@@ -151,11 +151,17 @@ export const Projects = {
             if (creationCard) {
                 const action = creationCard.dataset.studioAction;
 
-                // --- MODIFICADO: Dejamos pasar tanto a 'view-live' como a 'courses' ---
+                // --- MODIFICADO: Dejamos pasar a las herramientas independientes ---
                 if (action === 'view-live' || action === 'courses') {
                     const sectionMap = { 'view-live': 'studio-section', 'courses': 'courses-section' };
                     const link = document.querySelector(`.nav-link[data-section="${sectionMap[action]}"]`);
                     if (link) link.click();
+                    return;
+                }
+
+                // NUEVO: Redirección libre al Estudio de Podcast
+                if (action === 'podcast') {
+                    window.location.href = '/inv/podcast-studio.html';
                     return;
                 }
 
@@ -205,7 +211,7 @@ export const Projects = {
                     e.target.closest('.project-card').classList.add('selected');
                     
                     // ¡Desbloqueamos las herramientas! (Ignoramos las que nunca están bloqueadas)
-                    document.querySelectorAll('.creation-card:not([data-studio-action="view-live"]):not([data-studio-action="courses"])')
+                    document.querySelectorAll('.creation-card:not([data-studio-action="view-live"]):not([data-studio-action="courses"]):not([data-studio-action="podcast"])')
                             .forEach(card => card.classList.remove('disabled'));
                     
                     // Feedback visual (opcional)
