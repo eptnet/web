@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estudio Visual | EPT</title>
+    <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="/css/style.css">
+    
+    <style>
+        :root {
+            --bg-studio: #070a13;
+            --bg-panel: rgba(20, 25, 40, 0.9);
+            --border-subtle: rgba(255, 255, 255, 0.1);
+            --accent: #38bdf8;
+        }
+
+        body {
+            margin: 0; padding: 0; height: 100vh;
+            background-color: var(--bg-studio); color: white;
+            font-family: 'Inter', sans-serif; display: flex; flex-direction: column; overflow: hidden;
+        }
+
+        /* HEADER */
+        .studio-header {
+            height: 70px; display: flex; justify-content: space-between; align-items: center;
+            padding: 0 30px; background: #05070e; border-bottom: 1px solid var(--border-subtle);
+        }
+        .brand-zone { display: flex; align-items: center; gap: 15px; }
+        .brand-logo { height: 40px; }
+        .btn-back { background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--border-subtle); padding: 8px 15px; border-radius: 8px; text-decoration: none; font-size: 0.9rem; transition: 0.2s; display: flex; align-items: center; gap: 8px;}
+        .btn-back:hover { background: rgba(255,255,255,0.1); }
+
+        /* LAYOUT */
+        .studio-layout { display: grid; grid-template-columns: 350px 1fr; gap: 20px; padding: 20px; height: calc(100vh - 110px); }
+        .sidebar-panel { background: var(--bg-panel); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 20px; overflow-y: auto; }
+        
+        .canvas-panel { 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            background: rgba(0,0,0,0.3); border: 1px dashed var(--border-subtle); border-radius: 16px; 
+            padding: 20px; position: relative; overflow: hidden; 
+        }
+
+        #preview-canvas { 
+            max-width: 100%; max-height: 100%; object-fit: contain; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8); border-radius: 8px; display: none; 
+        }
+
+        /* CONTROLES */
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 8px; }
+        .input-group input, .input-group select, .input-group textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-subtle); background: rgba(0,0,0,0.5); color: white; outline: none; font-family: inherit; }
+        .btn-primary { width: 100%; background: var(--accent); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;}
+        .btn-primary:hover { transform: scale(1.02); }
+
+        .empty-state { text-align: center; color: #94a3b8; }
+        .empty-state i { font-size: 3rem; margin-bottom: 10px; opacity: 0.5; }
+
+        /* LA MAGIA DE PHOTOPEA (Overlay) */
+        #photopea-container {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #1e1e1e; z-index: 99999;
+        }
+        #btn-close-photopea {
+            position: absolute; top: 15px; right: 15px; z-index: 100000;
+            background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 30px;
+            font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: 0.2s;
+        }
+        #btn-close-photopea:hover { background: #dc2626; transform: scale(1.05); }
+    </style>
+</head>
+<body>
+
+    <div id="photopea-container">
+        <button id="btn-close-photopea" onclick="ImageStudio.closePhotopea()"><i class="fa-solid fa-xmark"></i> Cerrar Editor Avanzado</button>
+        <iframe id="photopea-iframe" style="width: 100%; height: 100%; border: none;"></iframe>
+    </div>
+
+    <header class="studio-header">
+        <div class="brand-zone">
+            <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="EPT" class="brand-logo">
+            <div style="font-weight: 900; letter-spacing: 1px;">ESTUDIO <span style="color:var(--accent)">VISUAL</span></div>
+        </div>
+        <a href="/inv/dashboard.html" class="btn-back"><i class="fa-solid fa-arrow-left"></i> Volver al Dashboard</a>
+    </header>
+
+    <div class="studio-layout">
+        <aside class="sidebar-panel">
+            <h3 style="margin-top: 0; color: var(--accent); border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px;"><i class="fa-solid fa-brain"></i> Crear con IA</h3>
+            
+            <div class="input-group">
+                <label>Descripción detallada de la imagen (Prompt en Inglés)</label>
+                <textarea id="ai-prompt" rows="4" placeholder="Ej: A futuristic library floating in space, cinematic lighting, highly detailed..."></textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="input-group">
+                    <label>Formato</label>
+                    <select id="ai-ratio">
+                        <option value="16:9">16:9 (Presentación)</option>
+                        <option value="1:1">1:1 (Cuadrado)</option>
+                        <option value="9:16">9:16 (Vertical)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Estilo</label>
+                    <select id="ai-style">
+                        <option value="cinematic">Cinemático</option>
+                        <option value="realistic">Fotorrealista</option>
+                        <option value="vector">Ilustración Vectorial</option>
+                        <option value="editorial">Arte Editorial</option>
+                    </select>
+                </div>
+            </div>
+
+            <button id="btn-generate" class="btn-primary" style="margin-bottom: 30px;"><i class="fa-solid fa-wand-magic-sparkles"></i> Pintar Imagen</button>
+
+            <h3 style="margin-top: 0; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px;"><i class="fa-solid fa-layer-group"></i> Edición y Branding</h3>
+            
+            <div class="input-group">
+                <label>Añadir texto sobre la imagen (Opcional)</label>
+                <input type="text" id="canvas-text" placeholder="Escribe un título...">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                <div class="input-group" style="margin-bottom: 0;">
+                    <label>Posición Vertical</label>
+                    <select id="text-pos-y">
+                        <option value="top">Arriba</option>
+                        <option value="middle">Centro</option>
+                        <option value="bottom" selected>Abajo</option>
+                    </select>
+                </div>
+                <div class="input-group" style="margin-bottom: 0;">
+                    <label>Posición Horizontal</label>
+                    <select id="text-pos-x">
+                        <option value="left">Izquierda</option>
+                        <option value="center" selected>Centro</option>
+                        <option value="right">Derecha</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button id="btn-apply-free" class="btn-back" style="justify-content: center;"><i class="fa-solid fa-font"></i> Aplicar Texto Libre</button>
+                <button id="btn-apply-ept" class="btn-back" style="justify-content: center; background: #f59e0b; color: black; border-color: #f59e0b;"><i class="fa-solid fa-crown"></i> Aplicar Portada EPT</button>
+            </div>
+
+            <div id="final-actions" style="display: none; flex-direction: column; gap: 10px; margin-top: 25px; padding-top: 20px; border-top: 1px dashed var(--border-subtle);">
+                <button id="btn-download" class="btn-primary" style="background: #10b981;"><i class="fa-solid fa-download"></i> Descargar Imagen</button>
+                <button id="btn-photopea" class="btn-primary" style="background: #8b5cf6; color: white;"><i class="fa-solid fa-paintbrush"></i> Editor Avanzado (Pro)</button>
+            </div>
+        </aside>
+
+        <main class="canvas-panel">
+            <div class="empty-state" id="empty-state">
+                <i class="fa-solid fa-image"></i>
+                <p>Tu obra de arte aparecerá aquí.</p>
+            </div>
+            <canvas id="preview-canvas"></canvas>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const ImageStudio = {
+            supabase: null,
+            baseImageBlob: null,
+            canvas: null,
+            ctx: null,
+
+            init() {
+                const SUPABASE_URL = 'https://seyknzlheaxmwztkfxmk.supabase.co';
+                const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWtuemxoZWF4bXd6dGtmeG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkyNjc5MTQsImV4cCI6MjA2NDg0MzkxNH0.waUUTIWH_p6wqlYVmh40s4ztG84KBPM_Ut4OFF6WC4E';
+                this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+                this.canvas = document.getElementById('preview-canvas');
+                this.ctx = this.canvas.getContext('2d');
+
+                document.getElementById('btn-generate').addEventListener('click', () => this.generateImage());
+                document.getElementById('btn-apply-free').addEventListener('click', () => this.drawCanvas('free'));
+                document.getElementById('btn-apply-ept').addEventListener('click', () => this.drawCanvas('ept'));
+                document.getElementById('btn-download').addEventListener('click', () => this.downloadImage());
+                
+                // Evento para abrir Photopea
+                document.getElementById('btn-photopea').addEventListener('click', () => this.openPhotopea());
+            },
+
+            async generateImage() {
+                const prompt = document.getElementById('ai-prompt').value.trim();
+                const ratio = document.getElementById('ai-ratio').value;
+                const style = document.getElementById('ai-style').value;
+                
+                if (!prompt) return alert("Escribe un prompt para generar la imagen.");
+
+                const btn = document.getElementById('btn-generate');
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Pintando...';
+                btn.disabled = true;
+
+                try {
+                    const cleanPrompt = `${prompt}, highly detailed, 4k, no text, no watermarks`;
+                    
+                    const { data, error } = await this.supabase.functions.invoke('generate-image', { 
+                        body: { prompt: cleanPrompt, style: style, ratio: ratio, engine: 'flux' } 
+                    });
+                    
+                    if (error) throw error;
+
+                    let imageSrc = data.image || data.result || data.url;
+                    if (!imageSrc.startsWith('http') && !imageSrc.startsWith('data:')) {
+                        imageSrc = 'data:image/jpeg;base64,' + imageSrc;
+                    }
+
+                    this.baseImageBlob = imageSrc;
+                    
+                    if(ratio === '16:9') { this.canvas.width = 1280; this.canvas.height = 720; }
+                    else if(ratio === '9:16') { this.canvas.width = 720; this.canvas.height = 1280; }
+                    else { this.canvas.width = 1024; this.canvas.height = 1024; }
+
+                    await this.drawCanvas('base'); 
+
+                    document.getElementById('empty-state').style.display = 'none';
+                    this.canvas.style.display = 'block';
+                    
+                    // Mostramos el bloque de botones (Descargar y Photopea)
+                    document.getElementById('final-actions').style.display = 'flex';
+
+                } catch (err) {
+                    console.error(err);
+                    alert("Error generando la imagen.");
+                } finally {
+                    btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Pintar Imagen';
+                    btn.disabled = false;
+                }
+            },
+
+            async drawCanvas(mode = 'base') {
+                if (!this.baseImageBlob) return;
+
+                const text = document.getElementById('canvas-text').value.trim();
+                const posX = document.getElementById('text-pos-x').value;
+                const posY = document.getElementById('text-pos-y').value;
+                
+                const loadImage = (src) => new Promise((resolve) => {
+                    const img = new Image(); img.crossOrigin = "Anonymous";
+                    img.onload = () => resolve(img); img.onerror = () => resolve(null);
+                    img.src = src;
+                });
+
+                const bgImg = await loadImage(this.baseImageBlob);
+                const logo = await loadImage('https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png');
+
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                if (bgImg) this.ctx.drawImage(bgImg, 0, 0, this.canvas.width, this.canvas.height);
+
+                this.ctx.font = "bold 20px Arial"; 
+                this.ctx.fillStyle = "rgba(255, 255, 255, 0.45)"; 
+                this.ctx.shadowBlur = 4;
+                this.ctx.shadowColor = "rgba(0,0,0,0.8)";
+                this.ctx.textAlign = "right";
+                this.ctx.textBaseline = "bottom";
+                this.ctx.fillText("✨ EPT IA", this.canvas.width - 20, this.canvas.height - 20);
+
+                if (!text) return; 
+
+                if (mode === 'free') {
+                    this.ctx.fillStyle = "#ffffff";
+                    this.ctx.shadowColor = "rgba(0,0,0,0.9)"; 
+                    this.ctx.shadowBlur = 15; 
+                    this.ctx.shadowOffsetX = 3; 
+                    this.ctx.shadowOffsetY = 3;
+                    
+                    const fontSize = this.canvas.width < 800 ? 50 : 80; 
+                    this.ctx.font = `bold ${fontSize}px 'Arial Black', Impact, sans-serif`;
+                    
+                    let startX, textAlign;
+                    if (posX === 'left') { startX = 50; textAlign = 'left'; }
+                    else if (posX === 'right') { startX = this.canvas.width - 50; textAlign = 'right'; }
+                    else { startX = this.canvas.width / 2; textAlign = 'center'; }
+
+                    let startY, textBaseline;
+                    if (posY === 'top') { startY = 80; textBaseline = 'top'; }
+                    else if (posY === 'middle') { startY = this.canvas.height / 2; textBaseline = 'middle'; }
+                    else { startY = this.canvas.height - 80; textBaseline = 'bottom'; }
+
+                    this.ctx.textAlign = textAlign;
+                    this.ctx.textBaseline = textBaseline;
+
+                    const words = text.split(' ');
+                    let lines = [];
+                    let currentLine = "";
+                    words.forEach(word => {
+                        if ((currentLine + word).length < 20) currentLine += (currentLine === "" ? "" : " ") + word;
+                        else { lines.push(currentLine); currentLine = word; }
+                    });
+                    lines.push(currentLine);
+
+                    let lineSpacing = fontSize + 15;
+                    let adjustedStartY = startY;
+                    
+                    if (posY === 'middle') {
+                        adjustedStartY = startY - ((lines.length - 1) * lineSpacing) / 2;
+                    } else if (posY === 'bottom') {
+                        adjustedStartY = startY - ((lines.length - 1) * lineSpacing);
+                    }
+
+                    lines.forEach((line, i) => {
+                        this.ctx.fillText(line, startX, adjustedStartY + (i * lineSpacing));
+                    });
+                } 
+                else if (mode === 'ept') {
+                    const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+                    gradient.addColorStop(0, "transparent");
+                    gradient.addColorStop(0.5, "transparent");
+                    gradient.addColorStop(1, "rgba(0, 0, 0, 0.95)");
+                    this.ctx.fillStyle = gradient;
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                    if (logo) this.ctx.drawImage(logo, this.canvas.width - 100, 40, 60, 60);
+
+                    this.ctx.fillStyle = "#ffffff";
+                    this.ctx.textAlign = "center";
+                    this.ctx.textBaseline = "bottom";
+                    this.ctx.shadowColor = "rgba(0,0,0,0.8)"; 
+                    this.ctx.shadowBlur = 10; 
+                    this.ctx.shadowOffsetY = 4;
+                    
+                    const fontSize = this.canvas.width < 800 ? 45 : 75;
+                    this.ctx.font = `bold ${fontSize}px 'Arial Black', Impact, sans-serif`;
+                    
+                    const words = text.split(' ');
+                    let lines = [];
+                    let currentLine = "";
+                    words.forEach(word => {
+                        if ((currentLine + word).length < 20) currentLine += (currentLine === "" ? "" : " ") + word;
+                        else { lines.push(currentLine.toUpperCase()); currentLine = word; }
+                    });
+                    lines.push(currentLine.toUpperCase());
+
+                    let startY = this.canvas.height - 60;
+                    lines.reverse().forEach((line, i) => {
+                        this.ctx.fillStyle = i === 0 ? "#facc15" : "#ffffff";
+                        this.ctx.fillText(line, this.canvas.width / 2, startY - (i * (fontSize + 10)));
+                    });
+                }
+            },
+
+            downloadImage() {
+                const link = document.createElement('a');
+                link.download = `EPT_Art_${Date.now()}.jpg`;
+                link.href = this.canvas.toDataURL('image/jpeg', 0.95);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            },
+
+            // --- LA MAGIA DE PHOTOPEA ---
+            openPhotopea() {
+                // 1. Tomamos lo que hay en el Canvas (con o sin textos añadidos)
+                const dataUrl = this.canvas.toDataURL('image/jpeg', 0.95);
+                
+                // 2. Preparamos el formato JSON que exige Photopea
+                const photopeaConfig = {
+                    "files": [dataUrl]
+                };
+
+                // 3. Codificamos el JSON en la URL
+                const encodedData = encodeURI(JSON.stringify(photopeaConfig));
+                
+                // 4. Inyectamos la URL en el Iframe
+                const iframe = document.getElementById('photopea-iframe');
+                iframe.src = "https://www.photopea.com#" + encodedData;
+
+                // 5. Mostramos la "Capa Fantasma" a pantalla completa
+                document.getElementById('photopea-container').style.display = 'block';
+            },
+
+            closePhotopea() {
+                // Ocultamos la capa y vaciamos el iframe para liberar la memoria del navegador
+                document.getElementById('photopea-container').style.display = 'none';
+                document.getElementById('photopea-iframe').src = "";
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => ImageStudio.init());
+    </script>
+</body>
+</html>

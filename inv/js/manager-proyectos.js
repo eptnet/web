@@ -165,6 +165,12 @@ export const Projects = {
                     return;
                 }
 
+                // NUEVO: Redirección libre al Generador de Imágenes
+                if (action === 'image') {
+                    window.location.href = '/inv/gen-imagen.html';
+                    return;
+                }
+
                 if (creationCard.classList.contains('disabled')) {
                     if (window.UI) {
                         window.UI.showAlert("⚠️ Por favor, busca y selecciona tu proyecto en el Paso 1 para continuar.");
@@ -211,7 +217,7 @@ export const Projects = {
                     e.target.closest('.project-card').classList.add('selected');
                     
                     // ¡Desbloqueamos las herramientas! (Ignoramos las que nunca están bloqueadas)
-                    document.querySelectorAll('.creation-card:not([data-studio-action="view-live"]):not([data-studio-action="courses"]):not([data-studio-action="podcast"])')
+                    document.querySelectorAll('.creation-card:not([data-studio-action="view-live"]):not([data-studio-action="courses"]):not([data-studio-action="podcast"]):not([data-studio-action="image"])')
                             .forEach(card => card.classList.remove('disabled'));
                     
                     // Feedback visual (opcional)
