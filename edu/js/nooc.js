@@ -254,24 +254,31 @@ const NoocRoom = {
             if(this.currentCourse.bsky_uri) this.loadCommunityFeed(this.currentCourse.bsky_uri, 'organic-feed-stream');
         
         } else if (view === 'meet') {
+            // VISTA DEL AULA EN VIVO (VDO.NINJA + MESHCAST)
             document.querySelectorAll('.menu-item').forEach(btn => btn.classList.remove('active-main'));
             if(document.getElementById('btn-nav-meet')) document.getElementById('btn-nav-meet').classList.add('active-main');
             this.toggleMobileMenu(true); 
 
-            // Mantenemos tu ID único de sala
+            // Creamos un ID de sala único y seguro usando el slug del curso
             const roomName = `ept_aula_${this.currentCourse.slug.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
             stage.innerHTML = `
                 <div class="module-stage-header">
                     <span class="rank-tag" style="background: #ef4444;">🔴 En Directo</span>
                     <h2 style="font-size: 2.2rem; margin: 10px 0 5px 0;">Aula Virtual Abierta</h2>
-                    <p style="opacity: 0.8; margin-bottom: 20px;">Únete a la sala para debatir en vivo. Permite el acceso a tu cámara y micrófono.</p>
+                    <p style="opacity: 0.8; margin-bottom: 10px;">Únete a la sala para debatir en vivo con otros investigadores de este curso. Permite el acceso a tu cámara y micrófono.</p>
+                    
+                    <div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b; padding: 10px 15px; border-radius: 4px; margin-bottom: 20px; max-width: 800px;">
+                        <p style="margin: 0; font-size: 0.9rem; color: #facc15;">
+                            <i class="fa-solid fa-triangle-exclamation"></i> <strong>Aviso de capacidad:</strong> Esta sala utiliza una red optimizada (Meshcast), pero se recomienda un <strong>máximo de 50 participantes simultáneos</strong> para garantizar la estabilidad.
+                        </p>
+                    </div>
                 </div>
                 
                 <div class="bento-card glow-hover" style="padding: 0; overflow: hidden; height: 65vh; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
                     <iframe 
                         allow="camera; microphone; fullscreen; display-capture; autoplay" 
-                        src="https://vdo.ninja/?room=${roomName}&chat&autostart" 
+                        src="https://vdo.ninja/?room=${roomName}&meshcast&chat&autostart" 
                         style="width: 100%; height: 100%; border: 0;">
                     </iframe>
                 </div>
