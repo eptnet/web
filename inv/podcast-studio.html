@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estudio de Podcast | EPT Studio</title>
+    <title>Estudio de Producción | EPT Studio</title>
     <link rel="icon" type="image/png" href="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
@@ -13,105 +13,105 @@
         :root {
             --bg-studio: #05070e;
             --header-height: 70px;
+            --sidebar-width: 280px;
             --accent-red: #ff3e3e;
+            --accent-purple: #8b5cf6;
             --border-subtle: rgba(255, 255, 255, 0.1);
         }
 
         body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            background-color: var(--bg-studio);
-            color: white;
-            font-family: 'Inter', sans-serif;
-            overflow: hidden; /* Evita scroll doble */
+            margin: 0; padding: 0; height: 100%;
+            background-color: var(--bg-studio); color: white;
+            font-family: 'Inter', sans-serif; overflow: hidden;
         }
 
-        /* HEADER BRANDING EPT */
+        /* HEADER */
         .studio-header {
             height: var(--header-height);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 30px;
-            background: rgba(10, 15, 28, 0.95);
-            border-bottom: 1px solid var(--border-subtle);
-            backdrop-filter: blur(10px);
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 30px; background: #0a0f1c; border-bottom: 1px solid var(--border-subtle);
             z-index: 100;
         }
+        .brand-zone { display: flex; align-items: center; gap: 15px; }
+        .brand-logo { height: 40px; }
+        .brand-text { font-weight: 900; font-size: 1.1rem; letter-spacing: 1px; text-transform: uppercase; }
+        .brand-text span { color: var(--accent-red); }
 
-        .brand-zone {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .brand-logo {
-            height: 40px;
-        }
-
-        .brand-text {
-            font-weight: 900;
-            font-size: 1.1rem;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-
-        .brand-text span {
-            color: var(--accent-red);
-        }
-
-        /* BOTÓN DE RETORNO */
         .btn-back {
-            background: rgba(255, 255, 255, 0.05);
-            color: white;
-            border: 1px solid var(--border-subtle);
-            padding: 10px 20px;
-            border-radius: 10px;
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 600;
+            background: rgba(255, 255, 255, 0.05); color: white; border: 1px solid var(--border-subtle);
+            padding: 10px 20px; border-radius: 10px; text-decoration: none; font-size: 0.9rem;
+            font-weight: 600; display: flex; align-items: center; gap: 10px; transition: 0.3s;
+        }
+        .btn-back:hover { background: rgba(255, 255, 255, 0.1); transform: translateX(-5px); }
+
+        /* MAIN LAYOUT */
+        .main-container {
             display: flex;
-            align-items: center;
-            gap: 10px;
+            height: calc(100vh - var(--header-height));
+            width: 100%;
+        }
+
+        .recorder-zone { flex: 1; background: black; position: relative; }
+        iframe#recorder-iframe { width: 100%; height: 100%; border: none; }
+
+        /* SIDEBAR DE HERRAMIENTAS */
+        .tools-sidebar {
+            width: var(--sidebar-width);
+            background: #0a0f1c;
+            border-left: 1px solid var(--border-subtle);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        .tools-sidebar h3 {
+            font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1.5px;
+            color: #94a3b8; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;
+        }
+
+        .tool-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
             transition: 0.3s;
         }
+        .tool-card:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: var(--accent-purple);
+            transform: translateY(-3px);
+        }
+        .tool-card i { font-size: 1.5rem; margin-bottom: 10px; color: var(--accent-purple); }
+        .tool-card h4 { margin: 0 0 5px 0; font-size: 0.95rem; }
+        .tool-card p { margin: 0; font-size: 0.75rem; color: #94a3b8; line-height: 1.3; }
 
-        .btn-back:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: white;
-            transform: translateX(-5px);
+        /* MODAL AUDIOMASS (CAPA FANTASMA) */
+        #audiomass-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #111; z-index: 99999;
+        }
+        #btn-close-editor {
+            position: absolute; top: 15px; right: 25px; z-index: 100000;
+            background: var(--accent-red); color: white; border: none; padding: 10px 20px;
+            border-radius: 30px; font-weight: bold; cursor: pointer;
         }
 
-        /* CONTENEDOR DEL IFRAME */
-        .iframe-container {
-            width: 100%;
-            height: calc(100vh - var(--header-height));
-            background: black;
-        }
-
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-
-        /* BARRA DE ESTADO INFERIOR (Opcional) */
-        .status-bar {
-            position: absolute;
-            bottom: 20px;
-            right: 30px;
-            background: rgba(0, 0, 0, 0.6);
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            color: #10b981;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            pointer-events: none;
+        .status-badge {
+            background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #10b981; padding: 5px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: bold;
+            display: inline-flex; align-items: center; gap: 6px; margin-top: auto;
         }
     </style>
 </head>
 <body>
+
+    <div id="audiomass-overlay">
+        <button id="btn-close-editor" onclick="StudioManager.closeAudioEditor()"><i class="fa-solid fa-xmark"></i> Salir del Editor</button>
+        <iframe id="audiomass-iframe" style="width: 100%; height: 100%; border: none;"></iframe>
+    </div>
 
     <header class="studio-header">
         <div class="brand-zone">
@@ -120,22 +120,78 @@
         </div>
 
         <a href="/inv/dashboard.html" class="btn-back">
-            <i class="fa-solid fa-arrow-left"></i> Volver al Dashboard
+            <i class="fa-solid fa-arrow-left"></i> Panel Principal
         </a>
     </header>
 
-    <main class="iframe-container">
-        <iframe 
-            id="vdo-ninja-iframe"
-            allow="camera; microphone; fullscreen; display-capture; autoplay" 
-            src="https://vdo.ninja/?podcast&autostart&label=Investigador_EPT"
-            title="EPT Podcast Studio">
-        </iframe>
-    </main>
+    <div class="main-container">
+        <main class="recorder-zone">
+            <iframe 
+                id="recorder-iframe"
+                allow="camera; microphone; fullscreen; display-capture; autoplay" 
+                src="https://vdo.ninja/?podcast&autostart&label=Investigador_EPT"
+                title="Grabación EPT">
+            </iframe>
+        </main>
 
-    <div class="status-bar">
-        <i class="fa-solid fa-shield-halved"></i> Conexión Encriptada de Alta Fidelidad
+        <aside class="tools-sidebar">
+            <section>
+                <h3><i class="fa-solid fa-scissors"></i> Post-Producción</h3>
+                
+                <div class="tool-card" onclick="StudioManager.openAudioEditor()">
+                    <i class="fa-solid fa-wave-square"></i>
+                    <h4>Editar Audio (Pro)</h4>
+                    <p>Corta, limpia y añade efectos a tu podcast con AudioMass.</p>
+                </div>
+            </section>
+
+            <section>
+                <h3><i class="fa-solid fa-clapperboard"></i> Video y Diseño</h3>
+                
+                <a href="https://www.capcut.com/editor" target="_blank" style="text-decoration: none; color: inherit;">
+                    <div class="tool-card">
+                        <i class="fa-solid fa-film"></i>
+                        <h4>CapCut Web</h4>
+                        <p>Edición de video rápida con IA y subtítulos automáticos.</p>
+                    </div>
+                </a>
+
+                <a href="https://canva.me/pp-video-editor-2" target="_blank" style="text-decoration: none; color: inherit; margin-top: 15px; display: block;">
+                    <div class="tool-card">
+                        <i class="fa-solid fa-palette"></i>
+                        <h4>Canva Design</h4>
+                        <p>Crea portadas y elementos visuales para tu episodio.</p>
+                    </div>
+                </a>
+            </section>
+
+            <div class="status-badge">
+                <i class="fa-solid fa-circle-check"></i> Motor de grabación activo
+            </div>
+        </aside>
     </div>
 
+    <script>
+        const StudioManager = {
+            openAudioEditor() {
+                const overlay = document.getElementById('audiomass-overlay');
+                const iframe = document.getElementById('audiomass-iframe');
+                
+                // Cargamos AudioMass en el iframe
+                iframe.src = "https://audiomass.co/";
+                overlay.style.display = 'block';
+            },
+
+            closeAudioEditor() {
+                const overlay = document.getElementById('audiomass-overlay');
+                const iframe = document.getElementById('audiomass-iframe');
+                
+                if(confirm("¿Has guardado tus cambios? Al cerrar el editor se perderá el progreso no descargado.")) {
+                    overlay.style.display = 'none';
+                    iframe.src = ""; // Liberar memoria
+                }
+            }
+        };
+    </script>
 </body>
 </html>
