@@ -13,7 +13,7 @@
         :root {
             --bg-studio: #05070e;
             --header-height: 70px;
-            --sidebar-width: 280px;
+            --sidebar-width: 320px;
             --accent-red: #ff3e3e;
             --accent-purple: #8b5cf6;
             --border-subtle: rgba(255, 255, 255, 0.1);
@@ -30,12 +30,21 @@
             height: var(--header-height);
             display: flex; justify-content: space-between; align-items: center;
             padding: 0 30px; background: #0a0f1c; border-bottom: 1px solid var(--border-subtle);
-            z-index: 100;
+            z-index: 100; position: relative;
         }
         .brand-zone { display: flex; align-items: center; gap: 15px; }
         .brand-logo { height: 40px; }
         .brand-text { font-weight: 900; font-size: 1.1rem; letter-spacing: 1px; text-transform: uppercase; }
         .brand-text span { color: var(--accent-red); }
+
+        .header-actions { display: flex; gap: 15px; align-items: center; }
+
+        .btn-tools {
+            background: rgba(139, 92, 246, 0.1); color: var(--accent-purple); border: 1px solid rgba(139, 92, 246, 0.3);
+            padding: 10px 20px; border-radius: 10px; font-size: 0.9rem; font-weight: 700; cursor: pointer;
+            display: flex; align-items: center; gap: 10px; transition: 0.3s;
+        }
+        .btn-tools:hover { background: var(--accent-purple); color: white; }
 
         .btn-back {
             background: rgba(255, 255, 255, 0.05); color: white; border: 1px solid var(--border-subtle);
@@ -49,21 +58,34 @@
             display: flex;
             height: calc(100vh - var(--header-height));
             width: 100%;
+            position: relative;
         }
 
-        .recorder-zone { flex: 1; background: black; position: relative; }
-        iframe#recorder-iframe { width: 100%; height: 100%; border: none; }
+        .recorder-zone { width: 100%; height: 100%; background: black; }
+        iframe#recorder-iframe { width: 100%; height: 100%; border: none; display: block; }
 
-        /* SIDEBAR DE HERRAMIENTAS */
+        /* SIDEBAR DE HERRAMIENTAS (PANEL DESLIZANTE) */
         .tools-sidebar {
+            position: absolute;
+            right: calc(var(--sidebar-width) * -1); /* Oculto por defecto */
+            top: 0;
+            height: 100%;
             width: var(--sidebar-width);
-            background: #0a0f1c;
+            background: rgba(10, 15, 28, 0.95);
+            backdrop-filter: blur(10px);
             border-left: 1px solid var(--border-subtle);
             padding: 20px;
             display: flex;
             flex-direction: column;
             gap: 20px;
             overflow-y: auto;
+            z-index: 90;
+            transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+        }
+
+        .tools-sidebar.open {
+            right: 0; /* Aparece */
         }
 
         .tools-sidebar h3 {
@@ -85,7 +107,7 @@
             transform: translateY(-3px);
         }
         .tool-card i { font-size: 1.5rem; margin-bottom: 10px; color: var(--accent-purple); }
-        .tool-card h4 { margin: 0 0 5px 0; font-size: 0.95rem; }
+        .tool-card h4 { margin: 0 0 5px 0; font-size: 0.95rem; color: white; }
         .tool-card p { margin: 0; font-size: 0.75rem; color: #94a3b8; line-height: 1.3; }
 
         /* MODAL AUDIOMASS (CAPA FANTASMA) */
@@ -96,13 +118,40 @@
         #btn-close-editor {
             position: absolute; top: 15px; right: 25px; z-index: 100000;
             background: var(--accent-red); color: white; border: none; padding: 10px 20px;
-            border-radius: 30px; font-weight: bold; cursor: pointer;
+            border-radius: 30px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transition: 0.2s;
         }
+        #btn-close-editor:hover { transform: scale(1.05); }
 
         .status-badge {
             background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3);
-            color: #10b981; padding: 5px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: bold;
-            display: inline-flex; align-items: center; gap: 6px; margin-top: auto;
+            color: #10b981; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold;
+            display: inline-flex; align-items: center; gap: 6px; margin-top: auto; justify-content: center;
+        }
+
+        /* =========================================
+           RESPONSIVIDAD MÓVIL (NUEVO)
+           ========================================= */
+        @media (max-width: 768px) {
+            .studio-header {
+                padding: 0 15px; /* Menos márgenes laterales */
+            }
+            .brand-text {
+                display: none; /* Oculta el texto "Podcast Studio" para dar espacio */
+            }
+            .btn-tools span, .btn-back span {
+                display: none; /* Oculta el texto de los botones */
+            }
+            .btn-tools, .btn-back {
+                padding: 10px 15px; /* Botones más cuadrados y táctiles */
+            }
+            .tools-sidebar {
+                width: 100%; /* El panel ocupa toda la pantalla en móvil al abrirse */
+                right: -100%;
+            }
+            .header-actions {
+                gap: 8px; /* Menos espacio entre botones */
+            }
         }
     </style>
 </head>
@@ -110,7 +159,7 @@
 
     <div id="audiomass-overlay">
         <button id="btn-close-editor" onclick="StudioManager.closeAudioEditor()"><i class="fa-solid fa-xmark"></i> Salir del Editor</button>
-        <iframe id="audiomass-iframe" style="width: 100%; height: 100%; border: none;"></iframe>
+        <iframe id="audiomass-iframe" allow="camera; microphone; fullscreen; display-capture; autoplay" style="width: 100%; height: 100%; border: none;"></iframe>
     </div>
 
     <header class="studio-header">
@@ -119,9 +168,14 @@
             <div class="brand-text">Podcast <span>Studio</span></div>
         </div>
 
-        <a href="/inv/dashboard.html" class="btn-back">
-            <i class="fa-solid fa-arrow-left"></i> Panel Principal
-        </a>
+        <div class="header-actions">
+            <button class="btn-tools" onclick="StudioManager.toggleSidebar()">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> <span>Herramientas</span>
+            </button>
+            <a href="/inv/dashboard.html" class="btn-back">
+                <i class="fa-solid fa-arrow-left"></i> <span>Panel Principal</span>
+            </a>
+        </div>
     </header>
 
     <div class="main-container">
@@ -134,52 +188,63 @@
             </iframe>
         </main>
 
-        <aside class="tools-sidebar">
+        <aside class="tools-sidebar" id="tools-sidebar">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 15px; margin-bottom: 5px;">
+                <h3 style="margin: 0; color: white;"><i class="fa-solid fa-toolbox"></i> Taller Creativo</h3>
+                <button onclick="StudioManager.toggleSidebar()" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 1.2rem;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
             <section>
-                <h3><i class="fa-solid fa-scissors"></i> Post-Producción</h3>
-                
+                <h3><i class="fa-solid fa-headphones"></i> Audio</h3>
                 <div class="tool-card" onclick="StudioManager.openAudioEditor()">
                     <i class="fa-solid fa-wave-square"></i>
-                    <h4>Editar Audio (Pro)</h4>
-                    <p>Corta, limpia y añade efectos a tu podcast con AudioMass.</p>
+                    <h4>AudioMass (Pro)</h4>
+                    <p>Corta, limpia, añade efectos y graba pistas extra directamente aquí.</p>
                 </div>
             </section>
 
             <section>
-                <h3><i class="fa-solid fa-clapperboard"></i> Video y Diseño</h3>
+                <h3><i class="fa-solid fa-clapperboard"></i> Video y Arte</h3>
                 
-                <a href="https://www.capcut.com/editor" target="_blank" style="text-decoration: none; color: inherit;">
+                <a href="https://canva.me/pp-video-editor-2" target="_blank" style="text-decoration: none;">
                     <div class="tool-card">
                         <i class="fa-solid fa-film"></i>
-                        <h4>CapCut Web</h4>
-                        <p>Edición de video rápida con IA y subtítulos automáticos.</p>
+                        <h4>Canva Video</h4>
+                        <p>Edición rápida y plantillas dinámicas para Shorts y Reels.</p>
                     </div>
                 </a>
 
-                <a href="https://canva.me/pp-video-editor-2" target="_blank" style="text-decoration: none; color: inherit; margin-top: 15px; display: block;">
+                <a href="/inv/gen-imagen.html" target="_blank" style="text-decoration: none; margin-top: 15px; display: block;">
                     <div class="tool-card">
-                        <i class="fa-solid fa-palette"></i>
-                        <h4>Canva Design</h4>
-                        <p>Crea portadas y elementos visuales para tu episodio.</p>
+                        <i class="fa-solid fa-palette" style="color: var(--accent-red);"></i>
+                        <h4>Estudio Visual EPT</h4>
+                        <p>Genera portadas con Inteligencia Artificial para tus episodios.</p>
                     </div>
                 </a>
             </section>
 
             <div class="status-badge">
-                <i class="fa-solid fa-circle-check"></i> Motor de grabación activo
+                <i class="fa-solid fa-shield-halved"></i> Conexión Segura
             </div>
         </aside>
     </div>
 
     <script>
         const StudioManager = {
+            toggleSidebar() {
+                document.getElementById('tools-sidebar').classList.toggle('open');
+            },
+
             openAudioEditor() {
                 const overlay = document.getElementById('audiomass-overlay');
                 const iframe = document.getElementById('audiomass-iframe');
                 
-                // Cargamos AudioMass en el iframe
+                // Cargamos AudioMass
                 iframe.src = "https://audiomass.co/";
                 overlay.style.display = 'block';
+                
+                // Ocultamos la barra lateral si estaba abierta
+                document.getElementById('tools-sidebar').classList.remove('open');
             },
 
             closeAudioEditor() {
