@@ -2803,7 +2803,9 @@ const ComunidadApp = {
                 message: messageText
             }]);
             if (error) throw error;
-        } catch (e) { console.error("Error al enviar mensaje:", e); }
+        } catch (e) { 
+            console.error("Error al enviar mensaje:", e.message || JSON.stringify(e)); 
+        }
     },
 
     setupRobustChatInput(inputId, btnId) {
