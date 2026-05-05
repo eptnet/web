@@ -253,6 +253,7 @@ const PublicRoomApp = {
         const s = this.sessionData;
         const playerContainer = document.getElementById('player-container');
         const overlay = document.getElementById('countdown-overlay');
+        const externalCard = document.getElementById('external-access-card'); // NUEVO
         const hostname = window.location.hostname || 'localhost';
         
         const now = new Date().getTime();
@@ -266,9 +267,20 @@ const PublicRoomApp = {
             return url;
         };
 
+        // LIMPIEZA INICIAL: Ocultamos ambos overlays
+        if (overlay) overlay.classList.add('hidden');
+        if (externalCard) externalCard.classList.add('hidden');
+
+        // Configuración de datos para la Tarjeta Externa
+        if (s.platform === 'external' && externalCard) {
+            document.getElementById('external-card-title').textContent = s.title || s.session_title;
+            document.getElementById('external-card-thumb').src = s.thumbnail_url || 'https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png';
+            document.getElementById('external-platform-label').textContent = s.platform_name || 'Enlace Externo';
+            document.getElementById('btn-external-access').href = s.platform_url || '#';
+        }
+
         // 1. ESTADO: FINALIZADO O GRABACIÓN
         if (s.status === 'FINALIZADO' || (s.status === 'PROGRAMADO' && isPast && s.recording_url)) {
-            overlay.classList.add('hidden');
             clearInterval(this.countdownTimer);
             
             // Limpiamos iframes en vivo si existían
@@ -292,14 +304,19 @@ const PublicRoomApp = {
 
         // 2. ESTADO: PROGRAMADO (GREEN ROOM GLOBAL)
         if (s.status === 'PROGRAMADO') {
-            overlay.classList.remove('hidden');
             playerContainer.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), url(${s.thumbnail_url || ''})`;
             playerContainer.style.backgroundSize = 'cover';
             playerContainer.style.backgroundPosition = 'center';
             
-            // Bloqueamos cualquier reproductor rebelde
             const existingIframe = playerContainer.querySelector('iframe');
             if (existingIframe) existingIframe.remove();
+
+            // MOSTRAR OVERLAY CORRECTO SEGÚN PLATAFORMA
+            if (s.platform === 'external') {
+                externalCard.classList.remove('hidden');
+            } else {
+                overlay.classList.remove('hidden');
+            }
 
             clearInterval(this.countdownTimer);
             this.countdownTimer = setInterval(() => {
@@ -307,32 +324,57 @@ const PublicRoomApp = {
                 if (distance < 0) {
                     document.getElementById('timer-display').textContent = "00:00:00";
                     document.getElementById('countdown-date').textContent = "El evento está por comenzar. Esperando señal del director...";
+                    
+                    // Si es externo, cambiamos el texto a "A punto de comenzar"
+                    if (s.platform === 'external') {
+                        document.getElementById('external-timer-display').textContent = "00:00:00";
+                        document.getElementById('external-countdown-box').innerHTML = '<p style="color:#10b981; font-weight:bold; margin:0;"><i class="fa-solid fa-door-open"></i> El evento está por comenzar</p>';
+                    }
                     return;
                 }
                 const d = Math.floor(distance / (1000 * 60 * 60 * 24));
                 const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                 const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
                 const sec = Math.floor((distance % (1000 * 60)) / 1000);
-                document.getElementById('timer-display').textContent = `${d > 0 ? d + 'd ' : ''}${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+                
+                const timeString = `${d > 0 ? d + 'd ' : ''}${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+                
+                document.getElementById('timer-display').textContent = timeString;
+                // Actualizamos también el timer de la tarjeta externa si existe
+                if (s.platform === 'external') {
+                    const extTimer = document.getElementById('external-timer-display');
+                    if (extTimer) extTimer.textContent = timeString;
+                }
             }, 1000);
             return;
         }
 
         // 3. ESTADO: EN VIVO (ABRIR TELÓN)
-        if (s.status === 'EN VIVO' || s.status === 'EN_VIVO') { // <-- Agrega el || s.status === 'EN_VIVO'
-            overlay.classList.add('hidden');
+        if (s.status === 'EN VIVO' || s.status === 'EN_VIVO') {
             clearInterval(this.countdownTimer);
 
-            const existingIframe = playerContainer.querySelector('iframe');
-            if (!existingIframe) {
-                let iframeSrc = '';
-                if (s.platform === 'youtube') iframeSrc = `https://www.youtube.com/embed/${s.platform_id}?autoplay=1`;
-                else if (s.platform === 'twitch') iframeSrc = `https://player.twitch.tv/?channel=${s.platform_id}&parent=${hostname}&autoplay=true`;
-                else if (s.platform === 'vdo_ninja') iframeSrc = `${s.viewer_url}&transparent=1&autoplay=1`;
+            if (s.platform === 'external') {
+                // MODO EXTERNO: Dejamos la tarjeta, pero actualizamos el aviso a "EN VIVO"
+                externalCard.classList.remove('hidden');
+                playerContainer.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), url(${s.thumbnail_url || ''})`;
+                playerContainer.style.backgroundSize = 'cover';
+                
+                const extBox = document.getElementById('external-countdown-box');
+                if (extBox) {
+                    extBox.innerHTML = '<p style="margin:0; font-size:1.1rem; color:#10b981; font-weight:bold;"><i class="fa-solid fa-tower-broadcast"></i> ¡El evento está EN VIVO!</p>';
+                }
+            } else {
+                // MODO REPRODUCTOR NORMAL: Inyectamos el video
+                const existingIframe = playerContainer.querySelector('iframe');
+                if (!existingIframe) {
+                    let iframeSrc = '';
+                    if (s.platform === 'youtube') iframeSrc = `https://www.youtube.com/embed/${s.platform_id}?autoplay=1`;
+                    else if (s.platform === 'twitch') iframeSrc = `https://player.twitch.tv/?channel=${s.platform_id}&parent=${hostname}&autoplay=true`;
+                    else if (s.platform === 'vdo_ninja') iframeSrc = `${s.viewer_url}&transparent=1&autoplay=1`;
 
-                if (iframeSrc) {
-                    // Inyectamos por debajo de los controles (z-index: 1)
-                    playerContainer.insertAdjacentHTML('beforeend', `<iframe src="${iframeSrc}" allow="autoplay; fullscreen; microphone; camera" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none; z-index:1;"></iframe>`);
+                    if (iframeSrc) {
+                        playerContainer.insertAdjacentHTML('beforeend', `<iframe src="${iframeSrc}" allow="autoplay; fullscreen; microphone; camera" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none; z-index:1;"></iframe>`);
+                    }
                 }
             }
         }

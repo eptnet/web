@@ -127,6 +127,17 @@
                     </div>
                 </div>
 
+                <div class="form-group" style="display: flex; align-items: center; gap: 15px; margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                    <label class="switch">
+                        <input type="checkbox" id="notify-community-toggle" checked>
+                        <span class="slider round"></span>
+                    </label>
+                    <div>
+                        <strong style="display: block; font-size: 0.9rem; color: var(--text-main);">Notificar a la Comunidad</strong>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">Publicar un anuncio automático al guardar la sesión.</span>
+                    </div>
+                </div>
+
                 <div class="form-section">
                     <h3>4. Destino de Transmisión</h3>
                     <div class="platform-grid">
@@ -149,19 +160,22 @@
                             <small>Masivo</small>
                         </label>
                         <label class="platform-card">
-                            <input type="radio" name="platform" value="substack">
-                            <i class="fa-solid fa-bookmark"></i>
-                            <span>Substack</span>
-                            <small>Solo VOD</small>
+                            <input type="radio" name="platform" value="external">
+                            <i class="fa-solid fa-link"></i>
+                            <span>Enlace Externo</span>
+                            <small>Zoom, Meet, Revista</small>
                         </label>
                     </div>
 
                     <div id="external-broadcast-options" class="hidden mt-3" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px;">
-                        <label style="margin-bottom: 10px; color: #38bdf8;">¿Dónde deseas transmitir?</label>
-                        <select id="broadcast-mode" style="width: 100%; margin-bottom: 15px; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-color); color: white; border-radius: 6px;">
-                            <option value="official">En el Canal Oficial de Epistecnología (Recomendado)</option>
-                            <option value="own">En mi propio canal</option>
-                        </select>
+                        
+                        <div id="broadcast-mode-group">
+                            <label style="margin-bottom: 10px; color: #38bdf8;">¿Dónde deseas transmitir?</label>
+                            <select id="broadcast-mode" style="width: 100%; margin-bottom: 15px; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-color); color: white; border-radius: 6px;">
+                                <option value="official">En el Canal Oficial de Epistecnología (Recomendado)</option>
+                                <option value="own">En mi propio canal</option>
+                            </select>
+                        </div>
 
                         <div id="platform-id-container" class="form-group hidden">
                             <label for="platform-id" style="color: #f59e0b;">ID de tu Transmisión / Video:</label>
@@ -171,8 +185,18 @@
 
                         <div id="official-channel-hint" class="form-group">
                             <p class="form-hint" style="color: #10b981; margin: 0;">
-                                <i class="fa-solid fa-key"></i> Al guardar la sesión, el sistema te asignará una <strong>Clave de Transmisión (Stream Key)</strong> única para que tu OBS envíe la señal directo a nuestra red oficial, la encontraras al final con la <strong>Guía de Traansmisión.</strong>
+                                <i class="fa-solid fa-key"></i> Al guardar la sesión, el sistema te asignará una <strong>Clave de Transmisión (Stream Key)</strong> única para que tu OBS envíe la señal directo a nuestra red oficial.
                             </p>
+                        </div>
+
+                        <div class="form-group hidden" id="platform-name-group" style="margin-top: 15px;">
+                            <label><i class="fa-solid fa-tag"></i> Nombre de la Plataforma (Ej: Zoom, Meet, Editorial)</label>
+                            <input type="text" id="session-platform-name" placeholder="¿Dónde será el evento?">
+                        </div>
+
+                        <div class="form-group hidden" id="platform-url-group" style="margin-top: 15px;">
+                            <label><i class="fa-solid fa-link"></i> Enlace Directo de la Sala (URL completa)</label>
+                            <input type="url" id="session-platform-url" placeholder="https://zoom.us/j/12345...">
                         </div>
                     </div>
                     

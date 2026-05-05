@@ -168,20 +168,59 @@ const SessionConfigApp = {
         const externalOptions = document.getElementById('external-broadcast-options');
         const eptHint = document.getElementById('ept-live-hint');
         const badge = document.getElementById('preview-badge');
+        
+        // Elementos dinámicos
+        const nameGroup = document.getElementById('platform-name-group');
+        const urlGroup = document.getElementById('platform-url-group');
+        const idContainer = document.getElementById('platform-id-container');
+        const officialHint = document.getElementById('official-channel-hint'); // <-- Controlamos el texto verde
+        const modeSelectContainer = document.getElementById('broadcast-mode-group'); // <-- Usamos el nuevo grupo
 
         if (platform === 'vdo_ninja') {
             if (externalOptions) externalOptions.classList.add('hidden');
             if (eptHint) eptHint.classList.remove('hidden');
+            if (nameGroup) nameGroup.classList.add('hidden');
+            if (urlGroup) urlGroup.classList.add('hidden');
             if (badge) { badge.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> EPT Live'; badge.style.background = 'var(--accent)'; }
         } else {
             if (externalOptions) externalOptions.classList.remove('hidden');
             if (eptHint) eptHint.classList.add('hidden');
-            if (badge) {
-                const icons = { 'youtube': 'fa-youtube', 'twitch': 'fa-twitch', 'substack': 'fa-bookmark' };
-                badge.innerHTML = `<i class="fa-brands ${icons[platform] || 'fa-video'}"></i> ${platform.toUpperCase()}`;
-                badge.style.background = '#334155';
+            
+            if (platform === 'external') {
+                // MODO ENLACE EXTERNO: Mostramos los nuevos campos
+                if (nameGroup) nameGroup.classList.remove('hidden');
+                if (urlGroup) urlGroup.classList.remove('hidden');
+                
+                // Ocultamos todo lo relacionado con YouTube/Twitch
+                if (modeSelectContainer) modeSelectContainer.classList.add('hidden');
+                if (idContainer) idContainer.classList.add('hidden');
+                if (officialHint) officialHint.classList.add('hidden');
+
+                if (badge) { badge.innerHTML = '<i class="fa-solid fa-link"></i> EXTERNO'; badge.style.background = '#334155'; }
+            } else {
+                // MODO YOUTUBE/TWITCH: Ocultamos los campos externos
+                if (nameGroup) nameGroup.classList.add('hidden');
+                if (urlGroup) urlGroup.classList.add('hidden');
+                
+                // Mostramos opciones de stream
+                if (modeSelectContainer) modeSelectContainer.classList.remove('hidden');
+                
+                if (idContainer) {
+                    idContainer.querySelector('label').innerHTML = 'ID de tu Transmisión / Video:';
+                    idContainer.querySelector('input').placeholder = 'Ej: dQw4w9WgXcQ (YouTube) o tu-canal (Twitch)';
+                }
+                
+                // Disparamos la función que decide si mostrar el campo ID o el Texto Verde oficial
+                if (document.getElementById('broadcast-mode')) {
+                    this.handleBroadcastModeChange(document.getElementById('broadcast-mode').value);
+                }
+
+                const icons = { 'youtube': 'fa-youtube', 'twitch': 'fa-twitch' };
+                if (badge) {
+                    badge.innerHTML = `<i class="fa-brands ${icons[platform] || 'fa-video'}"></i> ${platform.toUpperCase()}`;
+                    badge.style.background = '#334155';
+                }
             }
-            this.handleBroadcastModeChange(document.getElementById('broadcast-mode').value);
         }
     },
 
@@ -444,6 +483,8 @@ const SessionConfigApp = {
         };
 
         setVal('platform-id', session.platform_id);
+        setVal('session-platform-name', session.platform_name);
+        setVal('session-platform-url', session.platform_url);
         setVal('session-title', session.session_title);
         setVal('session-start', toLocalDatetime(session.scheduled_at));
         setVal('session-end', toLocalDatetime(session.end_at));
@@ -481,6 +522,16 @@ const SessionConfigApp = {
         document.getElementById('link-viewer').value = session.viewer_url || 'Pendiente...';
         document.getElementById('link-director').value = session.director_url || 'Pendiente...';
 
+        // Ocultar la guía de OBS si es una plataforma externa
+        const obsBox = document.getElementById('obs-instructions-box');
+        if (obsBox) {
+            if (session.platform === 'external') {
+                obsBox.classList.add('hidden');
+            } else {
+                obsBox.classList.remove('hidden');
+            }
+        }
+
         const btnObs = document.getElementById('btn-download-obs');
         if (btnObs) {
             btnObs.dataset.viewerUrl = session.viewer_url; 
@@ -492,7 +543,7 @@ const SessionConfigApp = {
         const broadcastMode = document.getElementById('broadcast-mode')?.value;
 
         if (step3) {
-            if (session.platform === 'vdo_ninja' || broadcastMode === 'official') {
+            if (session.platform === 'vdo_ninja' || (['youtube', 'twitch'].includes(session.platform) && broadcastMode === 'official')) {
                 const realStreamKey = session.stream_key || 'Clave-no-asignada';
                 let rtmpUrl = 'rtmp://a.rtmp.youtube.com/live2';
                 
@@ -569,7 +620,8 @@ const SessionConfigApp = {
         let platformIdToSave = document.getElementById('platform-id')?.value || null;
         let generatedStreamKey = this.currentSession?.stream_key || null;
 
-        if (platform !== 'vdo_ninja' && broadcastMode === 'official') {
+        // Solo buscamos claves oficiales si la plataforma es YouTube o Twitch
+        if ((platform === 'youtube' || platform === 'twitch') && broadcastMode === 'official') {
             const alreadyHasOfficialKey = this.isEditMode && 
                                           this.currentSession?.platform === platform && 
                                           this.currentSession?.stream_key && 
@@ -630,6 +682,8 @@ const SessionConfigApp = {
             more_info_url: document.getElementById('session-more-info')?.value || null,
             platform: platform,
             platform_id: platformIdToSave,
+            platform_name: document.getElementById('session-platform-name') ? document.getElementById('session-platform-name').value.trim() : null,
+            platform_url: document.getElementById('session-platform-url') ? document.getElementById('session-platform-url').value.trim() : null,
             stream_key: generatedStreamKey 
         };
 
@@ -649,26 +703,38 @@ const SessionConfigApp = {
                 const vdoUrls = this.generateVdoNinjaUrls();
                 sessionData = { ...sessionData, ...vdoUrls };
                 
-                const directLink = `${window.location.origin}/l/${sessionData.id}`;
-                const previewData = {
-                    title: sessionData.session_title,
-                    description: sessionData.description,
-                    thumb: sessionData.thumbnail_url
-                };
+                // LEEMOS EL SWITCHER DE FORMA SEGURA
+                const notifyToggle = document.getElementById('notify-community-toggle');
+                const shouldNotify = notifyToggle ? notifyToggle.checked : true; // Por defecto notifica
 
-                // 🔥 CORRECCIÓN: Enviamos hostOrigin en lugar de directLink
-                const { data, error } = await this.supabase.functions.invoke('create-session-and-bsky-thread', {
-                    body: { 
-                        sessionData: sessionData, 
-                        hostOrigin: window.location.origin, 
-                        previewData: previewData 
-                    }
-                });
+                if (shouldNotify) {
+                    // MODO RUIDOSO: Lanza el anuncio a la comunidad mediante la Edge Function
+                    const directLink = `${window.location.origin}/l/${sessionData.id}`;
+                    const previewData = {
+                        title: sessionData.session_title,
+                        description: sessionData.description,
+                        thumb: sessionData.thumbnail_url
+                    };
 
-                if (error) throw error;
-                if (!data.success) throw new Error(data.error || "Error desconocido en el servidor");
-                
-                savedSession = data.savedSession;
+                    const { data, error } = await this.supabase.functions.invoke('create-session-and-bsky-thread', {
+                        body: { 
+                            sessionData: sessionData, 
+                            hostOrigin: window.location.origin, 
+                            previewData: previewData 
+                        }
+                    });
+
+                    if (error) throw error;
+                    if (!data.success) throw new Error(data.error || "Error desconocido en el servidor");
+                    savedSession = data.savedSession;
+                } else {
+                    // MODO SILENCIOSO: Guarda directo en la BD sin avisar a nadie
+                    const { data, error } = await this.supabase.from('sessions')
+                        .insert([sessionData]).select().single();
+                    if (error) throw error;
+                    savedSession = data;
+                }
+
                 this.isEditMode = true;
                 this.editSessionId = savedSession.id;
                 window.history.replaceState({}, '', `?edit=${savedSession.id}`);
