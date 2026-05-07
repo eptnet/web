@@ -97,12 +97,15 @@ export const CoursesManager = {
                 }
             }
 
-            // 3. Ver Estadísticas / Alumnos (El paso futuro que mencionaste)
+            // 3. Ver Estadísticas / Alumnos (Conectado al archivo real)
             if (button.classList.contains('stats-course-btn')) {
                 const courseId = button.dataset.courseId;
-                // Por ahora lanzamos un alert o redirigimos a una futura página nooc-dashboard.html
-                alert("🚀 Próximamente: Aquí verás la lista de alumnos matriculados, su % de progreso y podrás enviarles DM por Bluesky.");
-                // window.location.href = `/edu/nooc-dashboard.html?id=${courseId}`;
+                const courseData = this.courses.find(c => c.id === courseId);
+                
+                if (courseData) {
+                    // Redirigimos al archivo que ya creamos, pasándole el slug en la variable 'c'
+                    window.location.href = `/edu/course-analytics.html?c=${courseData.slug}`;
+                }
             }
 
             // 4. Borrar curso
