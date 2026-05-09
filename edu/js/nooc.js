@@ -194,7 +194,7 @@ const NoocRoom = {
                 <div class="lessons-sub-list">
                     ${mod.nooc_lessons.sort((a,b) => a.order_index - b.order_index).map(les => `
                         <button class="menu-item lesson-link" onclick="NoocRoom.openLessonModal('${les.id}')">
-                            <i class="${les.content_type === 'video' ? 'fa-solid fa-play' : les.content_type === 'iframe' ? 'fa-solid fa-code' : 'fa-solid fa-file-lines'}"></i> ${les.title}
+                            <i class="${les.content_type === 'video' ? 'fa-solid fa-play' : les.content_type === 'iframe' ? 'fa-solid fa-code' : les.content_type === 'masterclass' ? 'fa-solid fa-calendar-check' : 'fa-solid fa-file-lines'}"></i> ${les.title}
                         </button>
                     `).join('')}
                 </div>
@@ -267,12 +267,7 @@ const NoocRoom = {
                     <span class="rank-tag" style="background: #ef4444;">🔴 En Directo</span>
                     <h2 style="font-size: 2.2rem; margin: 10px 0 5px 0;">Aula Virtual Abierta</h2>
                     <p style="opacity: 0.8; margin-bottom: 10px;">Únete a la sala para debatir en vivo con otros investigadores de este curso. Permite el acceso a tu cámara y micrófono.</p>
-                    
-                    <div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b; padding: 10px 15px; border-radius: 4px; margin-bottom: 20px; max-width: 800px;">
-                        <p style="margin: 0; font-size: 0.9rem; color: #facc15;">
-                            <i class="fa-solid fa-triangle-exclamation"></i> <strong>Aviso de capacidad:</strong> Esta sala utiliza una red optimizada (Meshcast), pero se recomienda un <strong>máximo de 50 participantes simultáneos</strong> para garantizar la estabilidad.
-                        </p>
-                    </div>
+                
                 </div>
                 
                 <div class="bento-card glow-hover" style="padding: 0; overflow: hidden; height: 65vh; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
@@ -291,7 +286,7 @@ const NoocRoom = {
             let cardsHtml = mod.nooc_lessons.sort((a,b) => a.order_index - b.order_index).map((les, i) => `
                 <div class="lesson-wide-card glow-hover" onclick="NoocRoom.openLessonModal('${les.id}')">
                     <div class="lesson-card-icon">
-                        <i class="${les.content_type === 'video' ? 'fa-solid fa-play' : les.content_type === 'iframe' ? 'fa-solid fa-laptop-code' : 'fa-solid fa-book-open'}"></i>
+                        <i class="${les.content_type === 'video' ? 'fa-solid fa-play' : les.content_type === 'iframe' ? 'fa-solid fa-laptop-code' : les.content_type === 'masterclass' ? 'fa-solid fa-ticket' : 'fa-solid fa-book-open'}"></i>
                     </div>
                     <div class="lesson-card-info">
                         <span class="lesson-num">Lección 0${i+1}</span>
@@ -424,6 +419,24 @@ const NoocRoom = {
             mediaHtml = `<div class="modal-media-wrapper"><iframe src="${videoUrl}" frameborder="0" allowfullscreen></iframe></div>`;
         } else if (lesson.content_type === 'iframe') {
             mediaHtml = `<div class="modal-media-wrapper">${lesson.content_payload}</div>`;
+        } 
+        // --- NUEVO: PASE DE ABORDAJE MASTERCLASS ---
+        else if (lesson.content_type === 'masterclass') {
+            const mc = lesson.content_payload || {};
+            mediaHtml = `
+                <div class="bento-card glow-hover" style="text-align: center; padding: 40px 20px; border: 1px solid var(--color-edu-accent); background: rgba(16, 185, 129, 0.05); margin-bottom: 20px;">
+                    <i class="fa-solid fa-calendar-star" style="font-size: 3.5rem; color: var(--color-edu-accent); margin-bottom: 15px;"></i>
+                    <h2 style="font-size: 1.8rem; margin: 0 0 10px 0;">Clase Sincrónica Programada</h2>
+                    <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 25px; color: #a0aab5; flex-wrap: wrap;">
+                        <span style="background: rgba(255,255,255,0.05); padding: 8px 15px; border-radius: 8px;"><i class="fa-regular fa-calendar"></i> ${mc.date || 'Por definir'}</span>
+                        <span style="background: rgba(255,255,255,0.05); padding: 8px 15px; border-radius: 8px;"><i class="fa-regular fa-clock"></i> ${mc.time || 'Por definir'} hrs</span>
+                    </div>
+                    <a href="${mc.url || '#'}" target="_blank" class="btn-action" style="background: var(--color-edu-accent); border-color: var(--color-edu-accent); color: white; padding: 15px 30px; font-size: 1.1rem; text-decoration: none; display: inline-block; font-weight: bold; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
+                        <i class="fa-solid fa-video"></i> Entrar a la Masterclass
+                    </a>
+                    <p style="font-size: 0.85rem; color: #64748b; margin-top: 15px;">El enlace se abrirá en una nueva pestaña segura para no perder tu sesión en el Campus.</p>
+                </div>
+            `;
         }
 
         let textHtml = '';

@@ -94,6 +94,20 @@ const CourseAnalytics = {
 
             this.renderStudentTable(enrollments, progressData, bskyData, totalLessons);
 
+            // 6. CONFIGURACIÓN DE CAFETERÍA VIRTUAL (VDO.Ninja)
+            // Generamos el ID de sala único basado en el slug (idéntico al del aula del alumno)
+            const roomName = `ept_aula_${course.slug.replace(/[^a-zA-Z0-9]/g, '_')}`;
+            
+            // Botón para entrar como un asistente más
+            document.getElementById('btn-cafe-asistente').onclick = () => {
+                window.open(`https://vdo.ninja/?room=${roomName}&meshcast&chat&autostart`, '_blank');
+            };
+
+            // Botón Maestro: Abre el panel de Director para moderar a los alumnos
+            document.getElementById('btn-cafe-director').onclick = () => {
+                window.open(`https://vdo.ninja/?director=${roomName}`, '_blank');
+            };
+
         } catch (err) {
             console.error(err);
             document.getElementById('course-title').textContent = "Error al cargar datos";

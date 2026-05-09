@@ -609,7 +609,9 @@ const NoocApp = {
     },
 
     generateLessonHTML(modId, les, index) {
-        const savedContent = (les.type !== 'texto' && typeof les.content_payload === 'string') ? les.content_payload : '';
+        const savedContent = (les.type !== 'texto' && les.type !== 'masterclass' && typeof les.content_payload === 'string') ? les.content_payload : '';
+        const mcData = les.type === 'masterclass' ? (les.content_payload || { url: '', date: '', time: '' }) : {};
+
         return `
             <div class="lesson-card">
                 <div class="lesson-header">
@@ -618,6 +620,7 @@ const NoocApp = {
                         <option value="texto" ${les.type === 'texto' ? 'selected' : ''}>Texto (Editor.js)</option>
                         <option value="video" ${les.type === 'video' ? 'selected' : ''}>Video (YouTube)</option>
                         <option value="iframe" ${les.type === 'iframe' ? 'selected' : ''}>Iframe / HTML Puro</option>
+                        <option value="masterclass" ${les.type === 'masterclass' ? 'selected' : ''}>🔴 Clase en Vivo (Masterclass)</option>
                     </select>
                     <input type="text" value="${les.title}" placeholder="Título de la lección" onchange="NoocApp.updateLessonTitle('${modId}', '${les.id}', this.value)">
                     <button class="btn-delete" onclick="NoocApp.deleteLesson('${modId}', '${les.id}')" title="Eliminar Lección"><i class="fa-solid fa-trash"></i></button>
@@ -626,7 +629,13 @@ const NoocApp = {
                     ? `<div id="editor_${les.id}" class="editor-container"></div>` 
                     : les.type === 'video'
                     ? `<input type="text" value="${savedContent}" placeholder="Pega el enlace de YouTube..." onchange="NoocApp.updateLessonContent('${modId}', '${les.id}', this.value)" style="width:100%; padding:10px; border-radius:6px; background:#111; color:white; border:1px solid rgba(255,255,255,0.1);">`
-                    : `<textarea placeholder="Pega aquí código <iframe>..." onchange="NoocApp.updateLessonContent('${modId}', '${les.id}', this.value)" style="width:100%; padding:10px; border-radius:6px; background:#111; color:white; border:1px solid rgba(255,255,255,0.1); min-height:80px; font-family:monospace;">${savedContent}</textarea>`
+                    : les.type === 'iframe'
+                    ? `<textarea placeholder="Pega aquí código <iframe>..." onchange="NoocApp.updateLessonContent('${modId}', '${les.id}', this.value)" style="width:100%; padding:10px; border-radius:6px; background:#111; color:white; border:1px solid rgba(255,255,255,0.1); min-height:80px; font-family:monospace;">${savedContent}</textarea>`
+                    : `<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 10px;">
+                        <input type="url" id="mc_url_${les.id}" value="${mcData.url || ''}" placeholder="Link (Meet, Zoom...)" onchange="NoocApp.updateMasterclassContent('${modId}', '${les.id}')" style="padding:10px; border-radius:6px; background:#111; color:white; border:1px solid rgba(255,255,255,0.1);">
+                        <input type="date" id="mc_date_${les.id}" value="${mcData.date || ''}" onchange="NoocApp.updateMasterclassContent('${modId}', '${les.id}')" style="padding:10px; border-radius:6px; background:#111; color:white; border:1px solid rgba(255,255,255,0.1);">
+                        <input type="time" id="mc_time_${les.id}" value="${mcData.time || ''}" onchange="NoocApp.updateMasterclassContent('${modId}', '${les.id}')" style="padding:10px; border-radius:6px; background:#111; color:white; border:1px solid rgba(255,255,255,0.1);">
+                       </div>`
                 }
             </div>
         `;
@@ -636,7 +645,11 @@ const NoocApp = {
         await this.saveAllEditors();
         const lesson = this.modules.find(m => m.id === mId).lessons.find(l => l.id === lId);
         lesson.type = val; 
-        lesson.content_payload = val === 'texto' ? { time: Date.now(), blocks: [], version: "2.28.2" } : '';
+        
+        if (val === 'texto') lesson.content_payload = { time: Date.now(), blocks: [], version: "2.28.2" };
+        else if (val === 'masterclass') lesson.content_payload = { url: '', date: '', time: '' };
+        else lesson.content_payload = '';
+        
         if(val !== 'texto') delete this.editorInstances[lId];
         this.renderCanvas(); 
     },
@@ -644,6 +657,13 @@ const NoocApp = {
     updateLessonContent(mId, lId, val) { this.modules.find(m => m.id === mId).lessons.find(l => l.id === lId).content_payload = val; },
     updateModTitle(id, val) { this.modules.find(m => m.id === id).title = val; },
     updateLessonTitle(mId, lId, val) { this.modules.find(m => m.id === mId).lessons.find(l => l.id === lId).title = val; },
+
+    updateMasterclassContent(mId, lId) {
+        const url = document.getElementById(`mc_url_${lId}`).value;
+        const date = document.getElementById(`mc_date_${lId}`).value;
+        const time = document.getElementById(`mc_time_${lId}`).value;
+        this.modules.find(m => m.id === mId).lessons.find(l => l.id === lId).content_payload = { url, date, time };
+    },
 
     initEditorJs(lessonId, existingData = { blocks: [] }) {
         if (this.editorInstances[lessonId] && typeof this.editorInstances[lessonId].destroy === 'function') {
