@@ -1225,8 +1225,13 @@ const ProfileApp = {
                                 <p class="manage-item-meta">${badge} <span>${date}</span></p>
                             </div>
                             <div style="display:flex; gap: 8px;">
-                                <button onclick="window.location.href='/editor.html?id=${p.id}'" title="Editar en Editor" style="background:transparent; color:#38bdf8; border:1px solid #38bdf8; padding:6px 10px; border-radius:6px; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
-                                <button onclick="togglePostStatus('${p.id}', '${p.status}')" title="${isPub ? 'Pasar a Borrador' : 'Publicar Artículo'}" style="background:transparent; color:${isPub ? '#10b981' : '#f59e0b'}; border:1px solid ${isPub ? '#10b981' : '#f59e0b'}; padding:6px 10px; border-radius:6px; cursor:pointer;"><i class="fa-solid ${isPub ? 'fa-eye' : 'fa-eye-slash'}"></i></button>
+                                <button onclick="window.location.href='/inv/editor.html?postId=${p.id}'" title="Editar en Editor" style="background:transparent; color:#38bdf8; border:1px solid #38bdf8; padding:6px 10px; border-radius:6px; cursor:pointer;">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                
+                                <button onclick="togglePostStatus('${p.id}', '${p.status}')" title="${isPub ? 'Pasar a Borrador' : 'Publicar Artículo'}" style="background:transparent; color:${isPub ? '#10b981' : '#f59e0b'}; border:1px solid ${isPub ? '#10b981' : '#f59e0b'}; padding:6px 10px; border-radius:6px; cursor:pointer;">
+                                    <i class="fa-solid ${isPub ? 'fa-eye' : 'fa-eye-slash'}"></i>
+                                </button>
                                 <button class="btn-delete" onclick="deleteManagementItem('posts', '${p.id}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
                             </div>
                         </li>`;
