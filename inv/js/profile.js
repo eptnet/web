@@ -1164,6 +1164,7 @@ const ProfileApp = {
 
         async loadManagementData(userId) {
             try {
+                // 1. Consultas a Supabase
                 const { data: projects } = await this.supabase.from('projects')
                     .select('id, title, doi, microsite_is_public, created_at')
                     .eq('user_id', userId).order('created_at', { ascending: false });
@@ -1172,7 +1173,12 @@ const ProfileApp = {
                     .select('id, session_title, scheduled_at, status, peak_viewers, live_viewers')
                     .eq('user_id', userId).order('scheduled_at', { ascending: false });
 
-                // Cálculos
+                // NUEVO: Consultar Artículos (Posts)
+                const { data: posts } = await this.supabase.from('posts')
+                    .select('id, title, status, created_at')
+                    .eq('user_id', userId).order('created_at', { ascending: false });
+
+                // 2. Cálculos de Estadísticas
                 let totalViews = 0;
                 let totalLive = 0;
                 if (events) {
@@ -1187,7 +1193,7 @@ const ProfileApp = {
                 document.getElementById('stat-total-views').textContent = totalViews;
                 document.getElementById('stat-total-live').textContent = totalLive;
 
-                // Lista Proyectos
+                // 3. Lista Proyectos
                 const projList = document.getElementById('manage-projects-list');
                 if (projects && projects.length > 0) {
                     projList.innerHTML = projects.map(p => {
@@ -1204,14 +1210,36 @@ const ProfileApp = {
                     }).join('');
                 } else { projList.innerHTML = '<li style="text-align: center; color: #888; padding: 20px;">Sin proyectos.</li>'; }
 
-                // Lista Eventos (Con Estadísticas)
+                // 4. Lista Artículos (Posts) - NUEVA SECCIÓN
+                const postList = document.getElementById('manage-posts-list');
+                if (posts && posts.length > 0) {
+                    postList.innerHTML = posts.map(p => {
+                        const isPub = p.status === 'published';
+                        const badge = isPub ? '<span class="badge-status badge-published">Publicado</span>' : '<span class="badge-status badge-draft">Borrador</span>';
+                        const date = new Date(p.created_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
+                        
+                        return `
+                        <li class="manage-item" id="manage-post-${p.id}">
+                            <div class="manage-item-info">
+                                <p class="manage-item-title" title="${p.title || 'Artículo sin título'}">${p.title || 'Artículo sin título'}</p>
+                                <p class="manage-item-meta">${badge} <span>${date}</span></p>
+                            </div>
+                            <div style="display:flex; gap: 8px;">
+                                <button onclick="window.location.href='/editor.html?id=${p.id}'" title="Editar en Editor" style="background:transparent; color:#38bdf8; border:1px solid #38bdf8; padding:6px 10px; border-radius:6px; cursor:pointer;"><i class="fa-solid fa-pen"></i></button>
+                                <button onclick="togglePostStatus('${p.id}', '${p.status}')" title="${isPub ? 'Pasar a Borrador' : 'Publicar Artículo'}" style="background:transparent; color:${isPub ? '#10b981' : '#f59e0b'}; border:1px solid ${isPub ? '#10b981' : '#f59e0b'}; padding:6px 10px; border-radius:6px; cursor:pointer;"><i class="fa-solid ${isPub ? 'fa-eye' : 'fa-eye-slash'}"></i></button>
+                                <button class="btn-delete" onclick="deleteManagementItem('posts', '${p.id}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        </li>`;
+                    }).join('');
+                } else { postList.innerHTML = '<li style="text-align: center; color: #888; padding: 20px;">Sin artículos.</li>'; }
+
+                // 5. Lista Eventos
                 const eventList = document.getElementById('manage-events-list');
                 if (events && events.length > 0) {
                     eventList.innerHTML = events.map(e => {
                         const isPast = e.status === 'ARCHIVADO' || new Date(e.scheduled_at) < new Date();
                         const badge = isPast ? '<span class="badge-status badge-draft">Pasado</span>' : '<span class="badge-status badge-published">Próximo</span>';
                         const date = new Date(e.scheduled_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
-                        
                         const statsHtml = `<span class="event-stats-badge" title="Vistas / Pico en Vivo"><i class="fa-solid fa-eye"></i> ${e.peak_viewers || 0} &nbsp;<i class="fa-solid fa-users-viewfinder"></i> ${e.live_viewers || 0}</span>`;
 
                         return `
@@ -1224,7 +1252,7 @@ const ProfileApp = {
                         </li>`;
                     }).join('');
                 } else { eventList.innerHTML = '<li style="text-align: center; color: #888; padding: 20px;">Sin eventos.</li>'; }
-            } catch (error) { console.error("Error:", error); }
+            } catch (error) { console.error("Error cargando el Centro de Mando:", error); }
         },
 };
 
@@ -1311,6 +1339,36 @@ window.deleteManagementItem = async (table, id) => {
     } catch (err) {
         console.error("Error al eliminar:", err);
         alert("Hubo un error. Asegúrate de tener permisos para borrar este elemento.");
+    }
+};
+
+window.togglePostStatus = async (postId, currentStatus) => {
+    const newStatus = currentStatus === 'published' ? 'draft' : 'published';
+    const msg = newStatus === 'published' 
+        ? '¿Deseas PUBLICAR este artículo? Será visible inmediatamente en tu micrositio.'
+        : '¿Deseas OCULTAR este artículo? Volverá a ser un borrador y desaparecerá del micrositio.';
+        
+    if (!confirm(msg)) return;
+    
+    try {
+        const { error } = await window.supabaseClient.from('posts')
+            .update({ status: newStatus })
+            .eq('id', postId);
+            
+        if (error) throw error;
+        
+        if (window.showToast) window.showToast('Estado del artículo actualizado');
+        else alert('Estado actualizado correctamente');
+        
+        // Recargar la vista del Centro de Mando para refrescar los botones
+        if (ProfileApp && ProfileApp.user) {
+            ProfileApp.loadManagementData(ProfileApp.user.id);
+        } else {
+            window.location.reload();
+        }
+    } catch (error) {
+        console.error("Error actualizando estado del post:", error);
+        alert("Hubo un error al actualizar el artículo.");
     }
 };
 
