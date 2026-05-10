@@ -100,7 +100,7 @@ const CourseAnalytics = {
             
             // Botón para entrar como un asistente más
             document.getElementById('btn-cafe-asistente').onclick = () => {
-                window.open(`https://vdo.ninja/?room=${roomName}&meshcast&chat&autostart`, '_blank');
+                window.open(`https://vdo.ninja/?room=${roomName}&meshcast&chat&autostart&webcam&screensharebutton&sl&l&avatar`, '_blank');
             };
 
             // Botón Maestro: Abre el panel de Director para moderar a los alumnos

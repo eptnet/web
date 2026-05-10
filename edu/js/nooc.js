@@ -273,7 +273,7 @@ const NoocRoom = {
                 <div class="bento-card glow-hover" style="padding: 0; overflow: hidden; height: 65vh; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
                     <iframe 
                         allow="camera; microphone; fullscreen; display-capture; autoplay" 
-                        src="https://vdo.ninja/?room=${roomName}&meshcast&chat&autostart" 
+                        src="https://vdo.ninja/?room=${roomName}&meshcast&chat&autostart&webcam&screensharebutton&sl&l&avatar" 
                         style="width: 100%; height: 100%; border: 0;">
                     </iframe>
                 </div>
