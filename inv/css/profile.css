@@ -184,12 +184,20 @@ input, textarea {
     background-color: var(--color-background);
     z-index: 100;
 }
-.profile-tab-link {
-    flex: 1; padding: 1rem; background: none; border: none;
-    border-bottom: 3px solid transparent; cursor: pointer; font-size: 1rem;
-    font-weight: 500; color: var(--color-secondary); display: flex;
-    align-items: center; justify-content: center; gap: 0.5rem;
-}
+.profile-tab-link { 
+        flex-shrink: 0; 
+        white-space: nowrap; 
+        padding: 12px 24px !important; /* Aumentamos el relleno (Touch Target más grande) */
+        font-size: 1.05rem !important; /* Letra ligeramente más grande */
+        border-radius: 25px !important; /* Bordes más suaves */
+        margin-right: 5px; /* Un poco de aire entre botón y botón */
+    }
+    
+    /* Si el icono está muy pegado al texto, le damos respiro */
+    .profile-tab-link i {
+        margin-right: 8px !important;
+        font-size: 1.1rem;
+    }
 .profile-tab-link:hover { background-color: var(--color-surface); }
 .profile-tab-link.active { color: var(--color-accent); border-bottom-color: var(--color-accent); }
 .profile-tab-content { display: none; gap: 1.5rem; grid-column: 1 / -1; }
@@ -1326,7 +1334,8 @@ body:not(.dark-theme) .supporter-logos img {
         overflow-x: auto !important;
         -webkit-overflow-scrolling: touch;
         padding: 15px 5px !important;
-        background: var(-color-bg); /* Asegura que no sea transparente */
+        background: color-mix(in srgb, var(--color-bg) 85%, transparent);
+        backdrop-filter: blur(12px) !important;
         position: sticky;
         top: 0;
         z-index: 100;

@@ -1321,29 +1321,46 @@ window.copySupportData = (elementId, btn) => {
 };
 
 // 5. Eliminar elemento desde el Centro de Mando
-window.deleteManagementItem = async (table, id) => {
-    if(!confirm("⚠️ ¿Estás seguro de que deseas eliminar este elemento? Esta acción es permanente y no se puede deshacer.")) return;
-    
+window.deleteManagementItem = async (tableName, itemId) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar este elemento? Esta acción no se puede deshacer.')) return;
+
     try {
-        // Pedimos a Supabase que borre el registro
-        const { error } = await window.ProfileApp.supabase.from(table).delete().eq('id', id);
+        // --- NUEVA LÓGICA DE SALVAGUARDA PARA EVENTOS ---
+        if (tableName === 'sessions') {
+            // Paso 1: Borrar a los participantes de este evento para evitar el error de llave foránea
+            const { error: partError } = await window.supabaseClient
+                .from('event_participants')
+                .delete()
+                .eq('session_id', itemId);
+                
+            if (partError) {
+                console.warn("Advertencia al limpiar participantes:", partError);
+                // No detenemos el proceso, intentamos borrar la sesión de todos modos
+            }
+        }
+        // ------------------------------------------------
+
+        // Paso 2: Borrar el elemento principal (Proyecto, Post o Sesión limpia)
+        const { error } = await window.supabaseClient
+            .from(tableName)
+            .delete()
+            .eq('id', itemId);
+
         if (error) throw error;
-        
-        // Efecto visual: Desaparece suavemente
-        const elementId = table === 'projects' ? `manage-proj-${id}` : `manage-event-${id}`;
-        const row = document.getElementById(elementId);
-        row.style.opacity = '0';
-        setTimeout(() => row.style.display = 'none', 300);
-        
-        // Restar 1 al contador grande
-        const statId = table === 'projects' ? 'stat-total-projects' : 'stat-total-events';
-        const statEl = document.getElementById(statId);
-        statEl.textContent = Math.max(0, parseInt(statEl.textContent) - 1);
-        
-        showToast("Elemento eliminado correctamente");
-    } catch (err) {
-        console.error("Error al eliminar:", err);
-        alert("Hubo un error. Asegúrate de tener permisos para borrar este elemento.");
+
+        if (window.showToast) window.showToast('Elemento eliminado correctamente');
+        else alert('Eliminado correctamente');
+
+        // Recargar la vista
+        if (ProfileApp && ProfileApp.user) {
+            ProfileApp.loadManagementData(ProfileApp.user.id);
+        } else {
+            window.location.reload();
+        }
+
+    } catch (error) {
+        console.error("Error al eliminar:", error);
+        alert("Hubo un error al intentar eliminar el elemento. Revisa la consola.");
     }
 };
 
