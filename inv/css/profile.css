@@ -1309,3 +1309,90 @@ body:not(.dark-theme) .supporter-logos img {
     max-width: 450px;
     border-radius: 24px;
 }
+/* ==========================================================================
+   REINGENIERÍA MÓVIL: NAVEGACIÓN PRIORITARIA Y CENTRO DE MANDO
+   ========================================================================== */
+@media (max-width: 768px) {
+    /* 1. REORDENAR: Navegación arriba, Perfil después */
+    .profile-container {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    .profile-tabs {
+        order: -1 !important; /* Mueve las pestañas al principio de todo */
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        padding: 15px 5px !important;
+        background: var(-color-bg); /* Asegura que no sea transparente */
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        scrollbar-width: none;
+    }
+    .profile-tabs::-webkit-scrollbar { display: none; }
+
+    .profile-sidebar {
+        order: 1 !important; /* La tarjeta de perfil baja después de las pestañas */
+        width: 100% !important;
+    }
+
+    .profile-main-content {
+        order: 2 !important;
+        width: 100% !important;
+    }
+
+    /* 2. CENTRO DE MANDO: ESTADÍSTICAS A UNA SOLA COLUMNA */
+    #tab-gestion .stats-grid {
+        display: flex !important;
+        flex-direction: column !important; /* Forzamos una sola columna */
+        gap: 15px !important;
+    }
+
+    #tab-gestion .stat-card {
+        width: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 20px !important;
+        padding: 20px !important;
+        text-align: left !important;
+    }
+
+    #tab-gestion .stat-card i {
+        font-size: 1.8rem !important;
+        margin: 0 !important;
+    }
+
+    #tab-gestion .stat-card h2 {
+        font-size: 2rem !important;
+        margin: 0 !important;
+    }
+
+    /* 3. AJUSTE DE COLUMNAS DE GESTIÓN */
+    #tab-gestion .profile-tab-content {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    .main-column, .side-column {
+        width: 100% !important;
+        min-width: 100% !important;
+        padding: 0 !important;
+    }
+
+    /* 4. MEJORA DE LISTAS DE ARTÍCULOS */
+    .manage-item {
+        padding: 20px !important;
+        background: rgba(255,255,255,0.02) !important;
+        border: 1px solid rgba(255,255,255,0.05) !important;
+    }
+
+    .manage-item-title {
+        font-size: 1.1rem !important;
+        line-height: 1.4 !important;
+    }
+}
