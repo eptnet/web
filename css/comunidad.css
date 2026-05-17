@@ -1364,6 +1364,13 @@ body.dark-theme {
         border-bottom: 0px solid var(--color-border);
     }
 
+    /* --- AJUSTE MILIMÉTRICO PARA CELULARES --- */
+    @media (max-width: 768px) {
+        .community-feed-tabs {
+            top: 50px !important; /* Cierra el hueco de 1px exacto en pantallas móviles */
+        }
+    }
+
     /* Respetar tu Modo Oscuro a la perfección */
     body.dark-theme .community-feed-tabs {
         background: rgba(18, 20, 24, 0.85);
