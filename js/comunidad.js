@@ -877,6 +877,12 @@ const ComunidadApp = {
                 agoraTabBtn.style.border = 'none';
 
                 this.currentActiveHashtag = agoraTabBtn.dataset.hashtag;
+                
+                // NUEVO: Sincroniza automáticamente los selectores de publicación con la pestaña activa
+                document.querySelectorAll('.post-destination-select').forEach(select => {
+                    select.value = this.currentActiveHashtag;
+                });
+
                 this.renderFeed(); // Recarga solo el feed
                 return;
             }
@@ -1169,7 +1175,12 @@ const ComunidadApp = {
                             <button type="button" class="post-action-icon disabled-icon" title="Emojis (Próximamente)"><i class="fa-regular fa-face-smile"></i></button>
                         </div>
                         <div class="form-submit-area">
-                            <span class="char-counter">300</span>
+                            <select name="post-destination" class="post-destination-select" style="background: var(--color-background); border: 1px solid var(--color-border); border-radius: 20px; padding: 6px 12px; font-size: 0.85rem; color: var(--color-primary-text); font-weight: 600; margin-right: 15px; cursor: pointer; outline: none;">
+                                <option value="#EPTcomunidad">🌍 Ágora Global</option>
+                                <option value="#EPTedu">🎓 Campus EDU</option>
+                            </select>
+                            
+                            <span class="char-counter" style="margin-right: 15px;">300</span>
                             <button type="submit" id="submit-post-btn" class="btn btn-primary btn-pill">Publicar</button>
                         </div>
                     </div>
@@ -1228,7 +1239,16 @@ const ComunidadApp = {
         const submitButton = form.querySelector('button[type="submit"]');
         const textArea = form.querySelector('textarea[name="post-text"]');
         const rawText = textArea.value.trim();
-        const postText = rawText ? `${rawText}\n\n${this.currentActiveHashtag}` : '';
+
+        // 1. Buscamos si el formulario tiene un selector de destino
+        const destinationSelect = form.querySelector('.post-destination-select');
+        const selectedHashtag = destinationSelect ? destinationSelect.value : this.currentActiveHashtag;
+
+        // 2. Armamos el texto final (Evitamos duplicar si el usuario ya lo escribió a mano)
+        let postText = rawText;
+        if (rawText && !rawText.toLowerCase().includes(selectedHashtag.toLowerCase())) {
+            postText = `${rawText}\n\n${selectedHashtag}`;
+        }
 
         const urlRegex = /(https?:\/\/[^\s]+)/g;
         const match = postText.match(urlRegex);
