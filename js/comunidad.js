@@ -748,11 +748,37 @@ const ComunidadApp = {
                 return;
             }
 
-            // FILTRO EXACTO PARA EL ÁGORA
+            // --- MAGIA DE FILTRADO INTELIGENTE ---
             const filteredFeed = feed.filter(item => {
                 const text = (item.post.record?.text || '').toLowerCase();
-                return text.includes(this.currentActiveHashtag.toLowerCase());
+                const authorHandle = (item.post.author?.handle || '').toLowerCase();
+                
+                // Si el usuario está en el canal Global (#EPTcomunidad)
+                if (this.currentActiveHashtag === '#EPTcomunidad') {
+                    // Condición 1: Tiene el hashtag puesto manualmente
+                    const hasHashtag = text.includes('#eptcomunidad');
+                    
+                    // --- REGLA DE EXCLUSIÓN ---
+                    // Agrega aquí cualquier subdominio o usuario que NO deba salir en el feed global
+                    const excludedDomains = [
+                        'cursos.epistecnologia.com',
+                        // 'eventos.epistecnologia.com', <- Ejemplo futuro
+                        // 'bot-secreto.epistecnologia.com' <- Ejemplo futuro
+                    ];
+                    
+                    // Condición 2: Es un autor oficial (termina en epistecnologia.com) 
+                    // Y ADEMÁS verificamos que no sea ninguno de los excluidos
+                    const isOfficialAuthor = authorHandle.endsWith('epistecnologia.com') && 
+                                             !excludedDomains.some(domain => authorHandle.endsWith(domain));
+                    
+                    return hasHashtag || isOfficialAuthor;
+                } 
+                // Si está en Campus EDU u otros canales futuros (Filtro estricto)
+                else {
+                    return text.includes(this.currentActiveHashtag.toLowerCase());
+                }
             });
+            // ------------------------------------
 
             if (filteredFeed.length === 0) {
                 container.innerHTML = `<p class="bento-box" style="text-align: center; color: var(--color-secondary-text);">No hay debates en <strong>${this.currentActiveHashtag}</strong> aún. ¡Sé el primero!</p>`;
