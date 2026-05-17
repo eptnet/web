@@ -1177,7 +1177,9 @@ const ComunidadApp = {
                         <div class="form-submit-area">
                             <select name="post-destination" class="post-destination-select" style="background: var(--color-background); border: 1px solid var(--color-border); border-radius: 20px; padding: 6px 12px; font-size: 0.85rem; color: var(--color-primary-text); font-weight: 600; margin-right: 15px; cursor: pointer; outline: none;">
                                 <option value="#EPTcomunidad">🌍 Ágora Global</option>
-                                <option value="#EPTedu">🎓 Campus EDU</option>
+                                <option value="#EPTcomunidad #EPTsociales">🏛️ Sociales y Sociología</option>
+                                <option value="#EPTcomunidad #EPTtech">💻 Tecnología y Código</option>
+                                <option value="#EPTedu">🎓 Campus EDU (Aislado)</option>
                             </select>
                             
                             <span class="char-counter" style="margin-right: 15px;">300</span>
@@ -2034,25 +2036,58 @@ const ComunidadApp = {
         }
     },
 
-    // Añade esta función a ComunidadApp en comunidad.js
     renderBskyStatus() {
         const container = document.getElementById('user-panel-bsky-status');
         if (!container) return;
 
         if (this.bskyCreds) {
-            // Si las credenciales existen, las mostramos <p style="font-size: 0.75rem; word-break: break-all; color: var(--color-secondary-text); margin-top: 0.5rem;">DID: ${this.bskyCreds.did}</p>
+            // Lógica del Tiempo (Calculamos el tiempo desde la última actualización del token)
+            const lastUpdate = new Date(this.bskyCreds.updated_at || this.bskyCreds.created_at);
+            const hoursSinceUpdate = (new Date() - lastUpdate) / (1000 * 60 * 60);
+
+            let lightColor = '#10b981'; // Verde (Óptimo)
+            let statusText = 'Conexión Óptima';
+            let explicitButtonHtml = '';
+
+            // ROJO: Expirado > 24h
+            if (hoursSinceUpdate > 24) {
+                lightColor = '#ef4444'; 
+                statusText = 'Sesión Expirada';
+                // Botón Explícito pero compacto
+                explicitButtonHtml = `
+                    <button id="connect-bsky-btn" class="btn-secondary" style="width: 100%; padding: 6px 10px; font-size: 0.8rem; margin-top: 10px; border-radius: 12px; display: flex; justify-content: center; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-arrows-rotate"></i> Reconectar cuenta
+                    </button>`;
+            } 
+            // AMARILLO: Inactivo > 1.5h
+            else if (hoursSinceUpdate > 1.5) {
+                lightColor = '#facc15'; 
+                statusText = 'Conexión Inactiva';
+                explicitButtonHtml = `
+                    <button id="connect-bsky-btn" class="btn-secondary" style="width: 100%; padding: 6px 10px; font-size: 0.8rem; margin-top: 10px; border-radius: 12px; display: flex; justify-content: center; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-bolt"></i> Renovar Sesión
+                    </button>`;
+            }
+
+            // Renderizado: Una tarjeta limpia. Si está verde, es delgada. Si hay error, muestra el botón.
             container.innerHTML = `
-                <div class="status-badge connected">
-                    <i class="fa-solid fa-circle-check"></i>
-                    <span>Conectado como <strong>@${this.bskyCreds.handle}</strong></span>
+                <div style="background: var(--color-background); padding: 10px 15px; border-radius: 12px; border: 1px solid var(--color-border); text-align: left;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: 0.85rem; color: var(--color-primary-text); display: flex; align-items: center; gap: 8px; overflow: hidden;">
+                            <i class="fa-brands fa-bluesky" style="color: ${lightColor}; font-size: 1.1rem;"></i>
+                            <strong style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;" title="@${this.bskyCreds.handle}">@${this.bskyCreds.handle}</strong>
+                        </span>
+                        
+                        <div style="width: 8px; height: 8px; border-radius: 50%; background-color: ${lightColor}; box-shadow: 0 0 6px ${lightColor}; flex-shrink: 0;" title="${statusText}"></div>
+                    </div>
+                    ${explicitButtonHtml}
                 </div>
             `;
         } else {
-            // Si no, mostramos un botón para conectar
+            // Usuario sin Bluesky conectado
             container.innerHTML = `
-                <p class="form-hint">Conecta tu cuenta para poder publicar.</p>
-                <button id="connect-bsky-btn" class="btn btn-primary" style="width:100%; margin-top:0.5rem;">
-                    <i class="fa-solid fa-link"></i> Conectar Cuenta
+                <button id="connect-bsky-btn" class="btn-primary" style="width:100%; padding: 8px; font-size: 0.85rem; border-radius: 20px;">
+                    <i class="fa-solid fa-link"></i> Vincular Bluesky
                 </button>
             `;
         }
