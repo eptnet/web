@@ -1388,18 +1388,30 @@ const ComunidadApp = {
         button.disabled = true;
 
         try {
+            // 1. Borrar de la red global de Bluesky (Usando tu Edge Function)
             const { data, error } = await this.supabase.functions.invoke('bsky-lexicon-api', {
                 body: { action: 'delete_post', postUri: postUri }
             });
+            
             if (error) throw error;
             if (data && data.error) throw new Error(data.error);
 
-            // Lo borramos de la pantalla al instante
+            // 2. --- LA MAGIA ANTI-FANTASMAS (NUEVO) ---
+            // Borrar de nuestra caché local en Supabase inmediatamente
+            const { error: dbError } = await this.supabase
+                .from('community_feed_cache')
+                .delete()
+                .eq('uri', postUri);
+                
+            if (dbError) console.warn("El post se borró en Bsky, pero hubo un tema limpiando la caché:", dbError);
+
+            // 3. Lo borramos de la pantalla al instante
             postElement.remove();
+            if (window.showToast) window.showToast('Publicación eliminada correctamente');
             
         } catch (error) {
             console.error("Error al eliminar post:", error);
-            alert("No se pudo eliminar la publicación.");
+            alert("No se pudo eliminar: " + error.message);
             postElement.style.opacity = '1';
             button.disabled = false;
         }
