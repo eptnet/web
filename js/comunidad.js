@@ -9,6 +9,7 @@ const ComunidadApp = {
     userProfile: null,
     bskyCreds: null,
     selectedImageFile: null,
+    currentActiveHashtag: '#EPTcomunidad',
 
     // --- INICIALIZACIÓN DE LA APLICACIÓN ---
     async init() {
@@ -736,6 +737,9 @@ const ComunidadApp = {
         const container = document.getElementById('feed-container');
         if (!container) return;
 
+        // Limpiamos y mostramos tu loader cada vez que cambiamos de tab
+        container.innerHTML = '<div class="bento-box feed-loader"><i class="fa-solid fa-spinner fa-spin"></i> Cargando feed...</div>';
+
         try {
             const { data: feed, error } = await this.supabase.functions.invoke('bsky-get-community-feed');
             if (error) throw error;
@@ -744,8 +748,19 @@ const ComunidadApp = {
                 return;
             }
 
-            // Mapeamos los posts a HTML (estructura similar a profile.js pero preparada para más interacción)
-            container.innerHTML = feed.map(item => this.createPostHtml(item.post)).join('');
+            // FILTRO EXACTO PARA EL ÁGORA
+            const filteredFeed = feed.filter(item => {
+                const text = (item.post.record?.text || '').toLowerCase();
+                return text.includes(this.currentActiveHashtag.toLowerCase());
+            });
+
+            if (filteredFeed.length === 0) {
+                container.innerHTML = `<p class="bento-box" style="text-align: center; color: var(--color-secondary-text);">No hay debates en <strong>${this.currentActiveHashtag}</strong> aún. ¡Sé el primero!</p>`;
+                return;
+            }
+
+            // Mapeamos los posts a HTML
+            container.innerHTML = filteredFeed.map(item => this.createPostHtml(item.post)).join('');
 
         } catch (error) {
             container.innerHTML = '<p class="bento-box" style="color: var(--color-accent);">Error al cargar el feed.</p>';
@@ -817,6 +832,26 @@ const ComunidadApp = {
                 
                 // Subir suavemente al inicio de la pestaña
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+
+            // --- SUB-TABS DE ÁGORAS (FILTRO DE FEED) ---
+            const agoraTabBtn = target.closest('.feed-agora-tab');
+            if (agoraTabBtn) {
+                document.querySelectorAll('.feed-agora-tab').forEach(b => {
+                    b.classList.remove('active');
+                    b.style.background = 'var(--color-surface)';
+                    b.style.color = 'var(--color-primary-text)';
+                    b.style.border = '1px solid var(--color-border)';
+                });
+                
+                agoraTabBtn.classList.add('active');
+                agoraTabBtn.style.background = 'var(--color-accent)';
+                agoraTabBtn.style.color = 'white';
+                agoraTabBtn.style.border = 'none';
+
+                this.currentActiveHashtag = agoraTabBtn.dataset.hashtag;
+                this.renderFeed(); // Recarga solo el feed
                 return;
             }
 
@@ -1166,7 +1201,8 @@ const ComunidadApp = {
     async handleCreatePost(form) {
         const submitButton = form.querySelector('button[type="submit"]');
         const textArea = form.querySelector('textarea[name="post-text"]');
-        const postText = textArea.value.trim();
+        const rawText = textArea.value.trim();
+        const postText = rawText ? `${rawText}\n\n${this.currentActiveHashtag}` : '';
 
         const urlRegex = /(https?:\/\/[^\s]+)/g;
         const match = postText.match(urlRegex);
