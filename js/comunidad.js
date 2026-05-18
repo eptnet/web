@@ -1165,29 +1165,32 @@ const ComunidadApp = {
                         </div>
                     </div>
 
-                    <div class="create-post-actions">
-                        <div class="action-icons">
+                    <div class="create-post-actions" style="display: flex; justify-content: space-between; align-items: center; padding-top: 10px; margin-top: 10px; border-top: 1px solid var(--color-background);">
+                        
+                        <div class="action-icons" style="display: flex; align-items: center; gap: 4px; flex-shrink: 1;">
                             <input type="file" id="image-upload-input" accept="image/jpeg, image/png" style="display: none;">
                             <button type="button" id="image-upload-btn" class="post-action-icon" title="Añadir imagen">
                                 <i class="fa-regular fa-image"></i>
                             </button>
-                            <button type="button" class="post-action-icon disabled-icon" title="GIF (Próximamente)"><i class="fa-solid fa-square-poll-vertical"></i></button>
-                            <button type="button" class="post-action-icon disabled-icon" title="Emojis (Próximamente)"><i class="fa-regular fa-face-smile"></i></button>
-                        </div>
-                        <div class="form-submit-area" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: 10px;">
+                            <button type="button" class="post-action-icon disabled-icon" title="GIF"><i class="fa-solid fa-square-poll-vertical"></i></button>
+                            <button type="button" class="post-action-icon disabled-icon" title="Emojis"><i class="fa-regular fa-face-smile"></i></button>
                             
-                            <select name="post-destination" class="post-destination-select" style="background: var(--color-accent-light); border: 1px solid transparent; border-radius: 20px; padding: 4px 10px; font-size: 0.75rem; color: var(--color-accent); font-weight: 700; cursor: pointer; outline: none; -webkit-appearance: none; appearance: none; text-align: center; max-width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                <option value="#EPTcomunidad"># Global</option>
-                                <option value="#EPTcomunidad #EPTsociales"># Sociales</option>
-                                <option value="#EPTcomunidad #EPTtech"># Tech</option>
-                                <option value="#EPTedu"># Campus</option>
-                            </select>
-                            
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span class="char-counter" style="color: var(--color-accent); font-size: 0.85rem; min-width: 28px; text-align: center;">300</span>
-                                <button type="submit" id="submit-post-btn" class="btn btn-primary btn-pill" style="padding: 6px 14px; font-size: 0.85rem;">Publicar</button>
+                            <div style="position: relative; width: 56px; height: 32px; border-radius: 20px; background: var(--color-accent-light); margin-left: 2px; flex-shrink: 0;">
+                                <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--color-accent); font-size: 0.95rem; pointer-events: none;">
+                                    <span class="agora-icon">🌍</span> <i class="fa-solid fa-chevron-down" style="font-size: 0.6rem; margin-left: 4px;"></i>
+                                </div>
+                                <select name="post-destination" class="post-destination-select" style="position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;" onchange="this.previousElementSibling.querySelector('.agora-icon').textContent = this.options[this.selectedIndex].text.split(' ')[0]">
+                                    <option value="#EPTcomunidad">🌍 Global</option>
+                                    <option value="#EPTcomunidad #EPTsociales">🏛️ Sociales</option>
+                                    <option value="#EPTcomunidad #EPTtech">💻 Tech</option>
+                                    <option value="#EPTedu">🎓 Campus</option>
+                                </select>
                             </div>
+                        </div>
 
+                        <div class="form-submit-area" style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                            <span class="char-counter" style="font-size: 0.85rem; color: var(--color-secondary-text); font-weight: 500; min-width: 28px; text-align: center;">300</span>
+                            <button type="submit" id="submit-post-btn" class="btn btn-primary btn-pill" style="padding: 6px 14px; font-size: 0.85rem;">Publicar</button>
                         </div>
                     </div>
                 </form>
