@@ -1174,16 +1174,20 @@ const ComunidadApp = {
                             <button type="button" class="post-action-icon disabled-icon" title="GIF (Próximamente)"><i class="fa-solid fa-square-poll-vertical"></i></button>
                             <button type="button" class="post-action-icon disabled-icon" title="Emojis (Próximamente)"><i class="fa-regular fa-face-smile"></i></button>
                         </div>
-                        <div class="form-submit-area">
-                            <select name="post-destination" class="post-destination-select" style="background: var(--color-background); border: 1px solid var(--color-border); border-radius: 20px; padding: 6px 12px; font-size: 0.85rem; color: var(--color-primary-text); font-weight: 600; margin-right: 15px; cursor: pointer; outline: none;">
-                                <option value="#EPTcomunidad">🌍 Ágora Global</option>
-                                <option value="#EPTcomunidad #EPTsociales">🏛️ Sociales y Sociología</option>
-                                <option value="#EPTcomunidad #EPTtech">💻 Tecnología y Código</option>
-                                <option value="#EPTedu">🎓 Campus EDU (Aislado)</option>
+                        <div class="form-submit-area" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: 10px;">
+                            
+                            <select name="post-destination" class="post-destination-select" style="background: var(--color-accent-light); border: 1px solid transparent; border-radius: 20px; padding: 4px 10px; font-size: 0.75rem; color: var(--color-accent); font-weight: 700; cursor: pointer; outline: none; -webkit-appearance: none; appearance: none; text-align: center; max-width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                <option value="#EPTcomunidad"># Global</option>
+                                <option value="#EPTcomunidad #EPTsociales"># Sociales</option>
+                                <option value="#EPTcomunidad #EPTtech"># Tech</option>
+                                <option value="#EPTedu"># Campus</option>
                             </select>
                             
-                            <span class="char-counter" style="margin-right: 15px;">300</span>
-                            <button type="submit" id="submit-post-btn" class="btn btn-primary btn-pill">Publicar</button>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="char-counter" style="color: var(--color-accent); font-size: 0.85rem; min-width: 28px; text-align: center;">300</span>
+                                <button type="submit" id="submit-post-btn" class="btn btn-primary btn-pill" style="padding: 6px 14px; font-size: 0.85rem;">Publicar</button>
+                            </div>
+
                         </div>
                     </div>
                 </form>
