@@ -2690,8 +2690,38 @@ body.dark-theme .hero-search-box { background: rgba(255,255,255,0.02); }
 }
 
 /* Responsivo */
+/* --- Ajustes responsivos ultra compactos para la Live Bar --- */
 @media (max-width: 768px) {
-    .hidden-mobile { display: none; }
-    .live-title { font-size: 0.8rem; }
-    .live-bar-container { padding: 5px 10px; }
+    /* 1. Ocultamos el mini reproductor en celulares */
+    .hidden-mobile { display: none !important; }
+    
+    /* 2. Reducimos los márgenes y paddings para ahorrar espacio */
+    .live-bar-container { 
+        padding: 6px 10px; 
+        gap: 8px;
+    }
+    
+    /* 3. Etiqueta "EN VIVO" más pequeña */
+    .live-badge {
+        font-size: 0.65rem;
+        padding: 2px 4px;
+    }
+
+    /* 4. Título con ancho máximo para que no empuje a los botones fuera de la pantalla */
+    .live-title { 
+        font-size: 0.8rem; 
+        max-width: 140px; /* Si el título es muy largo, se cortará con "..." */
+    }
+    
+    /* 5. Hacemos que el botón no se rompa en dos líneas */
+    .btn-live-go {
+        font-size: 0.75rem;
+        padding: 4px 10px;
+        white-space: nowrap; 
+    }
+    
+    .btn-close-bar {
+        font-size: 1.2rem;
+        padding-left: 2px;
+    }
 }

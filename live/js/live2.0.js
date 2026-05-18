@@ -222,10 +222,16 @@ const LiveAppV2 = {
             heroContainer.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.7)), url(${mainEvent.thumbnail_url || 'https://i.ibb.co/Vt9tv2D/default-placeholder.png'})`;
         }
         
-        const badgeHtml = isLive 
-            ? `<span class="badge live" id="hero-badge" style="padding:6px 12px; border-radius:4px;"><i class="fa-solid fa-tower-broadcast"></i> EN VIVO AHORA</span>`
-            : `<span class="badge upcoming" id="hero-badge" style="background:rgba(255,255,255,0.2); backdrop-filter:blur(5px); color:white; padding:6px 12px; border-radius:4px;"><i class="fa-regular fa-calendar"></i> PRÓXIMAMENTE • ${new Date(mainEvent.scheduled_at).toLocaleDateString('es-ES', {month: 'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</span>`;
-
+        // --- AQUÍ ESTABA EL BUG: Ahora validamos los 3 estados correctamente ---
+        let badgeHtml = '';
+        if (isLive) {
+            badgeHtml = `<span class="badge live" id="hero-badge" style="padding:6px 12px; border-radius:4px;"><i class="fa-solid fa-tower-broadcast"></i> EN VIVO AHORA</span>`;
+        } else if (isVOD) {
+            badgeHtml = `<span class="badge vod" id="hero-badge" style="background:rgba(255,255,255,0.2); backdrop-filter:blur(5px); color:white; padding:6px 12px; border-radius:4px;"><i class="fa-solid fa-play-circle"></i> GRABACIÓN</span>`;
+        } else {
+            badgeHtml = `<span class="badge upcoming" id="hero-badge" style="background:rgba(255,255,255,0.2); backdrop-filter:blur(5px); color:white; padding:6px 12px; border-radius:4px;"><i class="fa-regular fa-calendar"></i> PRÓXIMAMENTE • ${new Date(mainEvent.scheduled_at).toLocaleDateString('es-ES', {month: 'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</span>`;
+        }
+        
         const badgeEl = document.getElementById('hero-badge');
         if (badgeEl) badgeEl.outerHTML = badgeHtml;
         
