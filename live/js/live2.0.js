@@ -6,6 +6,8 @@ const LiveAppV2 = {
     supabase: null,
     allSessions: [],
     featuredSession: null,
+    currentSearchQuery: '', // <-- NUEVO
+    currentCategory: 'Todos', // <-- NUEVO
 
     async init() {
         if (window.supabaseClient) {
@@ -83,14 +85,22 @@ const LiveAppV2 = {
     setupEventListeners() {
         const searchInput = document.getElementById('global-search');
         if (searchInput) {
-            searchInput.addEventListener('input', (e) => this.handleSearch(e.target.value));
+            searchInput.addEventListener('input', (e) => {
+                this.currentSearchQuery = e.target.value;
+                this.applyFilters(); // <-- Llama a nuestra nueva función
+            });
         }
 
         const categoryPills = document.querySelectorAll('.category-pill');
         categoryPills.forEach(pill => {
             pill.addEventListener('click', (e) => {
+                // Actualiza los colores de los botones
                 categoryPills.forEach(p => p.classList.remove('active'));
                 e.target.classList.add('active');
+                
+                // Guarda la categoría seleccionada y filtra
+                this.currentCategory = e.target.dataset.category || 'Todos';
+                this.applyFilters(); // <-- Llama a nuestra nueva función
             });
         });
 
@@ -219,7 +229,9 @@ const LiveAppV2 = {
             videoWrapper.innerHTML = this.createPlayerIframe(mainEvent);
             heroContainer.insertBefore(videoWrapper, heroContainer.firstChild);
         } else {
-            heroContainer.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.7)), url(${mainEvent.thumbnail_url || 'https://i.ibb.co/Vt9tv2D/default-placeholder.png'})`;
+            // Usamos DiceBear con el ID del evento para generar una portada abstracta única
+            const defaultThumb = `https://api.dicebear.com/9.x/shapes/svg?seed=${mainEvent.id}`;
+            heroContainer.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.7)), url('${mainEvent.thumbnail_url || defaultThumb}')`;
         }
         
         // --- AQUÍ ESTABA EL BUG: Ahora validamos los 3 estados correctamente ---
@@ -270,11 +282,19 @@ const LiveAppV2 = {
             toRenderVOD = preSorted.vodSessions;
         }
 
+        // --- MAGIA UX: Ocultar o mostrar la sección completa ---
+        const scheduleSection = scheduleContainer ? scheduleContainer.closest('.tv-section') : null;
+        
+        if (toRenderUpcoming.length === 0) {
+            // Si no hay eventos próximos/en vivo, ocultamos TODA la sección (título incluido)
+            if (scheduleSection) scheduleSection.style.display = 'none';
+        } else {
+            // Si hay eventos, nos aseguramos de que la sección sea visible
+            if (scheduleSection) scheduleSection.style.display = 'block';
+        }
+
         const renderCards = (sessions, container) => {
             sessions.forEach(item => {
-                // 🛑 LÍNEA ELIMINADA: Ya no saltamos la featuredSession. Ahora TODO se dibuja.
-                // if (!filteredSessions && this.featuredSession && item.id === this.featuredSession.id) return;
-
                 const isLive = item.effectiveStatus === 'EN VIVO';
                 const isVOD = item.effectiveStatus === 'FINALIZADO';
                 
@@ -283,13 +303,17 @@ const LiveAppV2 = {
                 else if (!isVOD) badgeHtml = `<span class="badge upcoming" style="position:absolute; top:10px; left:10px; font-size:0.7rem; padding:5px 10px; border-radius: 6px; background: rgba(0,0,0,0.6); color: white; backdrop-filter: blur(4px);"><i class="fa-regular fa-calendar"></i> PRÓXIMAMENTE</span>`;
 
                 const dateString = new Date(item.scheduled_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-                const avatarUrl = item.profiles?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
                 const creatorName = item.profiles?.display_name || 'Investigador';
+                
+                // 1. Placeholder del Avatar basado en el nombre del creador
+                const avatarUrl = item.profiles?.avatar_url || `https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(creatorName)}`;
+                // 2. Placeholder de la Portada basado en el ID del evento
+                const thumbUrl = item.thumbnail_url || `https://api.dicebear.com/9.x/shapes/svg?seed=${item.id}`;
 
                 const cardHTML = `
                     <div class="tv-card" onclick="window.open('/l/${item.id}', '_blank')" style="display: flex; flex-direction: column; height: 100%; cursor: pointer;">
                         <div class="tv-card-img" style="aspect-ratio: 16/9; position: relative; background: #000;">
-                            <img src="${item.thumbnail_url || 'https://i.ibb.co/Vt9tv2D/default-placeholder.png'}" alt="Thumb" loading="lazy" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8;">
+                            <img src="${thumbUrl}" alt="Thumb" loading="lazy" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8;">
                             ${badgeHtml}
                         </div>
                         <div class="tv-card-content" style="padding: 1.2rem; flex-grow: 1; display: flex; flex-direction: column;">
@@ -314,7 +338,7 @@ const LiveAppV2 = {
         renderCards(toRenderUpcoming, scheduleContainer);
         renderCards(toRenderVOD, recordingsContainer);
 
-        if (scheduleContainer && scheduleContainer.innerHTML === '') scheduleContainer.innerHTML = '<p class="text-muted" style="grid-column: 1/-1;">No hay sesiones programadas en este momento.</p>';
+        // Para la sección On-Demand sí mantenemos el mensaje de vacío, por si en el futuro se quedan sin videos que mostrar.
         if (recordingsContainer && recordingsContainer.innerHTML === '') recordingsContainer.innerHTML = '<p class="text-muted" style="grid-column: 1/-1;">No hay grabaciones disponibles.</p>';
     },
 
@@ -334,21 +358,42 @@ const LiveAppV2 = {
         return '';
     },
 
-    handleSearch(query) {
-        if (!query || query.trim() === '') {
-            this.distributeContent(); // Volver al orden natural
+    applyFilters() {
+        // 1. Si no hay texto de búsqueda Y estamos en la categoría "Todos", mostramos la vista normal
+        if ((!this.currentSearchQuery || this.currentSearchQuery.trim() === '') && this.currentCategory === 'Todos') {
+            const heroContainer = document.getElementById('hero-tv-container');
+            if(heroContainer && this.featuredSession) heroContainer.style.display = 'flex'; // Restauramos el Hero
+            this.distributeContent(); 
             return;
         }
+
+        // 2. Ocultar el "Hero" (Video grande) porque el usuario está buscando/filtrando en catálogo
+        const heroContainer = document.getElementById('hero-tv-container');
+        if(heroContainer) heroContainer.style.display = 'none';
+
+        const lowerQuery = (this.currentSearchQuery || '').toLowerCase();
         
-        const lowerQuery = query.toLowerCase();
+        // 3. Filtrado combinado (Categoría + Texto)
         const filtered = this.allSessions.filter(s => {
-            const title = (s.title || s.session_title || '').toLowerCase();
-            const desc = (s.description || '').toLowerCase();
-            const project = (s.project_title || '').toLowerCase();
-            const creator = (s.profiles?.display_name || '').toLowerCase();
-            return title.includes(lowerQuery) || desc.includes(lowerQuery) || project.includes(lowerQuery) || creator.includes(lowerQuery);
+            // Filtro por Categoría
+            const matchCategory = this.currentCategory === 'Todos' || s.session_type === this.currentCategory;
+            
+            // Filtro por Búsqueda de texto
+            let matchSearch = true;
+            if (lowerQuery !== '') {
+                const title = (s.title || s.session_title || '').toLowerCase();
+                const desc = (s.description || '').toLowerCase();
+                const project = (s.project_title || '').toLowerCase();
+                const creator = (s.profiles?.display_name || '').toLowerCase();
+                const type = (s.session_type || '').toLowerCase();
+                
+                matchSearch = title.includes(lowerQuery) || desc.includes(lowerQuery) || project.includes(lowerQuery) || creator.includes(lowerQuery) || type.includes(lowerQuery);
+            }
+            
+            return matchCategory && matchSearch; // Deben cumplirse ambos
         });
 
+        // 4. Renderizamos las grillas con los resultados (El Hero ya está oculto)
         this.renderGrids(filtered);
     }
 };
