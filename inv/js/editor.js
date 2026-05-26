@@ -66,8 +66,17 @@ const StudioApp = {
         if (!session) { window.location.href = '/'; return; }
         this.userId = session.user.id;
         
-        const { data: profile } = await this.supabase.from('profiles').select('*').eq('id', this.userId).single();
-        this.currentUserProfile = profile;
+        // Cargamos Perfil y Credenciales de Bluesky al mismo tiempo
+        const [profileRes, credsRes] = await Promise.all([
+            this.supabase.from('profiles').select('*').eq('id', this.userId).single(),
+            this.supabase.from('bsky_credentials').select('*').eq('user_id', this.userId).single()
+        ]);
+        
+        this.currentUserProfile = profileRes.data;
+        this.bskyCreds = credsRes.data;
+
+        // Encendemos el Semáforo
+        this.renderBskyStatus();
 
         await this.initializeEditor();
         this.addEventListeners();
@@ -93,6 +102,43 @@ const StudioApp = {
 
         if (urlParams.get('postId')) await this.loadPost(urlParams.get('postId'));
         else if (urlParams.get('projectId')) this.setProjectFocus(urlParams.get('projectId'));
+    },
+
+    renderBskyStatus() {
+        const container = document.getElementById('editor-bsky-status');
+        if (!container) return;
+
+        if (this.bskyCreds) {
+            // Lógica del Semáforo de la Comunidad
+            const lastUpdate = new Date(this.bskyCreds.updated_at || this.bskyCreds.created_at);
+            const hoursSinceUpdate = (new Date() - lastUpdate) / (1000 * 60 * 60);
+
+            let iconColor = '#10b981'; // Verde (Óptimo)
+            let statusTooltip = 'Bluesky: Conexión Óptima';
+
+            if (hoursSinceUpdate > 24) {
+                iconColor = '#ef4444'; // Rojo (Expirado)
+                statusTooltip = 'Bluesky: Sesión Expirada. Guarda tu borrador y reconecta desde la Comunidad.';
+            } else if (hoursSinceUpdate > 1.5) {
+                iconColor = '#facc15'; // Amarillo (Inactivo)
+                statusTooltip = 'Bluesky: Conexión Inactiva. El token podría estar por expirar.';
+            }
+
+            // UI de Píldora Minimalista
+            container.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 6px; background: var(--color-surface); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--color-border); cursor: help;" title="${statusTooltip}">
+                    <i class="fa-brands fa-bluesky" style="color: ${iconColor}; font-size: 1.1rem;"></i>
+                    <span style="font-size: 0.75rem; color: var(--color-primary-text); font-weight: 600;" class="hidden-mobile">@${this.bskyCreds.handle}</span>
+                </div>
+            `;
+        } else {
+            // Sin conectar
+            container.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 6px; background: rgba(239, 68, 68, 0.1); padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(239, 68, 68, 0.3);" title="Bluesky no conectado">
+                    <i class="fa-brands fa-bluesky" style="color: #ef4444; font-size: 1.1rem;"></i>
+                </div>
+            `;
+        }
     },
 
     addEventListeners() {
@@ -171,8 +217,8 @@ const StudioApp = {
             if(linkInput) linkInput.addEventListener('input', updateCounter);
         }
 
-        // --- API IS.GD: ACORTADOR CON PROXY ANTI-CORS ---
-        document.getElementById('btn-shorten-link')?.addEventListener('click', async (e) => {
+        // --- API IS.GD: ACORTADOR VÍA JSONP (SIN PROXY) ---
+        document.getElementById('btn-shorten-link')?.addEventListener('click', (e) => {
             const linkInput = document.getElementById('social-post-link');
             let urlToShorten = linkInput.value.trim();
             
@@ -196,29 +242,32 @@ const StudioApp = {
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
             btn.disabled = true;
 
-            try {
-                // 1. Construimos la petición a is.gd
-                const isGdUrl = `https://is.gd/create.php?format=simple&url=${encodeURIComponent(urlToShorten)}`;
-                
-                // 2. Usamos el Proxy público AllOrigins para evadir el bloqueo de seguridad del navegador
-                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(isGdUrl)}`;
-                
-                const res = await fetch(proxyUrl);
-                
-                if (res.ok) {
-                    const shortUrl = await res.text();
-                    linkInput.value = shortUrl.trim(); // .trim() para limpiar espacios ocultos
-                    linkInput.dispatchEvent(new Event('input')); // Dispara la actualización del contador
+            // TÉCNICA JSONP (Evita CORS y no requiere Proxy)
+            const callbackName = 'isgd_callback_' + Math.round(100000 * Math.random());
+            
+            window[callbackName] = function(data) {
+                delete window[callbackName];
+                if (data.shorturl) {
+                    linkInput.value = data.shorturl.trim();
+                    linkInput.dispatchEvent(new Event('input')); // Actualiza el contador de caracteres
                 } else {
-                    alert("El acortador no respondió. Es posible que el enlace no sea válido.");
+                    alert("Error desde is.gd. Es posible que el enlace no sea válido.");
                 }
-            } catch (err) {
-                console.error("Error acortando URL:", err);
-                alert("No se pudo conectar con el acortador (Verifica tu conexión).");
-            } finally {
                 btn.innerHTML = originalHtml;
                 btn.disabled = false;
-            }
+            };
+
+            const script = document.createElement('script');
+            script.src = `https://is.gd/create.php?format=json&url=${encodeURIComponent(urlToShorten)}&callback=${callbackName}`;
+            
+            script.onerror = function() {
+                delete window[callbackName];
+                alert("No se pudo conectar con el acortador (Verifica tu conexión o adblocker).");
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            };
+            
+            document.body.appendChild(script);
         });
     },
 
