@@ -217,18 +217,19 @@ const StudioApp = {
             if(linkInput) linkInput.addEventListener('input', updateCounter);
         }
 
-        // --- API IS.GD: ACORTADOR VÍA JSONP (SIN PROXY) ---
-        document.getElementById('btn-shorten-link')?.addEventListener('click', (e) => {
+        // --- API SPOO.ME: ACORTADOR CORTO, MODERNO Y DIRECTO ---
+        document.getElementById('btn-shorten-link')?.addEventListener('click', async (e) => {
             const linkInput = document.getElementById('social-post-link');
             let urlToShorten = linkInput.value.trim();
             
-            // Si intenta acortar sin haber escrito nada, le ponemos su perfil
+            // Si intenta acortar sin haber escrito nada, ponemos su perfil
             if (!urlToShorten) { 
                 urlToShorten = `https://epistecnologia.com/@${window.StudioApp.currentUserProfile?.username || ''}`;
                 linkInput.value = urlToShorten;
             }
 
-            if (urlToShorten.includes('is.gd') || urlToShorten.includes('tinyurl.com') || urlToShorten.includes('n9.cl')) { 
+            // Prevención de re-acortamiento
+            if (urlToShorten.includes('spoo.me') || urlToShorten.includes('is.gd') || urlToShorten.includes('tinyurl.com')) { 
                 alert("Este enlace ya parece estar acortado."); 
                 return; 
             }
@@ -242,32 +243,36 @@ const StudioApp = {
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
             btn.disabled = true;
 
-            // TÉCNICA JSONP (Evita CORS y no requiere Proxy)
-            const callbackName = 'isgd_callback_' + Math.round(100000 * Math.random());
-            
-            window[callbackName] = function(data) {
-                delete window[callbackName];
-                if (data.shorturl) {
-                    linkInput.value = data.shorturl.trim();
-                    linkInput.dispatchEvent(new Event('input')); // Actualiza el contador de caracteres
-                } else {
-                    alert("Error desde is.gd. Es posible que el enlace no sea válido.");
-                }
-                btn.innerHTML = originalHtml;
-                btn.disabled = false;
-            };
+            try {
+                // Petición POST directa y limpia al servidor de spoo.me
+                const res = await fetch("https://spoo.me/", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Accept': 'application/json'
+                    },
+                    // Convertimos la URL al formato que su API exige
+                    body: new URLSearchParams({ url: urlToShorten }) 
+                });
 
-            const script = document.createElement('script');
-            script.src = `https://is.gd/create.php?format=json&url=${encodeURIComponent(urlToShorten)}&callback=${callbackName}`;
-            
-            script.onerror = function() {
-                delete window[callbackName];
-                alert("No se pudo conectar con el acortador (Verifica tu conexión o adblocker).");
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.short_url) {
+                        linkInput.value = data.short_url.trim();
+                        linkInput.dispatchEvent(new Event('input')); // Actualiza el contador de caracteres en la UI
+                    } else {
+                        throw new Error("El servidor devolvió un dato inválido");
+                    }
+                } else {
+                    throw new Error("Fallo de conexión con el servidor");
+                }
+            } catch (err) {
+                console.error("Error acortando URL con spoo.me:", err);
+                alert("No se pudo acortar el enlace ahora mismo. Puedes publicar usando el enlace original.");
+            } finally {
                 btn.innerHTML = originalHtml;
                 btn.disabled = false;
-            };
-            
-            document.body.appendChild(script);
+            }
         });
     },
 
