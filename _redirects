@@ -1,0 +1,13 @@
+# Archivo _redirects
+
+# Redirección a YouTube
+/yt             https://www.youtube.com/@epistecnologia?sub_confirmation=1     301
+
+# Redirección a la Revista
+/revista        https://publicaciones.epistecnologia.com/subscribe  301
+
+# Redirección a Suscripción/Newsletter
+/suscribete     https://publicaciones.epistecnologia.com/subscribe  301
+
+# Redirección a LinkedIn
+/in             https://linkedin.com/company/epistecnologia  301
