@@ -19,29 +19,31 @@
     <header class="studio-topbar">
         <div class="topbar-left">
             <a href="/inv/dashboard.html" class="back-btn" title="Volver al Dashboard"><i class="fa-solid fa-arrow-left"></i></a>
-            <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo" class="studio-logo">
+            <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo" class="studio-logo hide-on-laptop">
             
             <div class="project-focus-selector">
-                <label for="active-project-select"><i class="fa-solid fa-microscope"></i> Proyecto Activo:</label>
+                <label for="active-project-select" title="Proyecto Activo"><i class="fa-solid fa-microscope"></i> <span class="hide-on-laptop">Proyecto:</span></label>
                 <select id="active-project-select" class="form-control">
-                    <option value="">Cargando proyectos...</option>
+                    <option value="">Cargando...</option>
                 </select>
-                <span id="doi-badge" class="badge-hidden" title="Proyecto verificado con DOI"><i class="fa-solid fa-certificate"></i> DOI Verificado</span>
+                <span id="doi-badge" class="badge-hidden" title="Verificado con DOI"><i class="fa-solid fa-certificate"></i></span>
             </div>
-            <div class="project-focus-selector" style="margin-left: 15px;">
-                <label for="draft-select" style="color:#facc15;"><i class="fa-solid fa-file-pen"></i> Borradores:</label>
+            
+            <div class="project-focus-selector">
+                <label for="draft-select" style="color:#facc15;" title="Borradores"><i class="fa-solid fa-file-pen"></i> <span class="hide-on-laptop">Borrador:</span></label>
                 <select id="draft-select" class="form-control">
-                    <option value="">+ Nuevo Artículo...</option>
+                    <option value="">+ Nuevo...</option>
                 </select>
             </div>
         </div>
 
         <div class="topbar-right">
-            <button id="mobile-selectors-btn" class="mobile-only-btn" title="Opciones de Proyecto"><i class="fa-solid fa-sliders"></i></button>
+            <button id="mobile-selectors-btn" class="mobile-only-btn" title="Opciones"><i class="fa-solid fa-sliders"></i></button>
             
-            <div id="editor-bsky-status" style="margin-right: 15px; display: flex; align-items: center;"></div>
+            <div id="editor-bsky-status" style="display: flex; align-items: center;"></div>
 
-            <span id="save-status" class="save-status"><i class="fa-solid fa-cloud"></i> Guardado automático</span>
+            <span id="save-status" class="save-status" title="Estado de guardado"><i class="fa-solid fa-cloud"></i> <span class="hide-on-laptop">Sincronizado</span></span>
+            
             <button class="icon-btn" id="theme-switcher-studio" title="Cambiar tema"><i class="fa-solid fa-moon"></i></button>
             <button class="icon-btn logout-btn" id="logout-btn" title="Cerrar Sesión"><i class="fa-solid fa-right-from-bracket"></i></button>
         </div>

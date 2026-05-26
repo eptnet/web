@@ -128,7 +128,7 @@ const StudioApp = {
             container.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 6px; background: var(--color-surface); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--color-border); cursor: help;" title="${statusTooltip}">
                     <i class="fa-brands fa-bluesky" style="color: ${iconColor}; font-size: 1.1rem;"></i>
-                    <span style="font-size: 0.75rem; color: var(--color-primary-text); font-weight: 600;" class="hidden-mobile">@${this.bskyCreds.handle}</span>
+                    <span style="font-size: 0.75rem; color: var(--color-primary-text); font-weight: 600; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" class="hide-on-laptop">@${this.bskyCreds.handle}</span>
                 </div>
             `;
         } else {

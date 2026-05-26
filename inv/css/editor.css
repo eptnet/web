@@ -646,3 +646,18 @@ body.dark-theme h1.ce-header, body.dark-theme h2.ce-header, body.dark-theme h3.c
 .input-with-btn { display: flex; gap: 8px; align-items: stretch; }
 .input-with-btn input { flex-grow: 1; border-radius: 8px; }
 .input-with-btn button { border-radius: 8px; padding: 0 15px; flex-shrink: 0; }
+
+/* ==========================================================================
+   OPTIMIZACIÓN DE ESPACIO EN LA BARRA SUPERIOR DEL ESTUDIO
+   ========================================================================== */
+.topbar-left, .topbar-right { gap: 0.8rem; }
+.project-focus-selector { padding: 0.3rem 0.8rem; gap: 0.4rem; }
+.project-focus-selector select { max-width: 150px; font-size: 0.85rem; padding: 2px 0; }
+
+/* En laptops y tablets horizontales, colapsamos los textos para que nada se amontone */
+@media (max-width: 1250px) {
+    .hide-on-laptop { display: none !important; }
+    .project-focus-selector select { max-width: 110px; }
+    .studio-topbar { padding: 0 1rem; }
+    .studio-logo { display: none; } /* Sacrificamos el logo para darle aire a los controles */
+}
