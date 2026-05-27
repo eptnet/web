@@ -129,7 +129,26 @@
                             </div>
                     </div>
                 </div>
-                
+
+                <!-- NUEVO: PARED DE LA COMUNIDAD -->
+                <div class="bento-box community-wall-box" style="margin-top: 1.5rem; padding: 1.2rem;">
+                    <h4 style="margin: 0 0 12px 0; font-size: 0.85rem; color: var(--color-secondary-text); font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-users-rays" style="color: var(--color-accent);"></i> Nuevos Miembros
+                    </h4>
+                    
+                    <div id="community-wall-loader" style="text-align: center; font-size: 0.8rem; color: var(--color-secondary-text); padding: 10px 0;">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Cargando red...
+                    </div>
+                    
+                    <!-- Aquí JS inyectará los avatares -->
+                    <div id="community-wall-grid" style="display: none; grid-template-columns: repeat(auto-fill, minmax(36px, 1fr)); gap: 10px; justify-items: center;">
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 15px; border-top: 1px dashed var(--color-border); padding-top: 10px;">
+                        <span id="community-total-count" style="font-size: 0.75rem; color: var(--color-secondary-text); font-weight: 600;">Conectando con la red...</span>
+                    </div>
+                </div>
+                                
             </br>
                 <div class="bento-box nav-panel-box">
                     <nav class="community-nav">
