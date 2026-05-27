@@ -1111,7 +1111,7 @@ const ComunidadApp = {
                 const imgUrl = meta.image?.url || meta.image;
                 container.innerHTML = `
                     <button type="button" class="remove-image-btn" onclick="this.parentElement.style.display='none'; this.closest('.thread-reply-box, form').dataset.lastProcessedUrl='';" style="position: absolute; top: 5px; right: 5px; z-index:10; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer;">&times;</button>
-                    ${imgUrl ? `<img src="${imgUrl}" style="width:100%; height:150px; object-fit:cover; border-bottom:1px solid var(--color-border); border-radius: 12px 12px 0 0;">` : ''}
+                    ${imgUrl ? `<img src="${imgUrl}" style="width:100%; aspect-ratio: 1.91/1; height: auto; object-fit:cover; border-bottom:1px solid var(--color-border); border-radius: 12px 12px 0 0; display: block;">` : ''}
                     <div style="padding:12px; background: var(--color-surface); border-radius: 0 0 12px 12px;">
                         <strong style="display:block; font-size:0.9rem; color:var(--color-primary-text); margin-bottom:4px;">${meta.title || new URL(url).hostname}</strong>
                         <p style="font-size:0.8rem; color:var(--color-secondary-text); margin:0; line-height:1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${meta.description || ''}</p>
@@ -1764,7 +1764,7 @@ const ComunidadApp = {
                 try { hostname = new URL(externalData.uri).hostname; } catch(e) {}
                 embedHtml = `
                     <a href="${externalData.uri}" target="_blank" rel="noopener noreferrer" class="link-preview-card" style="display: block; text-decoration: none; color: inherit; border: 1px solid var(--color-border); border-radius: 12px; overflow: hidden; margin-top: 12px; background: var(--color-surface); transition: transform 0.2s;">
-                        ${externalData.thumb ? `<img src="${externalData.thumb}" alt="Vista previa" class="link-preview-image" style="width: 100%; height: 200px; object-fit: cover; border-bottom: 1px solid var(--color-border);">` : ''}
+                        ${externalData.thumb ? `<img src="${externalData.thumb}" alt="Vista previa" class="link-preview-image" style="width: 100%; aspect-ratio: 1.91/1; height: auto; object-fit: cover; border-bottom: 1px solid var(--color-border); display: block;">` : ''}
                         <div class="link-preview-info" style="padding: 15px;">
                             <p class="link-preview-title" style="margin: 0 0 5px 0; font-weight: 700; font-size: 0.95rem; line-height: 1.3; color: var(--color-primary-text);">${externalData.title || hostname}</p>
                             <p class="link-preview-description" style="margin: 0 0 10px 0; font-size: 0.85rem; color: var(--color-secondary-text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4;">${externalData.description || ''}</p>
