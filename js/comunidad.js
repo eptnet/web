@@ -2130,6 +2130,40 @@ const ComunidadApp = {
         if (oauthBtn) {
             oauthBtn.addEventListener('click', () => this.handleBlueskyOAuthStart());
         }
+
+        // --- LÓGICA DEL APP PASSWORD (PLAN B) ---
+        const savePassBtn = modalContainer.querySelector('#btn-save-app-password');
+        if (savePassBtn) {
+            savePassBtn.addEventListener('click', async () => {
+                const passInput = modalContainer.querySelector('#fallback-app-password').value.trim();
+                if (!passInput) return;
+                
+                savePassBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                savePassBtn.disabled = true;
+
+                const { error } = await this.supabase.from('bsky_credentials')
+                    .update({ app_password: passInput })
+                    .eq('user_id', this.user.id);
+
+                if (error) {
+                    alert("Error al guardar el App Password.");
+                    savePassBtn.innerHTML = 'Guardar';
+                    savePassBtn.disabled = false;
+                } else {
+                    savePassBtn.innerHTML = '<i class="fa-solid fa-check"></i> Activo';
+                    savePassBtn.style.color = '#10b981';
+                    savePassBtn.style.borderColor = '#10b981';
+                    if (!this.bskyCreds) this.bskyCreds = {};
+                    this.bskyCreds.app_password = passInput;
+                    
+                    // Mostramos un mensajito temporal
+                    setTimeout(() => {
+                        if (window.showToast) window.showToast("Llave de respaldo activada.");
+                        this.closeBskyConnectModal();
+                    }, 1000);
+                }
+            });
+        }
     },
 
     closeBskyConnectModal() {

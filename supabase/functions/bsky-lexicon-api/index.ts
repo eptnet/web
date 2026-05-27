@@ -29,6 +29,24 @@ async function generateDpopProof(htu: string, htm: string, privateJwk: any, nonc
 }
 
 async function fetchWithDpop(url: string, method: string, accessToken: string, privateJwk: any, body?: any, nonce?: string, contentType: string = 'application/json') {
+  
+  // --- MODO GRACEFUL DEGRADATION (Plan B: Sin DPoP, Bearer Puro) ---
+  if (!privateJwk) {
+      const headers: any = { 'Authorization': `Bearer ${accessToken}` };
+      
+      // Si hay un body y no es un archivo binario (imagen), asumimos JSON
+      if (body && !(body instanceof Uint8Array)) headers['Content-Type'] = 'application/json';
+      // Si nos pasan un Content-Type específico (como image/jpeg), lo respetamos
+      if (contentType && contentType !== 'application/json') headers['Content-Type'] = contentType;
+      
+      return await fetch(url, { 
+          method, 
+          headers, 
+          body: body instanceof Uint8Array ? body : (body ? JSON.stringify(body) : undefined) 
+      });
+  }
+
+  // --- MODO ORIGINAL (Plan A: Con Criptografía DPoP) ---
   const htu = url.split('?')[0];
   let currentNonce = nonce;
   const makeRequest = async (dpopNonce?: string) => {
@@ -36,13 +54,16 @@ async function fetchWithDpop(url: string, method: string, accessToken: string, p
     const headers: any = { 'Authorization': `DPoP ${accessToken}`, 'DPoP': dpopProof };
     const options: RequestInit = { method, headers };
     if (body) {
+      // Diferenciamos entre enviar un JSON o un Uint8Array (para subir imágenes a Bluesky)
       options.body = contentType === 'application/json' ? JSON.stringify(body) : body;
       options.headers['Content-Type'] = contentType;
     }
     return fetch(url, options);
   };
+  
   let res = await makeRequest(currentNonce);
   const newNonce = res.headers.get('dpop-nonce');
+  // Auto-reintento si Bluesky nos pide actualizar el Nonce criptográfico
   if ((res.status === 401 || res.status === 400) && newNonce) {
     res = await makeRequest(newNonce); 
   }
@@ -218,17 +239,48 @@ serve(async (req) => {
         }
     };
 
-    // EJECUCIÓN CON AUTO-REFRESCO
+    // ==========================================
+    // EJECUCIÓN CON GRACEFUL DEGRADATION
+    // ==========================================
     let response = await executeAction(accessToken);
+    
     if (response.status === 401) {
-        accessToken = await refreshBskyToken(supabaseClient, user.id, refreshData.token, privateJwk);
-        response = await executeAction(accessToken);
+        try {
+            console.log("Token OAuth caducado. Intentando refrescar...");
+            accessToken = await refreshBskyToken(supabaseClient, user.id, refreshData.token, privateJwk);
+            response = await executeAction(accessToken);
+        } catch (oauthError) {
+            console.warn("Fallo el refresco OAuth. Verificando Plan B...");
+            
+            // --- INICIO PLAN B (APP PASSWORD) ---
+            if (creds.app_password) {
+                console.log("⚡ Graceful Degradation: Iniciando sesión silenciosa con App Password...");
+                const loginRes = await fetch(`${pdsUrl}/xrpc/com.atproto.server.createSession`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier: creds.handle, password: creds.app_password })
+                });
+
+                if (loginRes.ok) {
+                    const sessionData = await loginRes.json();
+                    
+                    // MAGIA: Al poner privateJwk en null, la función fetchWithDpop usará Bearer Auth automáticamente
+                    privateJwk = null; 
+                    response = await executeAction(sessionData.accessJwt);
+                    console.log("✅ Acción rescatada con éxito usando App Password.");
+                } else {
+                    throw new Error("AUTH_EXPIRED"); // El App Password también es inválido
+                }
+            } else {
+                throw new Error("AUTH_EXPIRED"); // No hay Plan B configurado
+            }
+        }
     }
 
     const result = await response.text();
     return new Response(result, { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: response.status });
 
   } catch (error) {
-    return new Response(JSON.stringify({ success: false, error: error.message }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+    return new Response(JSON.stringify({ success: false, error: error.message }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 });
   }
 });
