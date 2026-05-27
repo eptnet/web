@@ -728,6 +728,13 @@ const StudioApp = {
         }
 
         let textForCommunity = socialText;
+        
+        // --- INYECCIÓN DE TAXONOMÍA ---
+        // Aseguramos que el post del Estudio siempre lleve el hashtag global para que Bluesky lo indexe
+        if (postToCommunity && !textForCommunity.toLowerCase().includes('#eptcomunidad')) {
+            textForCommunity += `\n\n#EPTcomunidad`;
+        }
+        
         if (postLink) {
             textForCommunity += `\n\n📖 Enlace: ${postLink}`;
         }

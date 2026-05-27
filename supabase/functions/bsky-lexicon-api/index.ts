@@ -147,9 +147,48 @@ serve(async (req) => {
                     };
                 }
 
-                return await fetchWithDpop(`${pdsUrl}/xrpc/com.atproto.repo.createRecord`, 'POST', token, privateJwk, {
+                const res = await fetchWithDpop(`${pdsUrl}/xrpc/com.atproto.repo.createRecord`, 'POST', token, privateJwk, {
                     repo: creds.did, collection: 'app.bsky.feed.post', record
                 });
+
+                // --- MAGIA DE CACHÉ INSTANTÁNEA ---
+                // Si es un post nuevo, lo inyectamos directamente en Supabase para evitar el retraso de indexación de Bluesky
+                if (res.ok && payload.action === 'create_post') {
+                    try {
+                        const clonedRes = res.clone();
+                        const bskyData = await clonedRes.json();
+                        
+                        const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+                        const { data: profile } = await admin.from('profiles').select('display_name, avatar_url').eq('id', user.id).single();
+                        
+                        const newPostCache = {
+                            uri: bskyData.uri,
+                            cid: bskyData.cid,
+                            post: {
+                                uri: bskyData.uri,
+                                cid: bskyData.cid,
+                                author: {
+                                    handle: creds.handle,
+                                    displayName: profile?.display_name || creds.handle,
+                                    avatar: profile?.avatar_url || ''
+                                },
+                                record: record,
+                                embed: embed,
+                                replyCount: 0,
+                                repostCount: 0,
+                                likeCount: 0,
+                                indexedAt: new Date().toISOString()
+                            },
+                            created_at: new Date().toISOString()
+                        };
+                        
+                        await admin.from('community_feed_cache').insert(newPostCache);
+                    } catch (e) {
+                        console.error("Error inyectando en caché local:", e);
+                    }
+                }
+
+                return res;
             }
 
             case 'delete_post': {
