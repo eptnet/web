@@ -57,18 +57,24 @@ serve(async (_req) => {
             const post = item.post;
 
             // --- INICIO DEL FILTRO INTELIGENTE ---
-            const postText = (post.record as any)?.text || '';
+            const postText = ((post.record as any)?.text || '').toLowerCase();
             const isBotAuthor = post.author.did === agent.session?.did;
+            const authorHandle = (post.author.handle || '').toLowerCase();
             
-            // Regla 1: ¿Tiene nuestra huella digital silenciosa?
-            const hasCommunityTag = postText.includes('#EPTcomunidad');
+            // Regla 1: ¿Tiene alguna de nuestras huellas digitales (Ágoras)?
+            const hasCommunityTag = postText.includes('#eptcomunidad') || 
+                                    postText.includes('#eptsociales') || 
+                                    postText.includes('#eptedu') || 
+                                    postText.includes('#epttech');
             
-            // Regla 2: ¿Es una respuesta a un hilo oficial (creado por el Bot)?
-            // (Si un miembro comenta en la transmisión en vivo, queremos verlo aunque no use hashtag)
+            // Regla 2: ¿Es un autor oficial de la red (su handle termina en epistecnologia.com)?
+            const isOfficialAuthor = authorHandle.endsWith('epistecnologia.com');
+
+            // Regla 3: ¿Es una respuesta a un hilo oficial (creado por el Bot)?
             const isReplyToBot = item.reply?.parent?.author?.did === agent.session?.did;
 
-            // La Sentencia: Si NO es el bot publicando cosas oficiales, y NO tiene el hashtag, y NO es respuesta al bot... lo ignoramos.
-            if (!isBotAuthor && !hasCommunityTag && !isReplyToBot) {
+            // La Sentencia: Si NO es el bot, NO es autor oficial, NO tiene ningún hashtag, y NO es respuesta al bot... lo ignoramos.
+            if (!isBotAuthor && !isOfficialAuthor && !hasCommunityTag && !isReplyToBot) {
                 return; // Saltamos este post, no entra a la caché
             }
             // --- FIN DEL FILTRO INTELIGENTE ---
