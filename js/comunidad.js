@@ -20,6 +20,7 @@ const ComunidadApp = {
         this.checkForBlueskyCallback(); 
         
         this.subscribeToLiveBroadcasts();
+        this.renderCommunityWall();
         this.addEventListeners();
     },
 
@@ -640,8 +641,6 @@ const ComunidadApp = {
         };
     },
 
-   
-
     // --- RENDERIZADO DE COMPONENTES DE LA UI ---
 
     /**
@@ -727,6 +726,61 @@ const ComunidadApp = {
 
         loadingPanel.style.display = 'none';
         contentPanel.style.display = 'block';
+    },
+
+    /**
+     * Frente 4: Pared de la Comunidad y Gamificación
+     * Obtiene los últimos 15 usuarios registrados y el total de la red.
+     */
+    async renderCommunityWall() {
+        const grid = document.getElementById('community-wall-grid');
+        const countSpan = document.getElementById('community-total-count');
+        const loader = document.getElementById('community-wall-loader');
+
+        if (!grid || !countSpan) return;
+
+        try {
+            const { data: profiles, count, error } = await this.supabase
+                .from('profiles')
+                .select('username, avatar_url', { count: 'exact' })
+                .order('created_at', { ascending: false })
+                .limit(15);
+
+            if (error) throw error;
+            if (loader) loader.style.display = 'none';
+
+            if (profiles && profiles.length > 0) {
+                const avatarsHtml = profiles.map(profile => {
+                    const displayName = profile.username || 'Investigador';
+                    
+                    // Aquí aplicamos la API de Dicebear si no hay foto real
+                    const seed = encodeURIComponent(displayName);
+                    const avatarUrl = profile.avatar_url || `https://api.dicebear.com/9.x/shapes/svg?seed=${seed}`;
+
+                    return `<img 
+                        src="${avatarUrl}" 
+                        alt="${displayName}" 
+                        title="@${displayName}"
+                        style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--color-surface); box-shadow: var(--shadow-soft); cursor: pointer; transition: transform 0.2s ease;"
+                        onmouseover="this.style.transform='scale(1.15)'"
+                        onmouseout="this.style.transform='scale(1)'"
+                    >`;
+                }).join('');
+
+                grid.innerHTML = avatarsHtml;
+                grid.style.display = 'grid'; 
+                countSpan.innerHTML = `Conectando a <strong>${count || 0}</strong> mentes en la red`;
+            } else {
+                grid.style.display = 'block';
+                grid.innerHTML = '<p style="font-size: 0.8rem; color: var(--color-secondary-text); text-align: center;">La red está esperando sus primeros nodos.</p>';
+                countSpan.textContent = "Conectando con la red...";
+            }
+
+        } catch (error) {
+            console.error("Error al renderizar la pared de la comunidad:", error);
+            if (loader) loader.style.display = 'none';
+            countSpan.innerHTML = '<span style="color: #ef4444;">Error al sincronizar la red</span>';
+        }
     },
 
     /**
