@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Centro de Identidad 2.0 - Epistecnología</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/inv/css/profile_v2.css">
+</head>
+<body class="loading-profile">
+
+    <header class="glass-nav">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">
+                <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="Logo">
+            </a>
+            <div class="nav-center">
+                <span class="nav-page-title">Centro de Control</span>
+            </div>
+            <div class="nav-actions">
+                <button class="theme-toggle" id="theme-switcher-v2"><i class="fa-solid fa-moon"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <main class="identity-layout">
+        <aside class="identity-sidebar">
+            <div class="bento-card profile-preview">
+                <div class="avatar-container">
+                    <img id="profile-card-avatar" src="https://i.ibb.co/61fJv24/default-avatar.png" alt="Avatar">
+                    <button class="btn-avatar-edit edit-btn" title="Cambiar Avatar"><i class="fa-solid fa-camera"></i></button>
+                </div>
+                <h1 id="profile-card-name">Cargando...</h1>
+                <p id="profile-card-bio" class="text-muted"></p>
+                
+                <div class="profile-stats-row">
+                    <div class="stat-box">
+                        <span id="stat-total-projects" class="stat-num">0</span>
+                        <span class="stat-label">Proyectos</span>
+                    </div>
+                    <div class="stat-box">
+                        <span id="stat-total-events" class="stat-num">0</span>
+                        <span class="stat-label">Eventos</span>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="sidebar-menu">
+                <button class="menu-item active" data-tab="tab-identidad">
+                    <i class="fa-solid fa-id-card"></i> <span>Identidad y Datos</span>
+                </button>
+                <button class="menu-item" data-tab="tab-publicar">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> <span>Publicar (Zenodo)</span>
+                </button>
+                <button class="menu-item" data-tab="tab-actividad">
+                    <i class="fa-solid fa-chart-pie"></i> <span>Centro de Mando</span>
+                </button>
+                <button class="menu-item" data-tab="tab-servicios">
+                    <i class="fa-solid fa-handshake-angle"></i> <span>Servicios B2B</span>
+                </button>
+                <hr>
+                <a href="/inv/dashboard.html" class="cta-dashboard">
+                    <i class="fa-solid fa-rocket"></i> <span>Ir al Dashboard</span>
+                    <i class="fa-solid fa-chevron-right arrow-icon"></i>
+                </a>
+            </nav>
+        </aside>
+
+        <section class="identity-content">
+            
+            <div id="tab-identidad" class="tab-pane active">
+                
+                <div class="bento-card identity-check-widget">
+                    <div class="widget-header">
+                        <h3>Pasaporte Epistémico</h3>
+                        <div class="progress-pill"><span id="identity-progress">25%</span></div>
+                    </div>
+                    <p class="widget-desc">Completa tu identidad para desbloquear el ecosistema completo.</p>
+                    <div class="passport-list">
+                        <div class="passport-row verified" id="item-google">
+                            <div class="row-icon"><i class="fa-brands fa-google"></i></div>
+                            <div class="row-info"><strong>Cuenta Base</strong><span class="status-tag">Verificado</span></div>
+                            <div class="row-action"><i class="fa-solid fa-circle-check"></i></div>
+                        </div>
+                        <div class="passport-row pending" id="item-orcid" onclick="window.ProfileApp.handleOrcidConnect()">
+                            <div class="row-icon"><i class="fa-brands fa-orcid"></i></div>
+                            <div class="row-info"><strong>Rigor Académico</strong><span class="action-text">Vincular ORCID iD</span></div>
+                            <div class="row-action"><i class="fa-solid fa-circle-plus"></i></div>
+                        </div>
+                        <div class="passport-row pending" id="item-bluesky" onclick="window.ProfileApp.openCommunityModal()">
+                            <div class="row-icon"><i class="fa-brands fa-bluesky"></i></div>
+                            <div class="row-info"><strong>Voz Pública</strong><span class="action-text">Conectar Bluesky</span></div>
+                            <div class="row-action"><i class="fa-solid fa-circle-plus"></i></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bento-card">
+                    <div class="card-header-simple">
+                        <h3>Datos Públicos</h3>
+                        <button class="btn-text-edit edit-btn"><i class="fa-solid fa-pencil"></i> Editar</button>
+                    </div>
+                    
+                    <div class="view-mode">
+                        <div class="data-field">
+                            <label>Nombre a Mostrar</label>
+                            <p id="view-display-name">Cargando...</p>
+                        </div>
+                        <div class="data-field">
+                            <label>Nombre de Autor (Substack)</label>
+                            <p id="view-substack-author-name">No establecido</p>
+                        </div>
+                        <div class="data-field">
+                            <label>Biografía Corta</label>
+                            <p id="view-bio">Cargando...</p>
+                        </div>
+                        <div class="data-field" style="margin-top: 20px;">
+                            <label>Tu Link Público</label>
+                            <div class="copy-link-container">
+                                <span id="my-public-link-text">epistecnologia.com/@usuario</span>
+                                <button id="btn-copy-link" title="Copiar enlace"><i class="fa-regular fa-copy"></i> Copiar</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="edit-mode" style="display: none;">
+                        <form id="profile-form">
+                            <div class="form-group">
+                                <label for="display-name">Nombre a Mostrar</label>
+                                <input type="text" id="display-name" name="display_name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="substack-author-name">Nombre de Autor</label>
+                                <input type="text" id="substack-author-name" name="substack_author_name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="bio">Biografía Corta</label>
+                                <textarea id="bio" name="bio" rows="3" maxlength="250"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Guardar Perfil</button>
+                        </form>
+                        
+                        <form id="avatar-update-form" style="margin-top: 20px; border-top: 1px solid var(--border-soft); padding-top: 20px;">
+                            <div class="form-group">
+                                <label for="avatar-url">URL de Avatar (imgbb.com)</label>
+                                <input type="url" id="avatar-url" placeholder="https://i.ibb.co/...jpg" required>
+                            </div>
+                            <button type="submit" class="btn btn-secondary">Actualizar Avatar</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="bento-card">
+                    <div class="card-header-simple">
+                        <h3>Plataformas Conectadas</h3>
+                        <button class="btn-text-edit edit-btn"><i class="fa-solid fa-pencil"></i> Editar Redes</button>
+                    </div>
+                    
+                    <div class="view-mode">
+                        <div id="view-platforms-list" class="platforms-grid-minimal">
+                            </div>
+                    </div>
+
+                    <div class="edit-mode" style="display: none;">
+                        <form id="platforms-form">
+                            <div class="form-group"><label for="youtube-url">YouTube</label><input type="url" id="youtube-url" name="youtube_url"></div>
+                            <div class="form-group"><label for="substack-url">Substack</label><input type="url" id="substack-url" name="substack_url"></div>
+                            <div class="form-group"><label for="bsky-url">Bluesky</label><input type="url" id="bsky-url" name="bsky_url"></div>
+                            <div class="form-group"><label for="linkedin-url">LinkedIn</label><input type="url" id="linkedin-url" name="linkedin_url"></div>
+                            <div class="form-group"><label for="x-url">X (Twitter)</label><input type="url" id="x-url" name="x_url"></div>
+                            <div class="form-group"><label for="instagram-url">Instagram</label><input type="url" id="instagram-url" name="instagram_url"></div>
+                            <div class="form-group"><label for="facebook-url">Facebook</label><input type="url" id="facebook-url" name="facebook_url"></div>
+                            <div class="form-group"><label for="tiktok-url">TikTok</label><input type="url" id="tiktok-url" name="tiktok_url"></div>
+                            <button type="submit" class="btn btn-primary">Guardar Plataformas</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-publicar" class="tab-pane">
+                <div class="bento-card">
+                    <h3><i class="fa-solid fa-cloud-arrow-up"></i> Publicar y Obtener DOI (Zenodo)</h3>
+                    <p class="widget-desc">Asegura tu autoría publicando en el repositorio europeo respaldado por el CERN.</p>
+                    <form id="zenodo-form">
+                        <div class="form-group"><label>Título</label><input type="text" id="zenodo-title" name="title" required></div>
+                        <div class="form-group"><label>Autores</label><textarea id="zenodo-authors" name="authors" rows="2" required></textarea></div>
+                        <div class="form-group"><label>Afiliación</label><input type="text" id="zenodo-affiliations" name="affiliations"></div>
+                        <div class="form-group"><label>Descripción / Abstract</label><textarea id="zenodo-description" name="description" rows="4" required></textarea></div>
+                        <div class="form-group"><label>Palabras Clave (separadas por coma)</label><input type="text" id="zenodo-keywords" name="keywords"></div>
+                        <div class="form-group"><label>Enlace Relacionado</label><input type="url" id="zenodo-related-link" name="related_link"></div>
+                        <div class="form-group">
+                            <label>Licencia</label>
+                            <select id="zenodo-license" name="license" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 6px;">
+                                <option value="cc-by-sa-4.0" selected>CC BY SA 4.0</option>
+                                <option value="cc-by-4.0">CC BY 4.0</option>
+                                <option value="cc0-1.0">Dominio Público (CC0)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Archivo (Max 50MB)</label>
+                            <input type="file" id="zenodo-file" required style="padding: 10px;">
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="margin-top: 15px;">Publicar y Obtener DOI</button>
+                        <div id="zenodo-message" class="form-message" style="margin-top: 1rem;"></div>
+                    </form>
+                </div>
+
+                <div class="bento-card">
+                    <h3><i class="fa-solid fa-book-bookmark"></i> Sincronizar desde ORCID</h3>
+                    <button id="sync-orcid-works-btn" class="btn btn-secondary">Sincronizar Trabajos Previos</button>
+                    <p id="sync-hint" class="form-hint" style="display: none; color: red;">Conecta tu ORCID en 'Identidad' para sincronizar.</p>
+                    <div id="projects-list" style="margin-top: 20px;"></div>
+                    <hr>
+                    <h4>Proyectos publicados aquí (EPT DOI)</h4>
+                    <div id="ept-doi-list"></div>
+                </div>
+            </div>
+
+            <div id="tab-actividad" class="tab-pane">
+                <div class="bento-card">
+                    <div class="stats-grid">
+                        <div class="stat-card"><i class="fa-solid fa-eye"></i><h2 id="stat-total-views">0</h2><p>Vistas Totales</p></div>
+                        <div class="stat-card"><i class="fa-solid fa-users-viewfinder"></i><h2 id="stat-total-live">0</h2><p>Picos Live</p></div>
+                    </div>
+                </div>
+                
+                <div class="bento-card">
+                    <h3>Mis Proyectos Activos</h3>
+                    <ul id="manage-projects-list" class="manage-list"></ul>
+                </div>
+
+                <div class="bento-card">
+                    <h3>Mis Eventos Agendados</h3>
+                    <ul id="manage-events-list" class="manage-list"></ul>
+                </div>
+
+                <div class="bento-card">
+                    <h3>Invitar a un Colega</h3>
+                    <form id="invite-form" style="display: flex; gap: 10px;">
+                        <input type="email" id="invitee-email" placeholder="email@universidad.edu" required style="flex-grow: 1;">
+                        <button type="submit" class="btn btn-primary" style="width: auto;">Enviar</button>
+                    </form>
+                    <div id="invitations-list" style="margin-top: 15px;"></div>
+                </div>
+            </div>
+
+            <div id="tab-servicios" class="tab-pane">
+                <div class="bento-card text-center" style="text-align: center;">
+                    <h3>Apoya el Ecosistema</h3>
+                    <p class="widget-desc">Tu contribución mantiene esta plataforma libre de anuncios y algoritmos extractivos.</p>
+                    <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
+                        <button class="btn btn-secondary" onclick="openPaymentModal('Simpatizante', 'S/ 10')">Nivel Simpatizante</button>
+                        <button class="btn btn-primary" onclick="openPaymentModal('Socio Activo', 'S/ 20')">Socio Activo</button>
+                        <button class="btn btn-secondary" style="border-color: #f59e0b; color: #f59e0b;" onclick="openPaymentModal('Mecenas', 'S/ 50')">Nivel Mecenas</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="global-toast" class="toast-hidden"></div>
+    <div id="modal-container"></div>
+    
+    <template id="bsky-connect-template">
+        <div class="bsky-oauth-container" style="text-align: center;">
+            <i class="fa-brands fa-bluesky" style="font-size: 4rem; color: #0085ff; margin-bottom: 20px;"></i>
+            <h3>Conectar Protocolo AT</h3>
+            <button id="bsky-oauth-start-btn" class="btn btn-primary">Autorizar con Bluesky</button>
+        </div>
+    </template>
+
+    <div id="payment-modal-overlay" class="onboarding-overlay">
+        <div class="onboarding-modal" style="background: white; padding: 30px; border-radius: 20px; max-width: 400px; text-align: center; position: relative;">
+            <button class="modal-close-btn" onclick="closePaymentModal()" style="position: absolute; right: 10px; top: 10px; border:none; background:none; font-size:20px; cursor:pointer;">&times;</button>
+            <h3 id="modal-tier-name">Nivel</h3>
+            <p>Monto sugerido: <strong id="modal-tier-price"></strong></p>
+            <a href="https://www.paypal.com/ncp/payment/AVNL8CGY5A2FL" target="_blank" class="btn btn-primary" style="margin-top: 20px;">Pagar con PayPal</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/main.js"></script>
+    <script type="module" src="/inv/js/profile_v2.js"></script>
+
+</body>
+</html>
