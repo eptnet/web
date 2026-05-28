@@ -350,3 +350,14 @@ entrypoint = "./functions/share-post/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/share-post/*.html" ]
+
+[functions.bot-welcome]
+enabled = true
+verify_jwt = true
+import_map = "./functions/bot-welcome/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/bot-welcome/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/bot-welcome/*.html" ]
