@@ -847,9 +847,10 @@ const ComunidadApp = {
 
             // --- MAGIA DE FILTRADO INTELIGENTE ---
             const filteredFeed = feed.filter(item => {
-                // REGLA 0 (NUEVA): Excluir las respuestas (replies) del feed principal
-                if (item.post.record && item.post.record.reply) {
-                    return false; // Si es una respuesta, la ocultamos de este muro
+                // REGLA 0 (BLINDADA): Excluir las respuestas (replies) del feed principal
+                // Revisamos tanto la raíz del item (estructura feedViewPost de Bluesky) como el record.
+                if (item.reply || (item.post.record && item.post.record.reply)) {
+                    return false; // Si es un comentario, lo destruimos del muro global
                 }
 
                 const text = (item.post.record?.text || '').toLowerCase();
@@ -861,21 +862,17 @@ const ComunidadApp = {
                     const hasHashtag = text.includes('#eptcomunidad');
                     
                     // --- REGLA DE EXCLUSIÓN ---
-                    // Agrega aquí cualquier subdominio o usuario que NO deba salir en el feed global
                     const excludedDomains = [
                         'cursos.epistecnologia.com',
-                        // 'eventos.epistecnologia.com', <- Ejemplo futuro
-                        // 'bot-secreto.epistecnologia.com' <- Ejemplo futuro
                     ];
                     
                     // Condición 2: Es un autor oficial (termina en epistecnologia.com) 
-                    // Y ADEMÁS verificamos que no sea ninguno de los excluidos
                     const isOfficialAuthor = authorHandle.endsWith('epistecnologia.com') && 
                                              !excludedDomains.some(domain => authorHandle.endsWith(domain));
                     
                     return hasHashtag || isOfficialAuthor;
                 } 
-                // Si está en Campus EDU u otros canales futuros (Filtro estricto)
+                // Si está en Campus EDU u otros canales (Filtro estricto)
                 else {
                     return text.includes(this.currentActiveHashtag.toLowerCase());
                 }
