@@ -98,7 +98,8 @@ const ComunidadApp = {
                     user_id: this.user.id,
                     status: 'PREPARANDO',
                     // Reutilizamos este campo para que el visor sepa a qué sala conectarse
-                    streamplace_id: this.currentRoomName 
+                    streamplace_id: this.currentRoomName, 
+                    playback_url: 'pending_init'
                 }]).select().single();
 
             if (error) throw error;
