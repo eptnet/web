@@ -670,14 +670,27 @@ const ComunidadApp = {
                 bioEl.textContent = this.userProfile.bio || 'Divulgador en Epistecnología';
             }
             
-            // --- NUEVO: RENDERIZADO DE LA BARRA DE XP ---
+            // --- NUEVO: RENDERIZADO DE LA BARRA DE XP CON RACHA DINÁMICA ---
             const xpContainer = document.getElementById('community-xp-container');
             if (xpContainer) {
-                // LA FUSIÓN: Sumamos el XP fijo y el XP temporal para calcular el nivel
                 const baseXP = this.userProfile.xp_total || 0;
-                const bonusXP = this.userProfile.xp_bonus || 0;
+                let bonusXP = 0;
+
+                // 🔍 Consultamos la caché para ver si publicó en los últimos 3 días
+                if (this.bskyCreds && this.bskyCreds.handle) {
+                    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+                    try {
+                        const { count } = await this.supabase
+                            .from('community_feed_cache')
+                            .select('*', { count: 'exact', head: true })
+                            .eq('author_handle', this.bskyCreds.handle)
+                            .gte('indexed_at', threeDaysAgo);
+                        
+                        if (count && count > 0) bonusXP = 50; // ¡Tiene racha activa!
+                    } catch(e) { console.error("Error leyendo racha:", e); }
+                }
+
                 const calculatedXP = baseXP + bonusXP;
-                
                 const levelData = this.getLevelData(calculatedXP);
                 
                 document.getElementById('community-rank-name').textContent = levelData.title.toUpperCase();
@@ -685,16 +698,18 @@ const ComunidadApp = {
                 
                 // Si el usuario tiene el bono activo, hacemos que el texto brille
                 if (bonusXP > 0) {
-                    document.getElementById('community-xp-text').innerHTML += ' <i class="fa-solid fa-fire-flame-curved" style="color: #f59e0b;" title="Bono de publicación activo"></i>';
+                    document.getElementById('community-xp-text').innerHTML += ' <i class="fa-solid fa-fire-flame-curved" style="color: #f59e0b;" title="Bono de publicación activo (+50 XP)"></i>';
                 }
 
                 // Pequeño timeout para que la transición CSS de llenado se vea al cargar
                 setTimeout(() => {
-                    document.getElementById('community-xp-fill').style.width = `${levelData.progressPercent}%`;
+                    const fillEl = document.getElementById('community-xp-fill');
+                    if (fillEl) fillEl.style.width = `${levelData.progressPercent}%`;
                 }, 100);
                 
                 xpContainer.style.display = 'block';
             }
+            // ---------------------------------------------------------------
 
             // --- LÓGICA DE GAMIFICACIÓN E INSIGNIAS ---
             const hasOrcid = this.userProfile.orcid && this.userProfile.orcid !== '0000';
@@ -1404,23 +1419,13 @@ const ComunidadApp = {
             this.removeSelectedImage(form);
             this.updateCharCounter({ target: textArea });
 
-            // --- INICIO MAGIA DEL BONO (XP TEMPORAL) ---
-            const currentBonus = this.userProfile.xp_bonus || 0;
-            const updateData = { last_post_at: new Date().toISOString() }; // Refresca su "reloj" de inactividad
+            // --- INICIO MAGIA DEL BONO DINÁMICO ---
+            if (window.showToast) window.showToast("🔥 ¡Publicación exitosa! Calculando tu XP...");
             
-            if (currentBonus === 0) {
-                updateData.xp_bonus = 50; // Le damos un bono de +50 XP
-                this.userProfile.xp_bonus = 50; 
-                if (window.showToast) window.showToast("🎉 ¡+50 XP de bono de actividad! Mantenlo publicando antes de 3 días.");
-            } else {
-                if (window.showToast) window.showToast("🔥 ¡Publicación exitosa! Racha mantenida.");
-            }
-            
-            // Actualizamos la BD en segundo plano sin congelar la pantalla
-            this.supabase.from('profiles').update(updateData).eq('id', this.user.id).then(({error}) => {
-                if(!error) this.renderUserPanel(); // Recargamos su barra de experiencia
-            });
-            // --- FIN MAGIA DEL BONO ---
+            // Esperamos 1 segundo para asegurar que la Edge Function insertó el post en la caché,
+            // y luego recargamos el panel izquierdo para que detecte la nueva racha.
+            setTimeout(() => { this.renderUserPanel(); }, 1000);
+            // --- FIN MAGIA DEL BONO DINÁMICO ---
 
             this.closePostModal();
 
