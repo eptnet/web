@@ -112,6 +112,16 @@
                          <p class="user-panel-slogan" id="user-panel-slogan" style="display: none;"></p>
                         <p class="user-panel-bio" id="user-panel-bio"></p>
                        
+                        <div id="community-xp-container" style="width: 100%; text-align: left; margin: 15px 0; display: none;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: bold; margin-bottom: 6px; color: var(--color-secondary-text);">
+                                <span>RANGO: <span id="community-rank-name" style="color: var(--color-primary-text);">Recluta</span></span>
+                                <span id="community-xp-text" style="color: var(--color-accent);">0 / 30 XP</span>
+                            </div>
+                            <div style="width: 100%; height: 8px; background: var(--color-border); border-radius: 10px; overflow: hidden; position: relative;">
+                                <div id="community-xp-fill" style="height: 100%; background: linear-gradient(90deg, #b72a1e, #ff3e3e); width: 0%; transition: 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 0 10px var(--color-accent);"></div>
+                            </div>
+                        </div>
+                       
                         <div class="profile-badges-container" id="community-user-badges" style="display: none; margin-bottom: 15px;">
                             <span class="badge-icon" id="badge-citizen" title="Explorador"><i class="fa-solid fa-seedling"></i></span>
                             <span class="badge-icon" id="badge-social" title="Voz Pública"><i class="fa-brands fa-bluesky"></i></span>

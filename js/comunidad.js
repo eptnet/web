@@ -670,6 +670,25 @@ const ComunidadApp = {
                 bioEl.textContent = this.userProfile.bio || 'Divulgador en Epistecnología';
             }
             
+            // --- NUEVO: RENDERIZADO DE LA BARRA DE XP ---
+            const xpContainer = document.getElementById('community-xp-container');
+            if (xpContainer) {
+                const xp = this.userProfile.xp_total || 0;
+                const levelData = this.getLevelData(xp);
+                
+                document.getElementById('community-rank-name').textContent = levelData.title.toUpperCase();
+                document.getElementById('community-xp-text').textContent = levelData.isMaxLevel ? 'MAX XP' : `${levelData.currentXP} / ${levelData.nextXP} XP`;
+                
+                // Pequeño timeout para que la transición CSS de llenado se vea al cargar
+                setTimeout(() => {
+                    document.getElementById('community-xp-fill').style.width = `${levelData.progressPercent}%`;
+                }, 100);
+                
+                xpContainer.style.display = 'block';
+            }
+
+            // --- LÓGICA DE GAMIFICACIÓN E INSIGNIAS ---
+            
             // --- LÓGICA DE GAMIFICACIÓN ---
             const hasOrcid = this.userProfile.orcid && this.userProfile.orcid !== '0000';
             const hasBsky = !!this.bskyCreds;
@@ -706,6 +725,8 @@ const ComunidadApp = {
             
         } else {
             // MODO INVITADO
+            const xpContainer = document.getElementById('community-xp-container');
+            if(xpContainer) xpContainer.style.display = 'none';
             const randomSeed = Math.floor(Math.random() * 10000);
             document.getElementById('user-panel-avatar').src = `https://api.dicebear.com/9.x/shapes/svg?seed=invitado_${randomSeed}`;
             document.getElementById('user-panel-name').textContent = 'Invitado Explorador';
@@ -3208,6 +3229,43 @@ const ComunidadApp = {
             // FIX UX: Una vez guardada la llave, abrimos el estudio de cámaras.
             this.openGoLiveModal(); 
         });
+    },
+
+    // ==========================================
+    // MOTOR RPG: CALCULADOR DE NIVELES (Heredado de EDU)
+    // ==========================================
+    getLevelData(xp) {
+        const levels = [
+            { threshold: 0, title: 'Recluta' },
+            { threshold: 30, title: 'Aprendiz' },
+            { threshold: 100, title: 'Explorador' },
+            { threshold: 300, title: 'Académico' },
+            { threshold: 600, title: 'Investigador' },
+            { threshold: 1200, title: 'Erudito' },
+            { threshold: 2500, title: 'Leyenda EPT' }
+        ];
+
+        let currentLevel = 0;
+        for (let i = 0; i < levels.length; i++) {
+            if (xp >= levels[i].threshold) currentLevel = i;
+        }
+
+        const isMaxLevel = currentLevel === levels.length - 1;
+        const nextLevelXP = isMaxLevel ? xp : levels[currentLevel + 1].threshold;
+        const previousLevelXP = levels[currentLevel].threshold;
+        
+        let progress = 100;
+        if (!isMaxLevel) {
+            progress = ((xp - previousLevelXP) / (nextLevelXP - previousLevelXP)) * 100;
+        }
+
+        return {
+            title: levels[currentLevel].title,
+            currentXP: xp,
+            nextXP: nextLevelXP,
+            progressPercent: progress,
+            isMaxLevel: isMaxLevel
+        };
     },
 
 };
