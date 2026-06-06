@@ -1378,3 +1378,32 @@ body.dark-theme {
         background: rgba(18, 20, 24, 0.85);
     }
 }
+
+/* Asegura que el Iframe sea la capa base */
+#golive-iframe-container {
+    position: absolute; 
+    top: 0; left: 0; width: 100%; height: 100%; 
+    z-index: 1;
+}
+
+/* El Chat debe ser hijo de un contenedor que respete el bottom */
+#studio-chat-overlay {
+    position: absolute; 
+    bottom: 0; left: 0; right: 0; 
+    height: 45vh; 
+    z-index: 20; 
+    pointer-events: none; /* Crucial: permite clic a través del chat */
+}
+
+/* Columna de controles a la izquierda (Estilo iconos) */
+.studio-side-controls {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    pointer-events: auto;
+}

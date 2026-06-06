@@ -86,53 +86,31 @@ const ComunidadApp = {
 
     async openGoLiveModal() {
         const studio = document.getElementById('golive-fullscreen-studio');
-        if (!studio) return;
-        
-        // 1. Generamos un ID de sala único y seguro para VDO.Ninja
-        this.currentRoomName = 'ept_live_' + this.user.id + '_' + Date.now();
-
-        // 2. Registramos el directo en Supabase con estado PREPARANDO
-        try {
-            const { data, error } = await this.supabase.from('active_broadcasts')
-                .insert([{
-                    user_id: this.user.id,
-                    status: 'PREPARANDO',
-                    // Reutilizamos este campo para que el visor sepa a qué sala conectarse
-                    streamplace_id: this.currentRoomName, 
-                    playback_url: 'pending_init'
-                }]).select().single();
-
-            if (error) throw error;
-            this.currentBroadcastId = data.id;
-            
-        } catch (err) {
-            console.error("Error al registrar el directo:", err);
-            if (window.showToast) window.showToast("No se pudo iniciar el estudio. Revisa tu conexión.");
-            else alert("No se pudo iniciar el estudio. Revisa tu conexión.");
-            return;
-        }
-
-        // 3. Preparamos la UI (Fase 1: Green Room)
         studio.classList.remove('hidden');
+
+        // Limpieza de capas
         document.getElementById('green-room-overlay').classList.remove('hidden');
         document.getElementById('studio-chat-overlay').classList.add('hidden');
 
-        // 4. Inyectamos el Iframe de VDO.Ninja (Autostart, Webcam, Record)
+        // Inyección del Iframe VDO.Ninja (El único que debe existir)
         const iframeContainer = document.getElementById('golive-iframe-container');
-        iframeContainer.innerHTML = `
-            <iframe 
-                src="https://vdo.ninja/?room=${this.currentRoomName}&autostart&webcam&record" 
-                allow="camera; microphone; display-capture; autoplay" 
-                style="width: 100%; height: 100%; border: none;">
-            </iframe>
-        `;
+        iframeContainer.innerHTML = `<iframe src="https://vdo.ninja/?room=${this.currentRoomName}&autostart&webcam&record" allow="camera; microphone; display-capture; autoplay" style="width:100%; height:100%; border:none;"></iframe>`;
 
-        // 5. Asignamos los Listeners de la Fase 1
-        document.getElementById('btn-cancel-golive').onclick = () => this.cancelBroadcastPrep();
-        document.getElementById('btn-go-public').onclick = () => this.startPublicBroadcast();
+        // Renderizado dinámico de controles laterales (Iconos)
+        const sideControls = document.createElement('div');
+        sideControls.className = 'studio-side-controls';
+        sideControls.innerHTML = `
+            <button id="btn-go-public-icon" class="icon-btn glass" title="Iniciar Vivo"><i class="fa-solid fa-tower-broadcast" style="color:#10b981;"></i></button>
+            <button id="btn-cancel-golive-icon" class="icon-btn glass" title="Cancelar"><i class="fa-solid fa-xmark" style="color:#ef4444;"></i></button>
+        `;
         
-        // Listener de Fase 2 pre-asignado
-        document.getElementById('btn-stop-broadcast').onclick = () => this.stopBroadcast();
+        // Lo inyectamos en el overlay de la green room
+        const greenRoom = document.getElementById('green-room-overlay');
+        greenRoom.appendChild(sideControls);
+
+        // Listeners
+        document.getElementById('btn-go-public-icon').onclick = () => this.startPublicBroadcast();
+        document.getElementById('btn-cancel-golive-icon').onclick = () => this.cancelBroadcastPrep();
     },
 
     async cancelBroadcastPrep() {
@@ -2486,7 +2464,7 @@ const ComunidadApp = {
         if (!modalContainer) return;
 
         // FIX DEFINITIVO: Usamos el DID universal en lugar de adivinar el dominio del handle
-        const embedUrl = `https://stream.place/embed/${streamplaceId}`;
+        const embedUrl = `https://vdo.ninja/?view=${streamplace_id}&autoplay&broadcast`;
         
         const chatInputHtml = this.user 
             ? `<div style="display: flex; gap: 8px; align-items: center;">
