@@ -847,6 +847,11 @@ const ComunidadApp = {
 
             // --- MAGIA DE FILTRADO INTELIGENTE ---
             const filteredFeed = feed.filter(item => {
+                // REGLA 0 (NUEVA): Excluir las respuestas (replies) del feed principal
+                if (item.post.record && item.post.record.reply) {
+                    return false; // Si es una respuesta, la ocultamos de este muro
+                }
+
                 const text = (item.post.record?.text || '').toLowerCase();
                 const authorHandle = (item.post.author?.handle || '').toLowerCase();
                 
@@ -1418,6 +1423,15 @@ const ComunidadApp = {
             textArea.value = '';
             this.removeSelectedImage(form);
             this.updateCharCounter({ target: textArea });
+
+            // --- NUEVO: DESTRUIR LA VISTA PREVIA DEL ENLACE ---
+            const previewContainer = form.querySelector('.link-preview-editor');
+            if (previewContainer) {
+                previewContainer.style.display = 'none';
+                previewContainer.innerHTML = '';
+            }
+            form.dataset.lastProcessedUrl = '';
+            // ---------------------------------------------------
 
             // --- INICIO MAGIA DEL BONO DINÁMICO ---
             if (window.showToast) window.showToast("🔥 ¡Publicación exitosa! Calculando tu XP...");
