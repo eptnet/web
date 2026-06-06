@@ -14,6 +14,7 @@ serve(async (_req) => {
     const { data: cachedFeed, error } = await supabaseAdmin
       .from('community_feed_cache')
       .select('*')
+      .eq('is_reply', false)
       .order('indexed_at', { ascending: false })
       .limit(50);
 

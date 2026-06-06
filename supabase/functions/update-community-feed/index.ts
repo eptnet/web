@@ -85,6 +85,7 @@ serve(async (_req) => {
             const postData = {
                 uri: post.uri,
                 cid: post.cid,
+                is_reply: !!item.reply,
                 author_did: post.author.did,
                 author_handle: post.author.handle,
                 author_display_name: post.author.displayName || post.author.handle,

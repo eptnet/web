@@ -243,10 +243,26 @@ serve(async (req) => {
     // EJECUCIÓN CON GRACEFUL DEGRADATION
     // ==========================================
     let response = await executeAction(accessToken);
+    let isExpired = response.status === 401;
+
+    // 1. Detectar el engaño de Bluesky (Devuelve 400 en lugar de 401 al expirar)
+    if (response.status === 400) {
+        const clonedRes = response.clone();
+        try {
+            const errData = await clonedRes.json();
+            if (errData.error === 'ExpiredToken' || (errData.message && errData.message.includes('expired'))) {
+                isExpired = true;
+            }
+        } catch (e) {}
+    }
     
-    if (response.status === 401) {
+    if (isExpired) {
         try {
             console.log("Token OAuth caducado. Intentando refrescar...");
+            
+            // Protección extra por si el usuario es muy antiguo y no tiene token de refresco
+            if (!refreshData.token || !privateJwk) throw new Error("No hay refresh token válido");
+            
             accessToken = await refreshBskyToken(supabaseClient, user.id, refreshData.token, privateJwk);
             response = await executeAction(accessToken);
         } catch (oauthError) {
@@ -264,7 +280,7 @@ serve(async (req) => {
                 if (loginRes.ok) {
                     const sessionData = await loginRes.json();
                     
-                    // MAGIA: Al poner privateJwk en null, la función fetchWithDpop usará Bearer Auth automáticamente
+                    // MAGIA: Al poner privateJwk en null, la función fetchWithDpop usará Bearer Auth tradicional
                     privateJwk = null; 
                     response = await executeAction(sessionData.accessJwt);
                     console.log("✅ Acción rescatada con éxito usando App Password.");
@@ -278,9 +294,13 @@ serve(async (req) => {
     }
 
     const result = await response.text();
-    return new Response(result, { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: response.status });
+    
+    // 2. TRUCO SUPABASE: Para que el frontend no nos oculte los errores con un genérico "non-2xx status code",
+    // devolvemos siempre 200, y dejamos que el frontend lea la propiedad "error"
+    return new Response(result, { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
 
   } catch (error) {
-    return new Response(JSON.stringify({ success: false, error: error.message }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 });
+    // Si la sesión murió y el App Password falló, enviamos AUTH_EXPIRED limpiamente al frontend
+    return new Response(JSON.stringify({ success: false, error: error.message }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
   }
 });
