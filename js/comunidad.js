@@ -673,12 +673,21 @@ const ComunidadApp = {
             // --- NUEVO: RENDERIZADO DE LA BARRA DE XP ---
             const xpContainer = document.getElementById('community-xp-container');
             if (xpContainer) {
-                const xp = this.userProfile.xp_total || 0;
-                const levelData = this.getLevelData(xp);
+                // LA FUSIÓN: Sumamos el XP fijo y el XP temporal para calcular el nivel
+                const baseXP = this.userProfile.xp_total || 0;
+                const bonusXP = this.userProfile.xp_bonus || 0;
+                const calculatedXP = baseXP + bonusXP;
+                
+                const levelData = this.getLevelData(calculatedXP);
                 
                 document.getElementById('community-rank-name').textContent = levelData.title.toUpperCase();
                 document.getElementById('community-xp-text').textContent = levelData.isMaxLevel ? 'MAX XP' : `${levelData.currentXP} / ${levelData.nextXP} XP`;
                 
+                // Si el usuario tiene el bono activo, hacemos que el texto brille
+                if (bonusXP > 0) {
+                    document.getElementById('community-xp-text').innerHTML += ' <i class="fa-solid fa-fire-flame-curved" style="color: #f59e0b;" title="Bono de publicación activo"></i>';
+                }
+
                 // Pequeño timeout para que la transición CSS de llenado se vea al cargar
                 setTimeout(() => {
                     document.getElementById('community-xp-fill').style.width = `${levelData.progressPercent}%`;
@@ -688,8 +697,6 @@ const ComunidadApp = {
             }
 
             // --- LÓGICA DE GAMIFICACIÓN E INSIGNIAS ---
-            
-            // --- LÓGICA DE GAMIFICACIÓN ---
             const hasOrcid = this.userProfile.orcid && this.userProfile.orcid !== '0000';
             const hasBsky = !!this.bskyCreds;
             
@@ -1396,6 +1403,25 @@ const ComunidadApp = {
             textArea.value = '';
             this.removeSelectedImage(form);
             this.updateCharCounter({ target: textArea });
+
+            // --- INICIO MAGIA DEL BONO (XP TEMPORAL) ---
+            const currentBonus = this.userProfile.xp_bonus || 0;
+            const updateData = { last_post_at: new Date().toISOString() }; // Refresca su "reloj" de inactividad
+            
+            if (currentBonus === 0) {
+                updateData.xp_bonus = 50; // Le damos un bono de +50 XP
+                this.userProfile.xp_bonus = 50; 
+                if (window.showToast) window.showToast("🎉 ¡+50 XP de bono de actividad! Mantenlo publicando antes de 3 días.");
+            } else {
+                if (window.showToast) window.showToast("🔥 ¡Publicación exitosa! Racha mantenida.");
+            }
+            
+            // Actualizamos la BD en segundo plano sin congelar la pantalla
+            this.supabase.from('profiles').update(updateData).eq('id', this.user.id).then(({error}) => {
+                if(!error) this.renderUserPanel(); // Recargamos su barra de experiencia
+            });
+            // --- FIN MAGIA DEL BONO ---
+
             this.closePostModal();
 
         } catch (error) {
