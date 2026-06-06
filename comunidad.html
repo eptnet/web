@@ -537,68 +537,57 @@
         </div>
     </div>
 
-    <div id="golive-fullscreen-studio" class="hidden">
+    <!-- ========================================== -->
+    <!-- NUEVO ESTUDIO EXPRESS (VDO.NINJA MOBILE)   -->
+    <!-- ========================================== -->
+    <div id="golive-fullscreen-studio" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 99999; display: flex; flex-direction: column;">
         
-        <div class="media-layer">
-            <video id="golive-local-video" autoplay playsinline muted></video>
+        <!-- Contenedor del Iframe de VDO.Ninja -->
+        <div id="golive-iframe-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;"></div>
+        
+        <!-- FASE 1: GREEN ROOM (Camerino) -->
+        <div id="green-room-overlay" style="position: absolute; inset: 0; z-index: 10; display: flex; flex-direction: column; justify-content: space-between; padding: 30px 20px; background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.9) 100%); pointer-events: none;">
             
-            <div id="golive-audio-mode" class="hidden" style="width: 100%; height: 100%; background: radial-gradient(circle, #1e293b 0%, #000000 100%);">
-                <canvas id="golive-visualizer" style="width: 100%; height: 100%;"></canvas>
+            <div style="text-align: center; pointer-events: auto;">
+                <span style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); color: white; padding: 6px 15px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; border: 1px solid rgba(255,255,255,0.3);"><i class="fa-solid fa-eye-slash"></i> Estás en la Green Room (Nadie te ve aún)</span>
             </div>
-        </div>
-        
-        <div id="golive-setup-panel" class="studio-panel">
-            <div class="setup-header">
-                <h3>Configuración de Estudio</h3>
-                <button id="btn-close-setup" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="setup-body">
-                <label><i class="fa-solid fa-camera"></i> Cámara / Capturadora</label>
-                <select id="golive-video-select" class="device-select"></select>
-                
-                <label><i class="fa-solid fa-microphone"></i> Micrófono / Interfaz</label>
-                <select id="golive-audio-select" class="device-select"></select>
-            </div>
-            <div class="setup-footer">
-                <button id="btn-ready-to-live" class="btn-primary" style="width: 100%;">
-                    <i class="fa-solid fa-bolt"></i> Iniciar Transmisión
+
+            <div style="display: flex; flex-direction: column; gap: 15px; align-items: center; pointer-events: auto;">
+                <button id="btn-go-public" class="btn-primary" style="width: 100%; max-width: 350px; padding: 16px; font-size: 1.1rem; border-radius: 30px; background: #10b981; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4); border: none;">
+                    <i class="fa-solid fa-tower-broadcast"></i> Iniciar Transmisión Pública
                 </button>
+                <button id="btn-cancel-golive" style="background: transparent; color: var(--color-secondary-text); border: none; font-weight: bold; font-size: 1rem; cursor: pointer;">Cancelar</button>
             </div>
         </div>
 
-        <div id="golive-live-ui" class="hidden">
-            <div class="studio-gradient top"></div>
-            <div class="studio-gradient bottom"></div>
-
-            <div class="studio-header-ui">
-                <div class="live-indicator is-live"><span class="dot"></span> EN VIVO</div>
-                <div style="background: rgba(0,0,0,0.5); color: white; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(4px);">
-                    <i class="fa-regular fa-eye"></i> <span id="studio-viewer-count">0</span>
+        <!-- FASE 2: EN VIVO (UI del Chat y Controles) -->
+        <div id="studio-chat-overlay" class="hidden" style="position: absolute; inset: 0; z-index: 10; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none;">
+            
+            <div style="padding: 20px; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: auto; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);">
+                <div style="background: #ef4444; color: white; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 10px rgba(239,68,68,0.5);">
+                    <span style="width: 8px; height: 8px; background: white; border-radius: 50%; animation: blink 1s infinite;"></span> EN VIVO
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <div style="background: rgba(0,0,0,0.5); color: white; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(4px);">
+                        <i class="fa-regular fa-eye"></i> <span id="studio-viewer-count">0</span>
+                    </div>
+                    <button id="btn-copy-guest" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; backdrop-filter: blur(4px); font-size: 0.85rem; font-weight: bold;" title="Copiar enlace de invitado"><i class="fa-solid fa-user-plus"></i></button>
                 </div>
             </div>
 
-            <div id="studio-chat-overlay" class="hidden">
-                <div id="studio-chat-messages"></div>
-                <div class="studio-chat-input-area">
-                    <button id="btn-react-studio" class="btn-reaction" title="Reaccionar">❤️</button>
-                    <input type="text" id="studio-chat-input" placeholder="Responde al chat...">
-                    <button id="btn-send-studio-chat"><i class="fa-solid fa-paper-plane"></i></button>
-                </div>
-            </div>
-
-            <div class="studio-controls-ui">
-                <div class="controls-wrapper">
-                    <button id="btn-switch-lens" class="icon-btn glass action-btn" title="Girar Cámara"><i class="fa-solid fa-camera-rotate"></i></button>
-                    <button id="btn-toggle-camera" class="icon-btn glass action-btn" title="Apagar Cámara"><i class="fa-solid fa-video"></i></button>
+            <!-- Capa del Chat Inferior (Idéntica al visor) -->
+            <div style="height: 45dvh; display: flex; flex-direction: column; justify-content: flex-end; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); pointer-events: auto;">
+                
+                <div id="studio-chat-messages" style="overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; mask-image: linear-gradient(to top, black 80%, transparent 100%); -webkit-mask-image: linear-gradient(to top, black 80%, transparent 100%);"></div>
+                
+                <div style="padding: 15px; padding-bottom: max(15px, env(safe-area-inset-bottom)); display: flex; gap: 8px; align-items: center;">
+                    <button id="btn-stop-broadcast" style="background: #ef4444; color: white; border: none; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; box-shadow: 0 4px 10px rgba(239,68,68,0.5); cursor: pointer;" title="Finalizar Transmisión"><i class="fa-solid fa-stop"></i></button>
                     
-                    <button id="btn-stop-broadcast" class="btn-transmitir is-live" title="Finalizar Transmisión">
-                        <div class="inner-circle stop-square"></div>
-                    </button>
-                    
-                    <button id="btn-toggle-mic" class="icon-btn glass action-btn" title="Silenciar"><i class="fa-solid fa-microphone"></i></button>
-                    
-                    <button id="btn-switch-mic" class="icon-btn glass action-btn" title="Cambiar Micrófono"><i class="fa-solid fa-microphone-lines"></i></button>
-                    <button id="btn-toggle-studio-chat" class="icon-btn glass action-btn" title="Chat"><i class="fa-regular fa-comment-dots"></i></button>
+                    <div style="flex-grow: 1; display: flex; gap: 10px; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); padding: 6px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.2);">
+                        <input type="text" id="studio-chat-input" placeholder="Escribe al chat..." autocomplete="off" style="flex-grow: 1; background: transparent; border: none; color: white; padding: 10px 15px; outline: none; font-size: 0.95rem;">
+                        <button id="btn-send-studio-chat" style="background: var(--color-accent); color: white; border: none; width: 42px; height: 42px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
                 </div>
             </div>
         </div>

@@ -79,540 +79,149 @@ const ComunidadApp = {
     },
 
     // ==========================================
-    // MOTOR DE STREAMING DIRECTO V2 (SETUP + LIVE)
+    // MOTOR DE STREAMING DIRECTO V2 (MOBILE FIRST - VDO.NINJA)
     // ==========================================
-    localMediaStream: null,
-    peerConnection: null,
-    isMicMuted: false,
-    isCameraOff: false,
-    currentFacingMode: "user",
-    audioContext: null,
-    visualizerAnimationId: null,
+    currentRoomName: null,
+    currentBroadcastId: null,
 
-    openGoLiveModal() {
+    async openGoLiveModal() {
         const studio = document.getElementById('golive-fullscreen-studio');
         if (!studio) return;
         
-        studio.classList.remove('hidden');
-        
-        // Fase 1: Mostrar Setup, ocultar Live UI
-        document.getElementById('golive-setup-panel').classList.remove('hidden');
-        document.getElementById('golive-live-ui').classList.add('hidden');
-        
-        // Cargar foto de perfil en el avatar por si acaso
-        const avatarImg = document.getElementById('golive-audio-avatar');
-        if (avatarImg && this.userProfile) avatarImg.src = this.userProfile.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
+        // 1. Generamos un ID de sala único y seguro para VDO.Ninja
+        this.currentRoomName = 'ept_live_' + this.user.id + '_' + Date.now();
 
-        // Listeners Fase 1
-        document.getElementById('btn-close-setup').onclick = () => this.closeGoLiveModal();
-        document.getElementById('btn-ready-to-live').onclick = () => this.startBroadcastToStreamplace();
-        document.getElementById('btn-switch-lens').onclick = () => this.switchLens(); // <-- NUEVO
-        document.getElementById('btn-toggle-camera').onclick = () => this.toggleCamera();
-        document.getElementById('golive-video-select').onchange = () => this.startCameraPreview(true);
-        document.getElementById('golive-audio-select').onchange = () => this.startCameraPreview(true);
+        // 2. Registramos el directo en Supabase con estado PREPARANDO
+        try {
+            const { data, error } = await this.supabase.from('active_broadcasts')
+                .insert([{
+                    user_id: this.user.id,
+                    status: 'PREPARANDO',
+                    // Reutilizamos este campo para que el visor sepa a qué sala conectarse
+                    streamplace_id: this.currentRoomName 
+                }]).select().single();
 
-        // Arrancar cámara por defecto y leer dispositivos
-        this.startCameraPreview(false);
-    },
-
-    closeGoLiveModal() {
-        if (this.peerConnection) {
-            alert("Detén la transmisión en el botón cuadrado antes de salir.");
+            if (error) throw error;
+            this.currentBroadcastId = data.id;
+            
+        } catch (err) {
+            console.error("Error al registrar el directo:", err);
+            if (window.showToast) window.showToast("No se pudo iniciar el estudio. Revisa tu conexión.");
+            else alert("No se pudo iniciar el estudio. Revisa tu conexión.");
             return;
         }
 
-        this.stopLocalMedia();
-        document.getElementById('golive-fullscreen-studio').classList.add('hidden');
-    },
+        // 3. Preparamos la UI (Fase 1: Green Room)
+        studio.classList.remove('hidden');
+        document.getElementById('green-room-overlay').classList.remove('hidden');
+        document.getElementById('studio-chat-overlay').classList.add('hidden');
 
-    stopLocalMedia() {
-        if (this.localMediaStream) {
-            this.localMediaStream.getTracks().forEach(track => track.stop());
-            this.localMediaStream = null;
-        }
-        if (this.audioContext) {
-            this.audioContext.close();
-            this.audioContext = null;
-            cancelAnimationFrame(this.visualizerAnimationId);
-        }
-    },
+        // 4. Inyectamos el Iframe de VDO.Ninja (Autostart, Webcam, Record)
+        const iframeContainer = document.getElementById('golive-iframe-container');
+        iframeContainer.innerHTML = `
+            <iframe 
+                src="https://vdo.ninja/?room=${this.currentRoomName}&autostart&webcam&record" 
+                allow="camera; microphone; display-capture; autoplay" 
+                style="width: 100%; height: 100%; border: none;">
+            </iframe>
+        `;
 
-    async startCameraPreview(isDeviceChange = false) {
-        try {
-            if (this.localMediaStream) {
-                this.localMediaStream.getTracks().forEach(track => track.stop());
-            }
-
-            const videoSelect = document.getElementById('golive-video-select');
-            const audioSelect = document.getElementById('golive-audio-select');
-
-            const constraints = {
-                video: videoSelect?.value ? { deviceId: { exact: videoSelect.value }, width: {ideal:1280}, height: {ideal:720} } : { width: {ideal:1280}, height: {ideal:720}, facingMode: "user" },
-                audio: audioSelect?.value ? { deviceId: { exact: audioSelect.value }, echoCancellation: true, noiseSuppression: true } : { echoCancellation: true, noiseSuppression: true }
-            };
-
-            const stream = await navigator.mediaDevices.getUserMedia(constraints);
-            this.localMediaStream = stream;
-            
-            const previewVideo = document.getElementById('golive-local-video');
-            if (previewVideo) {
-                previewVideo.srcObject = stream;
-                // Espejo solo si no se seleccionó cámara específica (asumiendo frontal de móvil)
-                previewVideo.style.transform = !videoSelect?.value ? "scaleX(-1)" : "scaleX(1)";
-            }
-
-            // Llenar listas la primera vez
-            if (!isDeviceChange) await this.populateDeviceSelectors();
-
-        } catch (error) {
-            console.error("Error cámara:", error);
-        }
-    },
-
-    async switchLens() {
-        // Si estamos en modo "Radio/Audio", no giramos la cámara
-        if (this.isCameraOff) return;
-
-        try {
-            // 1. Obtener TODAS las cámaras conectadas
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const videoDevices = devices.filter(d => d.kind === 'videoinput');
-
-            if (videoDevices.length < 2) {
-                window.showToast ? window.showToast("No se encontraron cámaras adicionales.") : alert("No se encontraron cámaras adicionales.");
-                return;
-            }
-
-            // 2. Identificar la cámara actual y cuál es la siguiente
-            const currentTrack = this.localMediaStream.getVideoTracks()[0];
-            const currentDeviceId = currentTrack.getSettings().deviceId;
-
-            let currentIndex = videoDevices.findIndex(d => d.deviceId === currentDeviceId);
-            let nextIndex = (currentIndex + 1) % videoDevices.length; 
-            let nextDevice = videoDevices[nextIndex];
-
-            // 🛑 EL FIX PARA MÓVILES: Liberar el hardware ANTES de pedir la nueva cámara
-            if (currentTrack) {
-                currentTrack.stop(); // Apagamos el sensor físicamente
-                this.localMediaStream.removeTrack(currentTrack);
-            }
-
-            // 3. Ahora sí, con el hardware libre, pedimos la nueva cámara
-            const newStream = await navigator.mediaDevices.getUserMedia({ 
-                video: { deviceId: { exact: nextDevice.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } } 
-            });
-            
-            const newVideoTrack = newStream.getVideoTracks()[0];
-            const videoEl = document.getElementById('golive-local-video');
-            
-            // 4. Lógica de Efecto Espejo
-            const label = nextDevice.label.toLowerCase();
-            const isFront = label.includes('front') || label.includes('user') || label.includes('frontal') || (nextIndex === 0 && !label.includes('back') && !label.includes('environment'));
-            videoEl.style.transform = isFront ? "scaleX(-1)" : "scaleX(1)";
-            
-            // 5. Inyectamos el nuevo track a nuestro stream local
-            this.localMediaStream.addTrack(newVideoTrack);
-            
-            // 6. Magia WebRTC: Reemplazamos la señal que va a Streamplace (Sin cortar el directo)
-            if (this.peerConnection) {
-                const sender = this.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
-                if (sender) {
-                    await sender.replaceTrack(newVideoTrack);
-                }
-            }
-
-            // 7. Sincronizamos la UI
-            const videoSelect = document.getElementById('golive-video-select');
-            if (videoSelect) videoSelect.value = nextDevice.deviceId;
-            
-        } catch (err) {
-            console.error("Error al cambiar de cámara:", err);
-            alert("No se pudo acceder a la cámara. El dispositivo puede estar bloqueado.");
-            // Recuperación de emergencia: reiniciamos el sensor para no quedarnos en negro
-            this.startCameraPreview();
-        }
-    },
-
-    async switchMicDevice() {
-        try {
-            // 1. Obtener TODOS los micrófonos conectados
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const audioDevices = devices.filter(d => d.kind === 'audioinput');
-
-            if (audioDevices.length < 2) {
-                window.showToast ? window.showToast("No hay otros micrófonos detectados.") : alert("No hay otros micrófonos detectados.");
-                return;
-            }
-
-            // 2. Identificar el actual y el siguiente
-            const currentTrack = this.localMediaStream.getAudioTracks()[0];
-            const currentDeviceId = currentTrack ? currentTrack.getSettings().deviceId : null;
-
-            let currentIndex = audioDevices.findIndex(d => d.deviceId === currentDeviceId);
-            let nextIndex = (currentIndex + 1) % audioDevices.length; 
-            let nextDevice = audioDevices[nextIndex];
-
-            // 3. Apagar el hardware actual para liberarlo
-            if (currentTrack) {
-                currentTrack.stop();
-                this.localMediaStream.removeTrack(currentTrack);
-            }
-
-            // 4. Pedir el nuevo micrófono
-            const newStream = await navigator.mediaDevices.getUserMedia({ 
-                audio: { deviceId: { exact: nextDevice.deviceId }, echoCancellation: true, noiseSuppression: true } 
-            });
-            const newAudioTrack = newStream.getAudioTracks()[0];
-            
-            // 5. Inyectarlo localmente
-            this.localMediaStream.addTrack(newAudioTrack);
-            
-            // 6. Magia WebRTC: Reemplazarlo en Streamplace sin cortar el directo
-            if (this.peerConnection) {
-                const sender = this.peerConnection.getSenders().find(s => s.track && s.track.kind === 'audio');
-                if (sender) {
-                    await sender.replaceTrack(newAudioTrack);
-                }
-            }
-
-            // 7. Sincronizar UI secreta
-            const audioSelect = document.getElementById('golive-audio-select');
-            if (audioSelect) audioSelect.value = nextDevice.deviceId;
-
-            // Avisamos al usuario
-            const micName = nextDevice.label ? nextDevice.label.substring(0, 20) : `Micrófono ${nextIndex + 1}`;
-            window.showToast ? window.showToast(`Audio: ${micName}...`) : console.log(`Audio: ${micName}`);
-            
-        } catch (err) {
-            console.error("Error al cambiar de micrófono:", err);
-            alert("No se pudo acceder al nuevo micrófono.");
-        }
-    },
-
-    async populateDeviceSelectors() {
-        try {
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const videoSelect = document.getElementById('golive-video-select');
-            const audioSelect = document.getElementById('golive-audio-select');
-            if (!videoSelect || !audioSelect) return;
-
-            videoSelect.innerHTML = ''; audioSelect.innerHTML = '';
-            let vCount = 1, aCount = 1;
-
-            devices.forEach(device => {
-                if (device.kind === 'videoinput') {
-                    const opt = document.createElement('option');
-                    opt.value = device.deviceId; opt.text = device.label || `Cámara ${vCount++}`;
-                    if (this.localMediaStream && this.localMediaStream.getVideoTracks()[0]?.getSettings().deviceId === device.deviceId) opt.selected = true;
-                    videoSelect.appendChild(opt);
-                } else if (device.kind === 'audioinput') {
-                    const opt = document.createElement('option');
-                    opt.value = device.deviceId; opt.text = device.label || `Micrófono ${aCount++}`;
-                    if (this.localMediaStream && this.localMediaStream.getAudioTracks()[0]?.getSettings().deviceId === device.deviceId) opt.selected = true;
-                    audioSelect.appendChild(opt);
-                }
-            });
-        } catch (err) { console.error("Error dispositivos:", err); }
-    },
-
-    // --- ACCIONES EN VIVO ---
-
-    async toggleCamera() {
-        if (!this.localMediaStream) return;
-        const videoTrack = this.localMediaStream.getVideoTracks()[0];
-        if (!videoTrack) return;
-
-        this.isCameraOff = !this.isCameraOff;
+        // 5. Asignamos los Listeners de la Fase 1
+        document.getElementById('btn-cancel-golive').onclick = () => this.cancelBroadcastPrep();
+        document.getElementById('btn-go-public').onclick = () => this.startPublicBroadcast();
         
-        const videoEl = document.getElementById('golive-local-video');
-        const audioModeEl = document.getElementById('golive-audio-mode');
-        const btnCam = document.getElementById('btn-toggle-camera');
-        
-        // Buscamos si ya estamos transmitiendo a Streamplace
-        const sender = this.peerConnection ? this.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video') : null;
+        // Listener de Fase 2 pre-asignado
+        document.getElementById('btn-stop-broadcast').onclick = () => this.stopBroadcast();
+    },
 
-        if (this.isCameraOff) {
-            // 1. Ocultar video local, mostrar Canvas
-            videoEl.classList.add('hidden');
-            audioModeEl.classList.remove('hidden');
-            btnCam.innerHTML = '<i class="fa-solid fa-video-slash" style="color: #ef4444;"></i>';
-            
-            // 2. Apagar la cámara web para que se apague la luz de tu PC
-            videoTrack.enabled = false; 
-
-            // 3. Iniciar el dibujado del Canvas
-            this.startAudioVisualizer();
-            
-            // 4. EL TRUCO: Capturar el canvas a 30 FPS y enviarlo a Streamplace
-            if (sender) {
-                const canvas = document.getElementById('golive-visualizer');
-                const canvasStream = canvas.captureStream(30); 
-                await sender.replaceTrack(canvasStream.getVideoTracks()[0]);
-            }
-        } else {
-            // 1. Mostrar video local, ocultar Canvas
-            videoEl.classList.remove('hidden');
-            audioModeEl.classList.add('hidden');
-            btnCam.innerHTML = '<i class="fa-solid fa-video"></i>';
-            
-            // 2. Detener la animación del Canvas para ahorrar batería
-            if (this.visualizerAnimationId) cancelAnimationFrame(this.visualizerAnimationId);
-            
-            // 3. Encender la cámara web de nuevo
-            videoTrack.enabled = true;
-            
-            // 4. Devolver la señal de la cámara a Streamplace
-            if (sender) {
-                await sender.replaceTrack(videoTrack);
-            }
+    async cancelBroadcastPrep() {
+        // Si el usuario se arrepiente en la Green Room, borramos el registro fantasma
+        if (this.currentBroadcastId) {
+            try {
+                await this.supabase.from('active_broadcasts')
+                    .delete()
+                    .eq('id', this.currentBroadcastId);
+            } catch(e) { console.error("Error al cancelar preparación:", e); }
         }
+        this.closeGoLiveModal();
     },
 
-    toggleMic() {
-        if (!this.localMediaStream) return;
-        const audioTrack = this.localMediaStream.getAudioTracks()[0];
-        if (!audioTrack) return;
-
-        this.isMicMuted = !this.isMicMuted;
-        audioTrack.enabled = !this.isMicMuted; // Mutea el envío
-        
-        const btnMic = document.getElementById('btn-toggle-mic');
-        btnMic.innerHTML = this.isMicMuted ? '<i class="fa-solid fa-microphone-slash" style="color: #ef4444;"></i>' : '<i class="fa-solid fa-microphone"></i>';
-    },
-
-    startAudioVisualizer() {
-        const canvas = document.getElementById('golive-visualizer');
-        const container = document.getElementById('golive-audio-mode');
-        if (!canvas || !container) return;
-        const ctx = canvas.getContext('2d');
-        
-        // CRÍTICO: Tomar la resolución real del contenedor para evitar el estiramiento
-        const rect = container.getBoundingClientRect();
-        canvas.width = rect.width;
-        canvas.height = rect.height;
-
-        const avatarImg = new Image();
-        avatarImg.crossOrigin = "anonymous"; 
-        avatarImg.src = this.userProfile?.avatar_url || 'https://i.ibb.co/61fJv24/default-avatar.png';
-
-        if (!this.audioContext) {
-            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const source = this.audioContext.createMediaStreamSource(this.localMediaStream);
-            const analyser = this.audioContext.createAnalyser();
-            analyser.fftSize = 256;
-            source.connect(analyser);
-            this.analyser = analyser;
-        }
-
-        const bufferLength = this.analyser.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
-        
-        const draw = () => {
-            this.visualizerAnimationId = requestAnimationFrame(draw);
-            this.analyser.getByteFrequencyData(dataArray);
-            
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
-            
-            // Radio dinámico: 15% del lado más pequeño de la pantalla (siempre será redondo)
-            const radius = Math.min(canvas.width, canvas.height) * 0.15; 
-
-            ctx.lineWidth = 4;
-            for(let i = 0; i < bufferLength; i++) {
-                // Ajustamos la altura de la onda basándonos en el tamaño de la pantalla
-                const barHeight = (dataArray[i] / 255) * (radius * 0.8); 
-                const rads = (Math.PI * 2) / bufferLength;
-                const angle = rads * i;
-                
-                const xStart = centerX + Math.cos(angle) * radius;
-                const yStart = centerY + Math.sin(angle) * radius;
-                const xEnd = centerX + Math.cos(angle) * (radius + barHeight);
-                const yEnd = centerY + Math.sin(angle) * (radius + barHeight);
-
-                ctx.strokeStyle = `rgba(239, 68, 68, ${dataArray[i]/255 + 0.2})`; 
-                ctx.beginPath();
-                ctx.moveTo(xStart, yStart);
-                ctx.lineTo(xEnd, yEnd);
-                ctx.stroke();
-            }
-
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, radius - 5, 0, Math.PI * 2, true);
-            ctx.closePath();
-            ctx.clip();
-            
-            if (avatarImg.complete && avatarImg.naturalHeight !== 0) {
-                ctx.drawImage(avatarImg, centerX - radius, centerY - radius, radius * 2, radius * 2);
-            } else {
-                ctx.fillStyle = '#1e293b';
-                ctx.fill();
-            }
-            ctx.restore();
-            
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, radius - 5, 0, Math.PI * 2, true);
-            ctx.lineWidth = 6;
-            ctx.strokeStyle = '#b72a1e';
-            ctx.stroke();
-        };
-        
-        if (avatarImg.complete) { draw(); } 
-        else { avatarImg.onload = draw; }
-    },
-
-    // --- CONEXIÓN AL SERVIDOR (FASE 2: AT PROTOCOL) ---
-    async startBroadcastToStreamplace() {
-        const btnReady = document.getElementById('btn-ready-to-live');
+    async startPublicBroadcast() {
+        const btnReady = document.getElementById('btn-go-public');
         if (btnReady) {
             btnReady.disabled = true;
             btnReady.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Conectando...';
         }
-        
-        try {
-            // Protección por si bskyCreds es null (Usuario recién registrado)
-            if (!this.bskyCreds) this.bskyCreds = {};
-            
-            const streamKey = this.bskyCreds.stream_key;
-            if (!streamKey) {
-                if (btnReady) {
-                    btnReady.disabled = false;
-                    btnReady.innerHTML = '<i class="fa-solid fa-bolt"></i> Iniciar Transmisión';
-                }
-                // Si por alguna razón llega aquí sin llave, le avisamos sin romper el UI
-                alert("No se detectó tu Stream Key. Cierra el estudio y vuelve a intentarlo.");
-                return;
-            }
 
-            const { data, error } = await this.supabase.functions.invoke('start-broadcast', {
-                body: { streamKey: streamKey }
-            });
+        try {
+            // 1. Actualizamos el estado a 'live' para que aparezca en el Feed global
+            const { error } = await this.supabase.from('active_broadcasts')
+                .update({ status: 'live' })
+                .eq('id', this.currentBroadcastId);
 
             if (error) throw error;
-            if (!data || !data.ingestUrl) throw new Error("La Edge Function no devolvió una URL válida.");
 
-            const whipUrl = data.ingestUrl;
+            // 2. Transición de UI (Adiós Green Room, Hola Chat)
+            document.getElementById('green-room-overlay').classList.add('hidden');
             
-            this.peerConnection = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
-            
-            if (this.isCameraOff) {
-                const canvas = document.getElementById('golive-visualizer');
-                const canvasStream = canvas.captureStream(30);
-                this.peerConnection.addTrack(canvasStream.getVideoTracks()[0], this.localMediaStream); 
-                this.peerConnection.addTrack(this.localMediaStream.getAudioTracks()[0], this.localMediaStream); 
-            } else {
-                this.localMediaStream.getTracks().forEach(track => this.peerConnection.addTrack(track, this.localMediaStream));
-            }
+            const chatOverlay = document.getElementById('studio-chat-overlay');
+            chatOverlay.classList.remove('hidden');
 
-            const offer = await this.peerConnection.createOffer();
-            await this.peerConnection.setLocalDescription(offer);
+            // 3. Inicializamos el Chat unificado (Reutilizando tu motor existente)
+            this.setupRobustChatInput('studio-chat-input', 'btn-send-studio-chat');
+            this.initUnifiedChat(this.currentBroadcastId, 'studio-chat-messages');
+            this.setupBroadcasterFadeOut();
 
-            // 3. LA INYECCIÓN WHIP (Enviando la llave secreta real al servidor)
-            const response = await fetch(whipUrl, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/sdp',
-                    'Authorization': `Bearer ${streamKey}` 
-                },
-                body: offer.sdp
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Fallo en servidor WHIP: ${response.status} - ${errorText}`);
-            }
-
-            const answerSdp = await response.text();
-            await this.peerConnection.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: answerSdp }));
-
-            // TRANSICIÓN DE FASE
-            document.getElementById('golive-setup-panel').classList.add('hidden');
-            document.getElementById('golive-live-ui').classList.remove('hidden');
-            
-            document.getElementById('btn-switch-lens').onclick = () => this.switchLens();
-            document.getElementById('btn-switch-mic').onclick = () => this.switchMicDevice();
-            document.getElementById('btn-toggle-camera').onclick = () => this.toggleCamera();
-            document.getElementById('btn-toggle-mic').onclick = () => this.toggleMic();
-            document.getElementById('btn-stop-broadcast').onclick = () => this.stopBroadcast();
-            
-            document.getElementById('btn-toggle-studio-chat').onclick = () => {
-                const chatOverlay = document.getElementById('studio-chat-overlay');
-                chatOverlay.classList.toggle('hidden');
-                this.wakeUpChatOverlay();
-            };
-
-            // FIX CRÍTICO BLINDADO V2
-            let broadcastId = null;
-            if (data && (data.id || data.broadcast_id || data.broadcastId)) {
-                broadcastId = data.id || data.broadcast_id || data.broadcastId;
-            } else {
-                for(let i=0; i<4; i++) {
-                    const { data: dbData, error: dbError } = await this.supabase.from('active_broadcasts')
-                        .select('id').eq('user_id', this.user.id).eq('status', 'live').limit(1); 
-                    
-                    if (dbData && dbData.length > 0) { 
-                        broadcastId = dbData[0].id; 
-                        break; 
-                    }
-                    if (dbError) console.error("Error buscando ID:", dbError);
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                }
-            }
-            
-            if (broadcastId) {
-                this.currentBroadcastId = broadcastId;
-                document.getElementById('studio-chat-overlay').classList.remove('hidden');
-                this.setupRobustChatInput('studio-chat-input', 'btn-send-studio-chat');
-                this.initUnifiedChat(broadcastId, 'studio-chat-messages');
-                this.setupBroadcasterFadeOut();
-            } else {
-                console.error("No se pudo obtener el ID del directo.");
-            }
         } catch (err) {
-            console.error("Error al transmitir:", err);
-            const btnReady = document.getElementById('btn-ready-to-live');
+            console.error("Error al salir al aire:", err);
+            alert("Hubo un error al salir al aire. Inténtalo de nuevo.");
             if (btnReady) {
                 btnReady.disabled = false;
-                btnReady.innerHTML = '<i class="fa-solid fa-bolt"></i> Reintentar Transmisión';
-            }
-            
-            if (this.supabase && this.user) {
-                try {
-                    // ELIMINADO EL 'ended_at' PARA EVITAR QUE SE CONGELE LA APP
-                    await this.supabase.from('active_broadcasts')
-                        .update({ status: 'ended' }) 
-                        .eq('user_id', this.user.id).eq('status', 'live');
-                } catch(e) {
-                    console.error("Error al limpiar estado live:", e);
-                }
+                btnReady.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> Iniciar Transmisión Pública';
             }
         }
     },
 
     async stopBroadcast() {
-        if (!confirm("¿Seguro que deseas terminar la transmisión?")) return;
-        
-        if (this.peerConnection) {
-            this.peerConnection.close();
-            this.peerConnection = null;
-        }
+        if (!confirm("¿Seguro que deseas terminar la transmisión? Tu video se descargará automáticamente.")) return;
 
+        // 1. Apagamos el canal de chat de Supabase
         if (this.studioChatChannel) {
             this.supabase.removeChannel(this.studioChatChannel);
             this.studioChatChannel = null;
         }
-        
-        try {
-            await this.supabase.from('active_broadcasts')
-                .update({ status: 'ended' }) // ¡SIN ended_at!
-                .eq('user_id', this.user.id).eq('status', 'live');
-        } catch(e) { console.error(e); }
 
+        // 2. Actualizamos la base de datos a 'ended'
+        try {
+            if (this.currentBroadcastId) {
+                await this.supabase.from('active_broadcasts')
+                    .update({ status: 'ended' })
+                    .eq('id', this.currentBroadcastId);
+            }
+        } catch(e) { console.error("Error al finalizar transmisión:", e); }
+
+        // 3. Cerramos el modal (esto destruye el iframe)
         this.closeGoLiveModal();
         if (window.showToast) window.showToast("Transmisión finalizada.");
+    },
+
+    closeGoLiveModal() {
+        // 1. Destruir el Iframe detiene el uso de la cámara, micrófono y fuerza la descarga del video en VDO.Ninja
+        const iframeContainer = document.getElementById('golive-iframe-container');
+        if (iframeContainer) iframeContainer.innerHTML = '';
+
+        // 2. Ocultar el estudio
+        document.getElementById('golive-fullscreen-studio').classList.add('hidden');
+
+        // 3. Resetear variables y botones
+        this.currentRoomName = null;
+        this.currentBroadcastId = null;
+        
+        const btnReady = document.getElementById('btn-go-public');
+        if (btnReady) {
+            btnReady.disabled = false;
+            btnReady.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> Iniciar Transmisión Pública';
+        }
     },
 
     // --- CHAT DEL BROADCASTER (ESTUDIO EXPRESS) ---
