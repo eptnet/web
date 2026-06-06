@@ -535,12 +535,8 @@ const ComunidadApp = {
             if (directoBtn && directoBtn.innerHTML.includes('fa-bolt')) {
                 e.preventDefault();
                 if (this.bskyCreds && (this.userProfile?.role === 'researcher' || this.userProfile?.role === 'admin')) {
-                    // FIX UX: Verificar llave ANTES de abrir el estudio
-                    if (!this.bskyCreds.stream_key) {
-                        this.openStreamKeyModal();
-                    } else {
-                        this.openGoLiveModal();
-                    }
+                    // ¡NUEVO!: Adiós a la validación de la llave, vamos directo a la Green Room
+                    this.openGoLiveModal();
                 } else {
                     alert("Solo los investigadores verificados pueden iniciar transmisiones en vivo.");
                 }
@@ -663,12 +659,8 @@ const ComunidadApp = {
             if (button && button.id === 'fab-golive') {
                 fabContainer.classList.remove('is-open'); // Lo cerramos
                 if (this.bskyCreds && (this.userProfile?.role === 'researcher' || this.userProfile?.role === 'admin')) {
-                    // FIX UX: Verificar llave ANTES de abrir el estudio
-                    if (!this.bskyCreds.stream_key) {
-                        this.openStreamKeyModal();
-                    } else {
-                        this.openGoLiveModal();
-                    }
+                    // ¡NUEVO!: Adiós a la validación de la llave, vamos directo a la Green Room
+                    this.openGoLiveModal();
                 } else {
                     alert("Por seguiridad, solo los investigadores verificados con ORCID y cuenta BlueSky pueden iniciar transmisiones en vivo, ve a tu perfil he inicia tu verificación.");
                 }
