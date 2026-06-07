@@ -1489,3 +1489,21 @@ body.dark-theme {
     from { transform: translateX(100%); opacity: 0; }
     to { transform: translateX(0); opacity: 1; }
 }
+
+/* Elevar los mensajes de chat por encima del degradado */
+.studio-chat-messages-area {
+    position: relative;
+    z-index: 30;
+}
+
+/* Darle formato de "Burbuja" a los mensajes para que no se pierdan en el fondo */
+.golive-chat-msg-row {
+    position: relative;
+    z-index: 30;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(5px);
+    margin-bottom: 5px;
+}

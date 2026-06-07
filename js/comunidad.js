@@ -88,7 +88,7 @@ const ComunidadApp = {
         const studio = document.getElementById('golive-fullscreen-studio');
         if (!studio) return;
 
-        // 1. Generamos ID único para la sala rápida
+        // 1. Generamos ID único para el Push
         const stableId = self.crypto.randomUUID().substring(0, 8);
         this.currentRoomName = `ept_live_${stableId}_${Date.now()}`;
 
@@ -98,7 +98,7 @@ const ComunidadApp = {
                 .insert([{
                     user_id: this.user.id,
                     status: 'PREPARANDO',
-                    streamplace_id: this.currentRoomName, // El roomName se guarda aquí
+                    streamplace_id: this.currentRoomName, 
                     playback_url: 'pending_init' 
                 }]).select().single();
 
@@ -111,24 +111,22 @@ const ComunidadApp = {
             return;
         }
 
-        // 3. Mostramos UI, asegurando que se vea el camerino y no el panel derecho
         studio.classList.remove('hidden');
         document.getElementById('green-room-overlay').style.display = 'flex';
         document.getElementById('studio-chat-overlay').style.display = 'none';
 
-        // 4. Inyección del Iframe (Broadcaster en Room + Meshcast + Cover)
+        // 3. EMISOR: Usa PUSH para enviar su video directo a Meshcast (Con &cover)
         const iframeContainer = document.getElementById('golive-iframe-container');
         const meshcastUrl = `https://cae1.meshcast.io/whep/${this.currentRoomName}`;
         
         iframeContainer.innerHTML = `
             <iframe 
-                src="https://vdo.ninja/?room=${this.currentRoomName}&autostart&webcam&record&whepshare=${meshcastUrl}&cover" 
+                src="https://vdo.ninja/?push=${this.currentRoomName}&autostart&webcam&record&whepshare=${meshcastUrl}&cover" 
                 allow="camera; microphone; display-capture; autoplay; fullscreen" 
                 style="width: 100%; height: 100%; border: none;">
             </iframe>
         `;
 
-        // 5. Asignamos Listeners
         const btnGoPublic = document.getElementById('btn-go-public');
         const btnCancel = document.getElementById('btn-cancel-golive');
         
@@ -2522,15 +2520,15 @@ const ComunidadApp = {
     currentBroadcastId: null,
     chatFadeTimer: null,
 
-    // Corregimos la advertencia de 'allowfullscreen' para el espectador
+    // --- RECEPTOR ---
     openLiveViewer(playbackUrl, handle, broadcastId, streamplaceId) {
         this.currentBroadcastId = broadcastId;
         const modalContainer = document.getElementById('modal-container');
         if (!modalContainer) return;
 
-        // Espectador jala la escena 0 de la sala usando Meshcast y Cover
+        // 4. ESPECTADOR: Usa VIEW para conectarse directo al Push a través de Meshcast (Con &cover)
         const meshcastUrl = `https://use1.meshcast.io/whep/${streamplaceId}`;
-        const embedUrl = `https://vdo.ninja/?room=${streamplaceId}&scene=0&meshcast=1&whepshare=${meshcastUrl}&cleanoutput&transparent&autoplay&cover`;
+        const embedUrl = `https://vdo.ninja/?view=${streamplaceId}&autoplay&meshcast&whepshare=${meshcastUrl}&cleanoutput&transparent&cover`;
         
         const chatInputHtml = this.user 
             ? `<div style="display: flex; gap: 8px; align-items: center;">
@@ -2576,7 +2574,6 @@ const ComunidadApp = {
             this.setupRobustChatInput('golive-chat-input', 'btn-send-golive-chat');
         }
 
-        // Se mantiene el chat efímero y reacciones unificadas
         this.initUnifiedChat(broadcastId, 'golive-chat-messages');
     },
 
