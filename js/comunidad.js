@@ -88,21 +88,22 @@ const ComunidadApp = {
         const studio = document.getElementById('golive-fullscreen-studio');
         if (!studio) return;
 
-        // 1. Generamos el ID de la sala para VDO.Ninja
-        this.currentRoomName = 'ept_live_' + this.user.id + '_' + Date.now();
+        // 1. Generamos ID único para la sala rápida
+        const stableId = self.crypto.randomUUID().substring(0, 8);
+        this.currentRoomName = `ept_live_${stableId}_${Date.now()}`;
 
-        // 2. Registramos el directo en Supabase (Esto soluciona el error "null")
+        // 2. Registramos en Supabase
         try {
             const { data, error } = await this.supabase.from('active_broadcasts')
                 .insert([{
                     user_id: this.user.id,
                     status: 'PREPARANDO',
-                    streamplace_id: this.currentRoomName,
+                    streamplace_id: this.currentRoomName, // El roomName se guarda aquí
                     playback_url: 'pending_init' 
                 }]).select().single();
 
             if (error) throw error;
-            this.currentBroadcastId = data.id; // Guardamos el ID real de la base de datos
+            this.currentBroadcastId = data.id;
             
         } catch (err) {
             console.error("Error al registrar el directo:", err);
@@ -110,26 +111,32 @@ const ComunidadApp = {
             return;
         }
 
-        // 3. Preparamos la interfaz (Fase 1: Green Room)
+        // 3. Mostramos UI, asegurando que se vea el camerino y no el panel derecho
         studio.classList.remove('hidden');
-        document.getElementById('green-room-overlay').classList.remove('hidden');
-        document.getElementById('studio-chat-overlay').classList.add('hidden');
+        document.getElementById('green-room-overlay').style.display = 'flex';
+        document.getElementById('studio-chat-overlay').style.display = 'none';
 
-        // 4. Inyectamos el Iframe
+        // 4. Inyección del Iframe (Broadcaster en Room + Meshcast + Cover)
         const iframeContainer = document.getElementById('golive-iframe-container');
+        const meshcastUrl = `https://cae1.meshcast.io/whep/${this.currentRoomName}`;
+        
         iframeContainer.innerHTML = `
             <iframe 
-                src="https://vdo.ninja/?room=${this.currentRoomName}&autostart&webcam&record" 
-                allow="camera; microphone; display-capture; autoplay" 
+                src="https://vdo.ninja/?room=${this.currentRoomName}&autostart&webcam&record&whepshare=${meshcastUrl}&cover" 
+                allow="camera; microphone; display-capture; autoplay; fullscreen" 
                 style="width: 100%; height: 100%; border: none;">
             </iframe>
         `;
 
-        // 5. Conectamos los botones que YA ESTÁN en tu HTML (Evita duplicados)
+        // 5. Asignamos Listeners
         const btnGoPublic = document.getElementById('btn-go-public');
         const btnCancel = document.getElementById('btn-cancel-golive');
         
-        if (btnGoPublic) btnGoPublic.onclick = () => this.startPublicBroadcast();
+        if (btnGoPublic) {
+            btnGoPublic.onclick = () => this.startPublicBroadcast();
+            btnGoPublic.disabled = false;
+            btnGoPublic.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> Salir al Aire';
+        }
         if (btnCancel) btnCancel.onclick = () => this.cancelBroadcastPrep();
     },
 
@@ -146,9 +153,8 @@ const ComunidadApp = {
     },
 
     async startPublicBroadcast() {
-        // Bloqueo de seguridad: Si no hay ID, detenemos el proceso
         if (!this.currentBroadcastId) {
-            alert("Error: No se encontró el ID de la transmisión. Cierra y vuelve a intentar.");
+            alert("Error: No se encontró el ID de la transmisión.");
             return;
         }
 
@@ -159,23 +165,53 @@ const ComunidadApp = {
         }
 
         try {
-            // 1. Actualizamos el estado a 'live'
+            // 1. Actualizamos estado en BD
             const { error } = await this.supabase.from('active_broadcasts')
                 .update({ status: 'live' })
                 .eq('id', this.currentBroadcastId);
 
             if (error) throw error;
 
-            // 2. Transición de UI (Adiós Green Room, Hola Chat)
-            document.getElementById('green-room-overlay').classList.add('hidden');
+            // 2. FASE 2: Transición de interfaces
+            document.getElementById('green-room-overlay').style.display = 'none';
+            document.getElementById('studio-chat-overlay').style.display = 'flex';
             
-            const chatOverlay = document.getElementById('studio-chat-overlay');
-            chatOverlay.classList.remove('hidden');
+            // Ocultamos el botón flotante inicialmente porque el panel ya está abierto
+            document.getElementById('btn-toggle-studio-chat').style.display = 'none';
 
-            // 3. Inicializamos el Chat unificado
+            // 3. Inicializamos Chat
             this.setupRobustChatInput('studio-chat-input', 'btn-send-studio-chat');
             this.initUnifiedChat(this.currentBroadcastId, 'studio-chat-messages');
             
+            // ==========================================
+            // NUEVOS LISTENERS DE CONTROLES DEL ESTUDIO
+            // ==========================================
+            
+            // Botón: Cerrar el panel lateral de chat (La 'X')
+            const btnCloseChat = document.getElementById('btn-close-chat-panel');
+            if (btnCloseChat) {
+                btnCloseChat.onclick = () => {
+                    document.getElementById('studio-chat-overlay').style.display = 'none';
+                    document.getElementById('btn-toggle-studio-chat').style.display = 'flex';
+                };
+            }
+
+            // Botón flotante: Volver a abrir el chat
+            const btnToggleChat = document.getElementById('btn-toggle-studio-chat');
+            if (btnToggleChat) {
+                btnToggleChat.onclick = () => {
+                    document.getElementById('btn-toggle-studio-chat').style.display = 'none';
+                    document.getElementById('studio-chat-overlay').style.display = 'flex';
+                    if (typeof this.wakeUpChatOverlay === 'function') this.wakeUpChatOverlay(); 
+                };
+            }
+
+            // Botón rojo: Finalizar transmisión
+            const btnStop = document.getElementById('btn-stop-broadcast');
+            if (btnStop) {
+                btnStop.onclick = () => this.stopBroadcast();
+            }
+
             if (typeof this.setupBroadcasterFadeOut === 'function') {
                 this.setupBroadcasterFadeOut();
             }
@@ -185,7 +221,7 @@ const ComunidadApp = {
             alert("Hubo un error al salir al aire. Inténtalo de nuevo.");
             if (btnReady) {
                 btnReady.disabled = false;
-                btnReady.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> Iniciar Transmisión Pública';
+                btnReady.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> Salir al Aire';
             }
         }
     },
@@ -2486,14 +2522,15 @@ const ComunidadApp = {
     currentBroadcastId: null,
     chatFadeTimer: null,
 
-    // Añadimos streamplaceId como cuarto parámetro
+    // Corregimos la advertencia de 'allowfullscreen' para el espectador
     openLiveViewer(playbackUrl, handle, broadcastId, streamplaceId) {
         this.currentBroadcastId = broadcastId;
         const modalContainer = document.getElementById('modal-container');
         if (!modalContainer) return;
 
-        // FIX DEFINITIVO: Usamos el DID universal en lugar de adivinar el dominio del handle
-        const embedUrl = `https://vdo.ninja/?view=${streamplace_id}&autoplay&broadcast`;
+        // Espectador jala la escena 0 de la sala usando Meshcast y Cover
+        const meshcastUrl = `https://use1.meshcast.io/whep/${streamplaceId}`;
+        const embedUrl = `https://vdo.ninja/?room=${streamplaceId}&scene=0&meshcast=1&whepshare=${meshcastUrl}&cleanoutput&transparent&autoplay&cover`;
         
         const chatInputHtml = this.user 
             ? `<div style="display: flex; gap: 8px; align-items: center;">
@@ -2513,7 +2550,7 @@ const ComunidadApp = {
                 <button class="modal-close-btn" id="close-viewer-btn" style="position: absolute; right: 15px; top: 15px; color: white; background: rgba(0,0,0,0.5); border: none; font-size: 1.5rem; width: 40px; height: 40px; border-radius: 50%; z-index: 20; cursor: pointer;">&times;</button>
                 
                 <div class="video-background-layer">
-                    <iframe src="${embedUrl}" allow="autoplay; fullscreen" allowfullscreen></iframe>
+                    <iframe src="${embedUrl}" allow="autoplay; fullscreen" style="width: 100%; height: 100%; border: none;"></iframe>
                     <div class="video-overlay-info">
                         <span class="badge-live"><span class="dot"></span> EN VIVO</span>
                         <span style="background: rgba(0,0,0,0.6); color: white; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 0.8rem; margin-left: 8px; backdrop-filter: blur(4px);">
@@ -2539,7 +2576,7 @@ const ComunidadApp = {
             this.setupRobustChatInput('golive-chat-input', 'btn-send-golive-chat');
         }
 
-        // Llamamos al motor unificado indicándole qué contenedor usar
+        // Se mantiene el chat efímero y reacciones unificadas
         this.initUnifiedChat(broadcastId, 'golive-chat-messages');
     },
 
