@@ -86,31 +86,51 @@ const ComunidadApp = {
 
     async openGoLiveModal() {
         const studio = document.getElementById('golive-fullscreen-studio');
-        studio.classList.remove('hidden');
+        if (!studio) return;
 
-        // Limpieza de capas
+        // 1. Generamos el ID de la sala para VDO.Ninja
+        this.currentRoomName = 'ept_live_' + this.user.id + '_' + Date.now();
+
+        // 2. Registramos el directo en Supabase (Esto soluciona el error "null")
+        try {
+            const { data, error } = await this.supabase.from('active_broadcasts')
+                .insert([{
+                    user_id: this.user.id,
+                    status: 'PREPARANDO',
+                    streamplace_id: this.currentRoomName,
+                    playback_url: 'pending_init' 
+                }]).select().single();
+
+            if (error) throw error;
+            this.currentBroadcastId = data.id; // Guardamos el ID real de la base de datos
+            
+        } catch (err) {
+            console.error("Error al registrar el directo:", err);
+            alert("No se pudo iniciar el estudio. Revisa tu conexión.");
+            return;
+        }
+
+        // 3. Preparamos la interfaz (Fase 1: Green Room)
+        studio.classList.remove('hidden');
         document.getElementById('green-room-overlay').classList.remove('hidden');
         document.getElementById('studio-chat-overlay').classList.add('hidden');
 
-        // Inyección del Iframe VDO.Ninja (El único que debe existir)
+        // 4. Inyectamos el Iframe
         const iframeContainer = document.getElementById('golive-iframe-container');
-        iframeContainer.innerHTML = `<iframe src="https://vdo.ninja/?room=${this.currentRoomName}&autostart&webcam&record" allow="camera; microphone; display-capture; autoplay" style="width:100%; height:100%; border:none;"></iframe>`;
-
-        // Renderizado dinámico de controles laterales (Iconos)
-        const sideControls = document.createElement('div');
-        sideControls.className = 'studio-side-controls';
-        sideControls.innerHTML = `
-            <button id="btn-go-public-icon" class="icon-btn glass" title="Iniciar Vivo"><i class="fa-solid fa-tower-broadcast" style="color:#10b981;"></i></button>
-            <button id="btn-cancel-golive-icon" class="icon-btn glass" title="Cancelar"><i class="fa-solid fa-xmark" style="color:#ef4444;"></i></button>
+        iframeContainer.innerHTML = `
+            <iframe 
+                src="https://vdo.ninja/?room=${this.currentRoomName}&autostart&webcam&record" 
+                allow="camera; microphone; display-capture; autoplay" 
+                style="width: 100%; height: 100%; border: none;">
+            </iframe>
         `;
-        
-        // Lo inyectamos en el overlay de la green room
-        const greenRoom = document.getElementById('green-room-overlay');
-        greenRoom.appendChild(sideControls);
 
-        // Listeners
-        document.getElementById('btn-go-public-icon').onclick = () => this.startPublicBroadcast();
-        document.getElementById('btn-cancel-golive-icon').onclick = () => this.cancelBroadcastPrep();
+        // 5. Conectamos los botones que YA ESTÁN en tu HTML (Evita duplicados)
+        const btnGoPublic = document.getElementById('btn-go-public');
+        const btnCancel = document.getElementById('btn-cancel-golive');
+        
+        if (btnGoPublic) btnGoPublic.onclick = () => this.startPublicBroadcast();
+        if (btnCancel) btnCancel.onclick = () => this.cancelBroadcastPrep();
     },
 
     async cancelBroadcastPrep() {
@@ -126,6 +146,12 @@ const ComunidadApp = {
     },
 
     async startPublicBroadcast() {
+        // Bloqueo de seguridad: Si no hay ID, detenemos el proceso
+        if (!this.currentBroadcastId) {
+            alert("Error: No se encontró el ID de la transmisión. Cierra y vuelve a intentar.");
+            return;
+        }
+
         const btnReady = document.getElementById('btn-go-public');
         if (btnReady) {
             btnReady.disabled = true;
@@ -133,7 +159,7 @@ const ComunidadApp = {
         }
 
         try {
-            // 1. Actualizamos el estado a 'live' para que aparezca en el Feed global
+            // 1. Actualizamos el estado a 'live'
             const { error } = await this.supabase.from('active_broadcasts')
                 .update({ status: 'live' })
                 .eq('id', this.currentBroadcastId);
@@ -146,10 +172,13 @@ const ComunidadApp = {
             const chatOverlay = document.getElementById('studio-chat-overlay');
             chatOverlay.classList.remove('hidden');
 
-            // 3. Inicializamos el Chat unificado (Reutilizando tu motor existente)
+            // 3. Inicializamos el Chat unificado
             this.setupRobustChatInput('studio-chat-input', 'btn-send-studio-chat');
             this.initUnifiedChat(this.currentBroadcastId, 'studio-chat-messages');
-            this.setupBroadcasterFadeOut();
+            
+            if (typeof this.setupBroadcasterFadeOut === 'function') {
+                this.setupBroadcasterFadeOut();
+            }
 
         } catch (err) {
             console.error("Error al salir al aire:", err);
