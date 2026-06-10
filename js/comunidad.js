@@ -121,7 +121,7 @@ const ComunidadApp = {
         
         iframeContainer.innerHTML = `
             <iframe 
-                src="https://vdo.ninja/?push=${this.currentRoomName}&autostart&webcam&record&whepshare=${meshcastUrl}&cover" 
+                src="https://vdo.ninja/alpha/?push=${this.currentRoomName}&autostart&webcam&record&whepshare=${meshcastUrl}&cover" 
                 allow="camera; microphone; display-capture; autoplay; fullscreen" 
                 style="width: 100%; height: 100%; border: none;">
             </iframe>
@@ -2528,7 +2528,7 @@ const ComunidadApp = {
 
         // 4. ESPECTADOR: Usa VIEW para conectarse directo al Push a través de Meshcast (Con &cover)
         const meshcastUrl = `https://use1.meshcast.io/whep/${streamplaceId}`;
-        const embedUrl = `https://vdo.ninja/?view=${streamplaceId}&autoplay&meshcast&whepshare=${meshcastUrl}&cleanoutput&transparent&cover`;
+        const embedUrl = `https://vdo.ninja/alpha/?view=${streamplaceId}&autoplay&meshcast&whepshare=${meshcastUrl}&cleanoutput&transparent&cover`;
         
         const chatInputHtml = this.user 
             ? `<div style="display: flex; gap: 8px; align-items: center;">

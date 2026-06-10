@@ -1449,9 +1449,9 @@ body.dark-theme {
 /* --- PANEL LATERAL DERECHO (CORREGIDO) --- */
 #studio-chat-overlay {
     position: absolute; top: 0; right: 0; bottom: 0;
-    width: 350px; max-width: 100%; z-index: 20;
+    width: 100%; max-width: 100%; z-index: 20;
     display: flex; flex-direction: column;
-    background: linear-gradient(to left, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 70%, transparent 100%);
+    background: linear-gradient(to left, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.) 70%, transparent 100%);
     pointer-events: none; 
     animation: slideInRight 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
@@ -1500,10 +1500,10 @@ body.dark-theme {
 .golive-chat-msg-row {
     position: relative;
     z-index: 30;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.6);
     padding: 8px 12px;
     border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(0px);
     margin-bottom: 5px;
 }
