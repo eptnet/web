@@ -115,13 +115,13 @@ const ComunidadApp = {
         document.getElementById('green-room-overlay').style.display = 'flex';
         document.getElementById('studio-chat-overlay').style.display = 'none';
 
-        // 3. EMISOR: Usa PUSH para enviar su video directo a Meshcast (Con &cover)
+        // 3. EMISOR: Usa PUSH enviando la señal directo a la ruta WHIP de Meshcast
         const iframeContainer = document.getElementById('golive-iframe-container');
         const meshcastUrl = `https://cae1.meshcast.io/whep/${this.currentRoomName}`;
         
         iframeContainer.innerHTML = `
             <iframe 
-                src="https://vdo.ninja/alpha/?push=${this.currentRoomName}&autostart&webcam&record&whepshare=${meshcastUrl}&cover" 
+                src="https://vdo.ninja/?push=${this.currentRoomName}&autostart&webcam&record&whepshare=${meshcastUrl}" 
                 allow="camera; microphone; display-capture; autoplay; fullscreen" 
                 style="width: 100%; height: 100%; border: none;">
             </iframe>
@@ -2526,9 +2526,10 @@ const ComunidadApp = {
         const modalContainer = document.getElementById('modal-container');
         if (!modalContainer) return;
 
-        // 4. ESPECTADOR: Usa VIEW para conectarse directo al Push a través de Meshcast (Con &cover)
-        const meshcastUrl = `https://use1.meshcast.io/whep/${streamplaceId}`;
-        const embedUrl = `https://vdo.ninja/alpha/?view=${streamplaceId}&autoplay&meshcast&whepshare=${meshcastUrl}&cleanoutput&transparent&cover`;
+        // 4. ESPECTADOR: Leemos directo del servidor CDN y quitamos cleanoutput 
+        // para que el navegador pueda mostrar el botón de "Play" si bloquea el audio.
+        const meshcastUrl = `https://cae1.meshcast.io/whep/${streamplaceId}`;
+        const embedUrl = `https://vdo.ninja/?whep=${meshcastUrl}&autoplay`;
         
         const chatInputHtml = this.user 
             ? `<div style="display: flex; gap: 8px; align-items: center;">
