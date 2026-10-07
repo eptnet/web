@@ -162,6 +162,14 @@
         <iframe id="audiomass-iframe" allow="camera; microphone; fullscreen; display-capture; autoplay" style="width: 100%; height: 100%; border: none;"></iframe>
     </div>
 
+    <!-- MODAL FREECUT (CAPA FANTASMA) -->
+    <div id="freecut-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #111; z-index: 99999;">
+        <button onclick="StudioManager.closeVideoEditor()" style="position: absolute; top: 15px; right: 25px; z-index: 100000; background: var(--accent-red); color: white; border: none; padding: 10px 20px; border-radius: 30px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: 0.2s;">
+            <i class="fa-solid fa-xmark"></i> Salir del Editor
+        </button>
+        <iframe id="freecut-iframe" allow="camera; microphone; fullscreen; display-capture; autoplay; cross-origin-isolated" style="width: 100%; height: 100%; border: none;"></iframe>
+    </div>
+
     <header class="studio-header">
         <div class="brand-zone">
             <img src="https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png" alt="EPT Logo" class="brand-logo">
@@ -205,6 +213,12 @@
 
             <section>
                 <h3><i class="fa-solid fa-clapperboard"></i> Video y Arte</h3>
+
+                <div class="tool-card" onclick="StudioManager.openVideoEditor()" style="margin-bottom: 15px;">
+                    <i class="fa-solid fa-scissors" style="color: #10b981;"></i>
+                    <h4>FreeCut (Pro)</h4>
+                    <p>Editor de video local sin subir archivos. Corta y anima clips directo en el navegador.</p>
+                </div>
                 
                 <a href="https://canva.me/pp-video-editor-2" target="_blank" style="text-decoration: none;">
                     <div class="tool-card">
@@ -254,6 +268,29 @@
                 if(confirm("¿Has guardado tus cambios? Al cerrar el editor se perderá el progreso no descargado.")) {
                     overlay.style.display = 'none';
                     iframe.src = ""; // Liberar memoria
+                }
+            },
+
+            // --- NUEVAS FUNCIONES PARA FREECUT ---
+            openVideoEditor() {
+                const overlay = document.getElementById('freecut-overlay');
+                const iframe = document.getElementById('freecut-iframe');
+                
+                // Cargamos FreeCut
+                iframe.src = "https://www.freecut.net/";
+                overlay.style.display = 'block';
+                
+                // Ocultamos la barra lateral
+                document.getElementById('tools-sidebar').classList.remove('open');
+            },
+
+            closeVideoEditor() {
+                const overlay = document.getElementById('freecut-overlay');
+                const iframe = document.getElementById('freecut-iframe');
+                
+                if(confirm("¿Has exportado tu video? Al cerrar se perderá el progreso que no esté guardado.")) {
+                    overlay.style.display = 'none';
+                    iframe.src = ""; // Liberar memoria pesada de video
                 }
             }
         };
