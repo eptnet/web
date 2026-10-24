@@ -18,21 +18,16 @@ Deno.serve(async (req) => {
     console.log(`✅ Se encontraron ${items.length} artículos en el RSS.`);
 
     const articles = items.map((item: any) => {
-      // 1. Autor
       let authorName = "Epistecnología";
       if (item["dc:creator"]) authorName = item["dc:creator"];
       if (authorName.includes("Henry") || authorName.includes("Epistec")) {
           authorName = "Henry Adolfo Márquez Mercado";
       }
 
-      // 2. Descripción (Resumen corto)
-      // Limpiamos etiquetas HTML simples si vienen en la descripción
       let desc = item.description || "";
-      // Truco para quitar HTML básico (regex simple)
       desc = desc.replace(/<[^>]*>?/gm, ''); 
       if (desc.length > 200) desc = desc.substring(0, 200) + "...";
 
-      // 3. Imagen (Intentamos buscarla en varios lugares estándar del RSS)
       let img = null;
       if (item.enclosure && item.enclosure["@url"] && item.enclosure["@type"]?.includes("image")) {
           img = item.enclosure["@url"];
@@ -42,11 +37,13 @@ Deno.serve(async (req) => {
           img = item["itunes:image"]["@href"];
       }
 
-      // 4. Tipo (Publicación vs Podcast)
-      // Si tiene un enclosure de audio, es podcast. Si no, es publicación.
-      let type = 'publicación'; // Por defecto "publicación" en español
+      let type = 'publicación'; 
+      let audioUrl = null; // <-- NUEVO CABLE PARA EL AUDIO
+
+      // Detectamos si es podcast y extraemos el MP3
       if (item.enclosure && item.enclosure["@type"]?.includes("audio")) {
           type = 'podcast';
+          audioUrl = item.enclosure["@url"]; // <-- EXTRAEMOS EL ENLACE DEL MP3
       }
 
       return {
@@ -55,13 +52,13 @@ Deno.serve(async (req) => {
         author_name: authorName,
         published_at: new Date(item.pubDate).toISOString(),
         description: desc,
-        image_url: img,  // Guardamos la imagen
-        source_type: type, // Guardamos el tipo nuevo
+        image_url: img,  
+        source_type: type, 
+        audio_url: audioUrl, // <-- GUARDAMOS EN LA TABLA
         created_at: new Date().toISOString()
       };
     });
 
-    // Upsert
     const { error } = await supabase
       .from('knowledge_base')
       .upsert(articles, { onConflict: 'url' });

@@ -45,7 +45,7 @@ document.addEventListener('mainReady', () => {
                             </div>`,
         stories: `<div class="bento-box bento-box--1x3 mobile-full-width" data-id="static-launch-stories" style="background-image: url('https://i.ibb.co/9kDJPK5K/Whisk-7b4dfc4406.jpg'); cursor: pointer; background-size: cover; background-position: center;"><div class="card-content"><span class="card-category" style="color: white;">Colección</span><h4 style="color: white;">Minuto cultural 📺</h4></div></div>`,
         quote: `<div class="bento-box bento-box--4x1 bento-style--flat mobile-full-width" data-id="static-quote" style="cursor:default;"><div class="card-content" style="text-align: center;"><p style="font-size: 1.2rem; font-style: italic;">"El conocimiento es la única riqueza que no se puede robar."</p><h4 style="margin-top: 0.5rem;">- Anónimo</h4></div></div>`,
-        videoFeatured: `<div class="bento-box bento-box--3x3 mobile-full-width video-featured-module" data-id="static-video-featured"><iframe src="https://www.youtube.com/embed/6PSKbO5yfDQ?rel=0&modestbranding=1&playsinline=1" title="Video destacado de YouTube" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`,
+        videoFeatured: `<div class="bento-box bento-box--3x3 mobile-full-width video-featured-module" data-id="static-video-featured"><iframe src="https://www.youtube.com/embed/-pRVgouxjwk?si=zVhtP6eUtMNJRxRE=0&modestbranding=1&playsinline=1" title="Video destacado de YouTube" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`,
         
         // *** NUEVO MÓDULO DE PODCAST ***
         // DESPUÉS
@@ -61,7 +61,7 @@ document.addEventListener('mainReady', () => {
                     <p>Cargando episodios...</p>
                 </div>
                 <div class="podcast-footer">
-                    <a href="https://eptnews.substack.com/s/diciencias" target="_blank" rel="noopener noreferrer" class="podcast-cta-button">Seguir escuchando</a>
+                    <a href="https://publicaciones.epistecnologia.com/s/diciencias" target="_blank" rel="noopener noreferrer" class="podcast-cta-button">Seguir escuchando</a>
                 </div>
             </div>`,
 
@@ -97,7 +97,7 @@ document.addEventListener('mainReady', () => {
             </div>`,
         
             subs: `
-                <div class="bento-box bento-box--3x2 mobile-full-width bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;">
+                <div class="bento-box bento-box--2x2 mobile-full-width bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;">
                     <div class="card-content">
                         
                         <iframe src="https://publicaciones.epistecnologia.com/embed" 
@@ -142,8 +142,8 @@ document.addEventListener('mainReady', () => {
             end: `
                 <div class="bento-box bento-box--4x1 bento-box--imagen" data-id="static-video" data-panel-type="embed" data-panel-title="Video Destacado" data-embed-src="https://www.youtube.com/embed/dQw4w9WgXcQ">
                     <div class="card-content">
-                        <span class="card-category">Ver Ahora</span>
-                        <h4>El Futuro de la Exploración Espacial</h4>
+                        <span class="card-category">Próximamente...</span>
+                        <h4>AQUÍ VIVIRÁ UNA NUEVA SECCIÓN</h4>
                     </div>
                 </div>`
     };
@@ -165,9 +165,10 @@ document.addEventListener('mainReady', () => {
         
         { type: 'module', id: 'zenodo' },
         { type: 'module', id: 'subs' },
+        { type: 'module', id: 'podcastPlayer' },
                 
         { type: 'module', id: 'videoFeatured' },
-        { type: 'module', id: 'podcastPlayer' },
+        
 
         { type: 'module', id: 'quote' },
 
@@ -185,8 +186,8 @@ document.addEventListener('mainReady', () => {
     ];
 
     // --- 4. LÓGICA DE LA APLICACIÓN ---
-    const articlesApiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua&order_dir=desc&count=15';
-    const podcastApiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fapi.substack.com%2Ffeed%2Fpodcast%2F2867518%2Fs%2F186951.rss';
+    //const articlesApiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua&order_dir=desc&count=18';
+    //const podcastApiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fapi.substack.com%2Ffeed%2Fpodcast%2F2867518%2Fs%2F186951.rss';
     let allPostsData = [];
     
     // Guardaremos los perfiles aquí para no tener que pedirlos de nuevo
@@ -197,9 +198,7 @@ document.addEventListener('mainReady', () => {
         bentoGrid.innerHTML = '<div class="loading" style="grid-column: span 4; text-align: center; padding: 2rem;">Cargando...</div>';
         
         try {
-            // --- INICIO DE LA LÓGICA MEJORADA (CON PROTECCIÓN CORS) ---
-            
-            // 1. Petición de perfiles a Supabase (Crítico - No debe fallar)
+            // 1. Petición de perfiles a Supabase
             const profilesResponse = await window.supabaseClient
                 .from('profiles')
                 .select('display_name, avatar_url, orcid, substack_author_name');
@@ -208,34 +207,42 @@ document.addEventListener('mainReady', () => {
             researcherProfiles = profilesResponse.data || [];
             console.log("Directorio de investigadores cargado:", researcherProfiles.length, "perfiles encontrados.");
             
-            // 2. Petición de artículos (Protegida)
-            let articleData = { status: 'error', items: [] };
-            try {
-                const articleRes = await fetch(articlesApiUrl);
-                if (articleRes.ok) articleData = await articleRes.json();
-            } catch (e) {
-                console.warn("Sincronización de artículos pausada temporalmente por bloqueo CORS.");
-            }
+            // 2. Petición a NUESTRA base de conocimiento (Adiós rss2json y CORS)
+            const { data: kbData, error: kbError } = await window.supabaseClient
+                .from('knowledge_base')
+                .select('*')
+                .order('published_at', { ascending: false })
+                .limit(30);
 
-            // 3. Petición de podcast (Protegida)
-            let podcastData = { status: 'error', items: [] };
-            try {
-                const podcastRes = await fetch(podcastApiUrl);
-                if (podcastRes.ok) podcastData = await podcastRes.json();
-            } catch (e) {
-                console.warn("Sincronización de podcast pausada temporalmente por bloqueo CORS.");
-            }
-            // --- FIN DE LA LÓGICA MEJORADA ---
+            if (kbError) throw kbError;
 
-            // Procesar artículos si tuvimos éxito
-            if (articleData.status === 'ok' && articleData.items) {
-                allPostsData = articleData.items.filter(item => !item.enclosure?.link?.endsWith(".mp3"));
-            } else {
-                allPostsData = []; // Fallback vacío si hay error
-            }
+            // 3. Clasificamos y adaptamos los datos al formato original
+            const rawArticles = kbData.filter(item => item.source_type === 'publicación');
+            const rawPodcasts = kbData.filter(item => item.source_type === 'podcast');
+
+            // Adaptamos los artículos para la grilla
+            allPostsData = rawArticles.map(item => ({
+                guid: item.id,
+                title: item.title,
+                content: item.description, 
+                description: item.description,
+                author: item.author_name,
+                pubDate: item.published_at,
+                link: item.url,
+                thumbnail: item.image_url
+            }));
+
+            // Adaptamos los podcasts para el reproductor
+            const formattedPodcasts = rawPodcasts.map(item => ({
+                title: item.title,
+                author: item.author_name,
+                pubDate: item.published_at,
+                thumbnail: item.image_url,
+                enclosure: { link: item.audio_url } // El reproductor buscará el enlace MP3 aquí
+            }));
             
-            // Renderizamos la grilla de todos modos (con o sin RSS)
-            displayContent(allPostsData, podcastData.items || []);
+            // 4. Renderizamos la web al instante
+            displayContent(allPostsData, formattedPodcasts);
             
         } catch (error) {
             console.error("Falló la carga de contenido o perfiles:", error);
