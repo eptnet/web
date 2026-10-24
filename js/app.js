@@ -197,32 +197,46 @@ document.addEventListener('mainReady', () => {
         bentoGrid.innerHTML = '<div class="loading" style="grid-column: span 4; text-align: center; padding: 2rem;">Cargando...</div>';
         
         try {
-            // --- INICIO DE LA LÓGICA MEJORADA ---
-            // 1. Hacemos las tres peticiones en paralelo para máxima eficiencia
-            const [articleResponse, podcastResponse, profilesResponse] = await Promise.all([
-                fetch(articlesApiUrl),
-                fetch(podcastApiUrl),
-                // Petición a nuestra base de datos para traer los perfiles
-                window.supabaseClient
-                    .from('profiles')
-                    .select('display_name, avatar_url, orcid, substack_author_name') // Traemos los campos que necesitamos
-            ]);
+            // --- INICIO DE LA LÓGICA MEJORADA (CON PROTECCIÓN CORS) ---
             
-            // 2. Procesamos los datos de los perfiles
+            // 1. Petición de perfiles a Supabase (Crítico - No debe fallar)
+            const profilesResponse = await window.supabaseClient
+                .from('profiles')
+                .select('display_name, avatar_url, orcid, substack_author_name');
+                
             if (profilesResponse.error) throw profilesResponse.error;
             researcherProfiles = profilesResponse.data || [];
             console.log("Directorio de investigadores cargado:", researcherProfiles.length, "perfiles encontrados.");
+            
+            // 2. Petición de artículos (Protegida)
+            let articleData = { status: 'error', items: [] };
+            try {
+                const articleRes = await fetch(articlesApiUrl);
+                if (articleRes.ok) articleData = await articleRes.json();
+            } catch (e) {
+                console.warn("Sincronización de artículos pausada temporalmente por bloqueo CORS.");
+            }
+
+            // 3. Petición de podcast (Protegida)
+            let podcastData = { status: 'error', items: [] };
+            try {
+                const podcastRes = await fetch(podcastApiUrl);
+                if (podcastRes.ok) podcastData = await podcastRes.json();
+            } catch (e) {
+                console.warn("Sincronización de podcast pausada temporalmente por bloqueo CORS.");
+            }
             // --- FIN DE LA LÓGICA MEJORADA ---
 
-            const articleData = await articleResponse.json();
-            const podcastData = await podcastResponse.json();
-
+            // Procesar artículos si tuvimos éxito
             if (articleData.status === 'ok' && articleData.items) {
                 allPostsData = articleData.items.filter(item => !item.enclosure?.link?.endsWith(".mp3"));
-                displayContent(allPostsData, podcastData.items);
-            } else { 
-                throw new Error("API de artículos no respondió correctamente."); 
+            } else {
+                allPostsData = []; // Fallback vacío si hay error
             }
+            
+            // Renderizamos la grilla de todos modos (con o sin RSS)
+            displayContent(allPostsData, podcastData.items || []);
+            
         } catch (error) {
             console.error("Falló la carga de contenido o perfiles:", error);
             bentoGrid.innerHTML = '<div class="error" style="grid-column: span 4; text-align: center; padding: 2rem;">No se pudo cargar el contenido.</div>';
@@ -346,7 +360,7 @@ document.addEventListener('mainReady', () => {
             .eq('status', 'EN VIVO')
             .order('scheduled_at', { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
 
         if (liveEvent) {
             bentoContainer.innerHTML = createNextEventHTML(liveEvent);
@@ -365,7 +379,7 @@ document.addEventListener('mainReady', () => {
             .gte('scheduled_at', nowIso) // ¡Solo fechas mayores a AHORA!
             .order('scheduled_at', { ascending: true })
             .limit(1)
-            .single();
+            .maybeSingle();
 
         if (nextEvent) {
             bentoContainer.innerHTML = createNextEventHTML(nextEvent);

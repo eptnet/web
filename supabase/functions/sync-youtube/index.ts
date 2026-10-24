@@ -1,53 +1,56 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 
-// Reemplaza ESTO con tu ID real que empieza con UC
+// Tu ID real de YouTube
 const YOUTUBE_CHANNEL_ID = 'UCg3ms3gecQ-2cjMhJwaPAig'; 
-const RSS_URL = `https://www.youtube.com/feeds/videos.xml?channel_id=${YOUTUBE_CHANNEL_ID}`;
+// Codificamos la URL para pasarla segura a rss2json
+const YOUTUBE_RSS = encodeURIComponent(`https://www.youtube.com/feeds/videos.xml?channel_id=${YOUTUBE_CHANNEL_ID}`);
+// Usamos tu API Key de app.js para asegurar el acceso sin límites
+const API_KEY = 'rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua';
+const FETCH_URL = `https://api.rss2json.com/v1/api.json?rss_url=${YOUTUBE_RSS}&api_key=${API_KEY}`;
 
 serve(async (req) => {
     try {
-        console.log("🚀 Iniciando sincronización con YouTube...");
+        console.log("🚀 Iniciando sincronización de YouTube vía rss2json...");
         
         const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
         const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
         const supabase = createClient(supabaseUrl, supabaseKey);
 
-        // Disfrazamos la petición con cabeceras de un navegador real
-        const response = await fetch(RSS_URL, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-            }
-        });
+        // Hacemos la petición al servicio autorizado de rss2json
+        const response = await fetch(FETCH_URL);
+        if (!response.ok) throw new Error(`Error contactando a rss2json (HTTP ${response.status})`);
         
-        if (!response.ok) throw new Error(`No se pudo contactar a YouTube (HTTP ${response.status})`);
-        const xmlText = await response.text();
+        const data = await response.json();
+        if (data.status !== 'ok') throw new Error(`rss2json devolvió error: ${data.message}`);
 
-        const entryRegex = /<entry>([\s\S]*?)<\/entry>/g;
-        const idRegex = /<yt:videoId>(.*?)<\/yt:videoId>/;
-        const titleRegex = /<title>(.*?)<\/title>/;
-        const descRegex = /<media:description>([\s\S]*?)<\/media:description>/;
-
-        let match;
-        let upsertedCount = 0;
         const videosToInsert = [];
 
-        while ((match = entryRegex.exec(xmlText)) !== null) {
-            const entryContent = match[1];
-            const videoIdMatch = entryContent.match(idRegex);
-            const titleMatch = entryContent.match(titleRegex);
-            const descMatch = entryContent.match(descRegex);
+        // Procesamos los videos que nos devuelve
+        for (const item of data.items) {
+            // Extraer el ID exacto del video (ej. desde yt:video:ID)
+            let videoId = null;
+            if (item.guid && item.guid.includes('yt:video:')) {
+                videoId = item.guid.split('yt:video:')[1];
+            } else if (item.link) {
+                const match = item.link.match(/v=([^&]+)/);
+                if (match) videoId = match[1];
+            }
 
-            if (videoIdMatch && titleMatch) {
+            if (videoId && item.title) {
+                // Limpiamos la descripción de cualquier etiqueta HTML residual
+                let cleanDesc = item.description || 'Sin descripción';
+                cleanDesc = cleanDesc.replace(/<[^>]*>?/gm, '');
+
                 videosToInsert.push({
-                    youtube_video_id: videoIdMatch[1],
-                    title: titleMatch[1],
-                    description: descMatch ? descMatch[1].substring(0, 600) : 'Sin descripción'
+                    youtube_video_id: videoId,
+                    title: item.title,
+                    description: cleanDesc.substring(0, 600)
                 });
             }
         }
 
+        let upsertedCount = 0;
         if (videosToInsert.length > 0) {
             const { error } = await supabase
                 .from('ondemand_videos')
@@ -59,7 +62,7 @@ serve(async (req) => {
 
         return new Response(JSON.stringify({ 
             success: true, 
-            message: `Sincronización exitosa. ${upsertedCount} videos procesados.` 
+            message: `Sincronización exitosa. ${upsertedCount} videos guardados.` 
         }), {
             headers: { 'Content-Type': 'application/json' },
             status: 200
