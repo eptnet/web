@@ -283,9 +283,21 @@
     <div class="overlay" id="overlay"></div>
     
     <!-- *** INICIO DEL REPRODUCTOR Y RADIO FLOTANTE *** -->
-    <!-- Botón Flotante para invocar la Radio -->
-    <button id="floating-radio-btn" style="position: fixed; bottom: 85px; right: 20px; z-index: 999; background: var(--color-accent); color: white; border: none; border-radius: 50%; width: 55px; height: 55px; font-size: 1.5rem; cursor: pointer; box-shadow: 0 4px 15px rgba(183, 42, 30, 0.4); display: flex; align-items: center; justify-content: center; transition: transform 0.3s;">
-        <i class="fa-solid fa-radio"></i>
+    <!-- Botón Flotante para invocar la Radio (Animado) -->
+    <button id="floating-radio-btn" class="radio-fab-animated" aria-label="Abrir Radio">
+        <!-- SVG para el texto giratorio -->
+        <svg viewBox="0 0 100 100" class="radio-text-ring">
+            <path id="textPath" d="M 50, 50 m -35, 0 a 35,35 0 1,1 70,0 a 35,35 0 1,1 -70,0" fill="transparent" />
+            <text>
+                <textPath href="#textPath" startOffset="0" class="radio-text">
+                    EPT-RADIO 📻 24/7 🎙️ EPT RADIO 24/7 
+                </textPath>
+            </text>
+        </svg>
+        <!-- Círculo central con el icono -->
+        <div class="radio-fab-inner">
+            <i class="fa-solid fa-radio"></i>
+        </div>
     </button>
 
     <div id="persistent-audio-player" class="persistent-audio-player" style="display: none;">
@@ -293,7 +305,7 @@
         <!-- Panel de Lista de Reproducción (Oculto por defecto) -->
         <div id="podcast-playlist-panel" class="podcast-playlist-panel" style="display: none;">
             <div class="playlist-header">
-                <h4>Episodios de Podcast</h4>
+                <h4>📻 EPT Radio</h4>
                 <button id="close-playlist-btn" title="Cerrar lista">&times;</button>
             </div>
             <ul id="podcast-playlist-list">

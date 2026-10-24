@@ -3012,3 +3012,87 @@ body.dark-theme .hero-search-box { background: rgba(255,255,255,0.02); }
         height: auto !important;
     }
 }
+
+/* ==========================================================================
+   BOTÓN FLOTANTE RADIO ANIMADO (TEXTO GIRATORIO)
+   ========================================================================== */
+.radio-fab-animated {
+    position: fixed;
+    bottom: 85px;
+    right: 20px;
+    z-index: 999;
+    width: 65px; /* Un poco más grande para acomodar el texto */
+    height: 65px;
+    background: transparent; /* El fondo lo da el círculo interior */
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.radio-fab-animated:hover {
+    transform: scale(1.1);
+}
+
+/* El círculo central con el icono */
+.radio-fab-inner {
+    position: absolute;
+    width: 45px;
+    height: 45px;
+    background: var(--color-accent);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 15px rgba(183, 42, 30, 0.5);
+    z-index: 2;
+}
+
+/* El anillo SVG con el texto */
+.radio-text-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    animation: rotateText 15s linear infinite; /* Animación de giro constante */
+}
+
+/* Estilo del texto giratorio */
+.radio-text {
+    font-size: 16px; /* Tamaño del texto SVG */
+    font-weight: 700;
+    font-family: var(--font-sans);
+    fill: var(--color-accent); /* Color del texto (usa tu color de acento) */
+    letter-spacing: 2px;
+}
+
+/* Modo oscuro para el texto giratorio */
+body.dark-theme .radio-text {
+    fill: white; 
+}
+
+/* Definición de la animación de rotación */
+@keyframes rotateText {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Ajuste sutil para móviles */
+@media (max-width: 768px) {
+    .radio-fab-animated {
+        width: 60px;
+        height: 60px;
+        right: 15px; /* Un poco más pegado al borde en móviles */
+    }
+    .radio-fab-inner {
+        width: 40px;
+        height: 40px;
+        font-size: 1.1rem;
+    }
+}
