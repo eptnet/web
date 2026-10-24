@@ -403,30 +403,46 @@ document.addEventListener('mainReady', () => {
         }
     }
     
+    // Nueva función para poblar tanto el Bento Grid como la Lista Flotante
     function populatePodcastPlayer(episodes) {
-        const listContainer = document.querySelector('.podcast-episode-list');
-        if (!listContainer) return;
-        listContainer.innerHTML = '';
-        episodes.forEach((episode, index) => {
-            const episodeHTML = `
-                <div class="podcast-episode" data-index="${index}">
-                    <i class="fa-solid fa-play episode-play-icon"></i>
-                    <div class="episode-info">
-                        <p>${episode.title}</p>
-                        <span>${new Date(episode.pubDate).toLocaleDateString()}</span>
+        // 1. Poblar el Bento Grid
+        const bentoList = document.querySelector('.podcast-episode-list');
+        if (bentoList) {
+            bentoList.innerHTML = '';
+            episodes.forEach((episode, index) => {
+                bentoList.insertAdjacentHTML('beforeend', `
+                    <div class="podcast-episode" data-index="${index}">
+                        <i class="fa-solid fa-play episode-play-icon"></i>
+                        <div class="episode-info"><p>${episode.title}</p><span>${new Date(episode.pubDate).toLocaleDateString()}</span></div>
                     </div>
-                </div>
-            `;
-            listContainer.insertAdjacentHTML('beforeend', episodeHTML);
-        });
+                `);
+            });
+            bentoList.addEventListener('click', (e) => {
+                const episodeDiv = e.target.closest('.podcast-episode');
+                if (episodeDiv) audioPlayer.playEpisode(parseInt(episodeDiv.dataset.index, 10));
+            });
+        }
 
-        listContainer.addEventListener('click', (e) => {
-            const episodeDiv = e.target.closest('.podcast-episode');
-            if (episodeDiv) {
-                const episodeIndex = parseInt(episodeDiv.dataset.index, 10);
-                audioPlayer.playEpisode(episodeIndex);
-            }
-        });
+        // 2. Poblar la Lista del Reproductor Flotante
+        const floatingList = document.getElementById('podcast-playlist-list');
+        if (floatingList) {
+            floatingList.innerHTML = episodes.map((ep, idx) => {
+                const img = ep.thumbnail || 'https://i.ibb.co/hFRyKrxY/logo-epist-v3-1x1-c.png';
+                const date = new Date(ep.pubDate).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
+                return `<li class="playlist-item" data-index="${idx}" style="cursor:pointer;">
+                            <img src="${img}" class="playlist-item-img">
+                            <div class="playlist-item-info">
+                                <p class="playlist-item-title">${ep.title}</p>
+                                <p class="playlist-item-date">${date}</p>
+                            </div>
+                        </li>`;
+            }).join('');
+            
+            floatingList.addEventListener('click', (e) => {
+                const item = e.target.closest('.playlist-item');
+                if (item) audioPlayer.playEpisode(parseInt(item.dataset.index, 10));
+            });
+        }
     }
 
     function createPostCardHTML(item) {
@@ -568,6 +584,7 @@ document.addEventListener('mainReady', () => {
         }
     });
 
+    // --- 6. REPRODUCTOR AUDIO PERSISTENTE Y RADIO ---
     const audioPlayer = {
         playerElement: document.getElementById('persistent-audio-player'),
         audio: new Audio(),
@@ -588,75 +605,103 @@ document.addEventListener('mainReady', () => {
         durationEl: document.getElementById('player-duration'),
 
         init() {
+            // Controles básicos
             this.playBtn.addEventListener('click', () => this.togglePlay());
             this.closeBtn.addEventListener('click', () => this.hide());
             this.forwardBtn.addEventListener('click', () => this.playNext());
             this.rewindBtn.addEventListener('click', () => this.playPrevious());
             this.volumeSlider.addEventListener('input', (e) => this.setVolume(e.target.value));
+            
+            // Lógica de Minimizar
+            const minimizeBtn = document.getElementById('player-minimize-btn');
+            if (minimizeBtn) {
+                minimizeBtn.addEventListener('click', () => this.playerElement.classList.toggle('is-minimized'));
+            }
+
+            // Lógica de la Lista de Reproducción
+            const playlistPanel = document.getElementById('podcast-playlist-panel');
+            document.getElementById('player-playlist-btn')?.addEventListener('click', () => {
+                playlistPanel.style.display = playlistPanel.style.display === 'none' ? 'flex' : 'none';
+            });
+            document.getElementById('close-playlist-btn')?.addEventListener('click', () => {
+                playlistPanel.style.display = 'none';
+            });
+
+            // Botón Flotante de Radio
+            const radioBtn = document.getElementById('floating-radio-btn');
+            if (radioBtn) {
+                radioBtn.addEventListener('click', () => {
+                    this.playerElement.style.display = 'block';
+                    setTimeout(() => this.playerElement.classList.add('is-visible'), 10);
+                    this.playerElement.classList.remove('is-minimized');
+                    // Si no hay nada sonando, reproduce el primer episodio al abrir la radio
+                    if (this.currentIndex === -1 && this.playlist.length > 0) {
+                        this.playEpisode(0);
+                    }
+                });
+            }
+
+            // Eventos del Audio
             this.audio.addEventListener('timeupdate', () => this.updateTimeline());
             this.audio.addEventListener('loadedmetadata', () => this.updateTimeline());
             this.audio.addEventListener('ended', () => this.playNext());
-            this.timeline.addEventListener('input', (e) => { if(this.audio.duration) this.audio.currentTime = (e.target.value / 100) * this.audio.duration; });
+            this.timeline.addEventListener('input', (e) => { 
+                if(this.audio.duration) this.audio.currentTime = (e.target.value / 100) * this.audio.duration; 
+            });
         },
-        setPlaylist(playlist) {
-            this.playlist = playlist;
-        },
+        setPlaylist(playlist) { this.playlist = playlist; },
         playEpisode(index) {
             if (index < 0 || index >= this.playlist.length) return;
             this.currentIndex = index;
             const track = this.playlist[index];
-            
             this.audio.src = track.enclosure.link;
             this.trackTitle.textContent = track.title;
-            this.trackAuthor.textContent = track.author;
-            this.trackImage.src = track.thumbnail;
+            this.trackAuthor.textContent = track.author || 'Epistecnología';
+            this.trackImage.src = track.thumbnail || 'https://i.ibb.co/BV0dKC2h/Portada-EPT-WEB.jpg';
             this.audio.play();
             this.playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+            
+            this.playerElement.style.display = 'block';
             this.playerElement.classList.add('is-visible');
+            this.playerElement.classList.remove('is-minimized');
             this.updatePlayingStatus();
         },
-        playNext() {
-            this.playEpisode((this.currentIndex + 1) % this.playlist.length);
-        },
-        playPrevious() {
-            const newIndex = (this.currentIndex - 1 + this.playlist.length) % this.playlist.length;
-            this.playEpisode(newIndex);
-        },
+        playNext() { this.playEpisode((this.currentIndex + 1) % this.playlist.length); },
+        playPrevious() { this.playEpisode((this.currentIndex - 1 + this.playlist.length) % this.playlist.length); },
         togglePlay() {
             if (this.audio.src) {
-                if (this.audio.paused) { this.audio.play(); } else { this.audio.pause(); }
+                this.audio.paused ? this.audio.play() : this.audio.pause();
                 this.playBtn.innerHTML = this.audio.paused ? '<i class="fa-solid fa-play"></i>' : '<i class="fa-solid fa-pause"></i>';
                 this.updatePlayingStatus();
             }
         },
-        setVolume(value) {
-            this.audio.volume = value / 100;
-        },
+        setVolume(value) { this.audio.volume = value / 100; },
         updateTimeline() {
             const formatTime = (secs) => {
                 if (isNaN(secs)) return '0:00';
-                const minutes = Math.floor(secs / 60);
-                const seconds = Math.floor(secs % 60);
-                return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                return `${Math.floor(secs / 60)}:${Math.floor(secs % 60).toString().padStart(2, '0')}`;
             };
             this.timeline.value = (this.audio.currentTime / this.audio.duration) * 100 || 0;
             this.currentTimeEl.textContent = formatTime(this.audio.currentTime);
             this.durationEl.textContent = formatTime(this.audio.duration);
         },
         updatePlayingStatus() {
+            // Actualiza íconos en el Bento Grid
             document.querySelectorAll('.podcast-episode').forEach((el, index) => {
                 el.classList.toggle('is-playing', index === this.currentIndex);
                 const icon = el.querySelector('.episode-play-icon');
-                if (icon) {
-                    icon.className = (index === this.currentIndex && !this.audio.paused) ? 'fa-solid fa-pause episode-play-icon' : 'fa-solid fa-play episode-play-icon';
-                }
+                if (icon) icon.className = (index === this.currentIndex && !this.audio.paused) ? 'fa-solid fa-pause episode-play-icon' : 'fa-solid fa-play episode-play-icon';
+            });
+            // Actualiza íconos en el Playlist Flotante
+            document.querySelectorAll('.playlist-item').forEach((item, index) => {
+                item.classList.toggle('active', index === this.currentIndex);
             });
         },
         hide() {
             this.audio.pause();
             this.playerElement.classList.remove('is-visible');
+            setTimeout(() => { this.playerElement.style.display = 'none'; }, 300);
             this.updatePlayingStatus();
-            this.currentIndex = -1;
         }
     };
     audioPlayer.init();

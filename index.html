@@ -282,12 +282,31 @@
     
     <div class="overlay" id="overlay"></div>
     
-    <!-- *** INICIO DE LA ESTRUCTURA DEL REPRODUCTOR PERSISTENTE *** -->
-    <div id="persistent-audio-player" class="persistent-audio-player">
+    <!-- *** INICIO DEL REPRODUCTOR Y RADIO FLOTANTE *** -->
+    <!-- Botón Flotante para invocar la Radio -->
+    <button id="floating-radio-btn" style="position: fixed; bottom: 85px; right: 20px; z-index: 999; background: var(--color-accent); color: white; border: none; border-radius: 50%; width: 55px; height: 55px; font-size: 1.5rem; cursor: pointer; box-shadow: 0 4px 15px rgba(183, 42, 30, 0.4); display: flex; align-items: center; justify-content: center; transition: transform 0.3s;">
+        <i class="fa-solid fa-radio"></i>
+    </button>
+
+    <div id="persistent-audio-player" class="persistent-audio-player" style="display: none;">
+        
+        <!-- Panel de Lista de Reproducción (Oculto por defecto) -->
+        <div id="podcast-playlist-panel" class="podcast-playlist-panel" style="display: none;">
+            <div class="playlist-header">
+                <h4>Episodios de Podcast</h4>
+                <button id="close-playlist-btn" title="Cerrar lista">&times;</button>
+            </div>
+            <ul id="podcast-playlist-list">
+                <!-- Se inyecta desde JS -->
+            </ul>
+        </div>
+
         <div id="player-content" class="player-content">
+            <button id="player-minimize-btn" title="Minimizar reproductor"><i class="fa-solid fa-chevron-down"></i></button>
+            
             <div class="track-info">
-                <img id="player-track-image" src="https://placehold.co/56x56/242526/e4e6eb?text=EPT" alt="Carátula del episodio">
-                <div>
+                <img id="player-track-image" src="https://placehold.co/56x56/242526/e4e6eb?text=EPT" alt="Carátula">
+                <div class="track-text">
                     <p id="player-track-title">Selecciona un episodio</p>
                     <p id="player-track-author">Epistecnología Podcast</p>
                 </div>
@@ -296,13 +315,13 @@
                 <button id="player-rewind-btn" title="Anterior"><i class="fa-solid fa-backward-step"></i></button>
                 <button id="player-play-btn" title="Reproducir/Pausa"><i class="fa-solid fa-play"></i></button>
                 <button id="player-forward-btn" title="Siguiente"><i class="fa-solid fa-forward-step"></i></button>
+                <button id="player-playlist-btn" title="Ver Lista"><i class="fa-solid fa-list-ul"></i></button>
             </div>
             <div class="player-timeline">
                 <span id="player-current-time">0:00</span>
                 <input type="range" id="player-timeline-slider" value="0" min="0" max="100">
                 <span id="player-duration">0:00</span>
             </div>
-            <!-- *** CAMBIO CLAVE: Añadido control de volumen *** -->
             <div class="player-volume">
                 <i class="fa-solid fa-volume-high"></i>
                 <input type="range" id="player-volume-slider" value="100" min="0" max="100">
