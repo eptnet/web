@@ -747,6 +747,27 @@ document.addEventListener('mainReady', () => {
         }
     }
 
+    // --- LÓGICA DE NAVEGACIÓN INTELIGENTE PARA LA RADIO ---
+    // Interceptamos los enlaces del menú de escritorio y móvil
+    const navLinks = document.querySelectorAll('.desktop-nav a, .mobile-nav a, .bottom-nav a, .mobile-more-menu__content a');
+    
+    navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            // Ignoramos enlaces que ya se abren en otra pestaña o anclas de la misma página (#)
+            if (link.target === '_blank' || link.getAttribute('href').startsWith('#') || link.getAttribute('href') === '/') return;
+
+            // Verificamos si la radio tiene una lista cargada y un índice válido (es decir, fue activada)
+            const isRadioActive = audioPlayer.currentIndex !== -1 && audioPlayer.playlist.length > 0;
+
+            if (isRadioActive) {
+                // Si la radio está activa, abrimos el enlace en una NUEVA pestaña para no cortar el audio
+                e.preventDefault(); // Detenemos la navegación normal
+                window.open(link.href, '_blank');
+            }
+            // Si la radio NO está activa, dejamos que la navegación siga su curso normal
+        });
+    });
+
     function initMobileNav() {
         const mobileNav = document.querySelector('.mobile-nav');
         if (!mobileNav) return;
