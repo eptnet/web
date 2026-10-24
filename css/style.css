@@ -3018,12 +3018,12 @@ body.dark-theme .hero-search-box { background: rgba(255,255,255,0.02); }
    ========================================================================== */
 .radio-fab-animated {
     position: fixed;
-    bottom: 85px;
-    right: 20px;
+    bottom: 90px;
+    right: 25px; /* Un poco más despegado del borde derecho en PC */
     z-index: 999;
-    width: 65px; /* Un poco más grande para acomodar el texto */
-    height: 65px;
-    background: transparent; /* El fondo lo da el círculo interior */
+    width: 115px; /* <-- Aumentado a 75px para PC */
+    height: 115px;
+    background: transparent; 
     border: none;
     border-radius: 50%;
     cursor: pointer;
@@ -3041,15 +3041,15 @@ body.dark-theme .hero-search-box { background: rgba(255,255,255,0.02); }
 /* El círculo central con el icono */
 .radio-fab-inner {
     position: absolute;
-    width: 45px;
-    height: 45px;
+    width: 80px; /* <-- Aumentado a 50px */
+    height: 80px;
     background: var(--color-accent);
     color: white;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
+    font-size: 1.4rem; /* <-- Icono más grande */
     box-shadow: 0 4px 15px rgba(183, 42, 30, 0.5);
     z-index: 2;
 }
@@ -3060,15 +3060,15 @@ body.dark-theme .hero-search-box { background: rgba(255,255,255,0.02); }
     width: 100%;
     height: 100%;
     z-index: 1;
-    animation: rotateText 15s linear infinite; /* Animación de giro constante */
+    animation: rotateText 15s linear infinite; 
 }
 
 /* Estilo del texto giratorio */
 .radio-text {
-    font-size: 16px; /* Tamaño del texto SVG */
+    font-size: 17px; /* <-- Texto un puntito más grande */
     font-weight: 700;
     font-family: var(--font-sans);
-    fill: var(--color-accent); /* Color del texto (usa tu color de acento) */
+    fill: var(--color-accent); 
     letter-spacing: 2px;
 }
 
@@ -3083,12 +3083,12 @@ body.dark-theme .radio-text {
     100% { transform: rotate(360deg); }
 }
 
-/* Ajuste sutil para móviles */
+/* Ajuste sutil para móviles (Se mantiene compacto) */
 @media (max-width: 768px) {
     .radio-fab-animated {
         width: 60px;
         height: 60px;
-        right: 15px; /* Un poco más pegado al borde en móviles */
+        right: 15px; 
     }
     .radio-fab-inner {
         width: 40px;
