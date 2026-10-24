@@ -45,7 +45,7 @@ document.addEventListener('mainReady', () => {
                             </div>`,
         stories: `<div class="bento-box bento-box--1x3 mobile-full-width" data-id="static-launch-stories" style="background-image: url('https://i.ibb.co/9kDJPK5K/Whisk-7b4dfc4406.jpg'); cursor: pointer; background-size: cover; background-position: center;"><div class="card-content"><span class="card-category" style="color: white;">Colección</span><h4 style="color: white;">Minuto cultural 📺</h4></div></div>`,
         quote: `<div class="bento-box bento-box--4x1 bento-style--flat mobile-full-width" data-id="static-quote" style="cursor:default;"><div class="card-content" style="text-align: center;"><p style="font-size: 1.2rem; font-style: italic;">"El conocimiento es la única riqueza que no se puede robar."</p><h4 style="margin-top: 0.5rem;">- Anónimo</h4></div></div>`,
-        videoFeatured: `<div class="bento-box bento-box--2x2 mobile-full-width video-featured-module" data-id="static-video-featured"><iframe src="https://www.youtube.com/embed/-pRVgouxjwk?si=zVhtP6eUtMNJRxRE=0&modestbranding=1&playsinline=1" title="Video destacado de YouTube" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`,
+        videoFeatured: `<div class="bento-box bento-box--2x3 mobile-full-width video-featured-module" data-id="static-video-featured"><iframe src="https://www.youtube.com/embed/-pRVgouxjwk?si=zVhtP6eUtMNJRxRE=0&modestbranding=1&playsinline=1" title="Video destacado de YouTube" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`,
         
         // *** NUEVO MÓDULO DE PODCAST ***
         // DESPUÉS
@@ -97,7 +97,7 @@ document.addEventListener('mainReady', () => {
             </div>`,
         
             subs: `
-                <div class="bento-box bento-box--2x2 mobile-full-width bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;">
+                <div class="bento-box bento-box--2x1 mobile-full-width bento-box--acento" data-id="static-in-feed-promo" style="cursor:pointer;">
                     <div class="card-content">
                         
                         <iframe src="https://publicaciones.epistecnologia.com/embed" 
@@ -110,7 +110,7 @@ document.addEventListener('mainReady', () => {
                 </div>`,
                 
             zenodo: `
-                <div class="bento-box zenodo-module bento-box--1x3 mobile-full-width" data-id="static-zenodo" style="background-image: url('https://i.ibb.co/x8JbV61H/a-futuristic-digital-artwork-depicting-a-k9-Jb0c-3-R0u8by-Ev-GGOrw-x-Ait-Jamg-RCat9-GLc-O810jg.jpg'); cursor: pointer;">
+                <div class="bento-box bento-box--2x2 zenodo-module mobile-full-width" data-id="static-zenodo" style="background-image: url('https://i.ibb.co/x8JbV61H/a-futuristic-digital-artwork-depicting-a-k9-Jb0c-3-R0u8by-Ev-GGOrw-x-Ait-Jamg-RCat9-GLc-O810jg.jpg'); cursor: pointer;">
                     <div class="card-content">
                         <h3>Únete a la Comunidad</h3>
                         <p>Publica tus trabajos, obtén un DOI y forma parte de nuestro ecosistema de conocimiento abierto.</p>
@@ -161,33 +161,35 @@ document.addEventListener('mainReady', () => {
         { type: 'post' }, 
         { type: 'post' }, 
         { type: 'post' }, 
+        //{ type: 'module', id: 'podcastPlayer' },
         { type: 'post' },
-        
-        { type: 'module', id: 'zenodo' },
-        { type: 'module', id: 'subs' },
-        { type: 'module', id: 'podcastPlayer' },
-                
-        { type: 'module', id: 'videoFeatured' },
-        
+        { type: 'post' }, 
+        { type: 'post' }, 
+        { type: 'post' }, 
+        { type: 'post' },
 
+        
+        { type: 'module', id: 'subs' },
+        { type: 'module', id: 'videoFeatured' },
+        { type: 'module', id: 'zenodo' },
+        
         { type: 'module', id: 'quote' },
 
         { type: 'post' }, 
-        { type: 'post' }, 
+        { type: 'post' },
         { type: 'post' }, 
         { type: 'post' },
-        { type: 'module', id: 'allPostsCTA' }, // <-- NUEVO CTA AQUÍ
+        
         { type: 'post' }, 
         { type: 'post' }, 
         { type: 'post' }, 
         { type: 'post' },
         
+        { type: 'module', id: 'allPostsCTA' },
         { type: 'module', id: 'end' }
     ];
 
     // --- 4. LÓGICA DE LA APLICACIÓN ---
-    //const articlesApiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Feptnews.substack.com%2Ffeed&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua&order_dir=desc&count=18';
-    //const podcastApiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fapi.substack.com%2Ffeed%2Fpodcast%2F2867518%2Fs%2F186951.rss';
     let allPostsData = [];
     
     // Guardaremos los perfiles aquí para no tener que pedirlos de nuevo
@@ -211,15 +213,27 @@ document.addEventListener('mainReady', () => {
                 .order('published_at', { ascending: false })
                 .limit(30);
 
-            // 3. HERENCIA DE COMUNIDAD: Petición del PODCAST con la API KEY (Anti-CORS y con MP3 reales)
-            const podcastUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fapi.substack.com%2Ffeed%2Fpodcast%2F2867518%2Fs%2F186951.rss&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua';
-            const podcastPromise = fetch(podcastUrl).then(res => res.json()).catch(() => null);
+            // 3. HERENCIA DE COMUNIDAD: Petición de los PODCASTS con la API KEY (Anti-CORS)
+            const apiKey = '&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua';
+            const podcastDiCienciaUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fapi.substack.com%2Ffeed%2Fpodcast%2F2867518%2Fs%2F186951.rss' + apiKey;
+            // ¡NUEVO!: Añadimos el canal de EPT Talk (Conversaciones)
+            const podcastEptTalkUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fapi.substack.com%2Ffeed%2Fpodcast%2F2867518%2Fs%2F143649.rss' + apiKey;
 
-            // Ejecutamos TODO al mismo tiempo para que la página cargue rapidísimo
-            const [profilesResponse, kbResponse, podcastData] = await Promise.all([
+            // Envolvemos en un catch silencioso para que si un feed falla, el resto de la web siga cargando
+            const fetchPodcast = (url, prefixTitle) => fetch(url).then(res => res.json()).then(data => {
+                if(data.status === 'ok' && data.items) {
+                    // Le ponemos una pequeña etiqueta al título para distinguir de qué programa es
+                    return data.items.map(item => ({...item, title: `${prefixTitle} | ${item.title}`}));
+                }
+                return [];
+            }).catch(() => []);
+
+            // Ejecutamos TODO al mismo tiempo en paralelo
+            const [profilesResponse, kbResponse, dicienciaData, eptTalkData] = await Promise.all([
                 profilesPromise, 
                 kbPromise, 
-                podcastPromise
+                fetchPodcast(podcastDiCienciaUrl, 'DiCiencia'),
+                fetchPodcast(podcastEptTalkUrl, 'EPT Talk')
             ]);
                 
             if (profilesResponse.error) throw profilesResponse.error;
@@ -239,14 +253,12 @@ document.addEventListener('mainReady', () => {
                 thumbnail: item.image_url
             }));
 
-            // 5. Inyectamos los MP3 puros al reproductor de la página de inicio
-            let formattedPodcasts = [];
-            if (podcastData && podcastData.status === 'ok' && podcastData.items) {
-                formattedPodcasts = podcastData.items; // Trae el formato exacto que tu audioPlayer necesita
-            }
+            // 5. UNIFICAMOS LOS PODCASTS: Juntamos DiCiencia y EPT Talk, y los ordenamos por fecha
+            let allPodcasts = [...dicienciaData, ...eptTalkData];
+            allPodcasts.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
             
             // 6. Renderizamos la web al instante
-            displayContent(allPostsData, formattedPodcasts);
+            displayContent(allPostsData, allPodcasts);
             
         } catch (error) {
             console.error("Falló la carga de contenido o perfiles:", error);
