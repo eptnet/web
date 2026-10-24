@@ -45,7 +45,7 @@ document.addEventListener('mainReady', () => {
                             </div>`,
         stories: `<div class="bento-box bento-box--1x3 mobile-full-width" data-id="static-launch-stories" style="background-image: url('https://i.ibb.co/9kDJPK5K/Whisk-7b4dfc4406.jpg'); cursor: pointer; background-size: cover; background-position: center;"><div class="card-content"><span class="card-category" style="color: white;">Colección</span><h4 style="color: white;">Minuto cultural 📺</h4></div></div>`,
         quote: `<div class="bento-box bento-box--4x1 bento-style--flat mobile-full-width" data-id="static-quote" style="cursor:default;"><div class="card-content" style="text-align: center;"><p style="font-size: 1.2rem; font-style: italic;">"El conocimiento es la única riqueza que no se puede robar."</p><h4 style="margin-top: 0.5rem;">- Anónimo</h4></div></div>`,
-        videoFeatured: `<div class="bento-box bento-box--3x3 mobile-full-width video-featured-module" data-id="static-video-featured"><iframe src="https://www.youtube.com/embed/-pRVgouxjwk?si=zVhtP6eUtMNJRxRE=0&modestbranding=1&playsinline=1" title="Video destacado de YouTube" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`,
+        videoFeatured: `<div class="bento-box bento-box--2x2 mobile-full-width video-featured-module" data-id="static-video-featured"><iframe src="https://www.youtube.com/embed/-pRVgouxjwk?si=zVhtP6eUtMNJRxRE=0&modestbranding=1&playsinline=1" title="Video destacado de YouTube" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`,
         
         // *** NUEVO MÓDULO DE PODCAST ***
         // DESPUÉS
@@ -110,7 +110,7 @@ document.addEventListener('mainReady', () => {
                 </div>`,
                 
             zenodo: `
-                <div class="bento-box zenodo-module bento-box--1x2 mobile-full-width" data-id="static-zenodo" style="background-image: url('https://i.ibb.co/x8JbV61H/a-futuristic-digital-artwork-depicting-a-k9-Jb0c-3-R0u8by-Ev-GGOrw-x-Ait-Jamg-RCat9-GLc-O810jg.jpg'); cursor: pointer;">
+                <div class="bento-box zenodo-module bento-box--1x3 mobile-full-width" data-id="static-zenodo" style="background-image: url('https://i.ibb.co/x8JbV61H/a-futuristic-digital-artwork-depicting-a-k9-Jb0c-3-R0u8by-Ev-GGOrw-x-Ait-Jamg-RCat9-GLc-O810jg.jpg'); cursor: pointer;">
                     <div class="card-content">
                         <h3>Únete a la Comunidad</h3>
                         <p>Publica tus trabajos, obtén un DOI y forma parte de nuestro ecosistema de conocimiento abierto.</p>
@@ -199,29 +199,36 @@ document.addEventListener('mainReady', () => {
         
         try {
             // 1. Petición de perfiles a Supabase
-            const profilesResponse = await window.supabaseClient
+            const profilesPromise = window.supabaseClient
                 .from('profiles')
                 .select('display_name, avatar_url, orcid, substack_author_name');
                 
-            if (profilesResponse.error) throw profilesResponse.error;
-            researcherProfiles = profilesResponse.data || [];
-            console.log("Directorio de investigadores cargado:", researcherProfiles.length, "perfiles encontrados.");
-            
-            // 2. Petición a NUESTRA base de conocimiento (Adiós rss2json y CORS)
-            const { data: kbData, error: kbError } = await window.supabaseClient
+            // 2. Petición a NUESTRA base de conocimiento SOLO para los artículos
+            const kbPromise = window.supabaseClient
                 .from('knowledge_base')
                 .select('*')
+                .eq('source_type', 'publicación') // Solo traemos los artículos escritos
                 .order('published_at', { ascending: false })
                 .limit(30);
 
-            if (kbError) throw kbError;
+            // 3. HERENCIA DE COMUNIDAD: Petición del PODCAST con la API KEY (Anti-CORS y con MP3 reales)
+            const podcastUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fapi.substack.com%2Ffeed%2Fpodcast%2F2867518%2Fs%2F186951.rss&api_key=rmd6o3ot92w3dujs1zgxaj8b0dfbg6tqizykdrua';
+            const podcastPromise = fetch(podcastUrl).then(res => res.json()).catch(() => null);
 
-            // 3. Clasificamos y adaptamos los datos al formato original
-            const rawArticles = kbData.filter(item => item.source_type === 'publicación');
-            const rawPodcasts = kbData.filter(item => item.source_type === 'podcast');
+            // Ejecutamos TODO al mismo tiempo para que la página cargue rapidísimo
+            const [profilesResponse, kbResponse, podcastData] = await Promise.all([
+                profilesPromise, 
+                kbPromise, 
+                podcastPromise
+            ]);
+                
+            if (profilesResponse.error) throw profilesResponse.error;
+            if (kbResponse.error) throw kbResponse.error;
 
-            // Adaptamos los artículos para la grilla
-            allPostsData = rawArticles.map(item => ({
+            researcherProfiles = profilesResponse.data || [];
+            
+            // 4. Adaptamos los artículos para que el Bento Grid los dibuje
+            allPostsData = (kbResponse.data || []).map(item => ({
                 guid: item.id,
                 title: item.title,
                 content: item.description, 
@@ -232,16 +239,13 @@ document.addEventListener('mainReady', () => {
                 thumbnail: item.image_url
             }));
 
-            // Adaptamos los podcasts para el reproductor
-            const formattedPodcasts = rawPodcasts.map(item => ({
-                title: item.title,
-                author: item.author_name,
-                pubDate: item.published_at,
-                thumbnail: item.image_url,
-                enclosure: { link: item.audio_url } // El reproductor buscará el enlace MP3 aquí
-            }));
+            // 5. Inyectamos los MP3 puros al reproductor de la página de inicio
+            let formattedPodcasts = [];
+            if (podcastData && podcastData.status === 'ok' && podcastData.items) {
+                formattedPodcasts = podcastData.items; // Trae el formato exacto que tu audioPlayer necesita
+            }
             
-            // 4. Renderizamos la web al instante
+            // 6. Renderizamos la web al instante
             displayContent(allPostsData, formattedPodcasts);
             
         } catch (error) {
