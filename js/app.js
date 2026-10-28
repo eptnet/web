@@ -197,7 +197,18 @@ document.addEventListener('mainReady', () => {
 
     async function loadContent() {
         if (!bentoGrid) return;
-        bentoGrid.innerHTML = '<div class="loading" style="grid-column: span 4; text-align: center; padding: 2rem;">Cargando...</div>';
+        
+        // ¡LA MAGIA DEL SKELETON LOADER AQUÍ!
+        bentoGrid.innerHTML = `
+        <div class="cinematic-section" style="min-height: 85vh; padding-top: 2rem; width: 100%; background: transparent !important; box-shadow: none !important; border: none !important;">
+            <h3 style="color: var(--color-text-secondary); margin-bottom: 1.5rem; opacity: 0.6;"><i class="fa-solid fa-spinner fa-spin" style="color: var(--color-accent); margin-right: 8px;"></i> Sincronizando ecosistema...</h3>
+            <div class="bento-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; width: 100%;">
+                <div class="skeleton-box mobile-full-width" style="grid-column: span 2; grid-row: span 2; min-height: 380px;"></div>
+                <div class="skeleton-box mobile-full-width" style="grid-column: span 2; grid-row: span 1; min-height: 180px;"></div>
+                <div class="skeleton-box mobile-full-width" style="grid-column: span 1; grid-row: span 1; min-height: 180px;"></div>
+                <div class="skeleton-box mobile-full-width" style="grid-column: span 1; grid-row: span 1; min-height: 180px;"></div>
+            </div>
+        </div>`;
         
         try {
             // 1. Petición de perfiles a Supabase

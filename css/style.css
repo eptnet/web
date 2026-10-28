@@ -3096,3 +3096,28 @@ body.dark-theme .radio-text {
         font-size: 1.1rem;
     }
 }
+
+/* ==========================================================================
+   UX: SKELETON LOADERS (EFECTO DE CARGA PREMIUM)
+   ========================================================================== */
+@keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+}
+
+.skeleton-box {
+    background: linear-gradient(90deg, rgba(0,0,0,0.03) 25%, rgba(0,0,0,0.08) 50%, rgba(0,0,0,0.03) 75%);
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite linear;
+    border-radius: 16px;
+    border: 1px solid var(--color-border);
+    width: 100%;
+}
+
+/* Magia para que se vea increíble en el Tema Oscuro */
+body.dark-theme .skeleton-box {
+    background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite linear;
+    border-color: rgba(255, 255, 255, 0.05);
+}
